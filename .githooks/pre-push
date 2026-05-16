@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Block direct pushes to protected branches. Use /ship or open a PR instead.
+set -e
+
+protected_regex='^refs/heads/(main|master)$'
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  if [[ "$remote_ref" =~ $protected_regex ]]; then
+    cat >&2 <<EOF
+[pre-push] Direct pushes to '$remote_ref' are not allowed.
+
+Push your feature branch instead, then run /ship in Claude Code to open a PR:
+  git push -u origin <your-feature-branch>
+EOF
+    exit 1
+  fi
+done
+
+exit 0

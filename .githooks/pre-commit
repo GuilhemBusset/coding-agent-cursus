@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Block direct commits to protected branches. Every change reaches main via PR.
+set -e
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "DETACHED")
+
+case "$branch" in
+  main|master)
+    cat >&2 <<EOF
+[pre-commit] Direct commits to '$branch' are not allowed.
+
+Create a feature branch first:
+  git checkout -b <type>/<short-description>
+
+Then commit, and run /ship in Claude Code (or open a PR) to merge.
+EOF
+    exit 1
+    ;;
+esac
