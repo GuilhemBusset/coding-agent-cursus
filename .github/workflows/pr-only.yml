@@ -1,0 +1,53 @@
+name: PR-only audit
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify each new commit was introduced via a merged PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          zero="0000000000000000000000000000000000000000"
+
+          if [ "$BEFORE" = "$zero" ]; then
+            echo "Branch-creation push; nothing to audit."
+            exit 0
+          fi
+          if [ "$AFTER" = "$zero" ]; then
+            echo "Branch-deletion push; nothing to audit."
+            exit 0
+          fi
+
+          commits="$(gh api "repos/$REPO/compare/$BEFORE...$AFTER" --jq '.commits[].sha')"
+          if [ -z "$commits" ]; then
+            echo "No new commits to audit."
+            exit 0
+          fi
+
+          failed=0
+          while IFS= read -r sha; do
+            merged=$(gh api "repos/$REPO/commits/$sha/pulls" \
+              --jq '[.[] | select(.merged_at != null)] | length')
+            if [ "$merged" -eq 0 ]; then
+              echo "::error::Commit $sha landed on main without a merged PR."
+              failed=1
+            else
+              echo "ok: $sha"
+            fi
+          done <<< "$commits"
+
+          exit "$failed"
