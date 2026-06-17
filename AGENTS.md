@@ -29,13 +29,3 @@ fast in-loop block. These accelerate feedback; they are never the only thing sta
 and a bad push.
 
 If a hook fires, fix the underlying issue — do **not** bypass with `--no-verify` or `--force`.
-
-## Setup (once per clone, outside an agent session)
-
-The git hooks must be activated once. An agent session may wire this automatically (Claude Code's
-SessionStart hook does); otherwise run:
-
-```sh
-git config core.hooksPath .githooks
-chmod +x .githooks/*
-```
