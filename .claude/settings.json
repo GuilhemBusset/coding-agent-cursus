@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/guard-main.sh"
+            "command": "scripts/guard-main.sh"
           }
         ]
       }

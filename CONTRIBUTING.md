@@ -13,8 +13,8 @@ Activate the protected-`main` git hooks once per clone:
 ./scripts/setup.sh
 ```
 
-Claude Code wires this automatically on session start; from any other agent or a bare
-terminal, run it by hand.
+Claude Code and Codex wire this automatically on session start (via their SessionStart
+hooks); from any other agent or a bare terminal, run it by hand.
 
 ## Making a change
 

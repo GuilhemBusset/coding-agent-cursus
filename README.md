@@ -15,5 +15,5 @@ hooks path is activated, so run this once per clone:
 ./scripts/setup.sh
 ```
 
-Claude Code wires this automatically on session start (via its `SessionStart` hook), so
-you only need to run it by hand when working from another agent or a bare terminal.
+Claude Code and Codex wire this automatically on session start (via their `SessionStart`
+hooks), so you only need to run it by hand when working from another agent or a bare terminal.

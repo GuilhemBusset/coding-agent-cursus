@@ -1,0 +1,28 @@
+# Project-scoped Codex configuration — the Codex convenience layer that mirrors
+# Claude Code's `.claude/settings.json`. Loaded only when the project is trusted.
+#
+# Per ADR 0002, the protected-`main` *guarantee* lives at agent-independent
+# layers (`.githooks/*` + `.github/workflows/pr-only.yml`); the hooks below are a
+# thin convenience wrapper that points Codex at the same shared scripts Claude
+# Code uses. If a hook is absent or untrusted, the git + CI layer still holds.
+
+# Activate the protected-main git hooks at session start — the Codex analog of
+# Claude Code's SessionStart hook. Both call the one agent-neutral setup script,
+# so `core.hooksPath -> .githooks` does not depend on any single agent.
+[[hooks.SessionStart]]
+matcher = "startup"
+
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "bash scripts/setup.sh"
+statusMessage = "Activating protected-main git hooks"
+
+# Fast in-loop block: refuse Bash commands that would commit on / push to a
+# protected branch. Reuses the same shared guard Claude Code's PreToolUse hook
+# runs — identical JSON payload in, exit-code-2 deny out.
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "scripts/guard-main.sh"
