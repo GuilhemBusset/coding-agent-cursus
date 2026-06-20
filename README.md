@@ -12,8 +12,7 @@ Working conventions for this repo (branching, merging, enforcement) are in
 hooks path is activated, so run this once per clone:
 
 ```sh
-git config core.hooksPath .githooks
-chmod +x .githooks/*
+./scripts/setup.sh
 ```
 
 Claude Code wires this automatically on session start (via its `SessionStart` hook), so

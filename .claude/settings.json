@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true"
+            "command": "bash scripts/setup.sh"
           }
         ]
       }

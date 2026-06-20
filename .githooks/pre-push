@@ -9,7 +9,8 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
     cat >&2 <<EOF
 [pre-push] Direct pushes to '$remote_ref' are not allowed.
 
-Push your feature branch instead, then run /ship in Claude Code to open a PR:
+Push your feature branch instead, then run /ship (in Claude Code or Codex) — or open a
+PR by hand — to merge:
   git push -u origin <your-feature-branch>
 EOF
     exit 1

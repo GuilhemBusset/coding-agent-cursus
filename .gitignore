@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments / uv
+.venv/
+venv/
+.uv/
+
+# Test, lint, and type-checker caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ty_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+
+# Environment / secrets (never commit real secrets)
+.env
+.env.*
+!.env.example
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
