@@ -12,7 +12,7 @@ case "$branch" in
 Create a feature branch first:
   git checkout -b <type>/<short-description>
 
-Then commit, and run /ship in Claude Code (or open a PR) to merge.
+Then commit, and run /ship (in Claude Code or Codex) — or open a PR — to merge.
 EOF
     exit 1
     ;;
