@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
-# PreToolUse hook: refuse any Bash command that would commit on, or push to,
-# a protected branch. Reads JSON event payload on stdin.
+# Shared PreToolUse guard: refuse any Bash command that would commit on, or push
+# to, a protected branch (main/master), or bypass the hooks with --no-verify.
+#
+# Agent-independent source of truth. Both harnesses invoke this same script:
+#   - Claude Code: PreToolUse(Bash) hook in .claude/settings.json
+#   - Codex:       PreToolUse(Bash) hook in .codex/config.toml
+# Both pass an identical JSON event on stdin (tool_name + tool_input.command) and
+# both treat exit code 2 + a stderr reason as "deny", so one script serves both.
+# This is convenience only — the real guarantee lives in .githooks/* and
+# .github/workflows/pr-only.yml, which hold even for an agent with zero config.
 #
 # Tokenizes the command with shlex so heredoc bodies, commit messages, and
 # echoed strings don't trigger false positives.

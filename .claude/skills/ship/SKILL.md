@@ -1,5 +1,7 @@
 ---
-description: Clean-merge the current branch to main via PR.
+name: ship
+description: Clean-merge the current branch to main via PR. Invoke explicitly with /ship when the user wants to land a finished feature branch.
+disable-model-invocation: true
 allowed-tools: Bash, Read
 ---
 
@@ -7,7 +9,7 @@ allowed-tools: Bash, Read
 
 You are shipping the current branch. Goal: get the work merged into `main` via a clean PR. Never push directly to `main`.
 
-The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase onto `main`, push with retry) live in `scripts/ship.sh`, so this workflow is identical under Claude Code, Codex, or a bare terminal. This command drives that script, then opens/updates the PR with the agent-independent `gh` CLI (no MCP server required).
+The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase onto `main`, push with retry) live in `scripts/ship.sh`, the single agent-independent source of truth, so this workflow is identical under Claude Code, Codex, or a bare terminal. The twin Codex skill at `.agents/skills/ship/SKILL.md` drives the same script. This skill drives that script, then opens/updates the PR with the agent-independent `gh` CLI (no MCP server required).
 
 ## Preflight (do all in parallel where possible)
 

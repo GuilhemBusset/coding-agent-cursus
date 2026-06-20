@@ -9,9 +9,9 @@ and any other). `CLAUDE.md` imports this file — do not duplicate conventions t
   pushes, no force-pushes.
 - Work on feature branches named `<type>/<short-description>` (e.g. `feat/login-form`,
   `fix/null-deref`).
-- To land a change, open a PR against `main`. In Claude Code, `/ship` automates it (rebase onto
-  `main`, push the feature branch, open/update the PR); from any other agent, do the equivalent or
-  open the PR by hand.
+- To land a change, open a PR against `main`. In Claude Code and Codex, the `/ship` skill automates
+  it (rebase onto `main`, push the feature branch, open/update the PR); from any other agent, do the
+  equivalent or open the PR by hand.
 
 ## Enforcement
 
@@ -23,9 +23,10 @@ bare terminal:
 - `.github/workflows/pr-only.yml` audits, server-side, that every commit on `main` arrived via a
   merged PR.
 
-Each agent then layers a thin **convenience** wrapper over the same rules — e.g. Claude Code's
-`PreToolUse` guard (`.claude/hooks/guard-main.sh`) and the `.claude/settings.json` deny-list give a
-fast in-loop block. These accelerate feedback; they are never the only thing standing between you
-and a bad push.
+Each agent then layers a thin **convenience** wrapper over the same rules — Claude Code
+(`.claude/settings.json`) and Codex (`.codex/config.toml`) both wire a `PreToolUse` guard that runs
+the shared `scripts/guard-main.sh`, plus a SessionStart hook that activates the git
+hooks via `scripts/setup.sh`; Claude Code adds a `settings.json` deny-list. These give a fast in-loop
+block. They accelerate feedback; they are never the only thing standing between you and a bad push.
 
 If a hook fires, fix the underlying issue — do **not** bypass with `--no-verify` or `--force`.
