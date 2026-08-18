@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Portable, agent-independent core of /ship.
+# Portable, agent-independent core of the ship skill (/ship in Claude Code,
+# $ship in Codex).
 #
 # Asserts we are on a feature branch, rebases it onto main, and pushes it with
 # retry/backoff. PR creation is delegated to the calling agent (via the `gh`
