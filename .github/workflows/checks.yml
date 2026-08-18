@@ -1,0 +1,30 @@
+name: Repo checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The ship skill is checked in twice (Claude Code reads .claude/skills/,
+      # Codex reads .agents/skills/ — no converged directory exists yet). The
+      # two copies must never drift.
+      - name: Ship skill copies are byte-identical
+        run: diff -u .agents/skills/ship/SKILL.md .claude/skills/ship/SKILL.md
+
+      - name: Shell syntax
+        run: bash -n scripts/*.sh .githooks/pre-commit .githooks/pre-push
+
+      - name: JSON validity
+        run: |
+          jq . .claude/settings.json > /dev/null
+          jq . .github/rulesets/pr-only-main.json > /dev/null
+
+      - name: Codex config TOML parses
+        run: python3 -c "import tomllib; tomllib.load(open('.codex/config.toml','rb'))"

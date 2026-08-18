@@ -13,8 +13,12 @@ Activate the protected-`main` git hooks once per clone:
 ./scripts/setup.sh
 ```
 
-Claude Code and Codex wire this automatically on session start (via their SessionStart
-hooks); from any other agent or a bare terminal, run it by hand.
+Claude Code wires this automatically on session start. Codex does too once you trust the
+project directory and approve its hooks via `/hooks` (re-approve after hook changes). From
+any other agent or a bare terminal, run it by hand.
+
+If you administer this repo (or your own fork), also apply the server-side PR-only
+ruleset once: `./scripts/apply-ruleset.sh` (see [`AGENTS.md`](AGENTS.md) → Enforcement).
 
 ## Making a change
 
@@ -22,8 +26,8 @@ hooks); from any other agent or a bare terminal, run it by hand.
    `fix/null-deref`, `docs/clarify-readme`, `chore/root-setup`). `main` is protected —
    no direct commits or pushes.
 2. Make your change and commit on the feature branch.
-3. Land it via a pull request: run `/ship` (in Claude Code or Codex), or open a PR against
-   `main` by hand. Do **not** bypass the hooks with `--no-verify` or `--force`.
+3. Land it via a pull request: run `/ship` (Claude Code) or `$ship` (Codex), or open a PR
+   against `main` by hand. Do **not** bypass the hooks with `--no-verify` or `--force`.
 
 See [`AGENTS.md`](AGENTS.md) for the full conventions and the agent-independent
-enforcement layers (git hooks + CI) that back them.
+enforcement layers (ruleset + git hooks + CI audit) that back them.

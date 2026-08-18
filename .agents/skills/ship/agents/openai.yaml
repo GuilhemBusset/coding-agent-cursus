@@ -1,5 +1,10 @@
 # Codex-specific skill metadata (ignored by other Agent Skills consumers).
-# Shipping has side effects, so /ship must be user-triggered only: disable
-# implicit matching while preserving explicit `/ship` (or `$ship`) invocation.
-# This is the Codex analog of the Claude skill's `disable-model-invocation: true`.
-allow_implicit_invocation: false
+# Shipping has side effects, so ship must be user-triggered only: disable
+# implicit matching while preserving explicit `$ship` invocation. This is the
+# Codex analog of the shared SKILL.md's `disable-model-invocation: true`
+# (a Claude Code extension field Codex ignores).
+#
+# NOTE: `allow_implicit_invocation` is only honored nested under `policy:` —
+# at top level it is silently ignored.
+policy:
+  allow_implicit_invocation: false

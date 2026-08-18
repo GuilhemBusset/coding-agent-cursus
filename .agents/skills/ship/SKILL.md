@@ -1,13 +1,16 @@
 ---
 name: ship
-description: Clean-merge the current branch to main via PR. Invoke explicitly with /ship (or $ship) when the user wants to land a finished feature branch. Do not invoke implicitly.
+description: Clean-merge the current branch to main via PR. Invoke explicitly with /ship (Claude Code) or $ship (Codex) when the user wants to land a finished feature branch. Do not invoke implicitly.
+compatibility: Requires git and an authenticated GitHub CLI (gh)
+disable-model-invocation: true
+allowed-tools: Bash, Read
 ---
 
-# /ship — open and merge a PR to `main`
+# ship — open and merge a PR to `main`
 
 You are shipping the current branch. Goal: get the work merged into `main` via a clean PR. Never push directly to `main`.
 
-The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase onto `main`, push with retry) live in `scripts/ship.sh`, the single agent-independent source of truth, so this workflow is identical under Codex, Claude Code, or a bare terminal. The twin Claude Code skill at `.claude/skills/ship/SKILL.md` drives the same script. This skill drives that script, then opens/updates the PR with the agent-independent `gh` CLI.
+The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase onto `main`, push with retry) live in `scripts/ship.sh`, the single agent-independent source of truth, so this workflow is identical under Claude Code, Codex, or a bare terminal. This skill body is checked in byte-identically at `.agents/skills/ship/SKILL.md` (Codex and other Agent Skills consumers) and `.claude/skills/ship/SKILL.md` (Claude Code) — CI enforces the match. Implicit invocation is disabled in both harnesses: `disable-model-invocation` in the frontmatter for Claude Code, `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex. The skill drives `scripts/ship.sh`, then opens/updates the PR with the agent-independent `gh` CLI (no MCP server required).
 
 ## Preflight (do all in parallel where possible)
 
