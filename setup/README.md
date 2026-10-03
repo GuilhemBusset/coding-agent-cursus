@@ -72,7 +72,9 @@ bash setup/apply-ruleset.sh
 ```
 
 This creates or updates the GitHub ruleset from [`pr-only-main.json`](pr-only-main.json):
-PR-only changes to the default branch, no force pushes, no deletion, and no bypass. Rulesets
+PR-only changes to the default branch, a passing `required` CI check before merge (see
+[ADR 0007](../docs/adr/0007-required-ci-gate-and-merge-forward-shipping.md)), no force pushes,
+no deletion, and no bypass. Rulesets
 are server state, so cloning or forking alone does not apply them. Re-running the script updates
 the matching ruleset. It requires admin access and is separate from local author setup.
 

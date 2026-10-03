@@ -10,7 +10,7 @@ allowed-tools: Bash, Read
 
 You are shipping the current branch. Goal: get the work merged into `main` via a clean PR. Never push directly to `main`.
 
-The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase onto `main`, push with retry) live in `scripts/ship.sh`, the single agent-independent source of truth, so this workflow is identical under Claude Code, Codex, or a bare terminal. This skill body is checked in byte-identically at `.agents/skills/ship/SKILL.md` (Codex and other Agent Skills consumers) and `.claude/skills/ship/SKILL.md` (Claude Code) — CI enforces the match. Implicit invocation is disabled in both harnesses: `disable-model-invocation` in the frontmatter for Claude Code, `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex. The skill drives `scripts/ship.sh`, then opens/updates the PR with the agent-independent `gh` CLI (no MCP server required).
+The deterministic git mechanics (assert-not-on-main, dirty-tree check, bring the branch up to date with `main`, push with retry) live in `scripts/ship.sh`, the single agent-independent source of truth, so this workflow is identical under Claude Code, Codex, or a bare terminal. This skill body is checked in byte-identically at `.agents/skills/ship/SKILL.md` (Codex and other Agent Skills consumers) and `.claude/skills/ship/SKILL.md` (Claude Code) — CI enforces the match. Implicit invocation is disabled in both harnesses: `disable-model-invocation` in the frontmatter for Claude Code, `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex. The skill drives `scripts/ship.sh`, then opens/updates the PR with the agent-independent `gh` CLI (no MCP server required).
 
 ## Preflight (do all in parallel where possible)
 
@@ -19,9 +19,9 @@ The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase on
 3. `git fetch origin main` then `git log --oneline origin/main..HEAD` — confirm there are commits to ship. If zero, STOP and report "nothing to ship".
 4. `git log --oneline -20` and `git diff origin/main...HEAD --stat` — read the actual changes so the PR description reflects reality.
 
-## Rebase and push
+## Update and push
 
-5. Run `scripts/ship.sh`. It rebases the current branch onto `main` and pushes it with retry/backoff (never `--force`, never `--no-verify`). If it reports a rebase conflict, STOP and surface it — do NOT auto-resolve unless instructed.
+5. Run `scripts/ship.sh`. A branch that has never been pushed is rebased onto `main`; a branch that is already published gets `main` merged into it instead, so every push is a fast-forward and never needs `--force`. It pushes with retry/backoff (never `--force`, never `--no-verify`). If it reports a conflict, STOP and surface it — do NOT auto-resolve unless instructed. If it reports that the branch is missing commits from its remote, STOP and ask.
 
 ## Open or update the PR (via `gh`)
 
@@ -35,8 +35,8 @@ The deterministic git mechanics (assert-not-on-main, dirty-tree check, rebase on
 ## Land it
 
 8. Report the PR URL (`gh pr view --json url --jq .url`). Then ask whether to:
-   - **enable auto-merge** (squash) once checks pass — `gh pr merge --squash --auto`, OR
-   - **merge now** if checks are already green — `gh pr merge --squash`, OR
+   - **enable auto-merge** (squash) once the `required` check passes — `gh pr merge --squash --auto`, OR
+   - **merge now** if the `required` check is already green — `gh pr merge --squash`, OR
    - **leave it open** for review.
 
 Only proceed with merge/auto-merge after explicit user confirmation.

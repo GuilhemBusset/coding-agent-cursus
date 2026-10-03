@@ -1,6 +1,6 @@
 # ADR 0006 — Shared HTML authoring assets, self-contained output
 
-- **Status:** Accepted
+- **Status:** Accepted — partially superseded by [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md) (CI checks now required through one `required` check)
 - **Date:** 2026-10-03
 - **Context:** [ADR 0001](0001-self-contained-per-session-subfolders.md), [ADR 0003](0003-ship-as-shared-skill-and-codex-convenience-layer.md)
 

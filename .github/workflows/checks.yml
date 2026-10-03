@@ -1,7 +1,9 @@
 name: Repo checks
 
+# Called by ci.yml on every pull request; its result feeds the single required check.
 on:
-  pull_request:
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,3 +28,7 @@ jobs:
 
       - name: JSON validity
         run: jq . setup/pr-only-main.json > /dev/null
+
+      # Repeated publication must never need --force: see scripts/test-ship.sh.
+      - name: Ship script behavior
+        run: bash scripts/test-ship.sh

@@ -20,8 +20,8 @@ or environment limitations.
   pushes, no force-pushes.
 - Work on feature branches named `<type>/<short-description>` (e.g. `feat/login-form`,
   `fix/null-deref`).
-- To land a change, open a PR against `main`. The shared `ship` skill automates it (rebase onto
-  `main`, push the feature branch, open/update the PR): run `/ship` in Claude Code or `$ship` in
+- To land a change, open a PR against `main`. The shared `ship` skill automates it (bring the
+  branch up to date with `main`, push the feature branch, open/update the PR): run `/ship` in Claude Code or `$ship` in
   Codex; from any other agent, do the equivalent or open the PR by hand.
 
 ## Enforcement
@@ -30,9 +30,9 @@ The guarantees are enforced at **agent-independent** layers, so they hold under 
 bare terminal:
 
 - A GitHub **ruleset** (`setup/pr-only-main.json`, applied once per repo with
-  `setup/apply-ruleset.sh`) requires a PR for every change to the default branch and blocks
-  force-pushes and branch deletion, with an empty bypass list. This is the hard server-side
-  guarantee.
+  `setup/apply-ruleset.sh`) requires a PR for every change to the default branch, requires the
+  `required` CI check to pass (`.github/workflows/ci.yml`, see ADR 0007), and blocks force-pushes
+  and branch deletion, with an empty bypass list. This is the hard server-side guarantee.
 - `.githooks/pre-commit` blocks commits while `HEAD` is on `main`/`master`; `.githooks/pre-push`
   blocks pushes targeting `refs/heads/main` or `refs/heads/master` (fast local feedback,
   activated once per clone by running `setup/git-hooks.sh`).
