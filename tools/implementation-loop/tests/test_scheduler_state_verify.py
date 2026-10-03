@@ -138,6 +138,19 @@ class VerifyTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(any("without pytest result accounting" in p for p in problems), problems)
 
+    def test_conditionally_defined_tests_are_still_expected(self):
+        (self.root / "checks" / "test_c.py").write_text("def test_good():\n    pass\n\nif True:\n    def test_required():\n        pass\n\ntry:\n    import json\nexcept ImportError:\n    pass\nelse:\n    class TestX:\n        def test_inner(self):\n            def test_nested_helper():\n                pass\n")
+        self.assertEqual(verify.expected_tests(self.root, ["checks/test_c.py"]),
+                         ["checks/test_c.py::TestX::test_inner", "checks/test_c.py::test_good", "checks/test_c.py::test_required"])
+
+    def test_one_run_test_satisfies_only_one_expectation(self):
+        expected = ["a/test_contract.py::test_contract", "b/test_contract.py::test_contract"]
+        one_case = [(["test_contract"], "test_contract")]
+        self.assertEqual(len(verify.unmatched(expected, one_case)), 1)
+        two_cases = [(["a", "test_contract"], "test_contract"), (["b", "test_contract"], "test_contract")]
+        self.assertEqual(verify.unmatched(expected, two_cases), [])
+        self.assertEqual(verify.unmatched(["t/test_p.py::test_p"], [(["t", "test_p"], "test_p[1]"), (["t", "test_p"], "test_p[2]")]), [])
+
     def test_expected_tests_are_read_from_locked_files(self):
         (self.root / "checks" / "test_a.py").write_text("def test_one():\n    pass\n\nasync def test_two():\n    pass\n\ndef helper():\n    pass\n")
         self.assertEqual(verify.expected_tests(self.root, ["checks/test_a.py", "checks/c.sh"]),
@@ -181,6 +194,17 @@ class PytestVerifyTests(unittest.TestCase):
                                         locked, ["tests/test_x.py"], expected)
         self.assertFalse(ok)
         self.assertTrue(any("unexpected skip" in p for p in problems), problems)
+
+    def test_failed_tests_fail_even_when_the_command_exits_zero(self):
+        (self.root / "run.sh").write_text(f"{sys.executable} -m pytest -q tests/test_x.py; true\n")
+        self.test_file.write_text("def test_a():\n    assert False\n")
+        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
+        expected = verify.expected_tests(self.root, ["tests/test_x.py"])
+        ok, evidence, problems = verify.verify(self.root, [CheckSpec("A1", "command", "bash run.sh")], "sha", self.root / ".w",
+                                               locked, ["tests/test_x.py"], expected)
+        self.assertEqual(evidence[0]["exit_code"], 0)
+        self.assertFalse(ok)
+        self.assertTrue(any("failed tests" in p for p in problems), problems)
 
     def test_same_name_in_two_classes_counts_as_two_tests(self):
         self.test_file.write_text("class TestGood:\n    def test_contract(self):\n        assert True\n\nclass TestBad:\n    def test_contract(self):\n        assert False\n")

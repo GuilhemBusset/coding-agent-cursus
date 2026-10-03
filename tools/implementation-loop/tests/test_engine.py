@@ -288,6 +288,24 @@ class ReviewFindingRegressions(EngineCase):
         self.assertEqual(self.gh.issues[2]["state"], "open")
         self.assertNotIn("- [x]", self.gh.issues[2]["body"])
 
+    def test_criteria_edited_during_post_merge_verification_are_not_ticked(self):
+        from unittest import mock
+        from implement_loop import engine as engine_module
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        real_verify = engine_module.verify.verify
+
+        def verify_then_edit(root, *args, **kwargs):
+            result = real_verify(root, *args, **kwargs)
+            if Path(root).name == "coord":
+                self.gh.issues[2]["body"] = self.gh.issues[2]["body"].replace("The check passes.", "Something else entirely.")
+            return result
+        with mock.patch.object(engine_module.verify, "verify", verify_then_edit):
+            self.run_engine()
+        self.assertEqual(self.phase(2), Phase.NEEDS_HUMAN)
+        self.assertNotIn("- [x]", self.gh.issues[2]["body"])
+        self.assertEqual(self.gh.issues[2]["state"], "open")
+
     def test_a_commit_made_after_verification_is_verified_before_review(self):
         from unittest import mock
         from implement_loop.engine import Engine

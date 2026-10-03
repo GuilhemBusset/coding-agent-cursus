@@ -479,6 +479,10 @@ class Engine:
         proven = {e["criterion"] for e in evidence if e["passed"]} | {e["criterion"] for e in artifact}
         manual = [c for c in self._checks(st) if c.kind == "manual"]
         issue = self.gh.get_issue(n)
+        if issue_parser.body_hash(issue.get("body") or "") != st.body_hash:
+            # edited while post-merge verification ran: this body is not what the evidence proves
+            self.store.event("requirements_changed_after_merge", issue=n)
+            return self._needs_human(n, CHANGED_AFTER_MERGE)
         unproven = [i.id for i in issue_parser.ledger(issue.get("body") or "")
                     if i.id not in proven and i.id not in {c.criterion for c in manual}]
         if unproven:

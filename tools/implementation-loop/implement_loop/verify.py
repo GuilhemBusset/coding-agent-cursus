@@ -103,12 +103,26 @@ def expected_tests(root: Path, check_files: list[str]) -> list[str]:
     tests. Parametrized tests count once: at least one of their cases must run."""
     found: list[str] = []
 
-    def walk(node, rel: str, prefix: list[str]):
-        for child in getattr(node, "body", []):
-            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name.startswith("test"):
-                found.append("::".join([rel, *prefix, child.name]))
+    def blocks(stmt) -> list[list]:
+        """Statement lists a definition can sit in: if/else, try/except/else/finally, with, for, while, match."""
+        out = [getattr(stmt, name, None) for name in ("body", "orelse", "finalbody")]
+        out += [h.body for h in getattr(stmt, "handlers", [])] + [c.body for c in getattr(stmt, "cases", [])]
+        return [b for b in out if isinstance(b, list)]
+
+    def walk_statements(statements: list, rel: str, prefix: list[str]):
+        for child in statements:
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if child.name.startswith("test"):
+                    found.append("::".join([rel, *prefix, child.name]))
+                # pytest never collects functions nested inside functions
             elif isinstance(child, ast.ClassDef):
-                walk(child, rel, prefix + [child.name])
+                walk_statements(child.body, rel, prefix + [child.name])
+            else:
+                for block in blocks(child):
+                    walk_statements(block, rel, prefix)
+
+    def walk(tree, rel: str, prefix: list[str]):
+        walk_statements(tree.body, rel, prefix)
 
     for rel in check_files:
         p = root / rel
@@ -120,16 +134,41 @@ def expected_tests(root: Path, check_files: list[str]) -> list[str]:
     return sorted(set(found))
 
 
-def _matches(expected: str, case: tuple[list[str], str]) -> bool:
-    """Does a JUnit case (classname parts, name) correspond to an expected test id?"""
+def _match_strength(expected: str, case: tuple[list[str], str]) -> int:
+    """How many trailing classname parts a JUnit case (classname parts, name) shares with an
+    expected test id; 0 when it cannot be that test."""
     parts = expected.split("::")
-    module = Path(parts[0]).with_suffix("").parts
-    want = list(module) + parts[1:-1]
+    want = list(Path(parts[0]).with_suffix("").parts) + parts[1:-1]
     have, name = case
     if re.sub(r"\[.*\]$", "", name) != parts[-1]:
-        return False
+        return 0
     m = min(len(want), len(have))
-    return m >= len(parts) - 1 and want[-m:] == have[-m:]
+    if m < len(parts) - 1 or want[-m:] != have[-m:]:
+        return 0
+    return m
+
+
+def unmatched(expected: list[str], cases: list[tuple[list[str], str]]) -> list[str]:
+    """Expected tests no run case accounts for. A case satisfies at most one expectation, so a
+    single `test_contract` run cannot stand in for two different `test_contract` tests.
+    Parametrized cases of one test share its expectation."""
+    remaining = list(range(len(cases)))
+    missing = []
+    # most specific expectations first, each taking its best-matching unused case
+    for exp in sorted(expected, key=lambda e: -len(e.split("::")) - len(Path(e.split("::")[0]).parts)):
+        scored = [(_match_strength(exp, cases[i]), i) for i in remaining]
+        scored = [(sc, i) for sc, i in scored if sc > 0]
+        if not scored:
+            missing.append(exp)
+            continue
+        best = max(sc for sc, _ in scored)
+        chosen = [i for sc, i in scored if sc == best]
+        # all parametrized cases of the same test belong to this expectation
+        key = (cases[chosen[0]][0], re.sub(r"\[.*\]$", "", cases[chosen[0]][1]))
+        for i in list(remaining):
+            if (cases[i][0], re.sub(r"\[.*\]$", "", cases[i][1])) == key:
+                remaining.remove(i)
+    return sorted(missing)
 
 
 def _junit_results(path: Path) -> dict[str, list]:
@@ -177,7 +216,9 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
     passed, note, tests = code == 0, "", None
     if junit.exists():
         tests = _junit_results(junit)
-        if tests["skipped"]:
+        if tests["failed"]:
+            passed, note = False, f"failed tests: {[n for _, n in tests['failed'][:3]]}"
+        elif tests["skipped"]:
             passed, note = False, f"unexpected skip: {[n for _, n in tests['skipped'][:3]]}"
         elif not (tests["passed"] or tests["failed"]):
             passed, note = False, "no tests ran"
@@ -210,7 +251,7 @@ def verify(root: Path, specs: list[CheckSpec], head_sha: str, work_dir: Path, lo
             problems.append("the locked tests ran without pytest result accounting; run them with pytest "
                             "so skips and missing tests can be detected")
         else:
-            missing = [t for t in expected if not any(_matches(t, c) for c in cases)]
+            missing = unmatched(expected, cases)
             if missing:
                 problems.append(f"expected tests did not run: {missing[:5]}")
     return (not problems), evidence, problems
