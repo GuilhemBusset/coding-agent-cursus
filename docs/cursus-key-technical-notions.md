@@ -9,7 +9,7 @@
 - Perceive-plan-act-observe agent loop (Russell & Norvig 1995; ReAct, Yao et al. 2022); 'the loop keeps the model honest'
 - Agent = Model + Harness ('if you're not the model, you're the harness'); tools, system prompt, filesystem, while-loop, stop conditions
 - Stop conditions and their two failure modes (runaway loop vs. premature 'done' while tests are red); chatbot (single forward pass) vs. agent (bounded loop corrected by reality)
-- Reliability-controls taxonomy recap (boundary / context / contract / verification / traceability) mapped onto the live demos and this repo's guard-main.sh and pr-only.yml
+- Reliability-controls taxonomy recap (boundary / context / contract / verification / traceability) mapped onto the live demos and this repo's PR-only ruleset and pr-only.yml
 - Deliberate CUTS: backprop, gradient descent, training loss, transformer block internals, RLHF, scaling laws, all benchmark numbers
 
 ## Session 2 — Research Agents (skills & sub-agents that produce a document)
@@ -65,7 +65,7 @@
 - Remote/headless agent loop as the self-improvement engine: claude -p headless + anthropics/claude-code-action in ephemeral runners; issue -> sandboxed agent -> self-verified PR -> leaderboard re-score on merge (the competition runs on the S4 deploy pipeline)
 - Deep-research-agent -> coding-agent -> leaderboard pipeline: background research on dispatch/look-ahead policies feeds the issue a remote agent then implements (callback to S2)
 - Containerized, reproducible submission scoring on a pinned CPU core / open solver / seed; nondeterminism beyond tolerance => DQ (the S2 determinism spine as an eligibility check)
-- Dual-rank leaderboard (static + dynamic averaged, EURO-NeurIPS-2022 style); the protected-main / /ship / guard-main.sh spine already live in this repo as the tournament's integrity layer
+- Dual-rank leaderboard (static + dynamic averaged, EURO-NeurIPS-2022 style); the PR-only ruleset / git hooks / /ship spine already live in this repo as the tournament's integrity layer
 - Demo Day: 3-min talk; RESULTS.md reproduces the recorded objective; PR history spans all five rungs (>=1 local-authored, >=1 red-then-green by leaderboard CI, >=1 remote-agent-authored from an issue); placement is glory, the reproducible artifact + spanning PR history is the pass
 - Precedents: EURO Meets NeurIPS 2022 VRP (static+dynamic dual-rank, containerized submissions), ROADEF/EURO Challenge (known+unknown instance split), Kaggle public/private 'ladder', SWE-bench contamination-resistant successors
 

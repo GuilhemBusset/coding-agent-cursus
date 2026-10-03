@@ -1,6 +1,6 @@
 # ADR 0002 — The repository works identically under both Claude Code and Codex
 
-- **Status:** Accepted
+- **Status:** Accepted — partially superseded by [ADR 0005](0005-drop-per-agent-guard-layer.md) (per-agent guard layer removed)
 - **Date:** 2026-06-16
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [`docs/cursus-narrative.md`](../cursus-narrative.md), [`docs/cursus-key-technical-notions.md`](../cursus-key-technical-notions.md), [ADR 0001](0001-self-contained-per-session-subfolders.md)
