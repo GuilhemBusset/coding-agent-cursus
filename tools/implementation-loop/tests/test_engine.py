@@ -306,6 +306,34 @@ class ReviewFindingRegressions(EngineCase):
         self.assertNotIn("- [x]", self.gh.issues[2]["body"])
         self.assertEqual(self.gh.issues[2]["state"], "open")
 
+    def test_a_finding_that_cannot_be_verified_is_never_treated_as_disproved(self):
+        self.add_work(2, "docs/a.txt", "alpha", review_defects=1, unverifiable=True)
+        self.epic(2)
+        self.run_engine()
+        self.assertEqual(self.phase(2), Phase.NEEDS_HUMAN)
+        self.assertIn("could not be verified", self.store.issue(2).reason)
+        self.assertFalse(self.gh.prs, "nothing is opened for merge")
+
+    def test_tags_an_agent_creates_are_deleted(self):
+        self.add_work(2, "docs/a.txt", "alpha", tags=True)
+        self.epic(2)
+        self.run_engine()
+        self.assertEqual(self.phase(2), Phase.DONE)
+        from helpers import git
+        self.assertEqual(git("tag", "--list", "agent-probe-*", cwd=self.repo.work), "")
+        self.assertEqual(self.events("agent_refs_deleted", 2)[0]["refs"], ["refs/tags/agent-probe-2"])
+
+    def test_commits_an_agent_makes_are_absorbed_into_engine_commits(self):
+        self.add_work(2, "docs/a.txt", "alpha", commits=True)
+        self.epic(2)
+        self.run_engine()
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertEqual(len(self.events("agent_commits_absorbed", 2)), 1)
+        from helpers import git
+        log = git("log", "--format=%s", "origin/feat/issue-2", cwd=self.repo.work)
+        self.assertNotIn("agent commit", log)
+        self.assertIn("Implement #2", log)
+
     def test_a_commit_made_after_verification_is_verified_before_review(self):
         from unittest import mock
         from implement_loop.engine import Engine

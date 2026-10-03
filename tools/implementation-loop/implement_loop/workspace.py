@@ -7,8 +7,11 @@ issue's branch). The engine creates and removes them itself.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import threading
+import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -54,7 +57,37 @@ class Workspace:
             self.git("worktree", "add", "--detach", "--quiet", str(path), self.base_ref())
         else:
             self.git("checkout", "--detach", "--quiet", self.base_ref(), cwd=path)
+        self.provision(path)
         return path
+
+    def coord_path(self) -> Path:
+        """The coordination worktree for read-only agents, created if missing but not refreshed:
+        refreshing is the engine's job, between verifications."""
+        path = self.dir / "coord"
+        if not (path / ".git").exists():
+            return self.coord()
+        return path
+
+    def provision(self, path: Path) -> None:
+        """Give a fresh worktree its own copy of ignored, machine-local tooling: the locked
+        browser tooling in setup/node_modules (about 20 MB). A copy, not a link, so an agent that
+        edits it changes only its own worktree; post-merge verification uses the coord copy."""
+        source = self.repo / "setup" / "node_modules"
+        target = path / "setup" / "node_modules"
+        if source.is_dir() and (path / "setup").is_dir() and not target.exists():
+            shutil.copytree(source, target, symlinks=True)
+
+    @contextmanager
+    def disposable(self, from_worktree: Path):
+        """A throwaway detached worktree at another worktree's HEAD; removed on exit."""
+        with self._mutex:
+            scratch = self.dir / f"scratch-{uuid.uuid4().hex[:8]}"
+            self.git("worktree", "add", "--detach", "--quiet", str(scratch), self.head(from_worktree))
+        self.provision(scratch)
+        try:
+            yield scratch
+        finally:
+            self.remove(scratch)
 
     def remote_branch_exists(self, branch: str) -> bool:
         return bool(self.git("ls-remote", "--heads", self.remote, branch))
@@ -77,7 +110,12 @@ class Workspace:
         else:
             self.fetch()
             self.git("worktree", "add", "--quiet", "-b", branch, str(path), self.base_ref())
+        self.provision(path)
         return path
+
+    def refs(self) -> dict[str, str]:
+        out = self.git("for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/tags")
+        return dict(line.split(" ", 1) for line in out.splitlines() if line)
 
     def remove(self, path: Path) -> None:
         with self._mutex:

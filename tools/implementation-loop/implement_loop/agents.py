@@ -75,7 +75,8 @@ class Agents(Protocol):
     def implement(self, vendor: str, req: DesignRequest, design: Design, worktree: Path, feedback: list[str]) -> ImplementResult: ...
     def review(self, vendor: str, role: str, req: DesignRequest, design: Design, worktree: Path,
                base_sha: str, head_sha: str, evidence: list[dict]) -> ReviewResult | None: ...
-    def verify_finding(self, vendor: str, req: DesignRequest, worktree: Path, finding: Finding) -> bool: ...
+    def verify_finding(self, vendor: str, req: DesignRequest, worktree: Path, finding: Finding) -> bool | None:
+        """True: reproduced. False: tried and could not reproduce. None: could not verify."""
 
 
 # --------------------------------------------------------------------------- fake
@@ -93,6 +94,9 @@ class Script:
     disagree: bool = False                        # the two proposals differ
     criterion_dispute: bool = False
     manual_items: tuple[str, ...] = ()            # ledger ids that only a person can prove
+    commits: bool = False                         # the implementer commits its work (it should not)
+    tags: bool = False                            # the implementer creates a git tag (it should not)
+    unverifiable: bool = False                    # the finding verifier cannot reach a verdict
     artifact_items: tuple[str, ...] = ()          # ledger ids proven by reviewer judgement
 
 
@@ -180,6 +184,13 @@ class FakeAgents:
         if s.tamper and k == 1:
             # second attempt restores the check, as an honest implementer would after feedback
             self.write_checks(vendor, req, design, worktree)
+        if s.commits:
+            import subprocess
+            subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
+            subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
+        if s.tags and k == 0:
+            import subprocess
+            subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
         return ImplementResult("done")
 
     def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):
@@ -204,4 +215,6 @@ class FakeAgents:
 
     def verify_finding(self, vendor, req, worktree, finding):
         self.calls.append(("verify_finding", vendor, req.issue.number, finding.id))
+        if self._s(req).unverifiable:
+            return None
         return finding.claims_acceptance_failure

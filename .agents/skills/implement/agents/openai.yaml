@@ -1,0 +1,8 @@
+# Codex-specific skill metadata (ignored by other Agent Skills consumers).
+# A run merges pull requests, so implement must be user-triggered only: disable implicit
+# matching while keeping explicit `$implement` invocation. This is the Codex analog of the shared
+# SKILL.md's `disable-model-invocation: true` (a Claude Code field Codex ignores).
+#
+# NOTE: `allow_implicit_invocation` is only honored nested under `policy:`.
+policy:
+  allow_implicit_invocation: false

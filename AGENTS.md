@@ -24,6 +24,15 @@ or environment limitations.
   branch up to date with `main`, push the feature branch, open/update the PR): run `/ship` in Claude Code or `$ship` in
   Codex; from any other agent, do the equivalent or open the PR by hand.
 
+## Implementing issues with the loop
+
+To implement an epic or an issue end to end, use the shared `implement` skill (`/implement <n>` in
+Claude Code, `$implement <n>` in Codex, or `scripts/implement.sh` from a terminal). A
+deterministic engine (`tools/implementation-loop/`, ADR 0008) designs, checks, implements,
+reviews and merges each open sub-issue; the vendor that did not write a change reviews it, and
+issues close only with evidence. The operator only launches, watches and reports: never edit a
+run's worktrees, commit, merge or tick issue checkboxes by hand while it runs.
+
 ## Enforcement
 
 The guarantees are enforced at **agent-independent** layers, so they hold under any agent — or a
