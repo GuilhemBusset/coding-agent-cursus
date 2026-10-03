@@ -1,17 +1,11 @@
 name: HTML page tooling
 
+# Called by ci.yml when a pull request touches HTML tooling or pages (ci.yml owns the
+# path list, so this check can feed the always-present required check). Can also be
+# run by hand from the Actions tab.
 on:
-  pull_request:
-    paths:
-      - 'tools/html-pages/**'
-      - 'setup/**'
-      - '.agents/skills/html-page/**'
-      - '.claude/skills/html-page/**'
-      - '.github/workflows/html-pages.yml'
-      - 'docs/**/*.html'
-      - 'docs/**/*.htm'
-      - 'sessions/**/*.html'
-      - 'sessions/**/*.htm'
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read

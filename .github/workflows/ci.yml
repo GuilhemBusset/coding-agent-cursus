@@ -1,0 +1,67 @@
+name: CI
+
+# The one workflow every pull request runs. It calls the individual check workflows and
+# ends with a single job, `required`, which the ruleset (setup/pr-only-main.json) names as
+# the required status check. Path-filtered checks are decided here, inside the run, so a
+# PR that does not need them still gets a `required` result instead of waiting forever for
+# a check that never starts. See docs/adr/0007-required-ci-gate-and-merge-forward-shipping.md.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      html: ${{ steps.diff.outputs.html }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        name: Decide which path-filtered checks apply
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          files="$(git diff --name-only "$BASE...$HEAD")"
+          printf '%s\n' "$files"
+          html_paths='^(tools/html-pages/|setup/|\.agents/skills/html-page/|\.claude/skills/html-page/|\.github/workflows/(ci|html-pages)\.yml$|(docs|sessions)/.*\.html?$)'
+          if grep -Eq "$html_paths" <<<"$files"; then
+            echo "html=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "html=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  repo-checks:
+    uses: ./.github/workflows/checks.yml
+
+  html-pages:
+    needs: changes
+    if: needs.changes.outputs.html == 'true'
+    uses: ./.github/workflows/html-pages.yml
+
+  required:
+    if: always()
+    needs: [changes, repo-checks, html-pages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every applicable check passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          HTML: ${{ needs.changes.outputs.html }}
+        run: |
+          set -euo pipefail
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          # Missing, cancelled or failed results never count as green. The HTML checks may be
+          # skipped only when no HTML-related path changed.
+          echo "$NEEDS" | jq -e --arg html "$HTML" '
+            (.changes.result == "success")
+            and (."repo-checks".result == "success")
+            and ((."html-pages".result == "success")
+                 or (."html-pages".result == "skipped" and $html == "false"))
+          ' > /dev/null

@@ -1,6 +1,6 @@
 # ADR 0004 — Server-side PR-only ruleset, and the August 2026 agent-layer refresh
 
-- **Status:** Accepted — partially superseded by [ADR 0005](0005-drop-per-agent-guard-layer.md) (per-agent guard layer removed)
+- **Status:** Accepted — partially superseded by [ADR 0005](0005-drop-per-agent-guard-layer.md) (per-agent guard layer removed) and [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md) (repo checks now required)
 - **Date:** 2026-08-18
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0002](0002-agent-agnostic-claude-code-and-codex.md), [ADR 0003](0003-ship-as-shared-skill-and-codex-convenience-layer.md)

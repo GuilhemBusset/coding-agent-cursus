@@ -2,11 +2,14 @@
 # Portable, agent-independent core of the ship skill (/ship in Claude Code,
 # $ship in Codex).
 #
-# Asserts we are on a feature branch, rebases it onto main, and pushes it with
-# retry/backoff. PR creation is delegated to the calling agent (via the `gh`
-# CLI), so the workflow behaves identically under Claude Code, Codex, or a bare
-# terminal. Never force-pushes, never uses --no-verify, never pushes to
-# main/master.
+# Asserts we are on a feature branch, brings it up to date with main, and
+# pushes it with retry/backoff. A branch that has never been pushed is rebased
+# onto main (clean, linear history). A branch that is already published gets
+# main merged into it instead, so every later push is a fast-forward of the
+# remote branch and never needs --force. PR creation is delegated to the
+# calling agent (via the `gh` CLI), so the workflow behaves identically under
+# Claude Code, Codex, or a bare terminal. Never force-pushes, never uses
+# --no-verify, never pushes to main/master.
 set -euo pipefail
 
 branch="$(git rev-parse --abbrev-ref HEAD)"
@@ -30,10 +33,27 @@ if [ -z "$(git log --oneline origin/main..HEAD)" ]; then
   exit 1
 fi
 
-# Rebase cleanly onto main; surface conflicts rather than auto-resolving.
-if ! git pull --rebase origin main; then
-  echo "[ship] Rebase onto main hit conflicts. Resolve them, then re-run." >&2
-  exit 1
+# Bring the branch up to date with main; surface conflicts rather than
+# auto-resolving. Rebasing a published branch would rewrite history the remote
+# already has, and the only way to push that is --force, so published branches
+# merge main in instead.
+if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+  git fetch origin "$branch"
+  if ! git merge-base --is-ancestor "origin/$branch" HEAD; then
+    echo "[ship] '$branch' is missing commits that origin/$branch has. Pull them first (git pull --no-rebase origin $branch); never force-push." >&2
+    exit 1
+  fi
+  if ! git merge-base --is-ancestor origin/main HEAD; then
+    if ! git merge --no-edit origin/main; then
+      echo "[ship] Merging main into '$branch' hit conflicts. Resolve them, commit, then re-run." >&2
+      exit 1
+    fi
+  fi
+else
+  if ! git rebase origin/main; then
+    echo "[ship] Rebase onto main hit conflicts. Resolve them (or git rebase --abort), then re-run." >&2
+    exit 1
+  fi
 fi
 
 # Push with retry/backoff for transient network failures. Never --force/--no-verify.
