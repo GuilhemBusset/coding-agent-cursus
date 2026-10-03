@@ -70,6 +70,25 @@ class StateTests(unittest.TestCase):
             repo.cleanup()
 
 
+class ProvisionTests(unittest.TestCase):
+    def test_worktrees_get_a_private_copy_of_the_browser_tooling(self):
+        from implement_loop.workspace import Workspace
+        repo = TempRepo()
+        try:
+            source = repo.work / "setup" / "node_modules" / "pkg"
+            source.mkdir(parents=True)
+            (source / "index.js").write_text("trusted\n")
+            target = repo.tmp / "wt"
+            (target / "setup").mkdir(parents=True)
+            Workspace(repo.work, 1, Path("ship.sh"), base_dir=repo.tmp / "loop").provision(target)
+            copied = target / "setup" / "node_modules" / "pkg" / "index.js"
+            self.assertFalse((target / "setup" / "node_modules").is_symlink())
+            copied.write_text("tampered\n")
+            self.assertEqual((source / "index.js").read_text(), "trusted\n")
+        finally:
+            repo.cleanup()
+
+
 class VerifyTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())

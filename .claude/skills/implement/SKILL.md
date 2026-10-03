@@ -41,6 +41,8 @@ Tell the user plainly, then ask for a yes:
 - Issues close only when every checkbox has evidence; anything only a person can prove is left
   for them, never faked.
 - There is no budget cap. Each call's cost is logged.
+- Agents run as the user, with GitHub credentials removed from their environment. That stops
+  casual use, not a determined agent; for stronger isolation, run the loop in a container or VM.
 
 Proceed only on an explicit yes in this conversation. This yes is the merge approval the `ship`
 skill would otherwise ask for, for every PR of this run.

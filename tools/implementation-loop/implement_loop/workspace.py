@@ -7,6 +7,7 @@ issue's branch). The engine creates and removes them itself.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import threading
 import uuid
@@ -68,12 +69,13 @@ class Workspace:
         return path
 
     def provision(self, path: Path) -> None:
-        """Make ignored, machine-local tooling available in a fresh worktree: the locked browser
-        tooling in setup/node_modules that tools/html-pages resolves relative to the checkout."""
+        """Give a fresh worktree its own copy of ignored, machine-local tooling: the locked
+        browser tooling in setup/node_modules (about 20 MB). A copy, not a link, so an agent that
+        edits it changes only its own worktree; post-merge verification uses the coord copy."""
         source = self.repo / "setup" / "node_modules"
         target = path / "setup" / "node_modules"
         if source.is_dir() and (path / "setup").is_dir() and not target.exists():
-            target.symlink_to(source, target_is_directory=True)
+            shutil.copytree(source, target, symlinks=True)
 
     @contextmanager
     def disposable(self, from_worktree: Path):
@@ -110,6 +112,10 @@ class Workspace:
             self.git("worktree", "add", "--quiet", "-b", branch, str(path), self.base_ref())
         self.provision(path)
         return path
+
+    def refs(self) -> dict[str, str]:
+        out = self.git("for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/tags")
+        return dict(line.split(" ", 1) for line in out.splitlines() if line)
 
     def remove(self, path: Path) -> None:
         with self._mutex:

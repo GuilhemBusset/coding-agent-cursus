@@ -57,6 +57,8 @@ DEFAULT_ROLES = {
     "verify_finding": RoleSettings(timeout_s=1800),
 }
 READ_ONLY = {"explore", "propose", "audit", "critique", "judge", "review"}
+# Writers that may need the network (installing or locking dependencies, fetching references).
+NETWORK_ROLES = {"implement", "verify_finding"}
 CLAUDE_READ_TOOLS = "Read,Glob,Grep"
 CLAUDE_WRITE_TOOLS = "Read,Glob,Grep,Edit,Write,Bash"
 # Convenience only: Claude Code matches these as command prefixes, so `git add x && git commit`
@@ -186,8 +188,9 @@ class LiveAgents:
         cmd = [self.bins["codex"], "exec", "-C", str(cwd), "--json", "--ephemeral",
                "--output-schema", str(schema_file), "-o", str(out_file),
                "-c", 'approval_policy="never"', "-c", f'model_reasoning_effort="{s.effort}"',
+               "-c", "mcp_servers={}",  # no inherited MCP tools: they are not bound by the sandbox
                "--sandbox", "workspace-write" if write else "read-only"]
-        if write:
+        if role in NETWORK_ROLES:
             cmd += ["-c", "sandbox_workspace_write.network_access=true"]
         if s.codex_model:
             cmd += ["-m", s.codex_model]
@@ -341,7 +344,7 @@ class LiveAgents:
             try:
                 v = self.call(vendor, "verify_finding", scratch, prompt, req.issue.number)
             except AgentFailure:
-                return False
+                return None  # no verdict is not a "not reproduced"
         return bool(v["reproduced"])
 
 

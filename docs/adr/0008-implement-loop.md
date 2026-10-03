@@ -50,8 +50,15 @@ debate, cross-model review and reward hacking such as ImpossibleBench).
    `codex exec` process with per-role permissions (read-only for explorers, designers and
    reviewers). Per-tool deny rules turned out to be prefix matches an agent can sidestep, so
    they are a convenience only: agents run with GitHub credentials removed from their
-   environment, any commit an agent makes is undone and recommitted by the engine, and every
-   prompt and answer is recorded for audit.
+   environment, any commit an agent makes is undone and recommitted by the engine, tags and
+   branches agents create are deleted, Codex calls start with no MCP servers, and every prompt
+   and answer is recorded for audit. Each worktree gets its own copy of the browser tooling, so
+   tampering with it stays local and post-merge verification uses a pristine copy.
+   **Known limit:** agents run as the operator's user. Scrubbing the environment stops casual
+   use of GitHub credentials, not an agent determined to read them from disk. Real isolation
+   needs an OS-level boundary (a container, a VM or a separate user), the local-to-remote move
+   Session 3 teaches; run the loop inside one for work you would not hand to a colleague's
+   laptop. Nothing reaches `main` without the ruleset's PR and `required` check either way.
 9. **One skill, both harnesses.** `implement` is a byte-identical `SKILL.md` pair (ADR 0003) that
    runs the preflight, shows the plan, asks the user to confirm self-merging, launches
    `scripts/implement.sh run` in the background and reports progress. A CI step

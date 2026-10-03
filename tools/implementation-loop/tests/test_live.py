@@ -104,6 +104,7 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual(b[b.index("--sandbox") + 1], "read-only")
         self.assertIn("--output-schema", b)
         self.assertNotIn("sandbox_workspace_write.network_access=true", b)
+        self.assertIn("mcp_servers={}", b, "inherited MCP tools are not bound by the sandbox")
 
     def test_writing_roles_can_edit_but_never_commit_push_or_call_gh(self):
         self.answer_with({"status": "done", "note": ""})
@@ -137,6 +138,16 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual((env["GH_TOKEN"], env["GITHUB_TOKEN"], env["SSH_AUTH_SOCK"]), (None, None, None))
         self.assertTrue(env["GH_CONFIG_DIR"].endswith("no-gh"))
         self.assertEqual((env["GIT_CONFIG_KEY_0"], env["GIT_CONFIG_VALUE_0"]), ("credential.helper", ""))
+
+    def test_the_codex_check_author_has_no_network(self):
+        self.answer_with({"files_written": [], "note": ""})
+        from implement_loop.agents import Design
+        design = Design(decisions={}, checks=[], files=[], check_files=["tests/t.py"])
+        self.agents.write_checks("codex", self.req, design, self.tmp)
+        argv = self.calls()[-1]["argv"]
+        self.assertEqual(argv[argv.index("--sandbox") + 1], "workspace-write")
+        self.assertNotIn("sandbox_workspace_write.network_access=true", argv)
+        self.assertIn("mcp_servers={}", argv)
 
     def test_answers_are_mapped_into_engine_types(self):
         self.answer_with({"decisions": [{"id": "lib", "choice": "gpt-tokenizer", "rationale": "UMD build"}],
@@ -179,6 +190,11 @@ class LiveAdapterTests(unittest.TestCase):
             self.assertIsNone(self.agents.review("codex", "cross", self.req, design, repo.work, head, head, []))
         finally:
             repo.cleanup()
+
+    def test_finding_verification_without_a_verdict_is_unresolved(self):
+        os.environ["FAKE_EXIT"] = "1"
+        finding = Finding(id="F1", reviewer="cross", priority=0, confidence=0.9, title="t")
+        self.assertIsNone(self.agents.verify_finding("claude", self.req, self.tmp, finding))
 
     def test_finding_verification_runs_in_a_disposable_copy(self):
         self.answer_with({"reproduced": True, "evidence": "saw it"})

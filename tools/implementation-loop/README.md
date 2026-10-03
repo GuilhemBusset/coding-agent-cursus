@@ -44,7 +44,12 @@ per-role effort, models and timeouts in `loop.toml`.
 Those per-tool rules are a convenience, not the boundary. Agents run with no GitHub
 credentials (tokens, SSH agent and git credential helpers are removed from their environment),
 the engine undoes any commit an agent makes and commits the changes itself, and only verified,
-reviewed heads are merged.
+reviewed heads are merged. Codex calls start with no MCP servers, agents' tags and branches are
+deleted, and each worktree has a private copy of `setup/node_modules`.
+
+**Known limit:** agents run as your user. Removing credentials from their environment stops
+casual use, not an agent determined to read them from disk. For real isolation, run the loop
+inside a container, a VM or a separate user account.
 
 ## How an issue moves
 
