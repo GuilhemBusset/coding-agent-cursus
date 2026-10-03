@@ -24,7 +24,8 @@ FAKE = r'''#!{python}
 import json, os, sys, time
 vendor = os.path.basename(sys.argv[0])
 if sys.argv[1:3] == ["mcp", "list"]:
-    print(os.environ.get("FAKE_MCP", "[]"))
+    local = os.path.join(os.getcwd(), ".fake-mcp.json")   # stands in for a project .codex/config.toml
+    print(open(local).read() if os.path.exists(local) else os.environ.get("FAKE_MCP", "[]"))
     sys.exit(0)
 prompt = sys.stdin.read()
 with open(os.environ["FAKE_LOG"], "a") as f:
@@ -161,6 +162,18 @@ class LiveAdapterTests(unittest.TestCase):
         argv = self.calls()[-1]["argv"]
         self.assertIn("mcp_servers.github.enabled=false", argv)
         self.assertIn("mcp_servers.files.enabled=false", argv)
+
+    def test_mcp_servers_are_listed_where_each_call_runs(self):
+        project = self.tmp / "worktree-with-project-config"
+        project.mkdir()
+        self.answer_with({"status": "done", "note": ""})
+        from implement_loop.agents import Design
+        design = Design(decisions={}, checks=[], files=[], check_files=[])
+        self.agents.implement("codex", self.req, design, project, [])
+        self.assertFalse(any("mcp_servers" in x for x in self.calls()[-1]["argv"]))
+        (project / ".fake-mcp.json").write_text(json.dumps([{"name": "added-later"}]))
+        self.agents.implement("codex", self.req, design, project, [])
+        self.assertIn("mcp_servers.added-later.enabled=false", self.calls()[-1]["argv"])
 
     def test_codex_is_refused_when_its_mcp_servers_cannot_be_listed(self):
         os.environ["FAKE_MCP"] = "not json"
