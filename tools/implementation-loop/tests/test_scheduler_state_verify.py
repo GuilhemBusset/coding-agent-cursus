@@ -1,0 +1,166 @@
+import json
+import os
+import socket
+import subprocess
+import sys
+import tempfile
+import textwrap
+import unittest
+from pathlib import Path
+
+from helpers import HAS_PYTEST, TempRepo, git
+
+from implement_loop import scheduler, verify
+from implement_loop.model import CheckSpec, IssueState, Phase
+from implement_loop.state import LockHeld, RepoClaims, RunLock, RunStore
+
+
+class SchedulerTests(unittest.TestCase):
+    def test_overlap_is_prefix_aware(self):
+        self.assertTrue(scheduler.overlaps("sessions/01/", "sessions/01/labs/a.html"))
+        self.assertTrue(scheduler.overlaps("a/b.txt", "a/b.txt"))
+        self.assertFalse(scheduler.overlaps("sessions/01", "sessions/010/x"))
+        self.assertFalse(scheduler.overlaps("a/b.txt", "a/b.txt.bak"))
+
+    def test_shared_files_serialize_but_session_readmes_do_not(self):
+        self.assertTrue(scheduler.is_shared("README.md"))
+        self.assertTrue(scheduler.is_shared(".github/workflows/ci.yml"))
+        self.assertFalse(scheduler.is_shared("sessions/01-fundamentals/README.md"))
+        self.assertTrue(scheduler.conflicts(["AGENTS.md", "x/a"], [["README.md", "y/b"]]))
+        self.assertFalse(scheduler.conflicts(["x/a"], [["y/b"]]))
+
+
+class StateTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.store = RunStore(self.tmp / "run")
+
+    def test_state_round_trips_and_events_are_sequenced(self):
+        st = IssueState(number=7, phase=Phase.VERIFY, attempts=2, locked={"a": "b"})
+        self.store.put(st)
+        self.store.event("one", issue=7)
+        self.store.event("two")
+        again = RunStore(self.tmp / "run")
+        self.assertEqual(again.issue(7).phase, Phase.VERIFY)
+        self.assertEqual(again.issue(7).locked, {"a": "b"})
+        self.assertEqual([e["seq"] for e in again.events()], [1, 2])
+        again.event("three")
+        self.assertEqual(again.events()[-1]["seq"], 3)
+
+    def test_lock_blocks_a_live_holder_and_takes_over_a_dead_one(self):
+        lock_path = self.tmp / "run" / "lock"
+        with RunLock(lock_path):
+            with self.assertRaises(LockHeld):
+                RunLock(lock_path).__enter__()
+        lock_path.write_text(json.dumps({"pid": 2 ** 22 + 12345, "host": socket.gethostname()}))
+        with RunLock(lock_path):
+            self.assertEqual(json.loads(lock_path.read_text())["pid"], os.getpid())
+        self.assertFalse(lock_path.exists())
+
+    def test_repo_claims_are_exclusive_per_resource(self):
+        repo = TempRepo()
+        try:
+            claims = RepoClaims(repo.work)
+            self.assertTrue(claims.acquire("merge-queue", "run-1"))
+            self.assertTrue(claims.acquire("merge-queue", "run-1"))
+            self.assertFalse(claims.acquire("merge-queue", "run-2"))
+            claims.release("merge-queue", "run-1")
+            self.assertTrue(claims.acquire("merge-queue", "run-2"))
+        finally:
+            repo.cleanup()
+
+
+class VerifyTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        (self.root / "checks").mkdir()
+        (self.root / "checks" / "c.sh").write_text("test \"$(cat out.txt)\" = ok\n")
+        (self.root / "out.txt").write_text("ok\n")
+        self.work = self.root / ".work"
+
+    def spec(self, cmd="bash checks/c.sh", **kw):
+        return CheckSpec(criterion="A1", kind="command", command=cmd, **kw)
+
+    def test_command_evidence_records_exit_and_head(self):
+        ev, _ = verify.run_check(self.root, self.spec(), "abc123", self.work)
+        self.assertTrue(ev.passed)
+        self.assertEqual((ev.exit_code, ev.head_sha), (0, "abc123"))
+        (self.root / "out.txt").write_text("no\n")
+        ev, _ = verify.run_check(self.root, self.spec(), "abc123", self.work)
+        self.assertFalse(ev.passed)
+
+    def test_timeout_fails(self):
+        ev, _ = verify.run_check(self.root, self.spec("sleep 5", timeout_s=1), "abc", self.work)
+        self.assertFalse(ev.passed)
+        self.assertIn("timed out", ev.output_tail)
+
+    def test_missing_cwd_fails_cleanly(self):
+        ev, _ = verify.run_check(self.root, self.spec(cwd="nope"), "abc", self.work)
+        self.assertFalse(ev.passed)
+        self.assertIn("does not exist", ev.output_tail)
+
+    def test_tamper_report_catches_changes_deletions_and_new_config(self):
+        locked = verify.lock(self.root, ["checks/c.sh"], ["."])
+        self.assertEqual(verify.tamper_report(self.root, locked, ["checks/c.sh"], ["."]), [])
+        (self.root / "checks" / "c.sh").write_text("exit 0\n")
+        (self.root / "checks" / "conftest.py").write_text("")
+        problems = verify.tamper_report(self.root, locked, ["checks/c.sh"], ["."])
+        self.assertIn("locked file changed: checks/c.sh", problems)
+        self.assertIn("new test configuration file: checks/conftest.py", problems)
+
+    def test_pyproject_locks_only_the_pytest_section(self):
+        (self.root / "pyproject.toml").write_text("[project]\nname='x'\n\n[tool.pytest.ini_options]\naddopts='-q'\n")
+        locked = verify.lock(self.root, ["checks/c.sh"], ["."])
+        self.assertIn("pyproject.toml", locked)
+        (self.root / "pyproject.toml").write_text("[project]\nname='x'\ndependencies=['numpy']\n\n[tool.pytest.ini_options]\naddopts='-q'\n")
+        self.assertEqual(verify.tamper_report(self.root, locked, ["checks/c.sh"], ["."]), [])
+        (self.root / "pyproject.toml").write_text("[project]\nname='x'\n\n[tool.pytest.ini_options]\naddopts='-q -k nothing'\n")
+        self.assertEqual(verify.tamper_report(self.root, locked, ["checks/c.sh"], ["."]), ["locked file changed: pyproject.toml"])
+
+    def test_a_new_pyproject_without_pytest_settings_is_fine(self):
+        locked = verify.lock(self.root, ["checks/c.sh"], ["."])
+        (self.root / "pyproject.toml").write_text("[project]\nname='x'\n")
+        self.assertEqual(verify.tamper_report(self.root, locked, ["checks/c.sh"], ["."]), [])
+
+    def test_expected_tests_are_read_from_locked_files(self):
+        (self.root / "checks" / "test_a.py").write_text("def test_one():\n    pass\n\nasync def test_two():\n    pass\n\ndef helper():\n    pass\n")
+        self.assertEqual(verify.expected_tests(self.root, ["checks/test_a.py", "checks/c.sh"]), ["test_one", "test_two"])
+
+
+@unittest.skipUnless(HAS_PYTEST, "pytest is not installed")
+class PytestVerifyTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        (self.root / "tests").mkdir()
+        self.test_file = self.root / "tests" / "test_x.py"
+        self.cmd = f"{sys.executable} -m pytest -q tests/test_x.py"
+
+    def run_verify(self, body):
+        self.test_file.write_text(textwrap.dedent(body))
+        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
+        expected = verify.expected_tests(self.root, ["tests/test_x.py"])
+        return verify.verify(self.root, [CheckSpec("A1", "command", self.cmd)], "sha", self.root / ".w",
+                             locked, ["tests/test_x.py"], expected)
+
+    def test_passing_tests_pass(self):
+        ok, evidence, problems = self.run_verify("def test_a():\n    assert True\n")
+        self.assertTrue(ok, problems)
+        self.assertEqual(evidence[0]["tests"]["passed"], 1)
+
+    def test_a_skip_fails_verification(self):
+        ok, _, problems = self.run_verify("import pytest\n\ndef test_a():\n    pytest.skip('later')\n")
+        self.assertFalse(ok)
+        self.assertTrue(any("unexpected skip" in p for p in problems))
+
+    def test_a_test_that_does_not_run_fails_verification(self):
+        self.test_file.write_text("def test_a():\n    assert True\n\ndef test_b():\n    assert True\n")
+        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
+        expected = verify.expected_tests(self.root, ["tests/test_x.py"])
+        spec = CheckSpec("A1", "command", f"{self.cmd} -k test_a")
+        ok, _, problems = verify.verify(self.root, [spec], "sha", self.root / ".w", locked, ["tests/test_x.py"], expected)
+        self.assertFalse(ok)
+        self.assertTrue(any("expected tests did not run: ['test_b']" in p for p in problems))
+
+
+if __name__ == "__main__":
+    unittest.main()
