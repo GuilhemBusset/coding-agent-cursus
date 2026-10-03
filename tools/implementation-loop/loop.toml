@@ -1,0 +1,47 @@
+# Per-role settings for the live agents of the implement loop.
+#
+# effort:       low | medium | high | xhigh | max (Claude); Codex uses it as model_reasoning_effort.
+# timeout_s:    a call taking longer is killed and retried (twice), then the step stops.
+# claude_model: alias or full id for `claude --model`; "" uses your Claude Code default.
+# codex_model:  model for `codex exec -m`; "" uses your Codex default.
+#
+# Explorers are cheap fact-finders; every other role works at high effort. Cost is not capped
+# (by decision); each call's cost and tokens are logged to <run dir>/agents.jsonl.
+
+[roles.explore]
+effort = "low"
+timeout_s = 900
+claude_model = "sonnet"
+codex_model = ""
+
+[roles.propose]
+effort = "high"
+timeout_s = 1800
+
+[roles.audit]
+effort = "high"
+timeout_s = 1200
+
+[roles.critique]
+effort = "high"
+timeout_s = 1200
+
+[roles.judge]
+effort = "high"
+timeout_s = 1800
+
+[roles.write_checks]
+effort = "high"
+timeout_s = 2400
+
+[roles.implement]
+effort = "high"
+timeout_s = 5400
+
+[roles.review]
+effort = "high"
+timeout_s = 2400
+
+[roles.verify_finding]
+effort = "high"
+timeout_s = 1800

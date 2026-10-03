@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import subprocess
 import threading
+import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -54,7 +56,36 @@ class Workspace:
             self.git("worktree", "add", "--detach", "--quiet", str(path), self.base_ref())
         else:
             self.git("checkout", "--detach", "--quiet", self.base_ref(), cwd=path)
+        self.provision(path)
         return path
+
+    def coord_path(self) -> Path:
+        """The coordination worktree for read-only agents, created if missing but not refreshed:
+        refreshing is the engine's job, between verifications."""
+        path = self.dir / "coord"
+        if not (path / ".git").exists():
+            return self.coord()
+        return path
+
+    def provision(self, path: Path) -> None:
+        """Make ignored, machine-local tooling available in a fresh worktree: the locked browser
+        tooling in setup/node_modules that tools/html-pages resolves relative to the checkout."""
+        source = self.repo / "setup" / "node_modules"
+        target = path / "setup" / "node_modules"
+        if source.is_dir() and (path / "setup").is_dir() and not target.exists():
+            target.symlink_to(source, target_is_directory=True)
+
+    @contextmanager
+    def disposable(self, from_worktree: Path):
+        """A throwaway detached worktree at another worktree's HEAD; removed on exit."""
+        with self._mutex:
+            scratch = self.dir / f"scratch-{uuid.uuid4().hex[:8]}"
+            self.git("worktree", "add", "--detach", "--quiet", str(scratch), self.head(from_worktree))
+        self.provision(scratch)
+        try:
+            yield scratch
+        finally:
+            self.remove(scratch)
 
     def remote_branch_exists(self, branch: str) -> bool:
         return bool(self.git("ls-remote", "--heads", self.remote, branch))
@@ -77,6 +108,7 @@ class Workspace:
         else:
             self.fetch()
             self.git("worktree", "add", "--quiet", "-b", branch, str(path), self.base_ref())
+        self.provision(path)
         return path
 
     def remove(self, path: Path) -> None:

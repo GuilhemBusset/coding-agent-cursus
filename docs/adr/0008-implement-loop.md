@@ -1,6 +1,6 @@
 # ADR 0008 — The implement loop: a deterministic engine, agents as workers
 
-- **Status:** Accepted (engine core); live adapters and the skill follow
+- **Status:** Accepted
 - **Date:** 2026-10-03
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0002](0002-agent-agnostic-claude-code-and-codex.md), [ADR 0003](0003-ship-as-shared-skill-and-codex-convenience-layer.md), [ADR 0005](0005-drop-per-agent-guard-layer.md), [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md)
@@ -45,6 +45,18 @@ debate, cross-model review and reward hacking such as ImpossibleBench).
    carries on. There is no token or dollar cap, by choice; cost is logged.
 7. **State outside the worktrees.** Run state lives under the git common dir; worktrees live in
    a sibling `<repo>.loop/` directory. A repo-wide claim serializes merges across runs.
+
+8. **Agents are workers without credentials.** Each call is a fresh headless `claude -p` or
+   `codex exec` process with per-role permissions (read-only for explorers, designers and
+   reviewers). Per-tool deny rules turned out to be prefix matches an agent can sidestep, so
+   they are a convenience only: agents run with GitHub credentials removed from their
+   environment, any commit an agent makes is undone and recommitted by the engine, and every
+   prompt and answer is recorded for audit.
+9. **One skill, both harnesses.** `implement` is a byte-identical `SKILL.md` pair (ADR 0003) that
+   runs the preflight, shows the plan, asks the user to confirm self-merging, launches
+   `scripts/implement.sh run` in the background and reports progress. A CI step
+   (`scripts/check-loop-guard.sh`) also fails a PR if a later commit changes acceptance checks
+   the loop locked.
 
 All guards stay agent-independent (ADR 0005): the engine, git hooks, the ruleset and CI.
 

@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # The ship skill is checked in twice (Claude Code reads .claude/skills/,
       # Codex reads .agents/skills/ — no converged directory exists yet). The
@@ -22,6 +24,17 @@ jobs:
 
       - name: HTML page skill copies are byte-identical
         run: diff -u .agents/skills/html-page/SKILL.md .claude/skills/html-page/SKILL.md
+
+      - name: Implement skill copies are byte-identical
+        run: diff -u .agents/skills/implement/SKILL.md .claude/skills/implement/SKILL.md
+
+      # Acceptance checks the implement loop committed stay untouched on their branch.
+      - name: Loop-locked acceptance checks unchanged
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/check-loop-guard.sh "$BASE" "$HEAD"
 
       - name: Shell syntax
         run: bash -n scripts/*.sh setup/*.sh .githooks/pre-commit .githooks/pre-push

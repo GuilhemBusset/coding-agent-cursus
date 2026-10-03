@@ -93,6 +93,7 @@ class Script:
     disagree: bool = False                        # the two proposals differ
     criterion_dispute: bool = False
     manual_items: tuple[str, ...] = ()            # ledger ids that only a person can prove
+    commits: bool = False                         # the implementer commits its work (it should not)
     artifact_items: tuple[str, ...] = ()          # ledger ids proven by reviewer judgement
 
 
@@ -180,6 +181,10 @@ class FakeAgents:
         if s.tamper and k == 1:
             # second attempt restores the check, as an honest implementer would after feedback
             self.write_checks(vendor, req, design, worktree)
+        if s.commits:
+            import subprocess
+            subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
+            subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
         return ImplementResult("done")
 
     def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):

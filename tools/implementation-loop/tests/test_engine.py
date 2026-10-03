@@ -306,6 +306,17 @@ class ReviewFindingRegressions(EngineCase):
         self.assertNotIn("- [x]", self.gh.issues[2]["body"])
         self.assertEqual(self.gh.issues[2]["state"], "open")
 
+    def test_commits_an_agent_makes_are_absorbed_into_engine_commits(self):
+        self.add_work(2, "docs/a.txt", "alpha", commits=True)
+        self.epic(2)
+        self.run_engine()
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertEqual(len(self.events("agent_commits_absorbed", 2)), 1)
+        from helpers import git
+        log = git("log", "--format=%s", "origin/feat/issue-2", cwd=self.repo.work)
+        self.assertNotIn("agent commit", log)
+        self.assertIn("Implement #2", log)
+
     def test_a_commit_made_after_verification_is_verified_before_review(self):
         from unittest import mock
         from implement_loop.engine import Engine

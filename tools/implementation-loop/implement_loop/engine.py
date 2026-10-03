@@ -12,6 +12,7 @@ third designs. Landing is serialized through a repo-wide merge-queue claim.
 
 from __future__ import annotations
 
+import threading
 import time
 import traceback
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
@@ -62,6 +63,7 @@ class Engine:
         self.claims = RepoClaims(repo_root)
         self.owner = f"run-{plan.root}"
         self.op, self.other = agents.operator, agents.other
+        self._accept_lock = threading.Lock()  # post-merge verification uses the one coord worktree
 
     # ------------------------------------------------------------------ public
     def run(self) -> dict:
@@ -119,7 +121,9 @@ class Engine:
                     if fut.done():
                         del running[n]
                         exc = fut.exception()
-                        if exc is not None:
+                        if exc is not None and type(exc).__name__ == "AgentStopped":
+                            self.store.event("step_interrupted", issue=n, phase=self.store.issue(n).phase.value)
+                        elif exc is not None:
                             detail = "".join(traceback.format_exception(exc))[-1500:]
                             self.store.event("step_crashed", issue=n, error=repr(exc), traceback=detail)
                             self._needs_human(n, f"engine error: {exc!r}")
@@ -127,6 +131,9 @@ class Engine:
                     if not stopped:
                         self.store.event("stop_requested")
                         stopped = True
+                        terminate = getattr(self.agents, "terminate_all", None)
+                        if terminate:
+                            terminate()
                     if not running:
                         return True
                 else:
@@ -187,6 +194,7 @@ class Engine:
         self.store.put(st)
         if previous != phase:
             self.store.event("phase", issue=n, frm=previous.value, to=phase.value)
+            self.log(f"#{n} {previous.value} -> {phase.value}")
             self._sync(n)
         return st
 
@@ -232,6 +240,14 @@ class Engine:
     def _merge_base(self, wt: Path) -> str:
         """Where this branch meets the current base branch; moves forward when main is merged in."""
         return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
+
+    def _absorb_agent_commits(self, n: int, wt: Path, before: str) -> None:
+        """Only the engine creates history. If an agent committed anyway, keep its changes but
+        undo the commits, so they are committed, verified and reviewed like everything else."""
+        head = self.ws.head(wt)
+        if head != before:
+            self.ws.git("reset", "--soft", "--quiet", before, cwd=wt)
+            self.store.event("agent_commits_absorbed", issue=n, from_head=head, to=before)
 
     def _uncommitted(self, wt: Path) -> list[str]:
         return [line[3:] for line in self.ws.git("status", "--porcelain", "--untracked-files=all", cwd=wt).splitlines()]
@@ -279,7 +295,9 @@ class Engine:
         design = self._design(st)
         wt = self.ws.issue_worktree(n, st.branch)
         base = self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
+        before = self.ws.head(wt)
         self.agents.write_checks(self.other, self._req(n), design, wt)
+        self._absorb_agent_commits(n, wt, before)
         outside = [f for f in self._uncommitted(wt) if not any(scheduler.overlaps(f, c) for c in design.check_files)]
         if outside:
             for f in outside:
@@ -300,7 +318,9 @@ class Engine:
     def _step_implement(self, n: int) -> None:
         st = self.store.issue(n)
         wt = Path(st.worktree)
+        before = self.ws.head(wt)
         result = self.agents.implement(self.op, self._req(n), self._design(st), wt, st.feedback)
+        self._absorb_agent_commits(n, wt, before)
         if result.status == "impossible":
             return self._needs_human(n, f"the implementer reports the task cannot be done as specified: {result.note}")
         sha = self.ws.commit_all(wt, f"Implement #{n} (attempt {st.attempts + 1})", "implementation", n)
@@ -460,6 +480,10 @@ class Engine:
             waited += self.caps.ci_poll_s
 
     def _step_accept(self, n: int) -> None:
+        with self._accept_lock:
+            self._accept(n)
+
+    def _accept(self, n: int) -> None:
         st = self.store.issue(n)
         if not self._requirements_current(n):
             self.store.event("requirements_changed_after_merge", issue=n)

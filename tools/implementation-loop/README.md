@@ -11,13 +11,40 @@ the `Agents` interface; the engine owns the issue graph, git, GitHub, the checks
 
 ## Use
 
+Normally through the skill: `/implement 10` (Claude Code) or `$implement 10` (Codex). It runs
+the preflight, shows the plan, asks you to confirm that the run merges its own PRs, starts the
+engine in the background and reports progress. The same steps by hand:
+
 ```sh
-scripts/implement.sh plan 10      # what a run on #10 would do: order, waves, warnings (read-only)
-scripts/implement.sh status 10    # progress of the run for #10
-scripts/implement.sh stop 10      # ask that run to stop at its next safe point
+scripts/implement.sh doctor [--smoke]                 # toolchain, logins, ruleset, html tooling
+scripts/implement.sh plan 10                           # order, waves, warnings (read-only)
+scripts/implement.sh run 10 --operator claude --yes    # run; re-running resumes
+scripts/implement.sh status 10                         # progress, cost so far
+scripts/implement.sh stop 10                           # stop at the next safe point
 ```
 
-`run` needs the live Claude Code and Codex adapters and is not available yet.
+`--operator` names the agent driving the run (it designs and implements); the other one writes
+the acceptance checks and reviews. `--yes` records that the user agreed the run merges its own
+PRs once every gate passes.
+
+## Live agents
+
+Every agent call is a fresh headless process: `claude -p --output-format json --json-schema …`
+or `codex exec --output-schema … -o …`, with the answer validated against the role's schema
+(`implement_loop/schemas.py`), retried twice on failure, and recorded with its prompt, answer,
+duration and cost under `<run dir>/calls/` and `agents.jsonl`. Prompts are in `prompts/`;
+per-role effort, models and timeouts in `loop.toml`.
+
+| Role | Access |
+| --- | --- |
+| explore, propose, audit, critique, judge, review | read-only tools (Claude) / read-only sandbox (Codex) |
+| write_checks, implement | edit the issue worktree and run commands; Claude's commit, push and `gh` commands are denied, Codex cannot write `.git` |
+| verify_finding | anything, in a disposable worktree deleted afterwards |
+
+Those per-tool rules are a convenience, not the boundary. Agents run with no GitHub
+credentials (tokens, SSH agent and git credential helpers are removed from their environment),
+the engine undoes any commit an agent makes and commits the changes itself, and only verified,
+reviewed heads are merged.
 
 ## How an issue moves
 

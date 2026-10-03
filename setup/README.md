@@ -54,8 +54,31 @@ to run this same setup and test sequence on Linux, macOS, and Windows.
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
-`/html-page` and `/ship` through `.claude/skills/`, and `$html-page` and `$ship` through
-`.agents/skills/`. No separate skill download or MCP registration is needed.
+`/html-page`, `/ship` and `/implement` through `.claude/skills/`, and `$html-page`, `$ship` and
+`$implement` through `.agents/skills/`. No separate skill download or MCP registration is needed.
+
+## Running the implement loop
+
+The implement loop (`scripts/implement.sh`, engine in `tools/implementation-loop/`) needs, on the
+machine that runs it:
+
+- Python 3.11 or newer (standard library only; nothing to install).
+- Git, and the GitHub CLI authenticated with push access (`gh auth login`).
+- **Both** agent CLIs, installed and logged in: Claude Code (`claude`) and Codex (`codex login`).
+  The one that launches a run implements; the other reviews.
+- The HTML browser tooling above, if the issues produce HTML pages.
+- Network access for the engine itself. Under Codex, run it outside the default sandbox.
+
+Check everything with:
+
+```sh
+scripts/implement.sh doctor           # toolchain, logins, ruleset, html tooling
+scripts/implement.sh doctor --smoke   # plus one tiny structured call to each CLI (costs cents)
+```
+
+Run state lives under the git common dir (`.git/implementation-loop/`), worktrees in a sibling
+`<repo>.loop/` directory. Agents run without your GitHub credentials. Per-role effort, models and
+timeouts are in `tools/implementation-loop/loop.toml`.
 
 Skill wrappers and git hooks stay in their native discovery locations; this directory owns
 their setup. Page authoring assets and checks live under `tools/html-pages/` and consume the
@@ -85,6 +108,7 @@ the matching ruleset. It requires admin access and is separate from local author
 | Git/Bash; Node/npm for HTML authors; gh/jq for administrators | Contributor-installed prerequisites; no global package manager changes are made by default |
 | Repository skills and HTML assets | Checked-in `.claude/skills/`, `.agents/skills/`, and `tools/html-pages/`; no global skill installation |
 | Git hooks | Checked-in `.githooks/`; `git-hooks.sh` configures the clone's `.git/config` |
+| Implement loop | Checked-in `tools/implementation-loop/` (standard-library Python); run state under `.git/implementation-loop/`, worktrees in a sibling `<repo>.loop/` directory; uses the installed `claude`, `codex` and `gh` |
 | Playwright, axe and transitive npm dependencies | Exact versions and integrity hashes in [`package-lock.json`](package-lock.json); installed in `setup/node_modules/` |
 | Chromium, headless shell and FFmpeg | Downloaded by the locked Playwright CLI into its per-user browser cache; `doctor.mjs` prints the executable location |
 | Linux browser libraries | OS packages installed only with `--with-system-deps`; versions come from the supported distribution's repositories |
