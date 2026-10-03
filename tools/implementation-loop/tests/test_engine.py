@@ -290,6 +290,25 @@ class ResumeTests(EngineCase):
         self.assertTrue(any(c[0] == "propose" for c in again.calls), "the design is redone")
         self.assertEqual(self.phase(2), Phase.DONE)
 
+    def test_a_merge_the_engine_never_recorded_is_picked_up_on_resume(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        real_merge = self.gh.merge_pr
+
+        def merge_then_die(n, sha, method="squash"):
+            real_merge(n, sha, method)
+            raise RuntimeError("process died right after the merge")
+        self.gh.merge_pr = merge_then_die
+        self.run_engine()
+        st = self.store.issue(2)
+        st.phase, st.reason = Phase.LAND, None   # as if the process died before handling the crash
+        self.store.put(st)
+        self.gh.merge_pr = real_merge
+        self.run_engine(agents=FakeAgents(self.scripts))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertEqual(len(self.events("merge_found_on_resume")), 1)
+        self.assertEqual(len([c for c in self.gh.calls if c[0] == "merge_pr"]), 1, "never merged twice")
+
     def store_dir(self) -> Path:
         return RunStore.for_root(self.repo.work, EPIC).dir
 

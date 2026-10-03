@@ -383,6 +383,14 @@ class Engine:
             st = self.store.issue(n)
             wt = Path(st.worktree)
             issue = self.plan.issues[n]
+            existing = self.gh.find_pr(st.branch)
+            if existing and (existing.get("merged") or existing.get("merged_at")):
+                # merged before a crash, but the merge was never recorded
+                merged_head = (existing.get("head") or {}).get("sha")
+                if merged_head and merged_head != st.reviewed_sha:
+                    return self._needs_human(n, f"PR #{existing['number']} was merged at {merged_head[:7]}, not at the reviewed {str(st.reviewed_sha)[:7]}")
+                self.store.event("merge_found_on_resume", issue=n, pr=existing["number"])
+                return self._set_phase(n, Phase.MERGED, pr=existing["number"])
             self.ws.push(wt)
             head = self.ws.head(wt)
             if head != st.reviewed_sha:

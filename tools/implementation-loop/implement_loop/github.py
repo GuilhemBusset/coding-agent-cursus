@@ -299,5 +299,6 @@ class FakeGitHub:
             raise GitHubError("Head branch was modified. Review and try the merge again.")
         merge_sha = self.on_merge(pr["head"]["ref"], sha) if self.on_merge else f"merged-{sha}"
         pr.update(state="closed", merged=True, merge_commit_sha=merge_sha)
+        pr["head"]["sha"] = sha
         self.calls.append(("merge_pr", n, sha))
         return {"merged": True, "sha": merge_sha}
