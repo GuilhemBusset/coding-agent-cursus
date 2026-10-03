@@ -23,6 +23,9 @@ from implement_loop.model import Finding, Issue
 FAKE = r'''#!{python}
 import json, os, sys, time
 vendor = os.path.basename(sys.argv[0])
+if sys.argv[1:3] == ["mcp", "list"]:
+    print(os.environ.get("FAKE_MCP", "[]"))
+    sys.exit(0)
 prompt = sys.stdin.read()
 with open(os.environ["FAKE_LOG"], "a") as f:
     f.write(json.dumps({{"vendor": vendor, "argv": sys.argv[1:], "prompt": prompt,
@@ -104,7 +107,7 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual(b[b.index("--sandbox") + 1], "read-only")
         self.assertIn("--output-schema", b)
         self.assertNotIn("sandbox_workspace_write.network_access=true", b)
-        self.assertIn("mcp_servers={}", b, "inherited MCP tools are not bound by the sandbox")
+        self.assertFalse(any("mcp_servers" in x for x in b), "no MCP servers configured, nothing to disable")
 
     def test_writing_roles_can_edit_but_never_commit_push_or_call_gh(self):
         self.answer_with({"status": "done", "note": ""})
@@ -147,7 +150,26 @@ class LiveAdapterTests(unittest.TestCase):
         argv = self.calls()[-1]["argv"]
         self.assertEqual(argv[argv.index("--sandbox") + 1], "workspace-write")
         self.assertNotIn("sandbox_workspace_write.network_access=true", argv)
-        self.assertIn("mcp_servers={}", argv)
+
+    def test_every_configured_codex_mcp_server_is_disabled_by_name(self):
+        os.environ["FAKE_MCP"] = json.dumps([{"name": "github", "enabled": True}, {"name": "files", "enabled": True}])
+        try:
+            self.answer_with({"objections": []})
+            self.agents.audit("codex", self.req, [])
+        finally:
+            os.environ.pop("FAKE_MCP", None)
+        argv = self.calls()[-1]["argv"]
+        self.assertIn("mcp_servers.github.enabled=false", argv)
+        self.assertIn("mcp_servers.files.enabled=false", argv)
+
+    def test_codex_is_refused_when_its_mcp_servers_cannot_be_listed(self):
+        os.environ["FAKE_MCP"] = "not json"
+        try:
+            self.answer_with({"objections": []})
+            with self.assertRaises(live.AgentFailure):
+                self.agents.audit("codex", self.req, [])
+        finally:
+            os.environ.pop("FAKE_MCP", None)
 
     def test_answers_are_mapped_into_engine_types(self):
         self.answer_with({"decisions": [{"id": "lib", "choice": "gpt-tokenizer", "rationale": "UMD build"}],

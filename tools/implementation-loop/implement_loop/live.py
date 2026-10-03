@@ -134,6 +134,7 @@ class LiveAgents:
         self._lock = threading.Lock()
         self._active: set[subprocess.Popen] = set()
         self._stopped = False
+        self._codex_mcp: list[str] | None = None
 
     # ---------------------------------------------------------------- process control
     def terminate_all(self) -> None:
@@ -168,6 +169,22 @@ class LiveAgents:
             raise AgentStopped("run stopped")
         return code, out or "", err or ""
 
+    def _codex_mcp_off(self) -> list[str]:
+        """`-c` overrides disabling every MCP server Codex would load: inherited MCP tools are not
+        bound by the sandbox. An empty-table override does not clear servers defined in config
+        files (tables merge), so each one is disabled by name. Fails closed if they can't be listed."""
+        if self._codex_mcp is None:
+            try:
+                proc = subprocess.run([self.bins["codex"], "mcp", "list", "--json"], cwd=self._root(),
+                                      capture_output=True, text=True, timeout=60, env=agent_env(self.no_gh_dir))
+                servers = json.loads(proc.stdout[proc.stdout.index("["):]) if proc.returncode == 0 else None
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                servers = None
+            if not isinstance(servers, list):
+                raise AgentFailure("could not list Codex MCP servers to disable them; refusing to run Codex")
+            self._codex_mcp = sorted(s["name"] for s in servers if isinstance(s, dict) and s.get("name"))
+        return [arg for name in self._codex_mcp for arg in ("-c", f"mcp_servers.{name}.enabled=false")]
+
     # ---------------------------------------------------------------- one call
     def _command(self, vendor: str, role: str, cwd: Path, schema: dict, out_file: Path) -> list[str]:
         s = self.roles[role]
@@ -188,7 +205,7 @@ class LiveAgents:
         cmd = [self.bins["codex"], "exec", "-C", str(cwd), "--json", "--ephemeral",
                "--output-schema", str(schema_file), "-o", str(out_file),
                "-c", 'approval_policy="never"', "-c", f'model_reasoning_effort="{s.effort}"',
-               "-c", "mcp_servers={}",  # no inherited MCP tools: they are not bound by the sandbox
+               *self._codex_mcp_off(),
                "--sandbox", "workspace-write" if write else "read-only"]
         if role in NETWORK_ROLES:
             cmd += ["-c", "sandbox_workspace_write.network_access=true"]
