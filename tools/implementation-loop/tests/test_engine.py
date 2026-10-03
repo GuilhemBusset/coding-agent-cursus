@@ -122,6 +122,8 @@ class HappyPathTests(EngineCase):
         writing = {n: [e for e in self.events("phase", n) if e["to"] == "checks"][0]["seq"] for n in (2, 3)}
         merged = {e["issue"]: e["seq"] for e in self.events("merged")}
         self.assertLess(max(writing.values()), min(merged.values()), "both should start writing before either merges")
+        self.assertEqual((self.phase(2), self.phase(3)), (Phase.DONE, Phase.DONE),
+                         "the second issue must not fail on files the first one merged")
 
     def test_overlapping_issues_write_one_at_a_time(self):
         self.add_work(2, "docs/shared.txt", "alpha")
@@ -243,6 +245,71 @@ class FailureTests(EngineCase):
         self.assertEqual(self.gh.issues[EPIC]["state"], "open", "the epic waits for the human evidence")
         summary = [c["body"] for c in self.gh.comments[EPIC] if "implement-loop:run" in c["body"]][0]
         self.assertIn("A2: A person rehearses it.", summary)
+
+
+class ReviewFindingRegressions(EngineCase):
+    """Regression tests for the cross-vendor review of PR #54."""
+
+    def test_criteria_edited_before_landing_send_the_issue_back_to_design(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        agents = FakeAgents(self.scripts)
+        original = agents.implement
+        edited = []
+
+        def implement_then_edit(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if not edited:
+                body = self.gh.issues[2]["body"]
+                self.gh.issues[2]["body"] = body.replace("The check passes.", "The check passes on main.") + "- [ ] A second criterion.\n"
+                edited.append(True)
+            return result
+        agents.implement = implement_then_edit
+        self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertTrue(self.events("requirements_changed", 2))
+        body = self.gh.issues[2]["body"]
+        self.assertIn("- [x] The check passes on main.", body)
+        self.assertIn("- [x] A second criterion.", body)
+
+    def test_criteria_edited_after_merge_are_never_ticked_with_old_evidence(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        merge = self.gh.on_merge
+
+        def merge_then_edit(branch, sha):
+            result = merge(branch, sha)
+            self.gh.issues[2]["body"] = self.gh.issues[2]["body"].replace("The check passes.", "A different criterion.")
+            return result
+        self.gh.on_merge = merge_then_edit
+        self.run_engine()
+        self.assertEqual(self.phase(2), Phase.NEEDS_HUMAN)
+        self.assertIn("changed after", self.store.issue(2).reason)
+        self.assertEqual(self.gh.issues[2]["state"], "open")
+        self.assertNotIn("- [x]", self.gh.issues[2]["body"])
+
+    def test_a_commit_made_after_verification_is_verified_before_review(self):
+        from unittest import mock
+        from implement_loop.engine import Engine
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        original = Engine._step_verify
+        store_dir = RunStore.for_root(self.repo.work, EPIC).dir
+
+        def verify_then_stop(engine, n):
+            original(engine, n)
+            (store_dir / "STOP").write_text("stop\n")
+        with mock.patch.object(Engine, "_step_verify", verify_then_stop):
+            self.run_engine()
+        self.assertEqual(self.phase(2), Phase.REVIEW)
+        wt = Path(self.store.issue(2).worktree)
+        (wt / "docs" / "a.txt").write_text("sabotage\n")
+        from helpers import git
+        git("commit", "-qam", "stray commit after verification", cwd=wt)
+        (store_dir / "STOP").unlink()
+        self.run_engine(agents=FakeAgents(self.scripts))
+        self.assertTrue(self.events("head_changed_before_review", 2))
+        self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha", "only verified content may reach main")
 
 
 class ResumeTests(EngineCase):

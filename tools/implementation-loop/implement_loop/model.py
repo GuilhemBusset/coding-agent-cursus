@@ -140,6 +140,7 @@ class IssueState:
     base_sha: str | None = None
     checks_sha: str | None = None
     head_sha: str | None = None
+    verified_sha: str | None = None
     reviewed_sha: str | None = None
     pr: int | None = None
     attempts: int = 0

@@ -19,12 +19,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Callable
 
-from . import issue_parser, report, scheduler, verify
+from . import graph, issue_parser, report, scheduler, verify
 from .agents import Agents, Design, DesignRequest, Objection, Proposal
 from .config import Config
 from .github import GitHub, GitHubError
 from .graph import Plan
-from .model import CheckSpec, Finding, IssueState, Phase, SATISFIES_DEPENDENTS, TERMINAL, WRITING_PHASES
+from .model import CheckSpec, Finding, Issue, IssueState, Phase, SATISFIES_DEPENDENTS, TERMINAL, WRITING_PHASES
 from .state import RepoClaims, RunStore
 from .workspace import GitError, Workspace
 
@@ -86,11 +86,13 @@ class Engine:
         for n in self.plan.work:
             st = self.store.issue(n)
             spec = self.plan.specs[n]
-            if st.body_hash and st.body_hash != spec.body_hash and st.phase not in (Phase.MERGED, Phase.ACCEPTED, Phase.DONE):
-                self.store.event("requirements_changed", issue=n, previous_phase=st.phase.value)
-                st.phase, st.design, st.checks, st.locked = Phase.PENDING, None, [], {}
-                st.attempts = st.fix_rounds = st.design_rounds = 0
-                st.feedback, st.blockers, st.reason = [], [], None
+            if st.body_hash and st.body_hash != spec.body_hash:
+                if st.phase in (Phase.MERGED, Phase.ACCEPTED):
+                    st.phase, st.reason = Phase.NEEDS_HUMAN, CHANGED_AFTER_MERGE
+                    self.store.event("requirements_changed_after_merge", issue=n)
+                elif st.phase != Phase.DONE:
+                    self.store.event("requirements_changed", issue=n, previous_phase=st.phase.value)
+                    invalidate(st)
             st.body_hash = spec.body_hash
             st.branch = st.branch or spec.branch or f"loop/issue-{n}"
             if st.design:
@@ -216,6 +218,21 @@ class Engine:
                 return self._safe(self.gh.update_comment, c["id"], body)
         return self._safe(self.gh.create_comment, n, body)
 
+    def _requirements_current(self, n: int) -> bool:
+        """Re-read the issue: is it still the version the design and checks were built from?"""
+        data = self.gh.get_issue(n)
+        st = self.store.issue(n)
+        if issue_parser.body_hash(data.get("body") or "") == st.body_hash:
+            return True
+        issue = Issue.from_api(data)
+        self.plan.issues[n] = issue
+        self.plan.specs[n] = issue_parser.parse(issue, graph.existing_session_dirs(self.repo_root))
+        return False
+
+    def _merge_base(self, wt: Path) -> str:
+        """Where this branch meets the current base branch; moves forward when main is merged in."""
+        return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
+
     def _uncommitted(self, wt: Path) -> list[str]:
         return [line[3:] for line in self.ws.git("status", "--porcelain", "--untracked-files=all", cwd=wt).splitlines()]
 
@@ -298,6 +315,7 @@ class Engine:
         ok, evidence, problems = verify.verify(wt, self._checks(st), head, self.store.issue_dir(n), st.locked,
                                                design.check_files, st.expected_tests.get("*", []),
                                                self.caps.check_timeout_s)
+        st.base_sha = self._merge_base(wt)
         allowed = self.plan.specs[n].declared_paths
         undeclared = [f for f in self.ws.changed_files(wt, st.base_sha) if not any(scheduler.overlaps(f, a) for a in allowed)]
         if undeclared:
@@ -305,8 +323,8 @@ class Engine:
             problems.append(f"changed files outside the declared paths: {undeclared[:8]}")
         self.store.event("verified", issue=n, head=head, ok=ok, problems=problems)
         if ok:
-            next_phase = Phase.REVIEW
-            self._set_phase(n, next_phase, evidence=evidence, head_sha=head, feedback=[], blockers=[])
+            self._set_phase(n, Phase.REVIEW, evidence=evidence, head_sha=head, verified_sha=head,
+                            base_sha=st.base_sha, feedback=[], blockers=[])
             return
         st.attempts += 1
         st.blockers.append(" | ".join(sorted(p.split(":")[0] + ":" + p.split(":", 1)[-1][:80] for p in problems)))
@@ -330,6 +348,9 @@ class Engine:
         wt = Path(st.worktree)
         design, req = self._design(st), self._req(n)
         head = self.ws.head(wt)
+        if head != st.verified_sha:
+            self.store.event("head_changed_before_review", issue=n, verified=st.verified_sha, head=head)
+            return self._set_phase(n, Phase.VERIFY)
 
         def one(role_vendor):
             role, vendor = role_vendor
@@ -383,6 +404,8 @@ class Engine:
             st = self.store.issue(n)
             wt = Path(st.worktree)
             issue = self.plan.issues[n]
+            if st.reviewed_sha != st.verified_sha:
+                return self._set_phase(n, Phase.VERIFY)
             existing = self.gh.find_pr(st.branch)
             if existing and (existing.get("merged") or existing.get("merged_at")):
                 # merged before a crash, but the merge was never recorded
@@ -391,6 +414,13 @@ class Engine:
                     return self._needs_human(n, f"PR #{existing['number']} was merged at {merged_head[:7]}, not at the reviewed {str(st.reviewed_sha)[:7]}")
                 self.store.event("merge_found_on_resume", issue=n, pr=existing["number"])
                 return self._set_phase(n, Phase.MERGED, pr=existing["number"])
+            if not self._requirements_current(n):
+                self.store.event("requirements_changed", issue=n, previous_phase=Phase.LAND.value)
+                st = self.store.issue(n)
+                invalidate(st)
+                st.body_hash = self.plan.specs[n].body_hash
+                self.store.put(st)
+                return self._set_phase(n, Phase.PENDING)
             self.ws.push(wt)
             head = self.ws.head(wt)
             if head != st.reviewed_sha:
@@ -431,6 +461,9 @@ class Engine:
 
     def _step_accept(self, n: int) -> None:
         st = self.store.issue(n)
+        if not self._requirements_current(n):
+            self.store.event("requirements_changed_after_merge", issue=n)
+            return self._needs_human(n, CHANGED_AFTER_MERGE)
         coord = self.ws.coord()
         design = self._design(st)
         head = self.ws.head(coord)
@@ -446,6 +479,10 @@ class Engine:
         proven = {e["criterion"] for e in evidence if e["passed"]} | {e["criterion"] for e in artifact}
         manual = [c for c in self._checks(st) if c.kind == "manual"]
         issue = self.gh.get_issue(n)
+        unproven = [i.id for i in issue_parser.ledger(issue.get("body") or "")
+                    if i.id not in proven and i.id not in {c.criterion for c in manual}]
+        if unproven:
+            return self._needs_human(n, f"ledger items without evidence on main: {unproven}")
         ticked = issue_parser.tick(issue.get("body") or "", {cid: link for cid in proven})
         if ticked != (issue.get("body") or ""):
             self._safe(self.gh.edit_issue, n, body=ticked)
@@ -492,6 +529,18 @@ class Engine:
         reasons = {n: self.store.issue(n).reason or "" for n in phases}
         tasks = {n: self.store.issue(n).human_tasks for n in phases if self.store.issue(n).human_tasks}
         self._upsert_comment(self.plan.root, report.RUN_MARKER, report.render_run_summary(self.plan.root, phases, reasons, tasks))
+
+
+CHANGED_AFTER_MERGE = ("the issue's criteria changed after its work was merged; its evidence proves the old "
+                       "criteria, so re-run the issue to design and prove the new ones")
+
+
+def invalidate(st: IssueState) -> None:
+    """Requirements changed: the design, checks and evidence no longer prove anything."""
+    st.phase, st.design, st.checks, st.locked, st.expected_tests = Phase.PENDING, None, [], {}, {}
+    st.attempts = st.fix_rounds = st.design_rounds = 0
+    st.feedback, st.blockers, st.evidence, st.reason = [], [], [], None
+    st.verified_sha = st.reviewed_sha = None
 
 
 def design_paths(files: list[str], check_files: list[str], parsed: list[str]) -> list[str]:
