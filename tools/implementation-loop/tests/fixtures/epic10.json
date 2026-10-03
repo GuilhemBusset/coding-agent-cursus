@@ -1,0 +1,1546 @@
+{
+ "blocked_by": {
+  "23": [
+   20
+  ],
+  "24": [
+   20,
+   21
+  ],
+  "25": [
+   20
+  ],
+  "26": [
+   19,
+   21
+  ],
+  "27": [
+   20
+  ],
+  "28": [
+   20,
+   21
+  ],
+  "29": [
+   20,
+   21
+  ],
+  "30": [
+   20
+  ],
+  "31": [
+   21
+  ],
+  "32": [
+   21
+  ],
+  "33": [
+   20
+  ],
+  "34": [
+   21
+  ],
+  "35": [
+   20
+  ],
+  "36": [
+   21
+  ],
+  "37": [
+   20,
+   23
+  ],
+  "38": [
+   21,
+   27
+  ],
+  "39": [
+   21,
+   27
+  ],
+  "40": [
+   19,
+   31,
+   32
+  ],
+  "41": [
+   23
+  ],
+  "42": [
+   23
+  ],
+  "43": [
+   21,
+   23,
+   35
+  ],
+  "44": [
+   19,
+   36
+  ],
+  "45": [
+   21,
+   22,
+   37
+  ],
+  "46": [
+   19,
+   28,
+   29,
+   38,
+   39
+  ],
+  "47": [
+   21,
+   42
+  ],
+  "48": [
+   19,
+   34,
+   47
+  ],
+  "49": [
+   24,
+   26,
+   45,
+   46,
+   40,
+   48,
+   43,
+   44
+  ],
+  "50": [
+   26,
+   46,
+   40,
+   48,
+   44
+  ],
+  "51": [
+   49,
+   50
+  ]
+ },
+ "issues": {
+  "10": {
+   "body": "Tracking issue for **Session 1: From Sampler to Agent**, a 4-hour interactive session that takes optimization PhD students from little knowledge of LLMs to confidently driving a coding agent (Claude Code or Codex) and refusing a green result without evidence.\n\nPlan and rationale (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n## Shape of the session\n\n| Time | Part | Tracking issue | Anchor |\n|---|---|---|---|\n| 0:00 to 0:15 | Opening | #12 | Never raise an agent's autonomy past your ability to verify the solution, not just the code. |\n| 0:15 to 1:00 | Act I: The sampler | #13 | A language model defines a learned distribution p(x_t \\| x_1 \u2026 x_{t-1}) over sub-word tokens. One forward pass gives one such distribution, with a fixed amount of compute: that is System 1. |\n| 1:00 to 1:10 | Break | | |\n| 1:10 to 1:55 | Act II: Thinking | #14 | Sample a token, append it, run the pass again: the autoregressive loop. Every token written is fed back as input, so writing more tokens buys more serial compute. That loop is what lets System 1 machinery behave like System 2, and reasoning becomes an anytime search that is only as good as its verifier. |\n| 1:55 to 2:35 | Act III: Agent = model + harness | #15 | The model is a pure function of its context. The conversation is an illusion the harness maintains by re-sending the transcript every turn. |\n| 2:35 to 2:45 | Break | | |\n| 2:45 to 3:35 | Act IV: Drive it yourself | #16 | Explore, plan, implement, verify. Grade the agent by evidence, not by how good its message sounds. |\n| 3:35 to 3:55 | Act V: When agents fail | #17 | Agents optimize what you check, not what you asked. |\n| 3:55 to 4:00 | Close | #12 | Five predict-and-reveal questions, one per act. |\n\nCross-cutting work: #11 (Foundations), #18 (Delivery)\n\n## Outcomes\nAfter four hours, a student can:\n1. Explain an LLM as a learned conditional distribution sampled one token at a time, and predict where that breaks: letters, arithmetic, exact recall, reproducibility.\n2. Explain how the autoregressive loop turns System 1 into System 2 (more serial compute and search, bounded by the verifier), and choose an effort level and a verifier for a task.\n3. Tell apart the three meanings of 'world model', and explain why an agent that observes tool output beats one that plans blind.\n4. Describe a coding agent as model plus harness, read its context budget, and name its parts: instruction files, skills, MCP, subagents, hooks, permissions, headless mode.\n5. Drive their own agent, Claude Code or Codex, through explore, plan, implement and verify on a small optimization repo.\n6. Spot the common failure modes and refuse a green result that comes without evidence.\n\n## Decisions settled before filing\n- **Student access.** Each student has Claude Code or Codex installed, not necessarily both. Every student-facing instruction covers both agents; the pre-work check passes with either one. Instructor demos run both.\n- **Narrative rescope.** Approved. The autoregressive loop is taught through System 1 and System 2: one forward pass is System 1, and feeding sampled tokens back in is what makes System 2 possible. S1-01 rewrites the Session 1 section.\n- **Problems.** P00 (tiny, four planted bugs) for the session labs. A beefed-up P01 (EV linehaul charging) as the take-home, which the cursus carries forward.\n- **Homework route.** Homework goes to a per-student branch, homework/s01/<handle>, never to main, through a new cursus-wide /turn-in skill. A ruleset makes those branches immune to force-push and deletion.\n- **Toolkit state.** Out of scope here. The issues build on the html-page toolkit as it stands.\n- **Tracking.** Native GitHub structure: a milestone, an epic with one tracking issue per act, sub-issues, labels and blocked-by links.\n\n## How these issues are organized\n- **Milestone** `Session 1: Fundamentals` holds every Session 1 issue.\n- **Hierarchy (sub-issues):** this epic, then one tracking issue per part (Foundations, Opening & close, Acts I to V, Delivery), then the work items.\n- **Titles:** `[S1 \u00b7 <part>] <Kind>: <what>`, for example `[S1 \u00b7 Act I] Widget: tokenizer playground`. Tracking issues have no kind.\n- **Labels:** `session:01`; the part (`stage:foundations`, `act:opening-close`, `act:1` to `act:5`, `stage:delivery`); `kind:*`; `size:S|M|L`; `cursus-wide` for work reused by later sessions.\n- **Dependencies:** native *blocked by* links, repeated in each issue body under \"Blocked by\".\n- **Picking up work:** take any open issue whose blockers are closed. Each body carries a suggested branch name (`<type>/s1-<slug>`).\n\n## Waves (earliest start)\n- **Wave 0, Ground:** #19, #20, #21, #22\n- **Wave 1, Build in parallel:** #23, #24, #25, #26, #27, #28, #29, #30, #31, #32, #33, #34, #35, #36\n- **Wave 2, Needs fixtures or P00:** #37, #38, #39, #40, #41, #42, #43, #44\n- **Wave 3, Needs recordings:** #45, #46, #47\n- **Wave 4, Act III deck:** #48\n- **Wave 5, Integrate:** #49, #50\n- **Wave 6, Rehearse:** #51\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/10",
+   "id": 5691192019,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 10,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 8
+   },
+   "title": "[S1] Session 1: From Sampler to Agent"
+  },
+  "11": {
+   "body": "Tracking issue for **Foundations** of Session 1. Part of #10.\n\nDocs, the session scaffold, toolkit components, the P00 problem pack and the cursus-wide /turn-in skill. Most other Session 1 issues are blocked by something here.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #19\n- #20\n- #21\n- #22\n- #23\n\n## Done when\n- All sub-issues are closed.\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/11",
+   "id": 5691192354,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 11,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 5
+   },
+   "title": "[S1 \u00b7 Foundations] Shared groundwork for Session 1"
+  },
+  "12": {
+   "body": "Tracking issue for **Opening & close** of Session 1. Part of #10.\n\nEverything around the four acts: the pre-work students do at home, the opening 15 minutes, the closing 5, and the take-home turned in through /turn-in.\n\n### Opening (0:00 to 0:15)\n> Never raise an agent's autonomy past your ability to verify the solution, not just the code.\n\n- Demo, 6 min: Cold open: an agent turns a word problem into a solved, certified LP\n- Discuss, 4 min: Poll: did AI make experienced developers faster? Predict, then reveal\n- Present, 5 min: The one discipline, and the map of the day\n- Cold open: in under five minutes an agent turns a short production word problem into an LP, solves it with HiGHS and prints a certificate. Students see the payoff before the theory.\n- METR's 2025 trial: experienced open-source developers expected AI to make them 24% faster. Measured, they were 19% slower. The 2026 follow-up points the other way but carries a selection-bias warning. The lesson is to measure, not to trust the feeling.\n- The jagged frontier: inside it, consultants with AI did more and better work. Outside it, they were 19 points less accurate. You find the edge by verifying.\n\n### Close (3:55 to 4:00)\n> Five predict-and-reveal questions, one per act.\n\n- Discuss, 5 min: Exit ticket, homework, what Session 2 builds on\n- Homework: rerun two demos, write three sentences on 'sampling, not retrieval', and solve the beefed-up P01 take-home with your own agent.\n- Turn it in with /turn-in (Claude Code) or $turn-in (Codex). It pushes to your own branch, homework/s01/<handle>, never to main. The same skill is used all term.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #24\n- #25\n- #26\n- #37\n- #45\n\n## Done when\n- All sub-issues are closed.\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/12",
+   "id": 5691192704,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 12,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 5
+   },
+   "title": "[S1 \u00b7 Opening & close] Pre-work, cold open, exit ticket and homework"
+  },
+  "13": {
+   "body": "Tracking issue for **Act I** of Session 1. Part of #10.\n\n**Time box:** 0:15 to 1:00 (45 min)\n\n> A language model defines a learned distribution p(x_t | x_1 \u2026 x_{t-1}) over sub-word tokens. One forward pass gives one such distribution, with a fixed amount of compute: that is System 1.\n\n## Run of show\n\n| Mode | Min | Segment |\n|---|---|---|\n| Present | 10 | p(x_t \\| x_<t): tokens, integer IDs, the strawberry crack |\n| Try | 5 | Tokenizer playground |\n| Present | 8 | One forward pass gives a distribution, not an answer: sampling and temperature |\n| Try | 7 | Place your bets, then step a real tiny model |\n| Present | 7 | Attention as a soft lookup; how a model is made |\n| Demo | 5 | Strawberry pivot: guessing, then writing code |\n| Discuss | 3 | Peer question and Q&A |\n\n## Key ideas\n- Tokens are integer IDs, not letters. That is why letter counting fails, and why asking for code that counts fixes it.\n- The output of a forward pass is a distribution, not an answer. Temperature and top-p reshape it, which is why two identical runs can give two different objective values.\n- Attention is a soft database lookup: the output is the expectation of value vectors under a query-dependent softmax measure.\n- How a model is made, one slide each: pretraining as lossy compression of text, post-training (base vs assistant), RL with verifiable rewards.\n- No truth oracle. A flipped objective sense is written as fluently as a correct one, so hallucination is structural, not a bug that will be patched.\n\n- **Students try:** Tokenizer playground; place-your-bets on real next-token distributions; step a real 260K-parameter model running in the page.\n- **Peer question:** Same prompt twice at temperature 0.7, two different objective values. Model update, sampling, server load, or memory of the first run?\n- **How it changes driving:** When the answer needs counting, arithmetic or exact recall, make the agent run code or read the source.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #27\n- #28\n- #29\n- #30\n- #38\n- #39\n- #46\n\n## Done when\n- All sub-issues are closed.\n- The act has been rehearsed inside its time box (checked in the dry-run issue).\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/13",
+   "id": 5691193073,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 13,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 7
+   },
+   "title": "[S1 \u00b7 Act I] The sampler (System 1)"
+  },
+  "14": {
+   "body": "Tracking issue for **Act II** of Session 1. Part of #10.\n\n**Time box:** 1:10 to 1:55 (45 min)\n\n> Sample a token, append it, run the pass again: the autoregressive loop. Every token written is fed back as input, so writing more tokens buys more serial compute. That loop is what lets System 1 machinery behave like System 2, and reasoning becomes an anytime search that is only as good as its verifier.\n\n## Run of show\n\n| Mode | Min | Segment |\n|---|---|---|\n| Present | 8 | The autoregressive loop: from System 1 to System 2; reasoning as search |\n| Try | 7 | Best-of-N and the verifier |\n| Demo | 6 | Effort dial: one problem at low and high effort |\n| Present | 6 | Is the chain of thought the reasoning? |\n| Present | 8 | Three meanings of 'world model' |\n| Try | 6 | Open loop vs closed loop |\n| Discuss | 4 | Think-pair-share: recall or search? Where is your verifier? |\n\n## Key ideas\n- System 1 and System 2 as a metaphor (Kahneman; Bengio 2019; LeCun's Mode-1 and Mode-2), with the caveat that it is the same network either way. The loop is the bridge between the two.\n- Two ways to spend compute: in parallel (best-of-N, voting) and sequentially (long traces learned with RL on verifiable rewards, as in DeepSeek-R1). Effort dials from low to max are now standard across vendors.\n- More thinking is not always better: inverse scaling on tasks with distractors, and overthinking on easy ones.\n- The written chain of thought is a lead, not evidence. Models often leave out the hint that changed their answer, especially when it arrived through tool output.\n- World model, three meanings: what the network represents inside (Othello-GPT, rhyme planning, and its limits, 'Kepler without Newton'); learned simulators (V-JEPA 2, Genie 3, Cosmos 3); and the agent's picture of your repo, which goes stale after every edit unless tools refresh it.\n\n- **Students try:** Best-of-N simulator with a verifier slider; open-loop vs closed-loop planning with an imperfect world model.\n- **Peer question:** Best-of-100 with majority vote, or best-of-5 with exact tests: which solves more hard problems?\n- **How it changes driving:** Treat effort as a compute budget. Give the agent a verifier (tests, certificates) and let it observe reality often.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #31\n- #32\n- #33\n- #40\n\n## Done when\n- All sub-issues are closed.\n- The act has been rehearsed inside its time box (checked in the dry-run issue).\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/14",
+   "id": 5691193437,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:2"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 14,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 4
+   },
+   "title": "[S1 \u00b7 Act II] Thinking: System 2 and world models"
+  },
+  "15": {
+   "body": "Tracking issue for **Act III** of Session 1. Part of #10.\n\n**Time box:** 1:55 to 2:35 (40 min)\n\n> The model is a pure function of its context. The conversation is an illusion the harness maintains by re-sending the transcript every turn.\n\n## Run of show\n\n| Mode | Min | Segment |\n|---|---|---|\n| Present | 8 | A pure function of its context; what the model actually sees |\n| Try | 5 | Context lab |\n| Present | 7 | The agent loop: gather, act, verify; stop conditions |\n| Demo | 10 | Live: the flipped objective sense, then the context bomb (Claude Code and Codex) |\n| Present | 7 | The 2026 landscape: models, harnesses, standards, time horizons |\n| Discuss | 3 | Peer question and Q&A |\n\n## Key ideas\n- From that one picture: the context window is a finite budget, cost grows with the transcript, and the KV cache is memoization of a processed prefix.\n- The agent loop: gather context, act, verify, repeat (ReAct). Two stop-condition failures: the runaway loop, and declaring victory while tests are red.\n- The harness, piece by piece: AGENTS.md and CLAUDE.md, skills, MCP, subagents, hooks, permissions and sandboxing, plan mode, headless mode. The same model behaves very differently under different harnesses.\n- The 2026 landscape: autocomplete, then chat, then agentic CLIs, then background and cloud agents, then fleets. 1M-token context and effort dials are standard. METR's measured task length doubles roughly every four months. Vendor benchmark numbers run far above standardized ones.\n\n- **Students try:** Context lab: toggle a chat into the raw stream the model reads, then fill and empty a /context-style budget.\n- **Peer question:** Message 30 is as long as message 1. Why does it cost more?\n- **How it changes driving:** Start a fresh session per task, keep instruction files lean, send exploration to subagents, and read /context.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #34\n- #41\n- #42\n- #47\n- #48\n\n## Done when\n- All sub-issues are closed.\n- The act has been rehearsed inside its time box (checked in the dry-run issue).\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/15",
+   "id": 5691193800,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 15,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 5
+   },
+   "title": "[S1 \u00b7 Act III] Agent = model + harness, and the 2026 landscape"
+  },
+  "16": {
+   "body": "Tracking issue for **Act IV** of Session 1. Part of #10.\n\n**Time box:** 2:45 to 3:35 (50 min)\n\n> Explore, plan, implement, verify. Grade the agent by evidence, not by how good its message sounds.\n\n## Run of show\n\n| Mode | Min | Segment |\n|---|---|---|\n| Present | 5 | Lab briefing: explore, plan, implement, verify |\n| Try | 40 | Lab ladder L1 to L4, in pairs |\n| Discuss | 5 | Debrief: what did the agent claim, and what did you verify? |\n\n## Key ideas\n- L1 Explore, read-only: predict first, then ask where the objective sense is set and how feasibility is checked.\n- L2 Fix with a verifier: a planted bug, tests protected. Done means `git diff --stat -- tests/` is empty and the suite is green.\n- L3 Build with a certificate: a new small model from a word problem, plan mode first, checked by an independent checker and a bound.\n- L4 Stretch: write an AGENTS.md rule or a tiny skill, or rerun L2 headless and compare.\n- Each student drives the agent they have, Claude Code or Codex. Mixed pairs compare the two and swap at L3.\n\n- **Students try:** 40 minutes on P00, a tiny fixed-charge transport MILP with four planted bugs.\n- **Peer question:** What did the agent claim, and what did you verify?\n\n## Work items\nAlso listed as sub-issues below.\n\n- #35\n- #43\n\n## Done when\n- All sub-issues are closed.\n- The act has been rehearsed inside its time box (checked in the dry-run issue).\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/16",
+   "id": 5691194140,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:4"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 16,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 2
+   },
+   "title": "[S1 \u00b7 Act IV] Drive it yourself: the lab ladder"
+  },
+  "17": {
+   "body": "Tracking issue for **Act V** of Session 1. Part of #10.\n\n**Time box:** 3:35 to 3:55 (20 min)\n\n> Agents optimize what you check, not what you asked.\n\n## Run of show\n\n| Mode | Min | Segment |\n|---|---|---|\n| Present | 8 | Failure gallery |\n| Try | 5 | Catch the agent: three diffs, one honest fix |\n| Present | 5 | Reliability controls, mapped to this repo |\n| Discuss | 2 | Q&A |\n\n## Key ideas\n- Failure gallery: edited tests and reward hacking; verifier gaming (AlphaEvolve exploiting a tolerance); destructive actions with an over-privileged token; prompt injection and the lethal trifecta; hallucinated packages; leaked secrets; sycophancy.\n- From the 2025 workshop: four cooperating agents silently dropped the CVaR term and still reported the same objective. More agents did not mean more correct.\n- The generator-verifier gap. You already own the fix: certificates, bounds, duality gaps.\n- Reliability controls (boundary, context, contract, verification, traceability), mapped to this repo's ruleset, git hooks, pr-only audit and /ship.\n\n- **Students try:** Catch the agent: three diffs that all make the tests pass, one of them honest.\n- **Peer question:** The agent says all tests pass. What do you check first?\n- **How it changes driving:** Protect the tests, prefer certificates to self-reports, and keep credentials scoped to the task.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #36\n- #44\n\n## Done when\n- All sub-issues are closed.\n- The act has been rehearsed inside its time box (checked in the dry-run issue).\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/17",
+   "id": 5691194592,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:5"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 17,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 2
+   },
+   "title": "[S1 \u00b7 Act V] When agents fail, and how you verify"
+  },
+  "18": {
+   "body": "Tracking issue for **Delivery** of Session 1. Part of #10.\n\nThe last mile: one entry page, a minute-by-minute run-of-show, a fact-check one week out, and a full rehearsal.\n\n## Work items\nAlso listed as sub-issues below.\n\n- #49\n- #50\n- #51\n\n## Done when\n- All sub-issues are closed.\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/18",
+   "id": 5691194998,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 0,
+    "total_blocked_by": 0,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:delivery"
+    },
+    {
+     "name": "kind:tracking"
+    }
+   ],
+   "number": 18,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 3
+   },
+   "title": "[S1 \u00b7 Delivery] Session hub, fact-check and dry run"
+  },
+  "19": {
+   "body": "**Foundations** \u00b7 tracked in #11 \u00b7 epic #10 \u00b7 wave 0 (Ground) \u00b7 size S\nSuggested branch: `docs/s1-rescope-narrative`\n\n## Context\n`docs/cursus-narrative.md` describes five sessions of about two hours and gives Session 1 a strict cut list (no RLHF, no scaling laws, no benchmark numbers). The approved plan makes Session 1 a 4-hour interactive session (an opening, five acts and a close) and adds System 1 and System 2, world models and the 2026 landscape. The autoregressive loop is now taught through System 1 and System 2. Every other Session 1 issue cites these docs, so they have to match the plan first.\n\n## Deliverables\n- [ ] Rewrite the Session 1 section of `docs/cursus-narrative.md` in the instructor's voice: the five acts, the two anchors, the inclusion test (\"does this change how you drive an agent next week?\") and the revised cut list.\n- [ ] Frame autoregression through System 1 and System 2: one forward pass is System 1 (fixed compute, one next-token distribution); the loop that feeds each sampled token back in is what lets a model spend more serial compute and behave like System 2.\n- [ ] Update the opening arc paragraph so it no longer states a uniform two-hour length.\n- [ ] Replace the old home exercise (\"land your first pull request via `/ship`\") with the new one: the P01 take-home, turned in with `/turn-in` to `homework/s01/<handle>`. Note that students have Claude Code or Codex, not necessarily both.\n- [ ] Update the Session 1 list in `docs/cursus-key-technical-notions.md`: add test-time compute and effort, RL with verifiable rewards (one slide), chain-of-thought faithfulness, the three meanings of world model, the generator-verifier gap, harness primitives and the failure gallery.\n- [ ] Keep cut: backpropagation, gradient descent, transformer block internals, RLHF mechanics. Benchmarks appear only as a lesson in distrust (vendor vs standardized numbers) plus METR's time-horizon trend.\n\n## Acceptance criteria\n- [ ] The Session 1 text matches the plan: act names, durations, demos, lab ladder and homework.\n- [ ] Sessions 2 to 5 are unchanged except for cross-references to Session 1 content.\n- [ ] The narrative still says no prior agent experience is assumed.\n- [ ] No product claim appears without a date.\n\n## Blocked by\n- Nothing. Ready to start.\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/19",
+   "id": 5691195303,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 5,
+    "total_blocked_by": 0,
+    "total_blocking": 5
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:docs"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 19,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Foundations] Docs: rescope Session 1 to the 4-hour format"
+  },
+  "20": {
+   "body": "**Foundations** \u00b7 tracked in #11 \u00b7 epic #10 \u00b7 wave 0 (Ground) \u00b7 size S\nSuggested branch: `feat/s1-scaffold`\n\n## Context\nNo `sessions/` folder exists yet. ADR 0001 requires each session to be self-contained, with its own `pyproject.toml` and `uv.lock`, a `mise.toml` if it pins tools, a pytest suite, a README runbook, and a split between `cursus/` (taught in the room) and `exercises/` (offline work).\n\n## Deliverables\n- [ ] `sessions/01-fundamentals/` with `README.md`, `pyproject.toml`, `uv.lock`, `mise.toml` (Python 3.12, uv), `cursus/`, `cursus/labs/`, `cursus/demos/`, `cursus/fixtures/`, `exercises/` and `tests/`.\n- [ ] Runtime dependencies `pytest`, `highspy` and `numpy`. A separate `fixtures` dependency group for build-only packages (torch, transformers), so students never install them.\n- [ ] `tests/test_pages.py`: every `*.html` in the session declares `data-design-system=\"cursus\"` and a valid `data-page-kind`, and loads no remote resource (a `src` or stylesheet `href` starting with `http`). Plain outbound reading links are fine.\n- [ ] Page validation documented in the README: `npm --prefix setup run check-repo` from the repo root checks every page marked `data-design-system=\"cursus\"`, and `node tools/html-pages/check-page.mjs <file>` checks one page.\n- [ ] README runbook: setup (`mise install`, `uv sync`), opening pages over file://, validating pages, the cursus/exercises boundary, and a placeholder agenda that the Delivery hub issue fills in.\n\n## Acceptance criteria\n- [ ] On a fresh clone, `cd sessions/01-fundamentals && uv run pytest` passes.\n- [ ] `bash -n` passes on the new script.\n- [ ] Nothing imports from outside the session at runtime.\n\n## Blocked by\n- Nothing. Ready to start.\n\n## References\n- ADR 0001: `docs/adr/0001-self-contained-per-session-subfolders.md`\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/20",
+   "id": 5691195655,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 10,
+    "total_blocked_by": 0,
+    "total_blocking": 10
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:infra"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 20,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Foundations] Infra: scaffold `sessions/01-fundamentals/` per ADR 0001"
+  },
+  "21": {
+   "body": "**Foundations** \u00b7 tracked in #11 \u00b7 epic #10 \u00b7 wave 0 (Ground) \u00b7 size M\nSuggested branch: `feat/s1-toolkit-components`\n\n## Context\nSession 1 needs about a dozen interactive pages built from the same few parts. The toolkit ships page, deck and lab templates and a budget-slider example, but no quiz, chart or stepper component. Add them once so every widget issue reuses them. Each component is inlined by `create-page.mjs` and has a data-attribute contract documented in `tools/html-pages/GUIDE.md`.\n\n## Deliverables\n- [ ] Predict-and-reveal card: choose, lock in, reveal the answer and explanation, reset. Also works as a multi-question exit ticket.\n- [ ] SVG probability-bar chart: labels, values, highlight, theme tokens only.\n- [ ] Labeled slider with a live formula readout.\n- [ ] Step-through controller (previous, next, index, keyboard) for steppers and replays.\n- [ ] Tests for the new components under `tools/html-pages/tests/`, wired into `setup/package.json` so `npm --prefix setup test` runs them.\n\n## Acceptance criteria\n- [ ] `npm --prefix setup test` passes.\n- [ ] A sample page using all four components passes `check-page.mjs` at desktop, laptop and mobile sizes, with no JS and with reduced motion, and the screenshots have been reviewed.\n- [ ] Components use theme tokens only and meet the 44 px target and visible-focus rules.\n\n## Blocked by\n- Nothing. Ready to start.\n\n## References\n- tools/html-pages/GUIDE.md: `tools/html-pages/GUIDE.md`\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/21",
+   "id": 5691195976,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 13,
+    "total_blocked_by": 0,
+    "total_blocking": 13
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:infra"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 21,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Foundations] Infra: html-pages toolkit, shared interaction components"
+  },
+  "22": {
+   "body": "**Foundations** \u00b7 tracked in #11 \u00b7 epic #10 \u00b7 wave 0 (Ground) \u00b7 size M\nSuggested branch: `feat/turn-in-skill`\n\n## Context\nEvery session ends with homework. Students turn it in by pushing to their own branch in the course repo, never by merging to `main`. One shared skill does this the same way all term, under Claude Code (`/turn-in`) and Codex (`$turn-in`). It follows the `ship` pattern from ADR 0003: a thin skill over an agent-independent script. Students have one of the two agents, not necessarily both.\n\n## Deliverables\n- [ ] `scripts/turn-in.sh <NN>` (for example `01`): resolve the student's GitHub handle (`gh api user`); create or switch to `homework/s<NN>/<handle>`; stage only `sessions/<NN>-*/exercises/**`; run the session's own check if it exists (`sessions/<NN>-*/exercises/turn-in-check.sh`, whose exit code gates the push); commit with a standard message; push with retry; print the branch URL. Never `--force`, never `--no-verify`. Re-running adds commits, so the history keeps every submission.\n- [ ] `.claude/skills/turn-in/SKILL.md` and `.agents/skills/turn-in/SKILL.md`, byte-identical, plus `.agents/skills/turn-in/agents/openai.yaml`. Explicit invocation only, with the same flags as `ship`. A diff step in `.github/workflows/checks.yml`.\n- [ ] `setup/homework-branches.json`, next to `setup/pr-only-main.json`: blocks force-push and deletion on `refs/heads/homework/**` with no bypass. Extend `setup/apply-ruleset.sh` to apply both rulesets.\n- [ ] A fallback for students without push access: push to their fork and print a compare URL.\n- [ ] Docs: a \"Turning in homework\" section in `AGENTS.md` and `README.md`, and an ADR under the next free number in `docs/adr/` (`00NN-homework-on-per-student-branches.md`; check the folder, numbers get taken quickly).\n- [ ] Raise in the PR: the repo is public, so homework branches are public. Either confirm that with the instructor or say so on the pre-work page.\n\n## Acceptance criteria\n- [ ] `/turn-in 01` in Claude Code and `$turn-in 01` in Codex each push a sample homework to `homework/s01/<handle>`. A second run adds a commit. A force-push to that branch is rejected by the ruleset.\n- [ ] The script refuses to stage anything outside the session's `exercises/` folder and never pushes to `main`.\n- [ ] `bash -n` passes on the script and the CI diff step passes.\n\n## Blocked by\n- Nothing. Ready to start.\n\n## References\n- ship skill (pattern to follow): `.claude/skills/ship/SKILL.md`\n- ADR 0003: `docs/adr/0003-ship-as-shared-skill-and-codex-convenience-layer.md`\n- [GitHub rulesets: branch targeting](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/22",
+   "id": 5691196316,
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "blocking": 1,
+    "total_blocked_by": 0,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:infra"
+    },
+    {
+     "name": "size:M"
+    },
+    {
+     "name": "cursus-wide"
+    }
+   ],
+   "number": 22,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Foundations] Infra: `/turn-in` skill, homework to a per-student branch (cursus-wide)"
+  },
+  "23": {
+   "body": "**Foundations** \u00b7 tracked in #11 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-p00-problem-pack`\n\n## Context\nThe course thesis is that the code can be green while the model is silently wrong. Session 1 needs a tiny, fast optimization repo where that happens on purpose. It is the running example for the Act III demo and the Act IV lab ladder, and its checker and test pattern are reused by the P01 take-home.\n\n## Deliverables\n- [ ] `exercises/p00-lab/` template: a problem statement (fixed-charge transport MILP, 3 plants and 5 customers), data CSVs, a reference model on HiGHS through `highspy`, and a README.\n- [ ] An independent checker that recomputes feasibility and the objective from a solution without calling a solver.\n- [ ] A solve-contract test suite: status in a whitelist rather than `== Optimal`, the independent re-check, an integrality round-trip, and the objective within tolerance.\n- [ ] Four planted bugs selected at export time: flipped objective sense; dropped demand constraint (the objective looks better); binary relaxed to continuous; a time-limit status read as optimal.\n- [ ] `exercises/p00-lab/export.py --bug <name> --out <dir>`: writes a standalone copy with `git init`, an `AGENTS.md` holding a task-scoped navigation rule, and the tests, so students and agents work outside the course repo.\n\n## Acceptance criteria\n- [ ] The reference passes every test. Each bug variant fails at least one test whose message names the broken contract.\n- [ ] The dropped-constraint variant reports a strictly better objective than the reference.\n- [ ] The full suite runs in under 10 seconds with open solvers only.\n\n## Blocked by\n- #20\n\n## References\n- [2025 workshop harness comparison (unit, metamorphic, adversarial)](https://github.com/GuilhemBusset/agentic-or-workshop/tree/main/workshop/materials/part-03-harness-optimization)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/23",
+   "id": 5691196700,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 4,
+    "total_blocked_by": 1,
+    "total_blocking": 4
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:foundations"
+    },
+    {
+     "name": "kind:problem"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 23,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Foundations] Problem: P00, a seeded optimization mini-pack"
+  },
+  "24": {
+   "body": "**Opening & close** \u00b7 tracked in #12 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-prework-kit`\n\n## Context\nInstallation and authentication are the biggest risk in a hands-on session. Each student has Claude Code or Codex, not necessarily both, and should arrive with a setup they verified days before.\n\n## Deliverables\n- [ ] `exercises/00-prework.html` (page): install steps for git, the GitHub CLI, uv, mise, and the student's agent (Claude Code native installer, or the Codex CLI) on macOS, Linux, WSL and Windows. Login troubleshooting: copy the printed URL by hand; remove a stale `ANTHROPIC_API_KEY`. Warn that `npm i -g codex` installs an unrelated package.\n- [ ] `exercises/check-setup.sh` and `check-setup.ps1`: PASS or FAIL for each tool and version, network reachability, `gh auth status`, and a smoke test for whichever agent is installed (`claude -p \"Reply with exactly: OK\"` or the `codex exec` equivalent). The missing agent is reported as \"not installed (fine)\". Print a summary block students paste into a form.\n- [ ] A check that the student can push a branch to the course repo, since `/turn-in` needs it.\n- [ ] Pre-reading: 3Blue1Brown's \"LLMs explained briefly\", selected chapters of Karpathy's \"How I use LLMs\", and Claude Code 101 or the OpenAI Academy Codex track.\n\n## Acceptance criteria\n- [ ] The check passes on a machine with only Claude Code, and on a machine with only Codex.\n- [ ] Scripts pass `bash -n` and shellcheck, never print secrets, and exit non-zero on any FAIL.\n- [ ] Tested on Linux and WSL. Untested platforms are listed on the page.\n- [ ] Every install command links to its official doc and carries the date it was checked.\n\n## Blocked by\n- #20\n- #21\n\n## References\n- [Claude Code setup](https://code.claude.com/docs/en/setup)\n- [Codex on Windows](https://developers.openai.com/codex/windows)\n- [Carpentries workshop checklists](https://docs.carpentries.org/resources/workshops/checklists.html)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/24",
+   "id": 5691197173,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:exercise"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 24,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Opening & close] Exercise: pre-work kit, setup guide and toolchain check"
+  },
+  "25": {
+   "body": "**Opening & close** \u00b7 tracked in #12 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size S\nSuggested branch: `feat/s1-demo-cold-open`\n\n## Context\nThe first six minutes: students watch an agent turn a short production-planning word problem into an LP, solve it and prove it optimal, before any theory.\n\n## Deliverables\n- [ ] `cursus/demos/cold-open/`: a runbook, the word problem and the prompt.\n- [ ] The agent writes the model, solves it on HiGHS and prints a certificate: primal and dual objective, duality gap 0, and the binding constraints.\n- [ ] Run it in Claude Code and in Codex, with CLI versions and models recorded.\n- [ ] A recorded fallback for a dead network or quota, plus one reset command.\n\n## Acceptance criteria\n- [ ] Runs end to end in under five minutes, twice in a row from a clean state.\n- [ ] Open solver only.\n\n## Blocked by\n- #20\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/25",
+   "id": 5691197555,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 0,
+    "total_blocked_by": 1,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:demo"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 25,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Opening & close] Demo: cold open, word problem to a certified LP"
+  },
+  "26": {
+   "body": "**Opening & close** \u00b7 tracked in #12 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size S\nSuggested branch: `feat/s1-deck-opening-close`\n\n## Context\nThe first 15 minutes and the last 5: set the one discipline, make students commit to a prediction before anything is explained, and close with an exit ticket and the homework.\n\n## Deliverables\n- [ ] `cursus/00-opening.html` (deck): title; the one discipline; the cold-open slot; the METR poll, predict then reveal (expected 24% faster, measured 19% slower in 2025; the 2026 follow-up and its selection-bias caveat); the jagged frontier; the map of the day as a timeline; how we work (modes, sticky notes, pairs).\n- [ ] `cursus/99-close.html` (deck): a five-question exit ticket built on the predict-and-reveal component, the homework and how to turn it in, and what Session 2 builds on.\n\n## Acceptance criteria\n- [ ] Every number on a slide shows its source and date.\n- [ ] `check-page.mjs` passes and deck navigation works from the keyboard.\n\n## Blocked by\n- #19\n- #21\n\n## References\n- [METR, early-2025 developer study](https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/)\n- [METR, uplift update (2026-02-24)](https://metr.org/blog/2026-02-24-uplift-update/)\n- [Dell'Acqua et al., jagged frontier (Organization Science, 2026)](https://doi.org/10.1287/orsc.2025.21838)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/26",
+   "id": 5691197927,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 2,
+    "total_blocked_by": 2,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:deck"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 26,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Opening & close] Deck: opening and close"
+  },
+  "27": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-model-trace-fixtures`\n\n## Context\nAct I widgets must run offline over file://, but they should show real model behavior. The 2025 context lab used invented curves, and this replaces that approach. Export real behavior once from small open models and commit it as JSON.\n\n## Deliverables\n- [ ] `cursus/fixtures/build_fixtures.py`, run with `uv run --group fixtures`, using GPT-2 small and SmolLM2-135M (base and instruct) at pinned revisions on CPU.\n- [ ] `next_token.json`: about 20 curated prompts with the top 20 tokens and their logits. Include OR prompts (\"minimize total\", \"subject to\"), a factual-recall prompt, a numeric prompt and \" strawberry\".\n- [ ] `attention.json`: one coreference sentence, every GPT-2 layer and head, quantized to stay small.\n- [ ] `base_vs_instruct.json`: five prompts completed greedily by the base and the instruct model.\n- [ ] A `meta` block in each file: model ID, revision, library versions, date.\n- [ ] `tests/test_fixtures.py`: schema check and a 500 KB size limit per file.\n\n## Acceptance criteria\n- [ ] Re-running the script produces byte-identical JSON (greedy decoding, fixed float rounding).\n- [ ] A student's `uv sync` does not install torch.\n- [ ] README has a short section on regenerating fixtures.\n\n## Blocked by\n- #20\n\n## References\n- [AnimatedLLM, precomputed-trace teaching tool (arXiv 2601.04213)](https://arxiv.org/abs/2601.04213)\n- [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/27",
+   "id": 5691198324,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 2,
+    "total_blocked_by": 1,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:infra"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 27,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Infra: model-trace fixtures (next-token, attention, base vs instruct)"
+  },
+  "28": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-widget-tokenizer`\n\n## Context\nThe first crack in the illusion is that the model sees integer IDs, not letters. Students need to see that, type into it and break it.\n\n## Deliverables\n- [ ] `cursus/labs/tokenizer.html` (lab): type-to-tokenize colored chips with IDs, character and token counts; a GPT-2 (r50k) vs o200k toggle; hovering a chip highlights its ID and the reverse.\n- [ ] Presets: \" strawberry\", \"Optimization\" and \"Bonjour\" across encodings, a LaTeX constraint, a Python snippet, a long number, a line of an MPS file, a French sentence.\n- [ ] A predict-and-reveal: \"How many tokens is ' strawberry'? How many r's can the model see?\"\n- [ ] A note on the page: Claude's tokenizer is not public, so these are OpenAI and GPT-2 encodings.\n- [ ] Vendor the `gpt-tokenizer@3.4.0` UMD builds as local classic scripts or inline, with license and sha256 recorded. Version 4 dropped the UMD build.\n\n## Acceptance criteria\n- [ ] Works offline from file:// with no fetch, and updates in under 50 ms per keystroke on 2,000 characters.\n- [ ] Page weight is documented (about 2.5 MB with o200k).\n- [ ] `check-page.mjs` passes and the screenshots have been reviewed.\n\n## Blocked by\n- #20\n- #21\n\n## References\n- [tiktokenizer](https://tiktokenizer.vercel.app/)\n- [gpt-tokenizer on npm](https://www.npmjs.com/package/gpt-tokenizer)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/28",
+   "id": 5691198674,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 28,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Widget: tokenizer playground"
+  },
+  "29": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size L\nSuggested branch: `feat/s1-widget-tiny-lm`\n\n## Context\nOne moment in Act I should be entirely real: a model running inside the page, one forward pass per token, sampling as it goes. It also previews Act II, because students drive the autoregressive loop by hand. Karpathy's stories260K checkpoint (1.06 MB) is small enough to inline.\n\n## Deliverables\n- [ ] `cursus/labs/tiny-lm.html` (lab): stories260K weights and the tok512 tokenizer inlined as base64, with a pure-JS llama2 forward pass (no WASM, no worker, no fetch).\n- [ ] Step runs one forward pass, samples one token, appends it and shows the top-10 distribution. Run generates 40 tokens. Rewind resamples from any position to show divergence.\n- [ ] Temperature and top-p sliders with the formula shown; a seeded random generator.\n- [ ] A plain caption: trained only on TinyStories, so this shows the mechanism, not the capability.\n\n## Acceptance criteria\n- [ ] Logits match a reference run of llama2.c (or its Python port) on three prompts within 1e-4, and the test is committed.\n- [ ] The same seed gives the same text.\n- [ ] Opens offline from file://. The first token appears in under a second on a 2020 laptop.\n- [ ] MIT attribution for the weights and the code.\n\n## Blocked by\n- #20\n- #21\n\n## References\n- [karpathy/tinyllamas](https://huggingface.co/karpathy/tinyllamas)\n- [llama2.js](https://github.com/epicure/llama2.js)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/29",
+   "id": 5691199088,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:L"
+    }
+   ],
+   "number": 29,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Widget: tiny real language model stepper"
+  },
+  "30": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size S\nSuggested branch: `feat/s1-demo-strawberry-sampling`\n\n## Context\nTwo short live demos about the model itself. Each needs a predict question, a script that runs headless, and a recorded fallback.\n\n## Deliverables\n- [ ] `cursus/demos/model/` with a one-page runbook per demo and `uv run` scripts.\n- [ ] Strawberry pivot: ask for the r-count of a long invented word and get unreliable answers, then ask the agent to write and run code and get the right one. Works in Claude Code and in Codex.\n- [ ] Sampling divergence: the same prompt five times at low and high temperature through the API, showing the spread. Check which current models still accept a temperature parameter and use one that does.\n- [ ] Recorded outputs, committed and dated, so both demos run without a network.\n\n## Acceptance criteria\n- [ ] Scripts read the API key from the environment and fail with a clear message when it is missing.\n- [ ] Each runbook gives the timing, the predict question, the expected outcome and the reset step.\n- [ ] Model IDs are recorded with the run date.\n\n## Blocked by\n- #20\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/30",
+   "id": 5691199504,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 0,
+    "total_blocked_by": 1,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:demo"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 30,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Demo: strawberry pivot and sampling divergence"
+  },
+  "31": {
+   "body": "**Act II** \u00b7 tracked in #14 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-widget-test-time-compute`\n\n## Context\nThe Act II anchor: the autoregressive loop buys serial compute, and reasoning is an anytime search capped by its verifier. OR students already know anytime search. This widget makes the analogy concrete.\n\n## Deliverables\n- [ ] `cursus/labs/test-time-compute.html` (lab) with three panels.\n- [ ] Best-of-N: problems with success rate p_i drawn from Beta(a, b); curves for coverage pass@N = E[1 \u2212 (1 \u2212 p)^N], majority vote, and selection by a verifier with a false-positive slider.\n- [ ] Effort dial: accuracy against log thinking tokens by difficulty, with a cost axis, and a toggle for an inverse-scaling task where the curve bends down.\n- [ ] Base vs RL-tuned pass@k: two Beta mixtures, with a k slider that shows the curves crossing (the sharpen-or-expand debate).\n- [ ] A predict-and-reveal per panel, the formulas on screen, and every chart labeled as an illustrative simulation with citations.\n\n## Acceptance criteria\n- [ ] Closed form or seeded Monte Carlo, with a unit test for the pass@N formula.\n- [ ] `check-page.mjs` passes, and charts stay readable at 390 px.\n\n## Blocked by\n- #21\n\n## References\n- [Brown et al., Large Language Monkeys (2407.21787)](https://arxiv.org/abs/2407.21787)\n- [Snell et al., scaling test-time compute (2408.03314)](https://arxiv.org/abs/2408.03314)\n- [Yue et al., does RL expand reasoning? (2504.13837)](https://arxiv.org/abs/2504.13837)\n- [Inverse scaling in test-time compute (2507.14417)](https://arxiv.org/abs/2507.14417)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/31",
+   "id": 5691199884,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:2"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 31,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act II] Widget: test-time compute lab (System 2 as search)"
+  },
+  "32": {
+   "body": "**Act II** \u00b7 tracked in #14 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-widget-world-model`\n\n## Context\nThe bridge from world models to agents: a plan made against an imperfect model drifts unless you observe reality and replan. For a coding agent, tests and tool output are the observations.\n\n## Deliverables\n- [ ] `cursus/labs/world-model.html` (lab).\n- [ ] Panel 1: a 2D point mass must reach a goal around an obstacle. A learned dynamics model with an error slider, a cross-entropy-method planner, and two runs drawn side by side: open loop (plan once, execute) and closed loop (replan from the observed state every step).\n- [ ] Panel 2, Kepler without Newton: a curve-fit predictor matches the orbits until a slider adds a new mass, and then it breaks.\n- [ ] A closing card mapping the parts to agents: the dynamics model is the agent's picture of your repo, the observation is test output, replanning is the loop.\n\n## Acceptance criteria\n- [ ] Deterministic with a seed. Reduced motion switches to step mode. Smooth on a laptop.\n- [ ] `check-page.mjs` passes.\n\n## Blocked by\n- #21\n\n## References\n- [Vafa et al., Kepler vs Newton (2507.06952)](https://arxiv.org/abs/2507.06952)\n- [V-JEPA 2 (2506.09985)](https://arxiv.org/abs/2506.09985)\n- [LeCun, A Path Towards Autonomous Machine Intelligence (2022)](https://openreview.net/pdf?id=BZ5a1r-kVsf)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/32",
+   "id": 5691200261,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:2"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 32,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act II] Widget: world models, open loop vs closed loop"
+  },
+  "33": {
+   "body": "**Act II** \u00b7 tracked in #14 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size S\nSuggested branch: `feat/s1-demo-effort-dial`\n\n## Context\nStudents predict, then see what more thinking buys on one small OR puzzle: tokens, time, cost and correctness.\n\n## Deliverables\n- [ ] `cursus/demos/effort/`: a runbook and a `uv run` script.\n- [ ] One small OR puzzle at low and at high effort, in Claude Code (`effort`) and in Codex (`model_reasoning_effort`). Capture tokens, wall time, cost and correctness to JSON and a printed table.\n- [ ] Recorded, dated results so the demo runs without a network.\n\n## Acceptance criteria\n- [ ] The runbook gives the timing, the predict question, the expected outcome and the reset step.\n- [ ] Model IDs and prices are recorded with the run date.\n\n## Blocked by\n- #20\n\n## References\n- [Claude effort parameter](https://platform.claude.com/docs/en/build-with-claude/effort)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/33",
+   "id": 5691200648,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 0,
+    "total_blocked_by": 1,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:2"
+    },
+    {
+     "name": "kind:demo"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 33,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act II] Demo: effort dial, one problem at low and high effort"
+  },
+  "34": {
+   "body": "**Act III** \u00b7 tracked in #15 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-widget-context`\n\n## Context\nThe Act III anchor: the model is a pure function of its context, and the harness re-sends the whole transcript every turn. This refreshes the 2025 context-window lab, whose recall curves were invented.\n\n## Deliverables\n- [ ] `cursus/labs/context.html` (lab).\n- [ ] Panel 1, what the model sees: toggle a rendered chat and its raw serialized stream (system prompt, tool schemas, user turn, tool call, tool result, reply), with token counts per segment.\n- [ ] Panel 2, cost over turns: cumulative input tokens over 30 turns with and without prompt caching, priced from a dated table.\n- [ ] Panel 3, a budget meter modeled on `/context`: system, tools, MCP tools, memory files, skills, messages, free space, autocompact buffer. Actions: read `solver.log`, add an MCP server (the ~17k-token context bomb), run the tests, `/compact`, `/clear`, delegate to a subagent that returns a 1-2k summary. A 200k / 1M toggle.\n- [ ] All constants in one config object, each with a source URL and date.\n\n## Acceptance criteria\n- [ ] No uncited performance curves.\n- [ ] A predict-and-reveal: \"Message 30 is as long as message 1. Why does it cost more?\"\n- [ ] `check-page.mjs` passes.\n\n## Blocked by\n- #21\n\n## References\n- [Anthropic, Effective context engineering for AI agents (2025-09-29)](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)\n- [Chroma, Context rot](https://research.trychroma.com/context-rot)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/34",
+   "id": 5691200993,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 34,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act III] Widget: context lab, what the model sees and what it costs"
+  },
+  "35": {
+   "body": "**Act IV** \u00b7 tracked in #16 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size S\nSuggested branch: `feat/s1-l3-word-problem`\n\n## Context\nLab level L3 asks students to build a new small model from a word problem and prove it. They need a problem the agent has not seen in P00, a checker that does not trust the agent, and a bound to compare against.\n\n## Deliverables\n- [ ] `exercises/l3-word-problem/`: a one-paragraph word problem (a small staffing or blending MILP), its data and the solution-file format.\n- [ ] An independent checker: feasibility and objective recomputed from the solution file, no solver call.\n- [ ] The known optimal objective and an LP-relaxation bound, and a `check` command that prints PASS or FAIL and the gap to the bound.\n\n## Acceptance criteria\n- [ ] The checker rejects three seeded wrong solutions with explicit messages.\n- [ ] HiGHS solves the reference in under five seconds.\n\n## Blocked by\n- #20\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/35",
+   "id": 5691201473,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:4"
+    },
+    {
+     "name": "kind:problem"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 35,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act IV] Problem: L3 word problem with an independent checker"
+  },
+  "36": {
+   "body": "**Act V** \u00b7 tracked in #17 \u00b7 epic #10 \u00b7 wave 1 (Build in parallel) \u00b7 size M\nSuggested branch: `feat/s1-widget-verifier-gaming`\n\n## Context\nThe Act V anchor: agents optimize what you check, not what you asked. In the AlphaEvolve mathematics runs with Tao et al., the optimizer exploited a tolerance in the evaluator. OR students already know the fix: certificates.\n\n## Deliverables\n- [ ] `cursus/labs/verifier-gaming.html` (lab).\n- [ ] Panel 1: a hill-climbing 'agent' maximizes a packing score, and the scorer accepts overlaps below a tolerance. A tolerance slider shows the optimizer converging on the exploit; an exact-checker toggle closes it.\n- [ ] Panel 2: an agent reports 'optimal' for a small LP, and a duality-gap gauge shows the real gap. Students decide which claims are certified.\n- [ ] Catch the agent: three short diffs that all make the tests pass. One edits the test, one hard-codes the expected value, one is an honest fix.\n\n## Acceptance criteria\n- [ ] Deterministic seed. Everything except the cited case is labeled illustrative.\n- [ ] `check-page.mjs` passes.\n\n## Blocked by\n- #21\n\n## References\n- [Georgiev, G\u00f3mez-Serrano, Tao, Wagner (2511.02864)](https://arxiv.org/abs/2511.02864)\n- [Jason Wei, Asymmetry of verification (2025-07-15)](https://www.jasonwei.net/blog/asymmetry-of-verification-and-verifiers-law)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/36",
+   "id": 5691201835,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:5"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 36,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act V] Widget: verifier-gaming sandbox"
+  },
+  "37": {
+   "body": "**Opening & close** \u00b7 tracked in #12 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-p01-take-home`\n\n## Context\nThe session labs use the tiny P00. The homework is a bigger problem: P01 from the 2025 workshop pack (EV linehaul charging), which the narrative carries into Session 3 and the Session 5 tournament. The old pack has a statement and CSVs only, with no checker, tests or reference solution. The 2025 data was also loose enough that every model found the same answer.\n\n## Deliverables\n- [ ] `exercises/homework-p01/`: the statement and data ported from `exercise/problems/P01-ev-linehaul-charging/` in the agentic-or-workshop repo, revised so capacity and charging constraints bind. Size the instance so HiGHS needs 5 to 60 seconds.\n- [ ] An independent checker (feasibility and objective from a solution file, no solver call) and a solve-contract test suite, following the P00 pattern.\n- [ ] A student starter: an empty model module, the solution-file format, the `turn-in-check.sh` that `/turn-in` runs, and a README stating the task: drive your agent to build the model, then prove it with the checker.\n- [ ] The optimal objective committed for the checker. The repo is public, so keep the reference model out of the tree until after the deadline and document where the instructor keeps it.\n\n## Acceptance criteria\n- [ ] The instructor's reference passes the checker. At least two plausible modelling mistakes (for example a dropped charging-window constraint, a relaxed binary) fail it with messages naming the broken contract.\n- [ ] HiGHS solves the reference in under 60 seconds on a laptop.\n\n## Blocked by\n- #20\n- #23\n\n## References\n- [agentic-or-workshop P01](https://github.com/GuilhemBusset/agentic-or-workshop/tree/main/exercise/problems/P01-ev-linehaul-charging)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/37",
+   "id": 5691202169,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:problem"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 37,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Opening & close] Problem: P01 EV linehaul charging, the beefed-up take-home"
+  },
+  "38": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-widget-next-token`\n\n## Context\nA forward pass returns a distribution, not an answer. Students commit a guess first, then see the real distribution, then reshape it.\n\n## Deliverables\n- [ ] `cursus/labs/next-token.html` (lab).\n- [ ] A prompt carousel fed by `next_token.json`. Students lock a guess before the bars reveal, and a class tally is kept locally.\n- [ ] Sampling panel: temperature, top-k and top-p sliders reshape softmax(z/T) live, with the nucleus shaded and the formula shown. A 'sample \u00d7100' histogram, and an argmax vs sample toggle with a note on why runs are not reproducible.\n\n## Acceptance criteria\n- [ ] Unit tests for the tempered softmax and the top-p cutoff.\n- [ ] Offline; `check-page.mjs` passes.\n\n## Blocked by\n- #21\n- #27\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/38",
+   "id": 5691202598,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 38,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Widget: next-token bets and sampling lab"
+  },
+  "39": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-widget-attention`\n\n## Context\nThe one framing this audience owns immediately: the output is the expectation of value vectors under a query-dependent softmax measure.\n\n## Deliverables\n- [ ] `cursus/labs/attention.html` (lab).\n- [ ] Toy panel: four keys and values in 2D. Drag the query (with sliders as the keyboard alternative); the softmax weights are drawn as a measure and the output point is their expectation. A scale slider for 1/\u221ad.\n- [ ] Real panel: GPT-2 attention on a coreference sentence from `attention.json`. Hover a token to draw arcs; select layer and head.\n- [ ] One line each on permutation-equivariance and multi-head attention.\n\n## Acceptance criteria\n- [ ] Offline, keyboard-operable, and `check-page.mjs` passes.\n\n## Blocked by\n- #21\n- #27\n\n## References\n- [3Blue1Brown, neural networks series](https://www.3blue1brown.com/topics/neural-networks)\n- [bbycroft LLM visualization](https://bbycroft.net/llm)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/39",
+   "id": 5691203028,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 39,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Widget: attention as a soft database lookup"
+  },
+  "40": {
+   "body": "**Act II** \u00b7 tracked in #14 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size L\nSuggested branch: `feat/s1-deck-act-2`\n\n## Context\n45 minutes on what the loop buys and what a world model is. The act opens where Act I stopped, on a single forward pass. Every concept slide ends with how it changes the way you drive an agent.\n\n## Deliverables\n- [ ] `cursus/02-thinking.html` (deck) with speaker notes.\n- [ ] The autoregressive loop as the bridge from System 1 to System 2: each sampled token is fed back in, so more tokens means more serial compute. Kahneman as a metaphor (Bengio 2019; LeCun's Mode-1 and Mode-2), with the caveat that it is one network.\n- [ ] Why chain of thought adds depth (Merrill and Sabharwal).\n- [ ] Reasoning as inference-time search, parallel and sequential; RL with verifiable rewards (DeepSeek-R1, Nature 2025); the sharpen-or-expand debate.\n- [ ] Effort dials across vendors as of the session date; inverse scaling and overthinking.\n- [ ] Is the chain of thought the reasoning? Unmentioned hints, the 36 + 59 example, cues arriving through tool output.\n- [ ] World models, three meanings: internal representations (Othello-GPT, rhyme planning) and their limits (Kepler without Newton); learned simulators (V-JEPA 2, Genie 3, Cosmos 3, AMI Labs); the agent's picture of your repo.\n- [ ] Links to the two Act II widgets at the right slides, and the effort-dial demo slot.\n\n## Acceptance criteria\n- [ ] Every 2025-26 claim carries a date and a source, and contested claims are labeled.\n- [ ] Rehearsed to fit 45 minutes; `check-page.mjs` passes.\n\n## Blocked by\n- #19\n- #31\n- #32\n\n## References\n- [Merrill and Sabharwal, expressive power of chain of thought (2310.07923)](https://arxiv.org/abs/2310.07923)\n- [DeepSeek-R1 (Nature, 2025)](https://www.nature.com/articles/s41586-025-09422-z)\n- [Anthropic, reasoning models don't always say what they think](https://www.anthropic.com/research/reasoning-models-dont-say-think)\n- [Anthropic, On the Biology of a Large Language Model](https://transformer-circuits.pub/2025/attribution-graphs/biology.html)\n- [Othello-GPT (2210.13382)](https://arxiv.org/abs/2210.13382)\n- [Genie 3](https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/40",
+   "id": 5691203370,
+   "issue_dependencies_summary": {
+    "blocked_by": 3,
+    "blocking": 2,
+    "total_blocked_by": 3,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:2"
+    },
+    {
+     "name": "kind:deck"
+    },
+    {
+     "name": "size:L"
+    }
+   ],
+   "number": 40,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act II] Deck: Act II, thinking"
+  },
+  "41": {
+   "body": "**Act III** \u00b7 tracked in #15 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-demo-agent-loop`\n\n## Context\nThe main live demo: an agent working, then an agent being degraded. It runs on P00 and has to survive a flaky network.\n\n## Deliverables\n- [ ] `cursus/demos/agent/` with a runbook per demo.\n- [ ] The loop: on the flipped-sense P00, the agent reads, runs pytest, sees red, fixes, sees green. Run it once in Claude Code and once in Codex to show the harness is swappable.\n- [ ] Context bomb: port the 2025 workshop's context-bomb MCP server. Show `/context` before and after, and the token cost of `claude -p \"Reply with exactly: OK\"` with and without it. Re-check tool-search behavior on the current CLI versions, and show the Codex equivalent.\n- [ ] Plan first vs straight to code, on the same task.\n- [ ] One reset command per demo, with CLI versions and models recorded.\n\n## Acceptance criteria\n- [ ] Each demo runs twice in a row from a clean state.\n- [ ] Each has a recorded fallback that plays in the agent-loop replay widget.\n- [ ] No proprietary solver.\n\n## Blocked by\n- #23\n\n## References\n- [2025 workshop context-bomb server](https://github.com/GuilhemBusset/agentic-or-workshop/tree/main/workshop/materials/part-01-explorer-paradigm/01-data-explorer/mcp/context-bomb)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/41",
+   "id": 5691203763,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 0,
+    "total_blocked_by": 1,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:demo"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 41,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act III] Demo: the agent loop on P00, and the context bomb"
+  },
+  "42": {
+   "body": "**Act III** \u00b7 tracked in #15 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-agent-run-recordings`\n\n## Context\nReal agent runs, recorded once, feed the replay widget and every demo fallback. The two vendors use different formats, so normalize them.\n\n## Deliverables\n- [ ] `cursus/fixtures/runs/` with recordings from `claude -p --output-format stream-json --verbose` and `codex exec --json` for: the P00 flipped-sense fix; an impossible task where the tests cannot pass honestly (record whatever happens and do not stage a hack); the context-bomb run.\n- [ ] `normalize_runs.py`: maps both formats to one schema (step type: thought, tool call, tool result, message; tokens; timestamps), with unit tests for each vendor format.\n- [ ] `sanitize.py`: strips home paths, user names, emails and keys, plus a test that scans the fixtures for secret patterns.\n- [ ] A metadata block per run: CLI version, model, effort, date.\n\n## Acceptance criteria\n- [ ] The secret scan passes and no personal paths remain.\n- [ ] Re-running the normalizer is deterministic.\n\n## Blocked by\n- #23\n\n## References\n- [Claude Code headless mode](https://code.claude.com/docs/en/headless)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/42",
+   "id": 5691204090,
+   "issue_dependencies_summary": {
+    "blocked_by": 1,
+    "blocking": 1,
+    "total_blocked_by": 1,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:infra"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 42,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act III] Infra: agent-run recordings and a normalized replay format"
+  },
+  "43": {
+   "body": "**Act IV** \u00b7 tracked in #16 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-lab-ladder`\n\n## Context\nForty minutes of students driving their own agent, Claude Code or Codex, on P00. The levels go from read-only exploration to building with a certificate. Work is graded by evidence, not by how the prompt reads. This replaces the 2025 prompt-judge lab.\n\n## Deliverables\n- [ ] `exercises/lab-ladder.html` (page), with every instruction given for both agents.\n- [ ] L1 Explore, read-only: predict first, then ask the agent where the objective sense is set and how feasibility is checked.\n- [ ] L2 Fix with a verifier: export a bug variant. The agent must make the tests pass without touching `tests/`. Done when `git diff --stat -- tests/` is empty and `uv run pytest` is green.\n- [ ] L3 Build with a certificate: the L3 word problem, plan mode first. Done when the independent checker passes and the gap to the bound is reported.\n- [ ] L4 Stretch: write an AGENTS.md rule or a tiny skill, or rerun L2 headless (`claude -p` or `codex exec`) and compare.\n- [ ] Pair protocol (mixed pairs compare the two agents and swap at L3), sticky-note signals, and a claim-vs-evidence debrief card.\n- [ ] Instructor hints in collapsed sections.\n\n## Acceptance criteria\n- [ ] An agent session completes L1 to L3 with each CLI inside the time boxes, and the timings are recorded.\n- [ ] Every level has a command students run to confirm they are done.\n\n## Blocked by\n- #21\n- #23\n- #35\n\n## References\n- [PRIMM: predict, run, investigate, modify, make](https://computingeducationresearch.org/projects/primm/)\n- [Anthropic, AI assistance and coding skills (2026)](https://www.anthropic.com/research/AI-assistance-coding-skills)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/43",
+   "id": 5691204470,
+   "issue_dependencies_summary": {
+    "blocked_by": 3,
+    "blocking": 1,
+    "total_blocked_by": 3,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:4"
+    },
+    {
+     "name": "kind:exercise"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 43,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act IV] Exercise: the lab ladder (L1 to L4)"
+  },
+  "44": {
+   "body": "**Act V** \u00b7 tracked in #17 \u00b7 epic #10 \u00b7 wave 2 (Needs fixtures or P00) \u00b7 size M\nSuggested branch: `feat/s1-deck-act-5`\n\n## Context\n20 minutes that turn the failure modes into a discipline, ending on this repo's own guardrails.\n\n## Deliverables\n- [ ] `cursus/05-failure.html` (deck).\n- [ ] Failure gallery, one slide each: edited tests and reward hacking (ImpossibleBench; the July 2026 ExploitGym incident per METR's investigation); verifier gaming (the AlphaEvolve tolerance exploit); destructive actions with an over-privileged token (PocketOS, April 2026); prompt injection and the lethal trifecta; hallucinated packages; leaked secrets; sycophancy.\n- [ ] The 2025 workshop result: four agents dropped the CVaR term and still matched the objective.\n- [ ] The generator-verifier gap and the verifier's law.\n- [ ] Reliability controls (boundary, context, contract, verification, traceability) mapped to this repo: the rulesets (including the homework-branch one), the git hooks, `pr-only.yml`, `/ship` and `/turn-in`.\n- [ ] A link to the verifier-gaming widget for the catch-the-agent exercise.\n\n## Acceptance criteria\n- [ ] Each incident slide cites a primary or investigative source with a date, and its wording stays within what the source establishes.\n- [ ] `check-page.mjs` passes.\n\n## Blocked by\n- #19\n- #36\n\n## References\n- [METR, OpenAI / Hugging Face incident investigation (2026-08-26)](https://metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/)\n- [GitGuardian, State of Secrets Sprawl 2026](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/44",
+   "id": 5691204877,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 2,
+    "total_blocked_by": 2,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:5"
+    },
+    {
+     "name": "kind:deck"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 44,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act V] Deck: Act V, when agents fail"
+  },
+  "45": {
+   "body": "**Opening & close** \u00b7 tracked in #12 \u00b7 epic #10 \u00b7 wave 3 (Needs recordings) \u00b7 size S\nSuggested branch: `feat/s1-homework-sheet`\n\n## Context\nThe homework consolidates the day and installs the turn-in habit used all term.\n\n## Deliverables\n- [ ] `exercises/home.html` (page) with four parts: rerun two demos from the session and note what changed between runs; write three sentences on \"sampling, not retrieval\"; solve the P01 take-home with your own agent; turn it in with `/turn-in 01` or `$turn-in 01`.\n- [ ] What a good answer looks like for each part, and the grading rule: feasibility proven by the checker counts more than the objective value.\n- [ ] Instructions written for both agents.\n\n## Acceptance criteria\n- [ ] An agent session completes the sheet end to end and turns in to `homework/s01/<handle>` from a non-owner account or a fork.\n\n## Blocked by\n- #21\n- #22\n- #37\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/45",
+   "id": 5691205236,
+   "issue_dependencies_summary": {
+    "blocked_by": 3,
+    "blocking": 1,
+    "total_blocked_by": 3,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:opening-close"
+    },
+    {
+     "name": "kind:exercise"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 45,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Opening & close] Exercise: Session 1 homework sheet"
+  },
+  "46": {
+   "body": "**Act I** \u00b7 tracked in #13 \u00b7 epic #10 \u00b7 wave 3 (Needs recordings) \u00b7 size L\nSuggested branch: `feat/s1-deck-act-1`\n\n## Context\n45 minutes from one equation to a correct picture of what an LLM is. Each concept is followed by a widget students use. The act ends on a single forward pass (System 1) so Act II can open on the loop.\n\n## Deliverables\n- [ ] `cursus/01-sampler.html` (deck) with speaker notes.\n- [ ] p(x_t | x_<t) on the board, with autoregression as a factorization of a joint distribution.\n- [ ] Tokens are integer IDs; strawberry; the pivot to writing code.\n- [ ] One forward pass gives a distribution, not an answer: sampling, temperature, why outputs are not reproducible. Name it: this is System 1, fixed compute per token.\n- [ ] Attention as a soft database lookup (one slide plus the lab).\n- [ ] How a model is made, one slide each: pretraining as lossy compression of text; post-training (base vs assistant, from `base_vs_instruct.json`); RL with verifiable rewards.\n- [ ] Knowledge cutoff; no truth oracle, so hallucination is structural; the OR stake: a flipped objective sense reads as fluently as a correct one.\n- [ ] Links to the four Act I widgets at the right slides, and the strawberry demo slot.\n\n## Acceptance criteria\n- [ ] Rehearsed to fit 45 minutes; `check-page.mjs` passes.\n\n## Blocked by\n- #19\n- #28\n- #29\n- #38\n- #39\n\n## References\n- [Karpathy, Deep Dive into LLMs](https://www.youtube.com/watch?v=7xTGNNLPyMI)\n- [Del\u00e9tang et al., Language modeling is compression (2309.10668)](https://arxiv.org/abs/2309.10668)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/46",
+   "id": 5691205603,
+   "issue_dependencies_summary": {
+    "blocked_by": 5,
+    "blocking": 2,
+    "total_blocked_by": 5,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:1"
+    },
+    {
+     "name": "kind:deck"
+    },
+    {
+     "name": "size:L"
+    }
+   ],
+   "number": 46,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act I] Deck: Act I, the sampler"
+  },
+  "47": {
+   "body": "**Act III** \u00b7 tracked in #15 \u00b7 epic #10 \u00b7 wave 3 (Needs recordings) \u00b7 size M\nSuggested branch: `feat/s1-widget-agent-loop-replay`\n\n## Context\nReplaces the static 2025 'what is an agent' diagram. Students step through a real recorded run and predict the agent's next action before each reveal.\n\n## Deliverables\n- [ ] `cursus/labs/agent-loop.html` (lab), loading the normalized runs (inlined at build time or as sibling classic scripts).\n- [ ] Step-through with the toolkit controller: thought, tool call, tool result, message. A lane shows gather, act, verify, and a meter shows tokens and context used so far.\n- [ ] Predict-and-reveal at marked steps: 'what will it run next?'\n- [ ] A side-by-side mode for the same task in Claude Code and Codex.\n- [ ] Doubles as the fallback player for the live demos.\n\n## Acceptance criteria\n- [ ] Works offline with every committed recording; `check-page.mjs` passes.\n\n## Blocked by\n- #21\n- #42\n\n## References\n- [OpenAI, Unrolling the Codex agent loop](https://openai.com/index/unrolling-the-codex-agent-loop/)\n- [How Claude Code works](https://code.claude.com/docs/en/how-claude-code-works)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/47",
+   "id": 5691205935,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 1,
+    "total_blocked_by": 2,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:widget"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 47,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act III] Widget: agent-loop replay"
+  },
+  "48": {
+   "body": "**Act III** \u00b7 tracked in #15 \u00b7 epic #10 \u00b7 wave 4 (Act III deck) \u00b7 size L\nSuggested branch: `feat/s1-deck-act-3`\n\n## Context\n40 minutes from 'pure function of its context' to the current field, with the main live demo in the middle.\n\n## Deliverables\n- [ ] `cursus/03-agent.html` (deck).\n- [ ] The model as a pure function of its context; the harness re-sends the transcript; the context window, cost growth, and the KV cache as memoization.\n- [ ] The agent loop: ReAct; gather, act, verify; stop conditions (the runaway loop, premature victory).\n- [ ] Harness primitives: AGENTS.md and CLAUDE.md, skills (the open Agent Skills standard), MCP (now under the Linux Foundation's Agentic AI Foundation), subagents, hooks, permissions and sandboxing, plan mode, headless mode.\n- [ ] The 2026 landscape: the paradigm ladder (autocomplete, chat, agentic CLI, background and cloud agents, fleets); current models with 1M context and effort dials; METR time horizons; vendor vs standardized benchmark numbers; vibe coding vs agentic engineering.\n- [ ] Demo slots for the P00 loop and the context bomb; links to the context lab and the replay widget.\n\n## Acceptance criteria\n- [ ] The landscape slides carry an as-of date and are rechecked by the fact-check issue.\n- [ ] `check-page.mjs` passes.\n\n## Blocked by\n- #19\n- #34\n- #47\n\n## References\n- [METR, Time Horizon 1.1 (2026-01-29)](https://metr.org/blog/2026-1-29-time-horizon-1-1/)\n- [MCP joins the Agentic AI Foundation](https://blog.modelcontextprotocol.io/posts/2025-12-09-mcp-joins-agentic-ai-foundation/)\n- [Agent Skills](https://agentskills.io/)\n- [AGENTS.md](https://agents.md/)\n- [ReAct (2210.03629)](https://arxiv.org/abs/2210.03629)\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/48",
+   "id": 5691206265,
+   "issue_dependencies_summary": {
+    "blocked_by": 3,
+    "blocking": 2,
+    "total_blocked_by": 3,
+    "total_blocking": 2
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "act:3"
+    },
+    {
+     "name": "kind:deck"
+    },
+    {
+     "name": "size:L"
+    }
+   ],
+   "number": 48,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Act III] Deck: Act III, agent = model + harness, and the 2026 landscape"
+  },
+  "49": {
+   "body": "**Delivery** \u00b7 tracked in #18 \u00b7 epic #10 \u00b7 wave 5 (Integrate) \u00b7 size M\nSuggested branch: `docs/s1-session-hub`\n\n## Context\nStudents need one file to open, and the instructor needs a minute-by-minute plan with every fallback in one place.\n\n## Deliverables\n- [ ] `sessions/01-fundamentals/index.html` (page): the student entry point, the agenda, and every deck, lab and exercise linked in order.\n- [ ] `cursus/run-of-show.html` (page): a minute-by-minute plan with mode, file, demo command, fallback and helper notes.\n- [ ] `cursus/instructor-notes.html` (page): misconceptions and expected questions (reusing the 2025 primer's list), and the peer-instruction questions with answers.\n- [ ] README agenda updated.\n\n## Acceptance criteria\n- [ ] Every page in the session is reachable from `index.html`, with no broken local links.\n\n## Blocked by\n- #24\n- #26\n- #45\n- #46\n- #40\n- #48\n- #43\n- #44\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/49",
+   "id": 5691206629,
+   "issue_dependencies_summary": {
+    "blocked_by": 8,
+    "blocking": 1,
+    "total_blocked_by": 8,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:delivery"
+    },
+    {
+     "name": "kind:docs"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 49,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Delivery] Docs: session hub, run-of-show and instructor notes"
+  },
+  "50": {
+   "body": "**Delivery** \u00b7 tracked in #18 \u00b7 epic #10 \u00b7 wave 5 (Integrate) \u00b7 size S\nSuggested branch: `chore/s1-fact-check`\n\n## Context\nThe field moves monthly: September 2026 alone brought more than ten frontier releases from five labs. Several research findings behind this plan came from a single secondary source and are flagged as uncertain.\n\n## Deliverables\n- [ ] Re-verify every dated claim (models, prices, plans, CLI commands, benchmarks, incidents) against primary sources, then update or remove it.\n- [ ] `cursus/sources.html` (page): the bibliography grouped by act, with access dates.\n- [ ] A short changelog in the PR description.\n\n## Acceptance criteria\n- [ ] No claim is presented past its as-of date without a recheck.\n- [ ] No claim backed only by one secondary source is presented as fact.\n\n## Blocked by\n- #26\n- #46\n- #40\n- #48\n- #44\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/50",
+   "id": 5691206985,
+   "issue_dependencies_summary": {
+    "blocked_by": 5,
+    "blocking": 1,
+    "total_blocked_by": 5,
+    "total_blocking": 1
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:delivery"
+    },
+    {
+     "name": "kind:qa"
+    },
+    {
+     "name": "size:S"
+    }
+   ],
+   "number": 50,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Delivery] QA: fact-check and as-of pass, one week before the session"
+  },
+  "51": {
+   "body": "**Delivery** \u00b7 tracked in #18 \u00b7 epic #10 \u00b7 wave 6 (Rehearse) \u00b7 size M\nSuggested branch: `chore/s1-dry-run`\n\n## Context\nThe last gate before teaching: every page, demo and fallback exercised end to end, and the four hours rehearsed against the clock.\n\n## Deliverables\n- [ ] Run `check-page.mjs` on every page, attach the reports, and review the screenshots.\n- [ ] A timed rehearsal of the four hours, noting where it runs over.\n- [ ] A fallback drill: run every demo with the network off, from recordings.\n- [ ] A from-scratch install with the pre-work kit, once with only Claude Code and once with only Codex.\n- [ ] A `/turn-in` and `$turn-in` round trip on the homework.\n- [ ] Follow-up issues for anything broken.\n\n## Acceptance criteria\n- [ ] All pages pass, every act fits its time box within five minutes, and every demo has a working fallback.\n\n## Blocked by\n- #49\n- #50\n\nSession plan (instructor's page): https://claude.ai/code/artifact/97f86c5f-4abe-4487-84c6-0bc8dbce877b\n\n<details><summary>Conventions for the implementing agent</summary>\n\n- Work under `sessions/01-fundamentals/` (ADR 0001). Nothing a delivered page or script needs at runtime may come from outside the session.\n- HTML pages: use the `html-page` skill (`/html-page` in Claude Code, `$html-page` in Codex), which follows `tools/html-pages/GUIDE.md` and ADR 0006. One-time setup: `node setup/html-pages.mjs`. Scaffold with `node tools/html-pages/create-page.mjs --kind page|deck|lab`, validate with `node tools/html-pages/check-page.mjs <file>` (or `npm --prefix setup run check-repo` for every page), and look at the screenshots before calling it done.\n- Offline only: pages open over `file://` with no CDN, remote font or runtime fetch. Label simulated numbers as illustrative. Give every \"latest\" claim an as-of date and a source URL.\n- Students have Claude Code or Codex, not necessarily both. Every student instruction must work in either (ADR 0002).\n- Land your work through `/ship`, `$ship` or a PR. Never `--no-verify` or `--force`.\n- Blocked or unsure about the plan? Comment on this issue rather than guessing.\n</details>\n",
+   "html_url": "https://github.com/GuilhemBusset/coding-agent-cursus/issues/51",
+   "id": 5691207420,
+   "issue_dependencies_summary": {
+    "blocked_by": 2,
+    "blocking": 0,
+    "total_blocked_by": 2,
+    "total_blocking": 0
+   },
+   "labels": [
+    {
+     "name": "session:01"
+    },
+    {
+     "name": "stage:delivery"
+    },
+    {
+     "name": "kind:qa"
+    },
+    {
+     "name": "size:M"
+    }
+   ],
+   "number": 51,
+   "state": "open",
+   "sub_issues_summary": {
+    "completed": 0,
+    "percent_completed": 0,
+    "total": 0
+   },
+   "title": "[S1 \u00b7 Delivery] QA: full dry run and offline validation"
+  }
+ },
+ "sub_issues": {
+  "10": [
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18
+  ],
+  "11": [
+   19,
+   20,
+   21,
+   22,
+   23
+  ],
+  "12": [
+   24,
+   25,
+   26,
+   37,
+   45
+  ],
+  "13": [
+   27,
+   28,
+   29,
+   30,
+   38,
+   39,
+   46
+  ],
+  "14": [
+   31,
+   32,
+   33,
+   40
+  ],
+  "15": [
+   34,
+   41,
+   42,
+   47,
+   48
+  ],
+  "16": [
+   35,
+   43
+  ],
+  "17": [
+   36,
+   44
+  ],
+  "18": [
+   49,
+   50,
+   51
+  ]
+ }
+}

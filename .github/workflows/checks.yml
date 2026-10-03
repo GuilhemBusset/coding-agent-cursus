@@ -32,3 +32,13 @@ jobs:
       # Repeated publication must never need --force: see scripts/test-ship.sh.
       - name: Ship script behavior
         run: bash scripts/test-ship.sh
+
+      # The implement loop engine: standard library only; pytest is needed only for the tests
+      # that check how the verifier treats pytest results.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Implement loop engine tests
+        run: |
+          python -m pip install --quiet pytest==8.3.5
+          python -m unittest discover -s tools/implementation-loop/tests -t tools/implementation-loop/tests
