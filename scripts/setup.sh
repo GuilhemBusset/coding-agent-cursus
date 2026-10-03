@@ -2,9 +2,8 @@
 # One-time, agent-neutral setup: activate this repo's protected-main git hooks.
 #
 # `main` is protected by the hooks under .githooks/, but those hooks are inert
-# until core.hooksPath points at them. This script wires that up. It is the
-# single source of truth for activation — Claude Code's SessionStart hook (and
-# any future per-agent startup wiring) just calls this, so the guarantee does
+# until core.hooksPath points at them. This script wires that up. Run it by hand
+# once per clone: no agent calls it automatically (ADR 0005), so activation does
 # not depend on any one agent. Safe to run repeatedly.
 #
 #   ./scripts/setup.sh

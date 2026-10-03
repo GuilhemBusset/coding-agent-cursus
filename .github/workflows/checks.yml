@@ -22,9 +22,4 @@ jobs:
         run: bash -n scripts/*.sh .githooks/pre-commit .githooks/pre-push
 
       - name: JSON validity
-        run: |
-          jq . .claude/settings.json > /dev/null
-          jq . .github/rulesets/pr-only-main.json > /dev/null
-
-      - name: Codex config TOML parses
-        run: python3 -c "import tomllib; tomllib.load(open('.codex/config.toml','rb'))"
+        run: jq . .github/rulesets/pr-only-main.json > /dev/null

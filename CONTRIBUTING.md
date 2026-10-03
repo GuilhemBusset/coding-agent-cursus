@@ -13,9 +13,8 @@ Activate the protected-`main` git hooks once per clone:
 ./scripts/setup.sh
 ```
 
-Claude Code wires this automatically on session start. Codex does too once you trust the
-project directory and approve its hooks via `/hooks` (re-approve after hook changes). From
-any other agent or a bare terminal, run it by hand.
+No agent runs this for you, whether you use Claude Code, Codex, or a bare terminal. Run it
+by hand; it is safe to re-run.
 
 If you administer this repo (or your own fork), also apply the server-side PR-only
 ruleset once: `./scripts/apply-ruleset.sh` (see [`AGENTS.md`](AGENTS.md) → Enforcement).

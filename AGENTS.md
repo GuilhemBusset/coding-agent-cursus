@@ -24,18 +24,15 @@ bare terminal:
   guarantee.
 - `.githooks/pre-commit` blocks commits while `HEAD` is on `main`/`master`; `.githooks/pre-push`
   blocks pushes targeting `refs/heads/main` or `refs/heads/master` (fast local feedback,
-  activated by `scripts/setup.sh`).
+  activated once per clone by running `scripts/setup.sh`).
 - `.github/workflows/pr-only.yml` audits, server-side, that every commit on `main` arrived via a
   merged PR — the backstop that travels with forks, since rulesets are per-repo server state and
   are not inherited until `scripts/apply-ruleset.sh` is run there.
 
-Each agent then layers a thin **convenience** wrapper over the same rules — Claude Code
-(`.claude/settings.json`) and Codex (`.codex/config.toml`) both wire a `PreToolUse` guard that
-runs the shared `scripts/guard-main.sh`, plus a SessionStart hook that activates the git hooks
-via `scripts/setup.sh`. Claude Code adds a `settings.json` deny-list; Codex adds declarative
-execution-policy rules (`.codex/rules/protected-main.rules`). Codex loads the project layer only
-after you trust the project, and each hook must be trusted once via `/hooks` (trust is per hook
-hash — re-trust after any hook change). These give a fast in-loop block. They accelerate
-feedback; they are never the only thing standing between you and a bad push.
+There is deliberately **no per-agent guard layer**: no Claude Code or Codex hooks, deny-lists,
+or execution-policy rules for `main` (see `docs/adr/0005-drop-per-agent-guard-layer.md`). Every
+agent hits the same git hooks and the same server-side rejection, so the rules hold identically
+without agent-specific config.
 
-If a hook fires, fix the underlying issue — do **not** bypass with `--no-verify` or `--force`.
+If a hook fires or a push is rejected, fix the underlying issue — do **not** bypass with
+`--no-verify` or `--force`.

@@ -15,10 +15,8 @@ hooks path is activated, so run this once per clone:
 ./scripts/setup.sh
 ```
 
-Claude Code wires this automatically on session start. Codex does too, once you (a) trust
-the project directory at first launch and (b) approve the repo's two hooks via `/hooks` —
-Codex trusts hooks per hash, so re-approve them if they change. From any other agent or a
-bare terminal, run the script by hand.
+No agent runs this for you, whether you use Claude Code, Codex, or a bare terminal. Run it
+by hand; it is safe to re-run.
 
 ## Setup (once per repo, maintainers and fork owners)
 

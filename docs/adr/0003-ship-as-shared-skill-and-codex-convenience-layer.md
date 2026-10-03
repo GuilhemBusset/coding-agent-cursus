@@ -1,6 +1,6 @@
 # ADR 0003 — `/ship` is an Agent Skill, and Codex gets a first-class convenience layer
 
-- **Status:** Accepted
+- **Status:** Accepted — partially superseded by [ADR 0005](0005-drop-per-agent-guard-layer.md) (per-agent guard layer removed)
 - **Date:** 2026-06-20
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0002](0002-agent-agnostic-claude-code-and-codex.md), [ADR 0001](0001-self-contained-per-session-subfolders.md), [`docs/cursus-narrative.md`](../cursus-narrative.md)
