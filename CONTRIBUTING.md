@@ -7,17 +7,8 @@ is a short pointer; **`AGENTS.md` is the source of truth.**
 
 ## First time here
 
-Activate the protected-`main` git hooks once per clone:
-
-```sh
-./scripts/setup.sh
-```
-
-No agent runs this for you, whether you use Claude Code, Codex, or a bare terminal. Run it
-by hand; it is safe to re-run.
-
-If you administer this repo (or your own fork), also apply the server-side PR-only
-ruleset once: `./scripts/apply-ruleset.sh` (see [`AGENTS.md`](AGENTS.md) → Enforcement).
+Follow [`setup/README.md`](setup/README.md) to activate the git hooks, install HTML authoring
+tools when needed, and configure the server-side ruleset if you administer a repo or fork.
 
 ## Making a change
 

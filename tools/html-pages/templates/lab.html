@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-page-kind="lab" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <!-- shared-style:begin -->
+  <style>{{STYLE}}</style>
+  <!-- shared-style:end -->
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to experiment</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Coding agent practice · Lab</p>
+      <h1>{{TITLE}}</h1>
+      <p class="lede">Explore how adding context reduces the room left for a response.</p>
+    </header>
+    <main id="content" tabindex="-1" data-lab data-budget-total="8000" data-budget-fixed="2000">
+      <div class="callout"><p><strong>Illustrative values, not model measurements:</strong> 8,000 tokens of capacity, with 2,000 reserved for instructions and the task. This example does not count real text.</p></div>
+      <div class="grid">
+        <section class="panel" aria-labelledby="allocation">
+          <h2 id="allocation">Allocate context</h2>
+          <p>Context allocation: <output id="context-value" for="context-budget" data-budget-output>3000</output> tokens.</p>
+          <div class="lab-controls">
+            <label for="context-budget">Tokens for reference material</label>
+            <input id="context-budget" data-budget type="range" min="0" max="6000" step="250" value="3000" aria-describedby="budget-help" disabled>
+            <p id="budget-help" class="muted">Choose 0–6,000 in steps of 250. Arrow keys adjust the focused slider.</p>
+            <button type="button" data-reset disabled>Reset to 3,000</button>
+          </div>
+          <noscript><p>The static example uses 3,000 context tokens. Enable JavaScript to adjust the allocation.</p></noscript>
+        </section>
+        <section class="panel" aria-labelledby="result">
+          <h2 id="result">Read the tradeoff</h2>
+          <dl class="grid">
+            <div><dt>Used tokens</dt><dd class="metric" data-budget-used>5000</dd></div>
+            <div><dt>Remaining tokens</dt><dd class="metric accent" data-budget-remaining>3000</dd></div>
+          </dl>
+          <label for="budget-meter">Used share of the 8,000-token capacity</label>
+          <meter id="budget-meter" class="meter" data-budget-meter min="0" max="8000" value="5000">5000 of 8000 tokens used</meter>
+          <p class="source">Used = 2,000 + context. Remaining = 8,000 − used. Remaining capacity is a ceiling, not a predicted response length.</p>
+        </section>
+      </div>
+      <section class="prose" aria-labelledby="try" style="margin-top: 2rem">
+        <h2 id="try">Leave room for the answer</h2>
+        <p><strong>Exercise:</strong> keep at least 2,500 tokens available for the response. What is the largest context allocation you can use?</p>
+        <details><summary>Check the reasoning</summary><p>8,000 − 2,000 − 2,500 = <strong>3,500 context tokens</strong>. Adding another 250 would leave only 2,250. Prefer the reference material that directly supports the task.</p></details>
+      </section>
+    </main>
+    <footer>Teaching simulation · Context allocation and response capacity.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>{{SCRIPT}}</script>
+  <!-- shared-script:end -->
+</body>
+</html>

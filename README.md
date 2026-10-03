@@ -6,25 +6,16 @@ optimization and math PhDs. The session material lives in [`docs/`](docs/).
 Working conventions for this repo (branching, merging, enforcement) are in
 [`AGENTS.md`](AGENTS.md) — read by every coding agent and by humans alike.
 
-## Setup (once per clone)
+## Setup
 
-`main` is protected by git hooks under `.githooks/`. Those hooks are inert until the
-hooks path is activated, so run this once per clone:
+Repository-wide installation instructions, dependency manifests, setup scripts, and diagnostics live in
+[`setup/`](setup/README.md). Start there after cloning, including when configuring a fork.
 
-```sh
-./scripts/setup.sh
-```
+## HTML teaching pages
 
-No agent runs this for you, whether you use Claude Code, Codex, or a bare terminal. Run it
-by hand; it is safe to re-run.
+Use `/html-page` in Claude Code or `$html-page` in Codex to create a reading page, deck,
+or interactive lab with the shared dark style. Generated HTML opens directly in a browser,
+including offline.
 
-## Setup (once per repo, maintainers and fork owners)
-
-Local hooks are convenience; the server-side guarantee is a GitHub ruleset that makes the
-default branch PR-only (no direct pushes, no force-pushes, no deletion, no bypass). The
-definition is checked in at [`.github/rulesets/pr-only-main.json`](.github/rulesets/pr-only-main.json);
-apply it to your repo or fork with an admin-authenticated `gh`:
-
-```sh
-./scripts/apply-ruleset.sh
-```
+See the [shared guide](tools/html-pages/GUIDE.md) for authoring and browser review, and the
+[research](tools/html-pages/research.md) for the design and tooling choices.

@@ -6,7 +6,7 @@
 # once per clone: no agent calls it automatically (ADR 0005), so activation does
 # not depend on any one agent. Safe to run repeatedly.
 #
-#   ./scripts/setup.sh
+#   ./setup/git-hooks.sh
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
