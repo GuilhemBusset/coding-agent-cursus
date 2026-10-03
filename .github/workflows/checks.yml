@@ -18,8 +18,11 @@ jobs:
       - name: Ship skill copies are byte-identical
         run: diff -u .agents/skills/ship/SKILL.md .claude/skills/ship/SKILL.md
 
+      - name: HTML page skill copies are byte-identical
+        run: diff -u .agents/skills/html-page/SKILL.md .claude/skills/html-page/SKILL.md
+
       - name: Shell syntax
-        run: bash -n scripts/*.sh .githooks/pre-commit .githooks/pre-push
+        run: bash -n scripts/*.sh setup/*.sh .githooks/pre-commit .githooks/pre-push
 
       - name: JSON validity
-        run: jq . .github/rulesets/pr-only-main.json > /dev/null
+        run: jq . setup/pr-only-main.json > /dev/null

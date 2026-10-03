@@ -2,11 +2,11 @@
 # One-command, idempotent application of the repo's server-side PR-only ruleset.
 #
 # Rulesets are per-repo server state: they are NOT inherited by forks or new
-# repos, so the definition is checked in (.github/rulesets/pr-only-main.json)
+# repos, so the definition is checked in (setup/pr-only-main.json)
 # and this script applies it. Run it once per repo (original or fork) with a
 # gh CLI authenticated as a repo admin:
 #
-#   ./scripts/apply-ruleset.sh
+#   ./setup/apply-ruleset.sh
 #
 # Until it has run, the CI audit (.github/workflows/pr-only.yml) and the local
 # git hooks remain the backstop. Requires: gh (authenticated), jq.
@@ -15,7 +15,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-ruleset_file=".github/rulesets/pr-only-main.json"
+ruleset_file="setup/pr-only-main.json"
 name="$(jq -r .name "$ruleset_file")"
 repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
 

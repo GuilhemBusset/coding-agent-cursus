@@ -1,0 +1,15 @@
+{
+  "name": "cursus-setup",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "doctor": "node doctor.mjs",
+    "check-repo": "node ../tools/html-pages/check-repo-pages.mjs",
+    "test": "node --test ../tools/html-pages/tests/pages.test.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "playwright": "1.63.0"
+  }
+}

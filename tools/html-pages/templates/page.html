@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-page-kind="page" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <!-- shared-style:begin -->
+  <style>{{STYLE}}</style>
+  <!-- shared-style:end -->
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Coding agent practice · Reading</p>
+      <h1>{{TITLE}}</h1>
+      <p class="lede">A small, testable contract makes an agent’s work easier to review. Start with behavior, constrain the change, and name the evidence you expect.</p>
+    </header>
+    <main id="content" class="prose" tabindex="-1">
+      <section aria-labelledby="contract">
+        <h2 id="contract">Specify the observable result</h2>
+        <p>“Fix validation” leaves the agent to invent requirements. A useful task says what input changes, what output should follow, and which existing behavior must survive.</p>
+        <div class="callout">
+          <h3>Exercise · Write a bounded task</h3>
+          <p>Implement <code>parse_count(text)</code>: trim surrounding whitespace, accept ASCII digits representing 1–99, and raise <code>ValueError</code> otherwise. Change only the function and its tests; add no dependencies.</p>
+        </div>
+      </section>
+      <section aria-labelledby="examples">
+        <h2 id="examples">Turn the contract into examples</h2>
+        <div class="table-wrap" role="region" aria-label="Acceptance examples" tabindex="0">
+          <table>
+            <caption>Inputs and expected behavior for the exercise</caption>
+            <thead><tr><th scope="col">Input</th><th scope="col">Expected</th><th scope="col">Reason</th></tr></thead>
+            <tbody>
+              <tr><td><code>" 12 "</code></td><td><code>12</code></td><td>Whitespace is allowed at the edges.</td></tr>
+              <tr><td><code>"01"</code></td><td><code>1</code></td><td>Leading zeroes are not forbidden.</td></tr>
+              <tr><td><code>"0"</code>, <code>"100"</code></td><td><code>ValueError</code></td><td>Both range boundaries matter.</td></tr>
+              <tr><td><code>"+2"</code>, <code>"1.5"</code>, <code>"１２"</code></td><td><code>ValueError</code></td><td>Only ASCII digits are accepted.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <details>
+          <summary>Why constrain digits explicitly?</summary>
+          <p>Python’s <code>str.isdigit()</code> accepts some non-ASCII characters. The contract deliberately narrows the accepted alphabet so the implementation and reviewer agree on what “digits” means.</p>
+        </details>
+      </section>
+      <section aria-labelledby="implementation">
+        <h2 id="implementation">Compare against an exact implementation</h2>
+        <p>Try the exercise first. Then inspect how each condition below corresponds to one part of the contract.</p>
+        <pre tabindex="0" aria-label="Python reference implementation"><code>def parse_count(text: str) -&gt; int:
+    value = text.strip()
+    if not value or any(c not in "0123456789" for c in value):
+        raise ValueError("Use ASCII digits for a count from 1 to 99")
+    significant = value.lstrip("0")
+    if not significant or len(significant) &gt; 2:
+        raise ValueError("Count must be between 1 and 99")
+    return int(significant)</code></pre>
+        <p><strong>Review checkpoint:</strong> ask the agent to report the changed files and test results. Check the actual diff and results before accepting the change.</p>
+      </section>
+    </main>
+    <footer>Teaching example · Parsing a count from 1 to 99.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>{{SCRIPT}}</script>
+  <!-- shared-script:end -->
+</body>
+</html>
