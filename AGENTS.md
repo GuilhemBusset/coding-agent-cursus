@@ -14,6 +14,15 @@ a fresh clone. Do not rely on an agent's global configuration, existing caches, 
 local installations. Keep OS-level installs explicit. Verify setup and report any platform
 or environment limitations.
 
+## Platform support
+
+Exercises must work on Linux, macOS and Windows: everything under `sessions/*/exercises/`, and
+what students run to set up and hand in that work (the session setup helper, `turn-in`).
+Students use their own machines. Exercises are mostly Python run through uv, which keeps this
+cheap; prefer Python over shell in them. Everything else (decks, teaching pages, demos, the
+HTML tooling, instructor and repo tooling, the implement loop) only needs to work on Linux,
+where it is built and presented. See ADR 0010.
+
 ## Branching & merging
 
 - `main` is **protected**. Every change lands via a pull request — no direct commits, no direct
