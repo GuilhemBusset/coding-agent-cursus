@@ -15,6 +15,3 @@ fixtures = [
     "torch>=2.14.1",
     "transformers>=5.18.0",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
