@@ -48,8 +48,8 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
-Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI is configured
-to run this same setup and test sequence on Linux, macOS, and Windows.
+Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI runs this
+same setup and test sequence on Linux, the only platform teaching pages need (ADR 0010).
 
 ## Session 1: set up the session
 
