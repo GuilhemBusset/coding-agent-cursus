@@ -77,6 +77,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
+| `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
 | `tests/` | The session's pytest suite |
 
 The boundary between `cursus/` and `exercises/` is load-bearing: `cursus/` holds only what is
