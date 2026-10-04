@@ -152,10 +152,216 @@
     reset.disabled = false;
   }
 
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
   function init() {
     enhanceDisclosurePrint();
     document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
     document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
