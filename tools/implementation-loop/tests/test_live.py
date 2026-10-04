@@ -111,7 +111,7 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertFalse(any("mcp_servers" in x for x in b), "no MCP servers configured, nothing to disable")
 
     def test_writing_roles_can_edit_but_never_commit_push_or_call_gh(self):
-        self.answer_with({"status": "done", "note": ""})
+        self.answer_with({"status": "done", "note": "", "defect_file": None, "defect_reproduction": None})
         from implement_loop.agents import Design
         design = Design(decisions={}, checks=[], files=["a.txt"], check_files=["tests/t.py"])
         self.agents.implement("claude", self.req, design, self.tmp, [])
@@ -166,7 +166,7 @@ class LiveAdapterTests(unittest.TestCase):
     def test_mcp_servers_are_listed_where_each_call_runs(self):
         project = self.tmp / "worktree-with-project-config"
         project.mkdir()
-        self.answer_with({"status": "done", "note": ""})
+        self.answer_with({"status": "done", "note": "", "defect_file": None, "defect_reproduction": None})
         from implement_loop.agents import Design
         design = Design(decisions={}, checks=[], files=[], check_files=[])
         self.agents.implement("codex", self.req, design, project, [])
@@ -196,6 +196,23 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual((record["role"], record["vendor"], record["issue"], record["ok"]), ("propose", "codex", 28, True))
         self.assertEqual(record["usage"]["input_tokens"], 12)
         self.assertTrue(list((self.tmp / "run" / "calls").glob("*-propose-codex-28.prompt.md")))
+
+    def test_the_judge_keeps_every_decision_with_its_rationale(self):
+        self.answer_with({"decisions": [{"id": "A2-reading", "choice": "dates only on new claims", "rationale": "A2 freezes Sessions 2-5"}],
+                          "checks": [{"criterion": "A1", "kind": "manual", "command": None, "cwd": ".",
+                                      "description": "the owner decides which claims need dates"}],
+                          "files": ["x.md"], "check_files": [], "notes": ""})
+        d = self.agents.judge("claude", self.req, [], [])
+        self.assertEqual(d.decisions, {"A2-reading": "dates only on new claims"})
+        self.assertEqual(d.decision_log[0]["rationale"], "A2 freezes Sessions 2-5")
+        self.assertFalse(hasattr(d, "criterion_disputes"))
+
+    def test_the_critic_sees_the_auditors_objections(self):
+        from implement_loop.agents import Objection
+        self.answer_with({"objections": []})
+        self.agents.critique("claude", self.req, [], [Objection("the checker misses integrality", blocking=True)])
+        prompt = sorted((self.tmp / "run" / "calls").glob("*-critique-claude-28.prompt.md"))[-1].read_text()
+        self.assertIn("the checker misses integrality", prompt)
 
     def test_an_answer_off_schema_is_rejected_and_retried_then_fails(self):
         self.answer_with({"status": "finished"})
@@ -311,6 +328,23 @@ class LoopGuardTests(unittest.TestCase):
         self.commit("tests/test_a.py", "def test_a(): pass\n", "acceptance-checks")
         self.commit("tests/test_a.py", "def test_a(): assert 1\n", "acceptance-checks")
         self.assertEqual(self.guard().returncode, 0)
+
+    def test_a_retired_check_is_no_longer_locked(self):
+        self.commit("tests/test_old.py", "def test_old(): pass\n", "acceptance-checks")
+        (self.wt / "tests" / "test_old.py").unlink()
+        git("add", "-A", cwd=self.wt)
+        git("commit", "-q", "-m", "retire\n\nLoop-Phase: acceptance-checks\nLoop-Unlocks: tests/test_old.py", cwd=self.wt)
+        self.commit("tests/test_old.py", "the implementer may reuse the path\n", "implementation")
+        self.assertEqual(self.guard().returncode, 0)
+
+    def test_unlocking_one_check_keeps_the_others_locked(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "acceptance-checks")
+        self.commit("tests/test_b.py", "def test_b(): pass\n", "acceptance-checks")
+        git("commit", "-q", "--allow-empty", "-m", "retire a\n\nLoop-Phase: acceptance-checks\nLoop-Unlocks: tests/test_a.py", cwd=self.wt)
+        self.commit("tests/test_b.py", "def test_b(): assert True\n", "implementation")
+        result = self.guard()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("tests/test_b.py was locked", result.stdout)
 
 
 if __name__ == "__main__":

@@ -187,7 +187,8 @@ def _junit_results(path: Path) -> dict[str, list]:
     return results
 
 
-def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, default_timeout: int = 900) -> tuple[Evidence, dict[str, list[str]] | None]:
+def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, default_timeout: int = 900,
+              extra_env: dict[str, str] | None = None) -> tuple[Evidence, dict[str, list[str]] | None]:
     if spec.kind != "command" or not spec.command:
         ev = Evidence(criterion=spec.criterion, kind=spec.kind, command=None, cwd=spec.cwd, head_sha=head_sha,
                       exit_code=None, passed=False, duration_s=0.0, output_tail="", output_sha256="",
@@ -197,7 +198,7 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
     # wrapper script (`bash run.sh`, `uv run pytest`, `make test`) are accounted for too.
     junit = work_dir / f"junit-{spec.criterion}-{head_sha[:12]}.xml"
     junit.unlink(missing_ok=True)
-    env = dict(os.environ)
+    env = dict(os.environ) | dict(extra_env or {})
     env["PYTEST_ADDOPTS"] = (env.get("PYTEST_ADDOPTS", "") + f" -p no:cacheprovider --junitxml={junit}").strip()
     command = spec.command
     cwd = root / spec.cwd
@@ -230,16 +231,19 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
 
 
 def verify(root: Path, specs: list[CheckSpec], head_sha: str, work_dir: Path, locked: dict[str, str],
-           check_files: list[str], expected: list[str], default_timeout: int = 900) -> tuple[bool, list[dict], list[str]]:
-    """Run every command check. Returns (all passed, evidence records, problems)."""
+           check_files: list[str], expected: list[str], default_timeout: int = 900,
+           extra_env: dict[str, str] | None = None, check_tamper: bool = True) -> tuple[bool, list[dict], list[str]]:
+    """Run every command check. Returns (all passed, evidence records, problems).
+    `extra_env` reaches the check commands only (for example the browser's private libraries);
+    `check_tamper=False` re-runs another issue's checks for regressions, behaviour only."""
     work_dir.mkdir(parents=True, exist_ok=True)
     cwds = sorted({s.cwd for s in specs if s.kind == "command"})
-    problems = tamper_report(root, locked, check_files, cwds)
+    problems = tamper_report(root, locked, check_files, cwds) if check_tamper else []
     evidence, cases, accounted = [], [], False
     for spec in specs:
         if spec.kind != "command":
             continue
-        ev, tests = run_check(root, spec, head_sha, work_dir, default_timeout)
+        ev, tests = run_check(root, spec, head_sha, work_dir, default_timeout, extra_env)
         evidence.append(asdict(ev))
         if tests is not None:
             accounted = True

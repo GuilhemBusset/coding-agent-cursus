@@ -36,8 +36,9 @@ by its full path. Re-run after the lockfile changes; repeating it is safe. It do
 git hooks or change GitHub settings.
 
 If you lack privileges to install Linux packages, ask the machine administrator to install
-Playwright's Chromium dependencies. Setup reports failure until Chromium can launch; there
-is no dependency on temporary libraries from an author's machine. See
+Playwright's Chromium dependencies, or, on Debian or Ubuntu, unpack them in user space with
+[`browser-libs.py`](#browser-libraries-without-root). Setup reports failure until Chromium can
+launch; there is no dependency on temporary libraries from an author's machine. See
 [Playwright's browser documentation](https://playwright.dev/docs/browsers) for supported
 environments, browser caches, and proxy/download configuration.
 
@@ -99,7 +100,20 @@ machine that runs it:
 - Git, and the GitHub CLI authenticated with push access (`gh auth login`).
 - **Both** agent CLIs, installed and logged in: Claude Code (`claude`) and Codex (`codex login`).
   The one that launches a run implements; the other reviews.
-- The HTML browser tooling above, if the issues produce HTML pages.
+- The HTML browser tooling above, if the issues produce HTML pages. Node.js 22 or newer is the
+  prerequisite; the loop repairs the rest itself, without `html-pages.mjs` (whose plain
+  `npm ci` replaces `setup/node_modules` in place, with lifecycle scripts on):
+  - npm packages missing or not at their locked versions: it stages its own install,
+    `npm ci --include=dev --ignore-scripts` (lifecycle scripts off; no locked package
+    declares one) in a directory under its state directory, checks every locked package is
+    there, then swaps it in for `setup/node_modules`. The previous `node_modules` is kept
+    until the re-check passes, and put back if it does not.
+  - a missing browser: Playwright's own CLI from `setup/node_modules`
+    (`install --no-remove chromium`, never `--with-deps`), which leaves `node_modules` alone.
+  - missing Chromium libraries: unpacked without root (below).
+- [uv](https://docs.astral.sh/uv/), for Python tests: the loop runs pytest as
+  `uv run --no-project --with pytest==8.3.5 python -m pytest`, the version CI pins, which
+  fetches pytest (and a Python, if none is found) into uv's cache.
 - Network access for the engine itself. Under Codex, run it outside the default sandbox.
 
 Check everything with:
@@ -112,6 +126,47 @@ scripts/implement.sh doctor --smoke   # plus one tiny structured call to each CL
 Run state lives under the git common dir (`.git/implementation-loop/`), worktrees in a sibling
 `<repo>.loop/` directory. Agents run without your GitHub credentials. Per-role effort, models and
 timeouts are in `tools/implementation-loop/loop.toml`.
+
+### Browser libraries without root
+
+When Chromium cannot start because Linux libraries are missing (`error while loading shared
+libraries`) and nobody can run `sudo`, the loop repairs it in user space
+([ADR 0011](../docs/adr/0011-autonomous-implement-loop.md), decision 5). By hand, on Debian
+or Ubuntu, with the HTML browser tooling installed:
+
+```sh
+python3 setup/browser-libs.py --dest <dir> --dry-run   # list what it would fetch; writes nothing
+python3 setup/browser-libs.py --dest <dir>
+CURSUS_BROWSER_LIBS=<dir> node setup/doctor.mjs
+```
+
+- **What:** the packages Playwright 1.63.0 lists for Chromium on Ubuntu 24.04 and 26.04
+  (pinned in the script, which cites the table they come from), plus any dependency apt's
+  solver says the host lacks, never the C runtime. Versions are the ones in the host's apt
+  indexes; `manifest.json` records each `.deb` and its SHA-256.
+- **How it is verified:** `apt-get download` needs no root and checks each file against apt's
+  signed indexes; `dpkg -x` unpacks them into a staging directory; then `ldd` on Playwright's
+  Chromium executables, with the unpacked directories first on `LD_LIBRARY_PATH`, must report
+  no missing library, and `setup/doctor.mjs`, given the staged copy, must launch Chromium and
+  render offline HTML. Only then is the copy activated. A failure leaves the active copy as it
+  was and exits non-zero. The loop launches Chromium again after activation; if it still
+  fails, the loop rolls back.
+- **Where:** only under `<dir>`: `libs-<content hash>/` (the unpacked files and
+  `manifest.json`), a `current` file naming the active copy, and `previous` naming the copy it
+  replaced, which is kept; older copies are deleted. The loop keeps its copy in its state
+  directory under `.git/implementation-loop/`.
+- **Who uses it:** nothing, unless `CURSUS_BROWSER_LIBS` names `<dir>` (or one copy in it).
+  Then `tools/html-pages/browser.mjs` prepends the copy's library directories to
+  `LD_LIBRARY_PATH` in the browser process's environment only, and names the browser
+  executable so Playwright skips its own host check, which would run without them. No shell
+  profile, `ld.so` configuration, Node process or other tool sees them.
+- **Roll back:** `python3 setup/browser-libs.py --dest <dir> --rollback` undoes the last
+  activation once: `current` goes back to the copy `previous` names (or to none, if no copy
+  was active before), and the rolled-back copy is deleted.
+- **Remove:** `rm -rf <dir>` and unset `CURSUS_BROWSER_LIBS`.
+- **Limits:** Debian and Ubuntu only, and the apt indexes must be current (`apt-get update`
+  needs root; stale indexes make downloads fail). A library no package provides still needs
+  an administrator; the loop then parks only the work that needs a browser.
 
 Skill wrappers and git hooks stay in their native discovery locations; this directory owns
 their setup. Page authoring assets and checks live under `tools/html-pages/` and consume the
@@ -151,9 +206,11 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Repository skills and HTML assets | Checked-in `.claude/skills/`, `.agents/skills/`, and `tools/html-pages/`; no global skill installation |
 | Git hooks | Checked-in `.githooks/`; `git-hooks.sh` configures the clone's `.git/config` |
 | Implement loop | Checked-in `tools/implementation-loop/` (standard-library Python); run state under `.git/implementation-loop/`, worktrees in a sibling `<repo>.loop/` directory; uses the installed `claude`, `codex` and `gh` |
-| Playwright, axe and transitive npm dependencies | Exact versions and integrity hashes in [`package-lock.json`](package-lock.json); installed in `setup/node_modules/` |
+| Playwright, axe and transitive npm dependencies | Exact versions and integrity hashes in [`package-lock.json`](package-lock.json); installed in `setup/node_modules/`. The implement loop re-installs them only through a staging directory in its state directory under `.git/implementation-loop/`, with lifecycle scripts off |
 | Chromium, headless shell and FFmpeg | Downloaded by the locked Playwright CLI into its per-user browser cache; `doctor.mjs` prints the executable location |
 | Linux browser libraries | OS packages installed only with `--with-system-deps`; versions come from the supported distribution's repositories |
+| Linux browser libraries without root | `browser-libs.py`: the pinned Chromium packages, plus dependencies apt says are missing, fetched with `apt-get download` and unpacked with `dpkg -x` under `--dest` only (the loop: its state directory under `.git/implementation-loop/`); used only by browser processes, through `CURSUS_BROWSER_LIBS` |
+| Pinned pytest for the implement loop | `uv run --no-project --with pytest==8.3.5` fetches pytest, and a Python if needed, into uv's per-user cache |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
 | Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |

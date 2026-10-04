@@ -1,4 +1,4 @@
-"""Caps and repo-specific constants. Correctness caps only: there is no budget cap by choice."""
+"""Caps and repo-specific constants. Correctness and recovery caps only: there is no budget cap by choice."""
 
 from dataclasses import dataclass, field
 
@@ -21,10 +21,14 @@ TEST_CONFIG_NAMES = frozenset({"conftest.py", "pytest.ini", "tox.ini", "setup.cf
 
 @dataclass(frozen=True)
 class Caps:
-    design_rounds: int = 2
     implement_attempts: int = 3
     fix_rounds: int = 2
     same_blocker_limit: int = 3
+    # Recovery steps (ADR 0011): each is tried this many times before the issue parks.
+    redesigns: int = 1
+    check_amendments: int = 2
+    ci_fixes: int = 2
+    fix_forwards: int = 1
     max_parallel_writers: int = 3
     max_parallel_agents: int = 6
     check_timeout_s: int = 900

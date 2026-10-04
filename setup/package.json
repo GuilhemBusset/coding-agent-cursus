@@ -6,7 +6,7 @@
   "scripts": {
     "doctor": "node doctor.mjs",
     "check-repo": "node ../tools/html-pages/check-repo-pages.mjs",
-    "test": "node --test ../tools/html-pages/tests/pages.test.mjs ../tools/html-pages/tests/predict.test.mjs ../tools/html-pages/tests/probability-chart.test.mjs ../tools/html-pages/tests/formula-slider.test.mjs ../tools/html-pages/tests/stepper.test.mjs ../tools/html-pages/tests/components-tooling.test.mjs ../tools/html-pages/tests/components-a11y.test.mjs"
+    "test": "node --test ../tools/html-pages/tests/pages.test.mjs ../tools/html-pages/tests/predict.test.mjs ../tools/html-pages/tests/probability-chart.test.mjs ../tools/html-pages/tests/formula-slider.test.mjs ../tools/html-pages/tests/stepper.test.mjs ../tools/html-pages/tests/components-tooling.test.mjs ../tools/html-pages/tests/components-a11y.test.mjs ../tools/html-pages/tests/browser-env.test.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

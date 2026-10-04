@@ -37,7 +37,6 @@ class Proposal:
 class Objection:
     text: str
     blocking: bool
-    changes_criterion: bool = False   # the dispute would change what the issue asks for
 
 
 @dataclass
@@ -47,13 +46,16 @@ class Design:
     files: list[str]
     check_files: list[str]
     notes: str = ""
-    criterion_disputes: list[str] = field(default_factory=list)
+    # Every reading the judge chose, with its reason: shown in the PR and the run report (ADR 0011).
+    decision_log: list[dict] = field(default_factory=list)
 
 
 @dataclass
 class ImplementResult:
-    status: str                       # "done" | "impossible"
+    status: str                       # "done" | "impossible" | "check_defect"
     note: str = ""
+    defect_file: str | None = None    # check_defect: the locked check that is wrong
+    defect_reproduction: str | None = None
 
 
 @dataclass
@@ -69,9 +71,10 @@ class Agents(Protocol):
     def explore(self, vendor: str, question: str, briefing: str) -> str: ...
     def propose(self, vendor: str, req: DesignRequest, author: str) -> Proposal: ...
     def audit(self, vendor: str, req: DesignRequest, proposals: list[Proposal]) -> list[Objection]: ...
-    def critique(self, vendor: str, req: DesignRequest, proposals: list[Proposal]) -> list[Objection]: ...
+    def critique(self, vendor: str, req: DesignRequest, proposals: list[Proposal], objections: list[Objection]) -> list[Objection]: ...
     def judge(self, vendor: str, req: DesignRequest, proposals: list[Proposal], objections: list[Objection]) -> Design: ...
-    def write_checks(self, vendor: str, req: DesignRequest, design: Design, worktree: Path) -> None: ...
+    def write_checks(self, vendor: str, req: DesignRequest, design: Design, worktree: Path,
+                     feedback: list[str] | None = None) -> None: ...
     def implement(self, vendor: str, req: DesignRequest, design: Design, worktree: Path, feedback: list[str]) -> ImplementResult: ...
     def review(self, vendor: str, role: str, req: DesignRequest, design: Design, worktree: Path,
                base_sha: str, head_sha: str, evidence: list[dict]) -> ReviewResult | None: ...
@@ -87,12 +90,14 @@ class Script:
     files: dict[str, str]                         # implementation: path -> correct content
     check_file: str = ""                          # defaults to checks/issue_<n>.sh
     wrong_attempts: int = 0                       # first N implementations write wrong content
-    impossible: bool = False
+    impossible: bool = False                      # every implementation reports the task impossible
+    impossible_once: bool = False                 # only the first does; a redesign fixes it
+    defective_check: bool = False                 # the first checks expect the wrong content
     tamper: bool = False                          # first implementation also edits the locked check
     review_defects: int = 0                       # cross reviewer reports a reproducible defect N times
     reviewer_fails: int = 0                       # cross reviewer returns nothing N times
     disagree: bool = False                        # the two proposals differ
-    criterion_dispute: bool = False
+    criterion_dispute: bool = False               # the audit finds the issue ambiguous
     manual_items: tuple[str, ...] = ()            # ledger ids that only a person can prove
     commits: bool = False                         # the implementer commits its work (it should not)
     tags: bool = False                            # the implementer creates a git tag (it should not)
@@ -111,6 +116,7 @@ class FakeAgents:
         self._implemented: dict[int, int] = {}
         self._reviewed: dict[int, int] = {}
         self._review_failures: dict[int, int] = {}
+        self._checks_written: dict[int, int] = {}
 
     def _s(self, req: DesignRequest) -> Script:
         return self.scripts[req.issue.number]
@@ -119,7 +125,7 @@ class FakeAgents:
         return self.scripts[n].check_file or f"checks/issue_{n}.sh"
 
     def explore(self, vendor, question, briefing):
-        self.calls.append(("explore", vendor, question))
+        self.calls.append(("explore", vendor, question, briefing))
         return f"[{vendor}] {question}: nothing surprising."
 
     def propose(self, vendor, req, author):
@@ -142,27 +148,32 @@ class FakeAgents:
         self.calls.append(("audit", vendor, req.issue.number))
         s = self._s(req)
         if s.criterion_dispute:
-            return [Objection("the criterion itself is ambiguous", blocking=True, changes_criterion=True)]
+            return [Objection("the criterion itself is ambiguous: read it as the stricter case", blocking=True)]
         return []
 
-    def critique(self, vendor, req, proposals):
-        self.calls.append(("critique", vendor, req.issue.number))
+    def critique(self, vendor, req, proposals, objections):
+        self.calls.append(("critique", vendor, req.issue.number, len(objections)))
         return [Objection("variant-b ignores the size limit", blocking=False)]
 
     def judge(self, vendor, req, proposals, objections):
         self.calls.append(("judge", vendor, req.issue.number))
         p = proposals[0]
-        disputes = [o.text for o in objections if o.changes_criterion]
+        log = [{"id": k, "choice": v, "rationale": "the simpler variant"} for k, v in p.decisions.items()]
+        log += [{"id": f"reading-{i}", "choice": o.text, "rationale": "decided by the judge"}
+                for i, o in enumerate(objections) if o.blocking]
         return Design(decisions=dict(p.decisions), checks=p.checks, files=p.files, check_files=p.check_files,
-                      notes="fake design", criterion_disputes=disputes)
+                      notes="fake design", decision_log=log)
 
-    def write_checks(self, vendor, req, design, worktree):
+    def write_checks(self, vendor, req, design, worktree, feedback=None):
         n = req.issue.number
         s = self._s(req)
-        self.calls.append(("write_checks", vendor, n))
+        k = self._checks_written.get(n, 0)
+        self._checks_written[n] = k + 1
+        self.calls.append(("write_checks", vendor, n, tuple(feedback or ())))
         lines = ["#!/usr/bin/env bash", "set -euo pipefail", f"# acceptance check for issue {n}"]
         for path, content in sorted(s.files.items()):
-            lines.append(f'test "$(cat {path})" = "{content}"')
+            expected = "a-wrong-expectation" if (s.defective_check and k == 0) else content
+            lines.append(f'test "$(cat {path})" = "{expected}"')
         target = worktree / self._check_file(n)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("\n".join(lines) + "\n")
@@ -173,8 +184,15 @@ class FakeAgents:
         k = self._implemented.get(n, 0)
         self._implemented[n] = k + 1
         self.calls.append(("implement", vendor, n, tuple(feedback)))
-        if s.impossible:
+        if s.impossible or (s.impossible_once and k == 0):
             return ImplementResult("impossible", "the criteria contradict each other")
+        if s.defective_check and k == 0:
+            for path, content in s.files.items():
+                target = worktree / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content + "\n")
+            return ImplementResult("check_defect", "the check expects a value the issue never asks for",
+                                   defect_file=self._check_file(n), defect_reproduction=f"bash {self._check_file(n)}")
         for path, content in s.files.items():
             target = worktree / path
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -217,4 +235,6 @@ class FakeAgents:
         self.calls.append(("verify_finding", vendor, req.issue.number, finding.id))
         if self._s(req).unverifiable:
             return None
+        if finding.reviewer == "implementer":   # a claimed check defect: reproduced when the check is wrong
+            return "a-wrong-expectation" in (worktree / (finding.file or "")).read_text()
         return finding.claims_acceptance_failure

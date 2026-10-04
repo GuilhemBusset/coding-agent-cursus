@@ -1,6 +1,6 @@
 # ADR 0008 — The implement loop: a deterministic engine, agents as workers
 
-- **Status:** Accepted
+- **Status:** Accepted; decisions 5 and 6 superseded by [ADR 0011](0011-autonomous-implement-loop.md)
 - **Date:** 2026-10-03
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0002](0002-agent-agnostic-claude-code-and-codex.md), [ADR 0003](0003-ship-as-shared-skill-and-codex-convenience-layer.md), [ADR 0005](0005-drop-per-agent-guard-layer.md), [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md)

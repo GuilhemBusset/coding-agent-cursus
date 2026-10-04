@@ -7,9 +7,11 @@ Rules for every role:
 - Never commit, push, merge, open pull requests, or edit GitHub issues. The engine does that.
 - Stay inside your role. Do not touch files your role does not own.
 - Never special-case tests, weaken a check, hard-code an expected answer, or skip a test.
-- If the task cannot be done as specified (contradictory or impossible criteria, missing
-  prerequisites), say so explicitly through the field the schema gives you. That is a valid
-  answer and far better than a fake success.
+- Nobody will answer questions during this run. Where something is ambiguous, choose the
+  reading that best serves the issue's intent and say which one you chose.
+- If the task cannot be done as specified (contradictory or impossible criteria, a wrong
+  check, missing prerequisites), say so explicitly through the field the schema gives you.
+  That is a valid answer and far better than a fake success.
 - Your final answer must be a single JSON object matching the schema you were given.
 
 The issue you are working on:

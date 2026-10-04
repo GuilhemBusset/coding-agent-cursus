@@ -25,6 +25,8 @@ class GitHub(Protocol):
     def list_comments(self, n: int) -> list[dict]: ...
     def find_pr(self, head: str) -> dict | None: ...
     def required_check(self, sha: str, name: str) -> str | None: ...
+    def required_check_run(self, sha: str, name: str) -> dict | None: ...
+    def find_issue(self, label: str, marker: str) -> int | None: ...
     # writes
     def create_comment(self, n: int, body: str) -> dict: ...
     def update_comment(self, comment_id: int, body: str) -> dict: ...
@@ -35,6 +37,9 @@ class GitHub(Protocol):
     def create_pr(self, head: str, base: str, title: str, body: str) -> dict: ...
     def update_pr(self, n: int, body: str) -> dict: ...
     def merge_pr(self, n: int, sha: str, method: str = "squash") -> dict: ...
+    def rerun_failed(self, sha: str) -> bool: ...
+    def failed_log(self, sha: str) -> str: ...
+    def create_issue(self, title: str, body: str, labels: list[str]) -> dict: ...
 
 
 class GhCli:
@@ -93,12 +98,28 @@ class GhCli:
         return (open_prs or prs or [None])[0]
 
     def required_check(self, sha, name):
+        run = self.required_check_run(sha, name)
+        if run is None:
+            return None
+        return run["conclusion"] if run["status"] == "completed" else "pending"
+
+    def required_check_run(self, sha, name):
+        """The latest check run called `name` on `sha`: its id (a re-run gets a new one), status
+        and conclusion."""
         data = self._api(self._r(f"commits/{sha}/check-runs?check_name={urllib.parse.quote(name)}&filter=latest")) or {}
         runs = data.get("check_runs", [])
         if not runs:
             return None
-        run = runs[0]
-        return run.get("conclusion") if run.get("status") == "completed" else "pending"
+        run = max(runs, key=lambda r: r.get("id", 0))
+        return {"id": run.get("id"), "status": run.get("status"), "conclusion": run.get("conclusion")}
+
+    def find_issue(self, label, marker):
+        """An issue (open or closed) with `label` whose body carries `marker`. Listing by label has
+        no search-index delay, so an issue created a moment ago is found."""
+        for issue in self._pages(self._r(f"issues?state=all&labels={urllib.parse.quote(label)}")):
+            if marker in (issue.get("body") or "") and "pull_request" not in issue:
+                return issue["number"]
+        return None
 
     def create_comment(self, n, body):
         return self._api(self._r(f"issues/{n}/comments"), "POST", {"body": body})
@@ -129,6 +150,30 @@ class GhCli:
     def merge_pr(self, n, sha, method="squash"):
         # `sha` makes GitHub refuse the merge unless the PR head is exactly the reviewed commit.
         return self._api(self._r(f"pulls/{n}/merge"), "PUT", {"sha": sha, "merge_method": method})
+
+    def _failed_runs(self, sha):
+        runs = (self._api(self._r(f"actions/runs?head_sha={sha}&per_page=50")) or {}).get("workflow_runs", [])
+        return [r for r in runs if r.get("conclusion") in ("failure", "timed_out", "cancelled", "startup_failure")]
+
+    def rerun_failed(self, sha):
+        """Re-run the failed jobs of every workflow run on `sha`. True if any re-run started."""
+        started = False
+        for run in self._failed_runs(sha):
+            self._api(self._r(f"actions/runs/{run['id']}/rerun-failed-jobs"), "POST", {})
+            started = True
+        return started
+
+    def failed_log(self, sha):
+        """The tail of the failed jobs' logs on `sha`, for the implementer to read."""
+        parts = []
+        for run in self._failed_runs(sha)[:3]:
+            proc = self._run(["gh", "run", "view", str(run["id"]), "--log-failed", "-R", self.repo],
+                             capture_output=True, text=True)
+            parts.append(f"## {run.get('name', 'workflow')} (run {run['id']})\n{(proc.stdout or proc.stderr)[-6000:]}")
+        return "\n\n".join(parts)
+
+    def create_issue(self, title, body, labels):
+        return self._api(self._r("issues"), "POST", {"title": title, "body": body, "labels": labels})
 
 
 class RecordingGitHub:
@@ -195,6 +240,10 @@ class FakeGitHub:
         self.prs: dict[int, dict] = {}
         self.checks: dict[str, str] = {}
         self.default_check: str | None = "success"
+        self.check_script: list[str] = []      # conclusions handed out in order, one per head looked at
+        self._check_seen: dict[str, dict] = {}  # sha -> the latest check run handed out
+        self._run_ids = iter(range(1, 10**9))
+        self.reruns: list[str] = []
         self.calls: list[tuple] = []
         self.owner = owner
         self.on_merge = on_merge
@@ -239,7 +288,23 @@ class FakeGitHub:
         return (open_prs or matches or [None])[0]
 
     def required_check(self, sha, name):
-        return self.checks.get(sha, self.default_check)
+        run = self.required_check_run(sha, name)
+        return None if run is None else run["conclusion"]
+
+    def required_check_run(self, sha, name):
+        if sha in self.checks:
+            return {"id": 0, "status": "completed", "conclusion": self.checks[sha]}
+        if sha not in self._check_seen:
+            conclusion = self.check_script.pop(0) if self.check_script else self.default_check
+            self._check_seen[sha] = {"id": next(self._run_ids), "status": "completed", "conclusion": conclusion}
+        run = self._check_seen[sha]
+        return None if run["conclusion"] is None else dict(run)
+
+    def find_issue(self, label, marker):
+        for n, issue in sorted(self.issues.items()):
+            if marker in (issue.get("body") or "") and {"name": label} in issue.get("labels", []):
+                return n
+        return None
 
     # writes
     def create_comment(self, n, body):
@@ -302,3 +367,18 @@ class FakeGitHub:
         pr["head"]["sha"] = sha
         self.calls.append(("merge_pr", n, sha))
         return {"merged": True, "sha": merge_sha}
+
+    def rerun_failed(self, sha):
+        self.reruns.append(sha)
+        self.calls.append(("rerun_failed", sha))
+        self._check_seen.pop(sha, None)   # the re-run is a new check run, with its own id and verdict
+        return True
+
+    def failed_log(self, sha):
+        return f"FAILED tests/test_fake.py::test_platform - fake CI failure on {sha[:7]}"
+
+    def create_issue(self, title, body, labels):
+        n = max(list(self.issues) + [9000]) + 1
+        self.add_issue(n, title, body, labels=tuple(labels))
+        self.calls.append(("create_issue", n, title))
+        return self._issue(n)

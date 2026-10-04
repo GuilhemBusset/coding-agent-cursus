@@ -1,9 +1,10 @@
 # Implement loop engine
 
 The engine behind `/implement` (Claude Code), `$implement` (Codex) and `scripts/implement.sh`.
-Give it an epic or a single issue; it works through every open sub-issue in dependency order and
-stops only when each acceptance criterion has evidence. Design and rationale:
-[ADR 0008](../../docs/adr/0008-implement-loop.md).
+Give it an epic or a single issue; it works through every open sub-issue in dependency order,
+without waiting for a person, until each issue is done, delivered with owner obligations, or
+parked with a diagnosis. Design and rationale: [ADR 0008](../../docs/adr/0008-implement-loop.md)
+and [ADR 0011](../../docs/adr/0011-autonomous-implement-loop.md).
 
 It is plain Python (3.11+, standard library only) plus `git` and the authenticated GitHub CLI.
 Agents (Claude Code and Codex, run headless) only produce proposals, patches and findings through
@@ -12,15 +13,16 @@ the `Agents` interface; the engine owns the issue graph, git, GitHub, the checks
 ## Use
 
 Normally through the skill: `/implement 10` (Claude Code) or `$implement 10` (Codex). It runs
-the preflight, shows the plan, asks you to confirm that the run merges its own PRs, starts the
-engine in the background and reports progress. The same steps by hand:
+the preflight, shows the plan, asks you once to confirm that the run merges its own PRs, starts
+the engine in the background and reports when it ends. The same steps by hand:
 
 ```sh
-scripts/implement.sh doctor [--smoke]                 # toolchain, logins, ruleset, html tooling
+scripts/implement.sh doctor [--smoke]                 # toolchain, logins, ruleset; repairs the browser tooling
 scripts/implement.sh plan 10                           # order, waves, warnings (read-only)
 scripts/implement.sh run 10 --operator claude --yes    # run; re-running resumes
 scripts/implement.sh status 10                         # progress, cost so far
 scripts/implement.sh stop 10                           # stop at the next safe point
+scripts/implement.sh retry 10 [21 ...]                 # let parked issues try again on the next run
 ```
 
 `--operator` names the agent driving the run (it designs and implements); the other one writes
@@ -53,21 +55,27 @@ inside a container, a VM or a separate user account.
 
 ## How an issue moves
 
-`pending → design → designed → checks → implement → verify → review → land → merged → accepted → done`
+`pending → design → designed → checks → implement → verify → review → land → merged → delivered | done`, or `parked`
 
 | Phase | Who | What happens |
 | --- | --- | --- |
-| design | both vendors, then a judge | Two blind proposals (one for small issues), a criteria audit by the other vendor, one critique round if they diverge, then a judge maps every ledger item to a check. |
+| design | both vendors, then a judge | Two blind proposals (one for small issues), a criteria audit by the other vendor, one critique round if they diverge, then a judge maps every ledger item to a check. The judge decides every ambiguity itself and publishes each decision in the PR. |
 | designed | engine | Waits until its files don't overlap any issue being written, and no shared file is held. |
 | checks | other vendor | Writes executable acceptance checks. The engine commits them first and locks them by hash. |
-| implement | operator vendor | Edits its own worktree. Never commits; has an explicit "impossible" exit. |
+| implement | operator vendor | Edits its own worktree. Never commits. May report a locked check as defective (the other vendor tries to reproduce it; if it does, the check's author amends it) or the design as impossible (it is redone once). Edits to locked checks are reverted before the engine commits. |
 | verify | engine | Runs the checks from the engine's own code: locked files unchanged, no new test configuration, every expected test ran, no skips, only declared files changed. |
 | review | both vendors | Cross-vendor, acceptance and (for HTML) visual reviewers in parallel. Findings are re-verified; a reproduced defect sends the issue back, whatever its priority. |
-| land | engine | One at a time: push without force, PR with `Refs #N`, evidence comment, wait for the `required` check on the exact head, merge with that head SHA. |
-| merged → accepted/done | engine | Re-verifies on `main`, ticks the issue's checkboxes with evidence links, closes it unless a person must provide some evidence. |
+| land | engine | One at a time: push without force, PR with `Refs #N`, evidence comment, wait for the `required` check on the exact head, merge with that head SHA. A red check is re-run once, then its log goes back to the implementer. |
+| merged → delivered/done | engine | Re-verifies on `main`, re-runs the run's earlier issues' checks there, ticks the checkboxes with evidence links, and closes the issue. With items only a person can provide it stays open as delivered; once the owner ticks them, the next run closes it. |
 
-Caps: 2 design rounds, 3 implement-verify attempts, 2 fix rounds, and the same blocker 3 times.
-Hitting one ends that issue in `needs_human`; independent work carries on.
+Recovery, in order, each bounded: 3 implement-verify attempts, 2 review fix rounds, 2 check
+amendments, 2 CI fix rounds, then one redesign that keeps the work already written; after a
+merge, one fix-forward round. When they run out the issue is **parked** with a diagnosis on the
+issue, issues that depend on it are parked with it, and independent work carries on. What
+resumes a parked issue on a later run depends on why it parked: a fixed environment, the end of
+an outage, a new engine version for an engine fault (filed once as a `loop:engine-bug` issue),
+an edit to the issue, or `retry`. Limits survive restarts; only an edit to the issue (new
+evidence) grants a fresh set.
 
 ## Where things live
 
@@ -75,6 +83,8 @@ Hitting one ends that issue in `needs_human`; independent work carries on.
 - Run state: `<git common dir>/implementation-loop/issue-<root>/` (`state.json`, `events.jsonl`,
   per-issue evidence). Re-running resumes; a `STOP` file there stops the run.
 - Repo-wide claims (merge queue): `<git common dir>/implementation-loop/claims/`.
+- Engine faults waiting to be filed, deduplicated by fingerprint: `<git common dir>/implementation-loop/faults.json`.
+- The browser's user-space system libraries, if the doctor had to fetch them: `<git common dir>/implementation-loop/browser-libs/`.
 
 ## Tests
 

@@ -16,14 +16,23 @@ class Phase(str, Enum):
     REVIEW = "review"            # reviewers in parallel, findings re-verified
     LAND = "land"                # push, PR, required check on the exact head, merge
     MERGED = "merged"            # merged; post-merge verification pending
-    ACCEPTED = "accepted"        # automated ledger passes on main; human items may remain
+    DELIVERED = "delivered"      # every agent-provable item passes on main; owner obligations remain
     DONE = "done"                # every ledger item has evidence; issue closed
-    NEEDS_HUMAN = "needs_human"  # a cap, an impossible task, or a dispute; the run goes on around it
+    PARKED = "parked"            # not delivered: a recovery path ran out, or a prerequisite is parked
 
 
-TERMINAL = frozenset({Phase.DONE, Phase.NEEDS_HUMAN})
-SATISFIES_DEPENDENTS = frozenset({Phase.ACCEPTED, Phase.DONE})
+# State written by earlier versions of the engine (ADR 0008) is read with the new names.
+LEGACY_PHASES = {"accepted": "delivered", "needs_human": "parked"}
+TERMINAL = frozenset({Phase.DONE, Phase.PARKED})
+SATISFIES_DEPENDENTS = frozenset({Phase.DELIVERED, Phase.DONE})
 WRITING_PHASES = frozenset({Phase.CHECKS, Phase.IMPLEMENT, Phase.VERIFY, Phase.REVIEW, Phase.LAND})
+
+# Why an issue is parked decides what lets it resume on a later run (ADR 0011).
+PARK_BLOCKED = "blocked"            # a prerequisite is parked: resumes when it no longer is
+PARK_ENVIRONMENT = "environment"    # the host cannot run its checks: resumes when the environment changes
+PARK_TRANSIENT = "transient"        # a reviewer or CI outage: resumes on the next run
+PARK_ENGINE_ERROR = "engine_error"  # an engine bug, filed as an issue: resumes on a new engine version
+PARK_EXHAUSTED = "exhausted"        # every recovery step was tried: resumes on an issue edit or `retry`
 
 
 @dataclass
@@ -157,6 +166,24 @@ class IssueState:
     human_tasks: list[str] = field(default_factory=list)
     reason: str | None = None
     rereview: bool = False
+    # Recovery bookkeeping. These survive restarts; an issue edit by the owner resets the
+    # per-round ones (new evidence), the engine's own redesigns never do (ADR 0011).
+    round: int = 1                  # work rounds: a new one after a post-merge edit or a fix-forward
+    redesigns: int = 0
+    check_amendments: int = 0
+    ci_fixes: int = 0
+    ci_rerun_heads: list[str] = field(default_factory=list)
+    fix_forwards: int = 0
+    superseded: list[str] = field(default_factory=list)   # unmerged check files a new design dropped
+    amend: list[str] = field(default_factory=list)        # a reproduced check defect to fix
+    amend_file: str | None = None                         # the only check an amendment may rewrite
+    merge_refusals: int = 0
+    reverted: list[str] = field(default_factory=list)     # locked checks the implementer edited, reverted
+    park_kind: str | None = None
+    resume_phase: str | None = None
+    parked_env: str | None = None
+    parked_version: str | None = None
+    retry: bool = False
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -166,6 +193,9 @@ class IssueState:
     @classmethod
     def from_dict(cls, d: dict) -> "IssueState":
         d = dict(d)
-        d["phase"] = Phase(d.get("phase", "pending"))
+        phase = d.get("phase", "pending")
+        if phase in LEGACY_PHASES:
+            d.setdefault("park_kind", PARK_EXHAUSTED if phase == "needs_human" else None)
+        d["phase"] = Phase(LEGACY_PHASES.get(phase, phase))
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in d.items() if k in known})

@@ -1,8 +1,8 @@
 """Which issues may move now.
 
-An issue may start once every prerequisite in the run is accepted (merged and re-verified on
-`main`). Writing phases run in parallel only for issues whose declared files do not overlap,
-and at most one in-flight issue may hold any shared file.
+An issue may start once every prerequisite in the run is delivered or done (merged and
+re-verified on `main`). Writing phases run in parallel only for issues whose declared files do
+not overlap, and at most one in-flight issue may hold any shared file.
 """
 
 from __future__ import annotations
