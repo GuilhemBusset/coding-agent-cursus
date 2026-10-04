@@ -1,0 +1,10 @@
+# Codex-specific skill metadata (ignored by other Agent Skills consumers).
+# Turning in homework has side effects (a commit and a push), so turn-in must be
+# user-triggered only: disable implicit matching while preserving explicit
+# `$turn-in <NN>` invocation. This is the Codex analog of the shared SKILL.md's
+# `disable-model-invocation: true` (a Claude Code extension field Codex ignores).
+#
+# NOTE: `allow_implicit_invocation` is only honored nested under `policy:` —
+# at top level it is silently ignored.
+policy:
+  allow_implicit_invocation: false

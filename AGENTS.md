@@ -24,6 +24,19 @@ or environment limitations.
   branch up to date with `main`, push the feature branch, open/update the PR): run `/ship` in Claude Code or `$ship` in
   Codex; from any other agent, do the equivalent or open the PR by hand.
 
+## Turning in homework
+
+Homework branches are the one branch family that never goes through a PR to `main`. Students
+turn in a session's homework with the shared `turn-in` skill: `/turn-in <NN>` in Claude Code,
+`$turn-in <NN>` in Codex, or `scripts/turn-in.sh <NN>` from a terminal (for example `01`). It
+commits only `sessions/<NN>-*/exercises/` to `homework/s<NN>/<handle>` (`<handle>` is the
+student's GitHub login), runs the session's `exercises/turn-in-check.sh` first if there is one
+(a failure stops the run), and pushes. Every run adds a commit, so the history keeps every
+submission; the `homework-branches` ruleset blocks force-pushes and deletion on these branches.
+Students without push access get their fork used instead, plus a compare URL against the course
+repo. The repository is public, so homework branches are public too. Never merge a homework
+branch, and never rewrite one. See ADR 0009.
+
 ## Implementing issues with the loop
 
 To implement an epic or an issue end to end, use the shared `implement` skill (`/implement <n>` in
