@@ -42,7 +42,8 @@ shopt -s nullglob
 candidates=(sessions/"$nn"-*/exercises)
 shopt -u nullglob
 dirs=()
-for d in "${candidates[@]}"; do
+# ${arr[@]+...}: an empty array is "unbound" under set -u in Bash < 4.4 (macOS ships 3.2).
+for d in ${candidates[@]+"${candidates[@]}"}; do
   if [ -d "$d" ] && [ ! -L "$d" ]; then dirs+=("$d"); fi
 done
 case ${#dirs[@]} in
@@ -75,7 +76,9 @@ if ! [[ $trimmed =~ $url_re ]]; then
 fi
 url_prefix=${BASH_REMATCH[1]}
 origin_repo=${BASH_REMATCH[3]}
-# Other repos are addressed in origin's own scheme (HTTPS or SSH), so the same
+# Every fetch and push names an explicit URL, never a remote, so remote config such as
+# remote.origin.pushurl cannot send a submission somewhere other than the repo checked
+# here. Other repos are addressed in origin's own scheme (HTTPS or SSH), so the same
 # credentials work for them.
 repo_url() { printf '%s%s.git' "$url_prefix" "$1"; }
 repo_re='^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$'
@@ -95,13 +98,13 @@ if [ -n "$parent" ]; then
   # A clone of the student's own fork: the course is the fork's parent.
   course=$parent
   push_repo=$origin_name
-  push_target=origin
+  push_target=$origin_url
 else
   course=$origin_name
   case $permission in
     ADMIN|MAINTAIN|WRITE)
       push_repo=$origin_name
-      push_target=origin
+      push_target=$origin_url
       ;;
     "")
       die "Could not tell whether you can push to $course."
@@ -112,7 +115,8 @@ else
       # through a named remote that could point anywhere.
       note "You cannot push to $course; using your fork instead."
       gh repo fork "$course" --clone=false >/dev/null || die "Could not create or find your fork of $course."
-      fork_jq=".[] | select((.owner.login | ascii_downcase) == \"${handle,,}\") | .full_name"
+      handle_lc=$(printf '%s' "$handle" | tr '[:upper:]' '[:lower:]')
+      fork_jq=".[] | select((.owner.login | ascii_downcase) == \"$handle_lc\") | .full_name"
       attempt=1
       delay=2
       while :; do
@@ -123,9 +127,12 @@ else
         attempt=$((attempt + 1))
         delay=$((delay * 2))
       done
-      mapfile -t fork_list < <(printf '%s\n' "$forks" | sed '/^$/d')
+      fork_list=()
+      while IFS= read -r line; do
+        if [ -n "$line" ]; then fork_list+=("$line"); fi
+      done <<<"$forks"
       if [ "${#fork_list[@]}" -ne 1 ]; then
-        die "Expected exactly one fork of $course owned by $handle, found ${#fork_list[@]} (${fork_list[*]-none})."
+        die "Expected exactly one fork of $course owned by $handle, found ${#fork_list[@]} (${fork_list[*]:-none})."
       fi
       push_repo=${fork_list[0]}
       push_target=$(repo_url "$push_repo")
@@ -135,7 +142,7 @@ fi
 if ! [[ $course =~ $repo_re ]] || ! [[ $push_repo =~ $repo_re ]]; then
   die "Unexpected repository names ($course, $push_repo)."
 fi
-if [ "$course" = "$origin_name" ]; then course_target=origin; else course_target=$(repo_url "$course"); fi
+if [ "$course" = "$origin_name" ]; then course_target=$origin_url; else course_target=$(repo_url "$course"); fi
 
 if ! default=$(gh repo view "$course" --json defaultBranchRef --jq .defaultBranchRef.name) \
     || [ -z "$default" ] || ! git check-ref-format --branch "$default" >/dev/null; then
@@ -160,8 +167,10 @@ if [ -n "$remote_tip" ]; then
 fi
 
 # Paths a commit changes relative to the course default that lie outside exercises/.
+# --no-renames lists both sides of a move, so moving a file into exercises/ still
+# reports its deletion outside.
 outside_paths() {
-  git diff -z --name-only "$course_tip...$1" | while IFS= read -r -d '' path; do
+  git diff -z --no-renames --name-only "$course_tip...$1" | while IFS= read -r -d '' path; do
     case $path in
       "$exercises"/*) ;;
       *) printf '%s\n' "$path" ;;
