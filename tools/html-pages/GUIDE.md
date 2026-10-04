@@ -112,6 +112,80 @@ Without JavaScript, the content stays visible. Print reveals all slides and disc
 Other labs may use their own behavior; do not retain the starter budget demo's markers on
 unrelated controls.
 
+## Interaction components
+
+Every generated page inlines four shared components: their styles sit between
+`/* components:begin */` and `/* components:end */` in `assets/theme.css`, and their behavior is
+`enhancePredict`, `enhanceProbChart`, `enhanceFormula` and `enhanceStepper` in `assets/page.js`.
+Each root is enhanced independently, so a page may hold several of each. Write the markup below;
+the script only enhances it, and the authored markup must read correctly without JavaScript.
+They use theme tokens only, add no motion, and keep every enabled control at least 44×44 px.
+The sample [`sessions/01-fundamentals/cursus/demos/components.html`](../../sessions/01-fundamentals/cursus/demos/components.html)
+uses all four; copy from it. The prefixes are `data-predict-*`, `data-prob-*`, `data-formula-*`
+and `data-step-*`. The starter budget markers (`data-lab`, `data-budget*`, `data-reset`) are
+reserved for the budget lab, which `check-page.mjs` tests; never put them on these components.
+
+**Predict and reveal** (also a multi-question exit ticket). The root `[data-predict]` holds one or
+more `fieldset[data-predict-question]`. Each question has a `legend`, at least two labelled native
+radios sharing a `name` with exactly one marked `data-correct`, an empty `[data-predict-result]`
+and a `[data-predict-answer]` block with the answer and its explanation. The root has one
+`button[data-predict-lock]`, `button[data-predict-reveal]` and `button[data-predict-reset]`, all
+`disabled` in the markup, and an empty `[data-predict-status]` with `role="status"`.
+
+- Without JavaScript the answers stay visible and the buttons stay disabled.
+- Once enhanced, the answers are `hidden` and Reset is enabled. Lock in enables when every
+  question has a choice; it disables the radios and enables Reveal. Reveal is never enabled
+  before Lock in, so a class can all lock in before anyone reveals. Reveal shows every answer
+  and writes `Correct.` or `Not quite. The answer is <label>.` into each result. Reset clears
+  the choices and returns to the initial state.
+- Focus moves on when its button becomes disabled: Lock in → Reveal → Reset; Reset focuses the
+  first radio. Print shows the answers and hides the buttons and status.
+
+**Probability bars.** Put `ol[data-prob-chart]` in a `figure` with a `figcaption`. Each row is
+`li[data-prob-row]` with `data-value` between 0 and 1 and an optional `data-highlight`, holding a
+`[data-prob-label]` and a `[data-prob-value]` whose authored text is the percentage with one
+decimal (`58.5%`), so no-JS readers get the numbers.
+
+- The script adds an `svg.prob-bar` (`aria-hidden`) per row: an `f-faint` track and a bar of
+  width value × 100%, `f-accent` when highlighted and `f-muted` otherwise. It rewrites the value
+  text from `data-value`.
+- A highlighted row never relies on color alone: its label is bold, and it holds a
+  `.visually-hidden` `[data-prob-flag]` span reading “(highlighted)” for screen readers. Author
+  that span on the highlighted row so the no-JS page has it too; the script adds and removes it.
+- Changing `data-value` or `data-highlight` re-renders that row. An invalid value (empty, not
+  finite or outside 0–1) removes the row's bar and shows `n/a`; a valid value brings it back.
+
+**Slider with a formula readout.** The root `[data-formula="<name>"]` holds a labelled
+`input[type=range][data-formula-input]`, an `output[data-formula-output]` and a
+`button[data-formula-reset]`. The range and button are `disabled` in the markup, and the output
+is authored with the readout for the default value. Register the formula in a page-specific
+script after the shared script block, which runs before `DOMContentLoaded`:
+
+```js
+window.CursusFormulas = window.CursusFormulas || {};
+window.CursusFormulas.temperature = function (value, root) { return 'T = ' + value.toFixed(1); };
+```
+
+On input, the returned text becomes the output and the range's `aria-valuetext`; show the formula
+with the current value substituted. Reset restores the range's default value. A formula may also
+update other components, as the sample's softmax sets the chart's `data-value`s. If no formula
+is registered under the name, the controls stay disabled and the static text remains.
+
+**Step-through controller** (steppers and replays). The root `[data-stepper]` holds a focusable
+stage `[data-step-stage]` with `tabindex="0"`, `role="group"` and an `aria-label`, containing
+the `[data-step]` items, and a `[data-step-controls]` block marked `hidden` with
+`button[data-step-prev]`, `button[data-step-next]`, `button[data-step-reset]` and a
+`[data-step-status]` with `aria-live="polite"` reading `Step 1 of n`.
+
+- Once enhanced, the controls appear and only the current step shows; the others are `hidden`.
+  Previous is disabled on the first step and Next on the last; if the focused button becomes
+  disabled, focus moves to the stage. The root's `data-step-current` holds the 0-based index,
+  and each move dispatches a bubbling `cursus:step` event with `detail.index`.
+- Keyboard: ArrowLeft, ArrowRight, Home and End move the step only when the stage itself has
+  focus and no modifier key (Shift, Ctrl, Alt, Meta) is held. Keys on buttons, ranges, selects,
+  text fields, summaries or links inside a step, and on the controls, keep their native behavior.
+- Without JavaScript and in print, every step shows; print also hides the controls.
+
 ## Browser validation
 
 Follow [`setup/README.md`](../../setup/README.md) for installation, the complete dependency
@@ -148,7 +222,8 @@ Before calling the page finished:
   verified; do not claim a visual or interaction pass from source inspection.
 
 The generic checker is an acceptance aid, not an automatic guarantee of visual consistency.
-When updating these tools, run `npm --prefix setup test` to exercise all three starters.
+When updating these tools, run `npm --prefix setup test` to exercise all three starters and the
+shared interaction components.
 CI also checks opted-in teaching files under `docs/` and `sessions/` via
 `npm --prefix setup run check-repo`; a `data-design-system="cursus"` marker opts a page in.
 Unrelated application interfaces and test fixtures are outside this check. These CI jobs do
