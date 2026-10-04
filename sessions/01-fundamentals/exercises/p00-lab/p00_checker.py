@@ -43,15 +43,21 @@ def _number(value):
 
 
 def objective(data, solution):
-    """Recompute the cost from the decisions; the reported objective is ignored."""
-    opening = solution.get("open", {})
-    flow = solution.get("flow", {})
+    """Recompute the cost from the decisions; the reported objective is ignored.
+
+    Malformed parts (a missing or non-mapping row) count as zero here; feasibility_problems
+    reports them.
+    """
+    opening = solution.get("open")
+    flow = solution.get("flow")
+    opening = opening if isinstance(opening, dict) else {}
+    flow = flow if isinstance(flow, dict) else {}
     total = sum(data["fixed_cost"][p] * opening.get(p, 0.0) for p in data["plants"])
-    total += sum(
-        data["unit_cost"][p][c] * flow.get(p, {}).get(c, 0.0)
-        for p in data["plants"]
-        for c in data["customers"]
-    )
+    for p in data["plants"]:
+        row = flow.get(p)
+        if not isinstance(row, dict):
+            continue
+        total += sum(data["unit_cost"][p][c] * row.get(c, 0.0) for c in data["customers"])
     return total
 
 
@@ -88,9 +94,9 @@ def feasibility_problems(data, solution, tol=1e-6):
 
     shipped = {}
     for p in plants:
-        row = flow.get(p)
-        if row is None:
+        if p not in flow:
             continue
+        row = flow[p]
         if not isinstance(row, dict):
             problems.append(f"feasibility contract: flow row for {p} is not a mapping")
             continue
