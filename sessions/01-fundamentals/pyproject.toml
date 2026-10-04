@@ -1,0 +1,17 @@
+[project]
+name = "cursus-session-01-fundamentals"
+version = "0.1.0"
+description = "Session 1 (Fundamentals): labs, demos and exercises."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "highspy>=1.15.1",
+    "numpy>=2.5.3",
+    "pytest>=9.1.1",
+]
+
+[dependency-groups]
+fixtures = [
+    "torch>=2.14.1",
+    "transformers>=5.18.0",
+]

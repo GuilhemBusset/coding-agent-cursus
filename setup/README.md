@@ -51,6 +51,22 @@ npm --prefix setup test
 Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI is configured
 to run this same setup and test sequence on Linux, macOS, and Windows.
 
+## Session 1: set up the session
+
+Prerequisites: [mise](https://mise.jdx.dev/getting-started.html) and Bash (Git Bash on Windows).
+
+```sh
+bash setup/session-01-fundamentals.sh
+```
+
+Run it from the repository root as above; from any other directory, pass the script's path
+(for example `bash ../../setup/session-01-fundamentals.sh` from inside the session). It resolves
+the session from its own location, then, inside `sessions/01-fundamentals/`, runs
+`mise trust mise.toml`, `mise install` (the Python and uv pinned in that session's `mise.toml`)
+and `mise exec -- uv sync --locked` (the runtime dependencies from its `uv.lock`). It does not
+install the build-only `fixtures` group. Repeating it is safe. The session's own
+[README](../sessions/01-fundamentals/README.md) covers running and validating it.
+
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
@@ -112,6 +128,7 @@ the matching ruleset. It requires admin access and is separate from local author
 | Playwright, axe and transitive npm dependencies | Exact versions and integrity hashes in [`package-lock.json`](package-lock.json); installed in `setup/node_modules/` |
 | Chromium, headless shell and FFmpeg | Downloaded by the locked Playwright CLI into its per-user browser cache; `doctor.mjs` prints the executable location |
 | Linux browser libraries | OS packages installed only with `--with-system-deps`; versions come from the supported distribution's repositories |
+| Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
 | GitHub ruleset | [`pr-only-main.json`](pr-only-main.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
