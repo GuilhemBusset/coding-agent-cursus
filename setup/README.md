@@ -70,8 +70,25 @@ install the build-only `fixtures` group. Repeating it is safe. The session's own
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
-`/html-page`, `/ship` and `/implement` through `.claude/skills/`, and `$html-page`, `$ship` and
-`$implement` through `.agents/skills/`. No separate skill download or MCP registration is needed.
+`/html-page`, `/ship`, `/implement` and `/turn-in` through `.claude/skills/`, and `$html-page`,
+`$ship`, `$implement` and `$turn-in` through `.agents/skills/`. No separate skill download or MCP
+registration is needed.
+
+## Students: turning in homework
+
+Prerequisites: Git, Bash (Git Bash on Windows), and the [GitHub CLI](https://cli.github.com/)
+(`gh`) logged in with `gh auth login`. `/turn-in <NN>`, `$turn-in <NN>` and
+`scripts/turn-in.sh <NN>` push the session's `exercises/` folder to `homework/s<NN>/<handle>`
+(see the root [README](../README.md#turning-in-homework) and
+[ADR 0009](../docs/adr/0009-homework-on-per-student-branches.md)). Nothing else is installed.
+
+CI runs the turn-in tests (`tests/turn_in/`, offline: throwaway repos and a fake `gh`) with uv
+0.11.28, the version Session 1 pins, and the pytest version the engine tests pin. To run them
+locally, with uv and `jq` installed:
+
+```sh
+uv run --no-project --with pytest==8.3.5 pytest -q tests/turn_in
+```
 
 ## Running the implement loop
 
@@ -100,7 +117,7 @@ Skill wrappers and git hooks stay in their native discovery locations; this dire
 their setup. Page authoring assets and checks live under `tools/html-pages/` and consume the
 locked browser environment through `tools/html-pages/browser.mjs`.
 
-## Repo administrators and fork owners: apply the ruleset
+## Repo administrators and fork owners: apply the rulesets
 
 Prerequisites: Bash, GitHub CLI (`gh`) authenticated as a repository administrator, and `jq`.
 Install those tools using your platform's package manager, and authenticate with `gh auth login`.
@@ -110,12 +127,21 @@ Then run once per repository or fork:
 bash setup/apply-ruleset.sh
 ```
 
-This creates or updates the GitHub ruleset from [`pr-only-main.json`](pr-only-main.json):
-PR-only changes to the default branch, a passing `required` CI check before merge (see
-[ADR 0007](../docs/adr/0007-required-ci-gate-and-merge-forward-shipping.md)), no force pushes,
-no deletion, and no bypass. Rulesets
-are server state, so cloning or forking alone does not apply them. Re-running the script updates
-the matching ruleset. It requires admin access and is separate from local author setup.
+This creates or updates two GitHub rulesets, each matched by name:
+
+- [`pr-only-main.json`](pr-only-main.json): PR-only changes to the default branch, a passing
+  `required` CI check before merge (see
+  [ADR 0007](../docs/adr/0007-required-ci-gate-and-merge-forward-shipping.md)), no force pushes,
+  no deletion, and no bypass.
+- [`homework-branches.json`](homework-branches.json): no force pushes and no deletion on every
+  homework branch (`refs/heads/homework/**/*`, which reaches nested names such as
+  `homework/s01/<handle>`), and no bypass (see
+  [ADR 0009](../docs/adr/0009-homework-on-per-student-branches.md)).
+
+Rulesets are server state, so cloning or forking alone does not apply them. Re-running the script
+updates the matching rulesets; it fails if either one cannot be applied. It requires admin access
+and is separate from local author setup. After the turn-in skill first lands, the owner's live
+checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 
 ## Installation inventory
 
@@ -129,7 +155,9 @@ the matching ruleset. It requires admin access and is separate from local author
 | Chromium, headless shell and FFmpeg | Downloaded by the locked Playwright CLI into its per-user browser cache; `doctor.mjs` prints the executable location |
 | Linux browser libraries | OS packages installed only with `--with-system-deps`; versions come from the supported distribution's repositories |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
-| GitHub ruleset | [`pr-only-main.json`](pr-only-main.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
+| Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
+| uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
+| GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
 When adding another repository-wide tool, put its installer, manifests/lockfiles and diagnostic

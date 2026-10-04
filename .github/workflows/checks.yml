@@ -28,6 +28,9 @@ jobs:
       - name: Implement skill copies are byte-identical
         run: diff -u .agents/skills/implement/SKILL.md .claude/skills/implement/SKILL.md
 
+      - name: Turn-in skill copies are byte-identical
+        run: diff -u .agents/skills/turn-in/SKILL.md .claude/skills/turn-in/SKILL.md
+
       # Acceptance checks the implement loop committed stay untouched on their branch.
       - name: Loop-locked acceptance checks unchanged
         if: github.event_name == 'pull_request'
@@ -36,15 +39,28 @@ jobs:
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: bash scripts/check-loop-guard.sh "$BASE" "$HEAD"
 
+      # `bash -n a b c` parses only `a` (the rest become its arguments), so parse each file.
       - name: Shell syntax
-        run: bash -n scripts/*.sh setup/*.sh .githooks/pre-commit .githooks/pre-push
+        run: |
+          for f in scripts/*.sh setup/*.sh .githooks/pre-commit .githooks/pre-push; do
+            bash -n "$f" || exit 1
+          done
 
       - name: JSON validity
-        run: jq . setup/pr-only-main.json > /dev/null
+        run: jq . setup/pr-only-main.json setup/homework-branches.json > /dev/null
 
       # Repeated publication must never need --force: see scripts/test-ship.sh.
       - name: Ship script behavior
         run: bash scripts/test-ship.sh
+
+      # The turn-in script, skill, rulesets and docs (ADR 0009). Offline: temp repos,
+      # local bare remotes and a fake gh. uv is pinned to the version Session 1 uses.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.28'
+      - name: Turn-in tests
+        run: uv run --no-project --with pytest==8.3.5 pytest -q tests/turn_in
 
       # The implement loop engine: standard library only; pytest is needed only for the tests
       # that check how the verifier treats pytest results.
