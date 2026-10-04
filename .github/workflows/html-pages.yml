@@ -12,11 +12,9 @@ permissions:
 
 jobs:
   browser-checks:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    # Teaching pages and their tooling only need Linux; exercises are the cross-platform
+    # part of the repo (docs/adr/0010-platform-support.md).
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -26,16 +24,12 @@ jobs:
           cache: npm
           cache-dependency-path: setup/package-lock.json
       - name: Reproduce the documented Linux setup
-        if: runner.os == 'Linux'
         run: node setup/html-pages.mjs --with-system-deps
-      - name: Reproduce the documented macOS and Windows setup
-        if: runner.os != 'Linux'
-        run: node setup/html-pages.mjs
       - run: npm --prefix setup test
       - run: npm --prefix setup run check-repo
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: html-page-review-${{ matrix.os }}
+          name: html-page-review
           path: artifacts/html-pages/
           retention-days: 7
