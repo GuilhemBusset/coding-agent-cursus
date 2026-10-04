@@ -7,6 +7,7 @@ the run directory asks the engine to stop at the next safe point.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import socket
@@ -89,6 +90,12 @@ class RunStore:
             self.state["issues"][str(st.number)] = st.to_dict()
             self.save()
 
+    def put_section(self, section: str, key: str, value) -> None:
+        """Run-level records kept across invocations, such as the checks later merges re-run."""
+        with self._lock:
+            self.state.setdefault(section, {})[key] = value
+            self.save()
+
     def known(self) -> list[int]:
         return sorted(int(k) for k in self.state["issues"])
 
@@ -100,6 +107,18 @@ class RunStore:
     # control -----------------------------------------------------------------
     def stop_requested(self) -> bool:
         return (self.dir / "STOP").exists()
+
+    def clear_stop(self, older_than: float) -> bool:
+        """Remove a stop request made before `older_than` (left by an earlier run). True if there
+        was one; a newer request is kept."""
+        path = self.dir / "STOP"
+        try:
+            if path.stat().st_mtime >= older_than:
+                return False
+            path.unlink()
+            return True
+        except FileNotFoundError:
+            return False
 
     def lock(self) -> "RunLock":
         return RunLock(self.dir / "lock")
@@ -183,3 +202,62 @@ class RepoClaims:
                 path.unlink()
         except (OSError, ValueError):
             pass
+
+
+class FaultOutbox:
+    """Engine faults waiting to be filed on GitHub, deduplicated repo-wide by fingerprint.
+
+    A local journal (`<git common dir>/implementation-loop/faults.json`) written before any
+    filing is attempted: one issue per distinct fault, a comment when it is seen again, and
+    nothing lost when GitHub is unreachable. Filing never happens inside a failing step."""
+
+    def __init__(self, repo_root: Path):
+        self.path = runs_root(repo_root) / "faults.json"
+        self._lock = threading.Lock()
+
+    class _Transaction:
+        """One read-modify-write, serialized across threads and across runs (an flock)."""
+
+        def __init__(self, outbox: "FaultOutbox"):
+            self.outbox = outbox
+
+        def __enter__(self) -> dict:
+            self.outbox._lock.acquire()
+            self.fd = os.open(self.outbox.path.with_suffix(".lock"), os.O_CREAT | os.O_RDWR)
+            fcntl.flock(self.fd, fcntl.LOCK_EX)
+            self.data = self.outbox._load()
+            return self.data
+
+        def __exit__(self, exc_type, *rest) -> None:
+            try:
+                if exc_type is None:
+                    tmp = self.outbox.path.with_suffix(f".json.{os.getpid()}.tmp")
+                    tmp.write_text(json.dumps(self.data, indent=1, sort_keys=True))
+                    os.replace(tmp, self.outbox.path)
+            finally:
+                fcntl.flock(self.fd, fcntl.LOCK_UN)
+                os.close(self.fd)
+                self.outbox._lock.release()
+
+    def _load(self) -> dict:
+        try:
+            return json.loads(self.path.read_text())
+        except (OSError, ValueError):
+            return {}
+
+    def record(self, fingerprint: str, title: str, body: str, issue: int, run: int) -> None:
+        with self._Transaction(self) as data:
+            entry = data.setdefault(fingerprint, {"title": title, "body": body, "count": 0, "reported": 0,
+                                                  "issues": [], "runs": [], "filed": None})
+            entry["count"] += 1
+            entry["issues"].append(issue)
+            entry["runs"].append(run)
+
+    def pending(self) -> list[tuple[str, dict]]:
+        """Faults never filed, or seen again since they were last reported."""
+        return [(fp, e) for fp, e in sorted(self._load().items()) if e["count"] > e["reported"]]
+
+    def mark_reported(self, fingerprint: str, issue_number: int) -> None:
+        with self._Transaction(self) as data:
+            entry = data[fingerprint]
+            entry["filed"], entry["reported"] = issue_number, entry["count"]

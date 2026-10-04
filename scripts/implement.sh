@@ -6,9 +6,11 @@
 #   scripts/implement.sh run 10 --operator claude --yes  # run it (merges its own PRs); resumes
 #   scripts/implement.sh status 10                       # progress and cost of the run for #10
 #   scripts/implement.sh stop 10                         # stop that run at its next safe point
+#   scripts/implement.sh retry 10 [21 ...]               # let parked issues try again next run
 #
 # The engine lives in tools/implementation-loop/ and needs Python 3.11+, git, an authenticated
-# GitHub CLI, and both the claude and codex CLIs. See docs/adr/0008-implement-loop.md.
+# GitHub CLI, and both the claude and codex CLIs. See docs/adr/0008-implement-loop.md and
+# docs/adr/0011-autonomous-implement-loop.md.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

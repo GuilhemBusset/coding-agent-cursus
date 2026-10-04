@@ -81,10 +81,12 @@ ROLE_FOCUS = {
 CREDENTIAL_VARS = ("GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "SSH_AUTH_SOCK")
 
 
-def agent_env(no_gh_dir: Path) -> dict[str, str]:
+def agent_env(no_gh_dir: Path, extra: dict[str, str] | None = None) -> dict[str, str]:
     """The environment agents run in: no GitHub credentials, so they cannot push, call the
-    GitHub API, or touch issues and pull requests, whatever their own permission settings allow."""
-    env = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS}
+    GitHub API, or touch issues and pull requests, whatever their own permission settings allow.
+    `extra` is what the engine's own checks get too (the browser's private libraries), so an
+    agent runs the checks exactly as the verifier will."""
+    env = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS} | dict(extra or {})
     no_gh_dir.mkdir(parents=True, exist_ok=True)
     env["GH_CONFIG_DIR"] = str(no_gh_dir)          # gh finds no stored login
     env["GIT_TERMINAL_PROMPT"] = "0"
@@ -117,7 +119,7 @@ def render(name: str, **values) -> str:
 class LiveAgents:
     def __init__(self, operator: str, run_dir: Path, workspace, roles: dict[str, RoleSettings] | None = None,
                  claude_bin: str = "claude", codex_bin: str = "codex", retries: int = 2,
-                 backoff_s: tuple[float, ...] = (30, 90), sleep=time.sleep):
+                 backoff_s: tuple[float, ...] = (30, 90), sleep=time.sleep, extra_env: dict[str, str] | None = None):
         if operator not in ("claude", "codex"):
             raise ValueError("operator must be 'claude' or 'codex'")
         self.operator = operator
@@ -127,6 +129,7 @@ class LiveAgents:
         self.bins = {"claude": claude_bin, "codex": codex_bin}
         self.retries, self.backoff, self.sleep = retries, backoff_s, sleep
         self.no_gh_dir = run_dir / "no-gh"
+        self.extra_env = dict(extra_env or {})
         self.calls_dir = run_dir / "calls"
         self.calls_dir.mkdir(parents=True, exist_ok=True)
         self.log_path = run_dir / "agents.jsonl"
@@ -151,7 +154,7 @@ class LiveAgents:
         if self._stopped:
             raise AgentStopped("run stopped")
         proc = subprocess.Popen(cmd, cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                text=True, start_new_session=True, env=agent_env(self.no_gh_dir))
+                                text=True, start_new_session=True, env=agent_env(self.no_gh_dir, self.extra_env))
         with self._lock:
             self._active.add(proc)
         try:
@@ -176,7 +179,7 @@ class LiveAgents:
         agent could even write) adds servers. Fails closed if they can't be listed."""
         try:
             proc = subprocess.run([self.bins["codex"], "mcp", "list", "--json"], cwd=cwd,
-                                  capture_output=True, text=True, timeout=60, env=agent_env(self.no_gh_dir))
+                                  capture_output=True, text=True, timeout=60, env=agent_env(self.no_gh_dir, self.extra_env))
             servers = json.loads(proc.stdout[proc.stdout.index("["):]) if proc.returncode == 0 else None
         except (OSError, ValueError, subprocess.TimeoutExpired):
             servers = None
@@ -311,8 +314,9 @@ class LiveAgents:
     def audit(self, vendor, req, proposals):
         return self._objections(vendor, "audit", req, proposals)
 
-    def critique(self, vendor, req, proposals):
-        return self._objections(vendor, "critique", req, proposals)
+    def critique(self, vendor, req, proposals, objections):
+        earlier = json.dumps([asdict(o) for o in objections], indent=1) if objections else ""
+        return self._objections(vendor, "critique", req, proposals, earlier)
 
     def judge(self, vendor, req, proposals, objections):
         prompt = render("judge", proposals=self._proposal_text(proposals),
@@ -320,10 +324,10 @@ class LiveAgents:
                         **self._issue_vars(req, "judge"))
         v = self.call(vendor, "judge", self._root(), prompt, req.issue.number)
         return Design(decisions={d["id"]: d["choice"] for d in v["decisions"]}, checks=[CheckSpec(**c) for c in v["checks"]],
-                      files=v["files"], check_files=v["check_files"], notes=v["notes"],
-                      criterion_disputes=v["criterion_disputes"])
+                      files=v["files"], check_files=v["check_files"], notes=v["notes"], decision_log=v["decisions"])
 
-    def write_checks(self, vendor, req, design, worktree):
+    def write_checks(self, vendor, req, design, worktree, feedback=None):
+        req = DesignRequest(issue=req.issue, spec=req.spec, context=req.context, lens=req.lens, feedback=feedback or [])
         prompt = render("write_checks", design=json.dumps(_design_json(design), indent=1),
                         check_files=", ".join(f"`{p}`" for p in design.check_files), **self._issue_vars(req, "check author"))
         self.call(vendor, "write_checks", worktree, prompt, req.issue.number)
@@ -335,7 +339,8 @@ class LiveAgents:
                         files=", ".join(f"`{p}`" for p in design.files), check_files=", ".join(f"`{p}`" for p in design.check_files),
                         commands=commands or "  (none)", **self._issue_vars(req, "implementer"))
         v = self.call(vendor, "implement", worktree, prompt, req.issue.number)
-        return ImplementResult(status=v["status"], note=v["note"])
+        return ImplementResult(status=v["status"], note=v["note"], defect_file=v["defect_file"],
+                               defect_reproduction=v["defect_reproduction"])
 
     def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):
         diff = subprocess.run(["git", "diff", f"{base_sha}..{head_sha}"], cwd=worktree, capture_output=True, text=True).stdout

@@ -1,4 +1,4 @@
-"""Command line: `implement doctor | plan | run | status | stop | record-fixture`."""
+"""Command line: `implement doctor | plan | run | status | stop | retry | record-fixture`."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import VERSION, report
+from . import VERSION, environment, report
 from .config import Config
 from .github import GhCli, RecordingGitHub
 from .graph import CycleError, build_plan
@@ -57,9 +57,10 @@ def cmd_status(args) -> int:
         return 0
     for n in issues:
         st = store.issue(n)
-        extra = f" · {st.reason}" if st.reason else ""
+        extra = f" · {st.park_kind}: {st.reason}" if st.reason else ""
+        owner = f" · owner: {len(st.human_tasks)} item(s)" if st.human_tasks else ""
         print(f"#{n:<5} {st.phase.value:<12} attempts {st.attempts} · fix rounds {st.fix_rounds}"
-              + (f" · PR #{st.pr}" if st.pr else "") + extra)
+              + (f" · PR #{st.pr}" if st.pr else "") + owner + extra)
     calls = store.dir / "agents.jsonl"
     if calls.exists():
         records = [json.loads(line) for line in calls.read_text().splitlines() if line.strip()]
@@ -76,6 +77,24 @@ def cmd_stop(args) -> int:
     store = RunStore.for_root(repo_root(), args.issue)
     (store.dir / "STOP").write_text("stop requested\n")
     print(f"Stop requested. The run for #{args.issue} finishes its current steps, saves, and exits.")
+    return 0
+
+
+def cmd_retry(args) -> int:
+    """Let parked issues try again on the next run, with a fresh set of recovery steps."""
+    from .model import Phase
+    store = RunStore.for_root(repo_root(), args.issue)
+    if (store.dir / "lock").exists():
+        sys.exit(f"implement: the run for #{args.issue} is active; retry after it finishes")
+    targets = args.items or [n for n in store.known() if store.issue(n).phase == Phase.PARKED]
+    for n in targets:
+        st = store.issue(n)
+        if st.phase != Phase.PARKED:
+            print(f"#{n} is {st.phase.value}, not parked; nothing to do")
+            continue
+        st.retry = True
+        store.put(st)
+        print(f"#{n} will be retried on the next run (was parked: {st.park_kind})")
     return 0
 
 
@@ -128,14 +147,36 @@ def doctor_checks(root: Path, slug: str | None) -> list[tuple[str, str, str]]:
             required |= c2 == 0 and '"context":"required"' in o2.replace(" ", "")
         add(required, "required check", "the ruleset requires `required`" if required else
             "the ruleset does not require `required`; run setup/apply-ruleset.sh", warn_only=True)
-    node_modules = (root / "setup" / "node_modules").is_dir()
-    add(node_modules, "html tooling", "setup/node_modules present" if node_modules else
-        "missing: HTML deliverables cannot be checked; run node setup/html-pages.mjs", warn_only=True)
+    # What the checks need on this host. A failure parks only the deliverables that depend on it
+    # (ADR 0011), so it warns instead of failing.
+    for p in environment.probe(root, environment_dir(root)):
+        add(p.ok, p.name, p.detail if p.ok else f"{p.detail} ({p.kind} checks will park until this is fixed)",
+            warn_only=True)
     return checks
+
+
+def environment_dir(root: Path) -> Path:
+    """Shared by every run and kept across `--fresh`: the unpacked browser libraries live here."""
+    return runs_dir(root) / "environment"
+
+
+def prepare_environment(root: Path, log=print) -> dict:
+    """Heal what the checked-in recipes can, then describe the environment for the engine: a
+    fingerprint (a parked issue resumes when it changes) and what check commands need."""
+    state = environment_dir(root)
+    for action in environment.heal(root, state):
+        log(f"environment: {action}")
+    probes = environment.probe(root, state)
+    for p in probes:
+        if not p.ok:
+            log(f"environment: {p.name} still failing ({p.kind} checks will park): {p.detail}")
+    return {"fingerprint": environment.fingerprint(probes), "check_env": environment.browser_env(state)}
 
 
 def cmd_doctor(args) -> int:
     root = repo_root()
+    for action in environment.heal(root, environment_dir(root)):
+        print(f"FIXED {action}")
     code, slug = _out(["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"])
     checks = doctor_checks(root, args.repo or (slug if code == 0 else None))
     for status, name, detail in checks:
@@ -166,6 +207,7 @@ def cmd_run(args) -> int:
     from .live import LiveAgents
     from .workspace import Workspace
 
+    invoked_at = time.time()   # a stop requested after this moment is honoured, an older one is stale
     root = repo_root()
     operator = args.operator or detect_operator()
     if operator not in ("claude", "codex"):
@@ -197,13 +239,15 @@ def cmd_run(args) -> int:
         with log_file.open("a") as f:
             f.write(line + "\n")
 
+    env = prepare_environment(root, log)
     ws = Workspace(root, args.issue, root / "scripts" / "ship.sh")
-    agents = LiveAgents(operator, store.dir, ws)
+    agents = LiveAgents(operator, store.dir, ws, extra_env=env["check_env"])
     log(f"run for #{args.issue}: operator {operator}, reviewer {agents.other}, {len(plan.work)} work item(s)")
-    engine = Engine(plan, store, gh, ws, agents, Config(repo=slug), repo_root=root, log=log)
+    engine = Engine(plan, store, gh, ws, agents, Config(repo=slug), repo_root=root, log=log, environment=env,
+                    invoked_at=invoked_at)
     summary = engine.run()
     log("finished: " + json.dumps(summary, default=str))
-    return 0 if not summary["needs_human"] and not summary["blocked_by_needs_human"] else 3
+    return 0 if not summary["parked"] else 3
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -230,6 +274,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--yes", action="store_true", help="the user confirmed that this run merges its own PRs")
     p.add_argument("--fresh", action="store_true", help="archive the previous run state and start over")
     p.set_defaults(func=cmd_run)
+    p = sub.add_parser("retry", help="let parked issues of a run try again on its next run")
+    p.add_argument("issue", type=int, help="the run's root issue")
+    p.add_argument("items", type=int, nargs="*", help="parked issues to retry (default: all of them)")
+    p.set_defaults(func=cmd_retry)
     p = sub.add_parser("record-fixture", help="record GitHub reads for offline tests")
     p.add_argument("issue", type=int)
     p.add_argument("out")

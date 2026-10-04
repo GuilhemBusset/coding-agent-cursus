@@ -26,7 +26,8 @@ Rules:
   ones; an empty list is a fine answer when the work is sound.
 - Priority 0–3 (0 = would produce wrong results or a false "done"; 3 = nit). Confidence 0–1.
 - Give `file` and `line` where possible and a `reproduction` someone can run or follow.
-- Set `claims_acceptance_failure` when the finding means a ledger item is not actually met.
+- Set `claims_acceptance_failure` when the finding means a ledger item is not actually met,
+  including when a design decision dropped or weakened an item of the issue as written.
 - `coverage`: for each ledger item proven by an `artifact` check ({{artifact_ids}}), say whether
   the evidence shows it is met.
 

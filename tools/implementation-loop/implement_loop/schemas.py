@@ -40,17 +40,17 @@ PROPOSAL = obj(
     check_files=arr(STR),
     open_questions=arr(STR),
 )
-OBJECTIONS = obj(objections=arr(obj(text=STR, blocking=BOOL, changes_criterion=BOOL)))
+OBJECTIONS = obj(objections=arr(obj(text=STR, blocking=BOOL)))
 DESIGN = obj(
     decisions=arr(DECISION),
     checks=arr(CHECK),
     files=arr(STR),
     check_files=arr(STR),
     notes=STR,
-    criterion_disputes=arr(STR),
 )
 CHECKS_WRITTEN = obj(files_written=arr(STR), note=STR)
-IMPLEMENTED = obj(status={"type": "string", "enum": ["done", "impossible"]}, note=STR)
+IMPLEMENTED = obj(status={"type": "string", "enum": ["done", "impossible", "check_defect"]}, note=STR,
+                  defect_file=NSTR, defect_reproduction=NSTR)
 REVIEW = obj(
     findings=arr(obj(
         id=STR, priority=INT, confidence=NUM, title=STR, file=NSTR, line=NINT,

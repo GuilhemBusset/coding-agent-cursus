@@ -70,6 +70,45 @@ class StateTests(unittest.TestCase):
             repo.cleanup()
 
 
+class LegacyStateTests(unittest.TestCase):
+    def test_state_from_the_stop_and_ask_engine_reads_with_the_new_outcomes(self):
+        stopped = IssueState.from_dict({"number": 21, "phase": "needs_human", "reason": "a design dispute"})
+        self.assertEqual((stopped.phase, stopped.park_kind), (Phase.PARKED, "exhausted"))
+        accepted = IssueState.from_dict({"number": 22, "phase": "accepted"})
+        self.assertEqual((accepted.phase, accepted.park_kind), (Phase.DELIVERED, None))
+
+
+class StopTests(unittest.TestCase):
+    def test_only_a_stop_older_than_the_invocation_is_cleared(self):
+        import time
+        store = RunStore(Path(tempfile.mkdtemp()) / "run")
+        (store.dir / "STOP").write_text("stop\n")
+        self.assertFalse(store.clear_stop(older_than=time.time() - 60), "a stop asked after the run started stays")
+        self.assertTrue(store.stop_requested())
+        self.assertTrue(store.clear_stop(older_than=time.time() + 60))
+        self.assertFalse(store.stop_requested())
+
+
+class UncommittedTests(unittest.TestCase):
+    def test_a_modified_file_listed_first_keeps_its_whole_path(self):
+        # the porcelain line " M setup/package.json" was stripped and cut to "etup/package.json"
+        from implement_loop.workspace import Workspace
+        repo = TempRepo()
+        try:
+            wt = repo.work
+            git("switch", "-q", "-c", "feat/x", cwd=wt)
+            (wt / "setup").mkdir()
+            (wt / "setup" / "package.json").write_text("{}\n")
+            git("add", "-A", cwd=wt)
+            git("commit", "-q", "-m", "seed", cwd=wt)
+            (wt / "setup" / "package.json").write_text('{"x": 1}\n')
+            (wt / "new file.txt").write_text("x\n")
+            ws = Workspace(wt, 1, Path("ship.sh"), base_dir=repo.loop_dir)
+            self.assertEqual(sorted(ws.uncommitted(wt)), ["new file.txt", "setup/package.json"])
+        finally:
+            repo.cleanup()
+
+
 class ProvisionTests(unittest.TestCase):
     def test_worktrees_get_a_private_copy_of_the_browser_tooling(self):
         from implement_loop.workspace import Workspace

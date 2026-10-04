@@ -31,11 +31,29 @@ class Workspace:
         # contend for the same lock files, so every operation that writes shared state is serialized.
         self._mutex = threading.RLock()
 
-    def git(self, *args: str, cwd: Path | None = None, check: bool = True) -> str:
+    def git(self, *args: str, cwd: Path | None = None, check: bool = True, strip: bool = True) -> str:
         proc = subprocess.run(["git", *args], cwd=cwd or self.repo, capture_output=True, text=True)
         if check and proc.returncode != 0:
             raise GitError(f"git {' '.join(args)} failed: {(proc.stderr or proc.stdout).strip()[:400]}")
-        return proc.stdout.strip()
+        return proc.stdout.strip() if strip else proc.stdout
+
+    def uncommitted(self, path: Path) -> list[str]:
+        """Paths changed in the working tree, staged or not, including untracked files.
+
+        Read NUL-delimited and unstripped: porcelain lines start with a two-letter status that
+        may begin with a space (" M setup/package.json"), and stripping the output once cut the
+        first path to "etup/package.json"."""
+        out = self.git("status", "--porcelain=v1", "-z", "--untracked-files=all", cwd=path, strip=False)
+        paths, records = [], out.split("\0")
+        i = 0
+        while i < len(records):
+            record = records[i]
+            if len(record) > 3:
+                paths.append(record[3:])
+                if record[0] in "RC":   # a rename or copy is followed by its source path
+                    i += 1
+            i += 1
+        return paths
 
     def fetch(self) -> None:
         with self._mutex:
@@ -128,19 +146,46 @@ class Workspace:
 
     def changed_files(self, path: Path, since: str) -> list[str]:
         committed = self.git("diff", "--name-only", f"{since}..HEAD", cwd=path).splitlines()
-        working = [line[3:] for line in self.git("status", "--porcelain", "--untracked-files=all", cwd=path).splitlines()]
-        return sorted(set(f for f in committed + working if f))
+        return sorted(set(f for f in committed + self.uncommitted(path) if f))
+
+    def has_commit(self, path: Path, sha: str) -> bool:
+        return subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=path, capture_output=True).returncode == 0
+
+    def is_ancestor(self, path: Path, ancestor: str, descendant: str) -> bool:
+        return subprocess.run(["git", "merge-base", "--is-ancestor", ancestor, descendant], cwd=path,
+                              capture_output=True).returncode == 0
+
+    def exists_at(self, path: Path, ref: str, file: str) -> bool:
+        return bool(self.git("ls-tree", "--name-only", ref, "--", file, cwd=path, check=False))
 
     # writes ---------------------------------------------------------------------
-    def commit_all(self, path: Path, subject: str, phase: str, issue: int) -> str | None:
-        """Commit everything in the worktree. Returns the new SHA, or None if nothing changed."""
+    def commit_all(self, path: Path, subject: str, phase: str, issue: int, unlocks: list[str] | None = None) -> str | None:
+        """Commit everything in the worktree. Returns the new SHA, or None if nothing changed.
+        `unlocks` names check files an earlier acceptance-checks commit locked that a new design
+        no longer uses; the CI guard stops protecting them from this commit on."""
         with self._mutex:
             self.git("add", "--all", cwd=path)
-            if not self.git("status", "--porcelain", cwd=path):
+            if not self.git("status", "--porcelain", cwd=path) and not unlocks:
                 return None
-            message = f"{subject}\n\nRefs #{issue}\n\nLoop-Phase: {phase}\n"
-            self.git("commit", "--quiet", "-m", message, cwd=path)
+            trailers = f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
+            message = f"{subject}\n\nRefs #{issue}\n\n{trailers}"
+            self.git("commit", "--quiet", "--allow-empty", "-m", message, cwd=path)
             return self.head(path)
+
+    def commit_paths(self, path: Path, paths: list[str], subject: str, phase: str, issue: int) -> str | None:
+        """Commit only `paths` (changed, added or deleted), leaving every other change uncommitted."""
+        with self._mutex:
+            self.git("reset", "-q", cwd=path)
+            self.git("add", "--all", "--", *paths, cwd=path)
+            if not self.git("diff", "--cached", "--name-only", cwd=path):
+                return None
+            self.git("commit", "--quiet", "-m", f"{subject}\n\nRefs #{issue}\n\nLoop-Phase: {phase}\n", cwd=path)
+            return self.head(path)
+
+    def nothing_to_land(self, path: Path) -> bool:
+        """The branch changes nothing on the base branch (for example a re-run that found the
+        work already merged)."""
+        return not self.git("diff", "--name-only", f"{self.base_ref()}...HEAD", cwd=path)
 
     def push(self, path: Path) -> str:
         """Publish through the trusted ship script (rebase before first push, merge-forward after)."""
