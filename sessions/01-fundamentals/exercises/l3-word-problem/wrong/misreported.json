@@ -1,0 +1,12 @@
+{
+  "objective": 11,
+  "start": {
+    "Mon": 4,
+    "Tue": 1,
+    "Wed": 2,
+    "Thu": 2,
+    "Fri": 1,
+    "Sat": 1,
+    "Sun": 1
+  }
+}
