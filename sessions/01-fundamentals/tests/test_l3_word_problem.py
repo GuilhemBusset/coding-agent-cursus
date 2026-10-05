@@ -397,7 +397,8 @@ def solve_reference(*, integral):
     demand = demand_from_csv()
     model = highspy.Highs()
     model.setOptionValue("output_flag", False)
-    model.setOptionValue("threads", 1)
+    # Keep default threads: P00 may already have initialized HiGHS's
+    # process-wide scheduler before this reference model runs.
     model.setOptionValue("time_limit", 4.0)
     model.setOptionValue("mip_rel_gap", 0.0)
     variable_type = highspy.HighsVarType.kInteger if integral else highspy.HighsVarType.kContinuous
