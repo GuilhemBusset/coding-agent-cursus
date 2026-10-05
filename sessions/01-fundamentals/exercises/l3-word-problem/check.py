@@ -37,9 +37,10 @@ TOL = 1e-6
 # so the bound is tight for the relaxation.
 LP_BOUND = 10.2
 
-# Optimum. Headcount is an integer, so it is at least ceil(10.2) = 11. The roster
-# (4, 1, 2, 1, 1, 1, 1) has headcount 11 and covers 8, 8, 9, 9, 9, 6, 6 >= demand, so 11 is
-# optimal. Derived by hand; never taken from solver output.
+# Optimum. Headcount is an integer, so it is at least ceil(10.2) = 11, and a whole-number
+# roster of 11 that meets every day's demand exists, so 11 is optimal. The witness roster is
+# kept out of this folder, in the course's instructor tests (finding it is the exercise).
+# Derived by hand; never taken from solver output.
 KNOWN_OPTIMUM = 11
 
 ROOT_KEYS = ("objective", "start")
