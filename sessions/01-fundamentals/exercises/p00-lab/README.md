@@ -80,6 +80,10 @@ variant; write one name on the board for the whole room just before L2.
   objective sense is set, so the bug is found by memory, not by reading the failure.
 - **Avoid `timelimit-as-optimal` for a first run.** Its only symptom is the status-mapping
   test, which is a good discussion but a poor 12-minute exercise.
+- **The done commands do not rule out hard-coding.** The contract suite solves only the
+  bundled instance, so a `p00_model.py` that returns a fixed optimal plan (keeping the real
+  `contract_status`) passes `uv run pytest` and both Git checks. Read
+  `git diff -- p00_model.py` to confirm the fix repairs the model.
 
 ## The known optimum, derived without a solver
 

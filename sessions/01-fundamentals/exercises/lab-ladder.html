@@ -347,7 +347,7 @@ git status --short</code></pre>
           <summary>Instructor hints · L2</summary>
           <ul>
             <li>Choosing the variant: use the variant table in <a href="p00-lab/README.md">the P00 instructor notes</a> and write one name on the board for the whole room. Pick one whose test failure is visible on this instance; the notes explain which one shows only through the status-mapping test, and why the objective-sense variant is a poor choice right after L1.</li>
-            <li>Typical pink notes: "all tests pass" without the agent ever running them; a fix that also edits <code>tests/</code> or <code>p00_checker.py</code>; a model that returns the known optimum as a constant. The three done commands catch all three.</li>
+            <li>Typical pink notes: "all tests pass" without the agent ever running them; a fix that also edits <code>tests/</code> or <code>p00_checker.py</code>; a model that returns the known optimum as a constant. The done commands catch the first two only. They cannot catch the third: the contract tests solve only the bundled instance, so a <code>p00_model.py</code> that returns a fixed optimal plan passes the tests and both Git checks without solving anything. To rule out hard-coding, read the model diff with <code>git diff -- p00_model.py</code> and check that the change fixes the model rather than returning a plan or a number.</li>
             <li>Codex may need approval to run <code>uv</code> outside its sandbox (the package cache sits outside the folder). That is expected; the student approves the command.</li>
             <li>A student whose agent fixed the bug but cannot name the contract is not done: the done-means paragraph in the export's <code>AGENTS.md</code> asks for it.</li>
           </ul>
