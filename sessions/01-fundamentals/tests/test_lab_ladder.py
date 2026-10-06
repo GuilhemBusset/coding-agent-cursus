@@ -11,10 +11,11 @@ These check where the done commands run and their recorded completion times.
 
 The agreed HTML interface is section[data-level][data-box], data-agent and
 data-done. A done block contains newline-separated commands in pre/code;
-L4 may group its alternative commands in separate code blocks. No additional
-HTML attributes are required. Working directories are the exported repo for
-L1/L2/L4 and the L3 pack for L3, as specified in the design. Review must check
-that these directories and expected outputs are explained to students.
+L4 alternatives use separate blocks marked data-option="rule", "skill", or
+"headless"; every command in the selected block is executed. Working directories
+are the exported repo for L1/L2/L4 and the L3 pack for L3, as specified in the
+design. Review must check that these directories and expected outputs are
+explained to students.
 
 Git status/diff normally exit zero even when they display violations. Thus
 "done" below means exit status AND the prescribed output predicate, not exit
@@ -179,7 +180,8 @@ def test_tests_dir_preserves_contract_and_default_export(exports, tmp_path):
     assert reference["tests/__init__.py"] == b""
     assert reference["tests/test_p00_contract.py"] == original["test_p00_contract.py"]
     assert reference["tests/test_p00_contract.py"] == (P00 / "test_p00_contract.py").read_bytes()
-    for name in set(original) - {"test_p00_contract.py", "AGENTS.md"}:
+    assert reference[".gitignore"] == original[".gitignore"] + b".claude/settings.local.json\n"
+    for name in set(original) - {"test_p00_contract.py", "AGENTS.md", ".gitignore"}:
         assert reference[name] == original[name], f"D3: opt-in unexpectedly changes {name}"
     agents = reference["AGENTS.md"].decode("utf-8")
     for contract in ("tests/", "p00_checker.py", "data/", "mise install", "uv sync", "uv run pytest"):
@@ -269,11 +271,13 @@ def test_done_commands_l3_relative_problem_link(page):
     assert (L3 / "README.md").is_file()
 
 
-def done_commands(page, name):
+def done_blocks(page, name):
+    """Preserve block boundaries and option markers, including command order."""
     blocks = [node for node in level(page, name).walk() if "data-done" in node.attrs]
     assert blocks, f"A2: {name} needs a data-done block"
-    commands = []
+    parsed = []
     for block in blocks:
+        commands = []
         code = [node for node in block.walk() if node.tag == "code"]
         if not code:
             code = [block]
@@ -290,8 +294,13 @@ def done_commands(page, name):
                 args = shlex.split(line)
                 assert args and args[0] in {"git", "uv"}, f"A2: not a done command: {line}"
                 commands.append(args)
-    assert commands, f"A2: empty done commands for {name}"
-    return commands
+        assert commands, f"A2: empty done block for {name}"
+        parsed.append((block.attrs.get("data-option"), commands))
+    return parsed
+
+
+def done_commands(page, name):
+    return [args for _, commands in done_blocks(page, name) for args in commands]
 
 
 def command_kind(args):
@@ -307,7 +316,7 @@ def command_kind(args):
         return "head-diff"
     if args[:3] == ["git", "grep", "-n"] and len(args) >= 4:
         return "citation"
-    if args == ["git", "diff", "--", "AGENTS.md"]:
+    if args == ["git", "diff", "HEAD", "--", "AGENTS.md"]:
         return "rule"
     if args[:4] == ["git", "diff", "--stat", "--"]:
         paths = {arg.rstrip("/") for arg in args[4:]}
@@ -332,38 +341,76 @@ REQUIRED = {
 }
 
 
+L4_REQUIRED = {
+    "rule": {"rule", "contract-diff", "status"},
+    "skill": {"skill", "contract-diff", "status"},
+    "headless": {"tests-diff", "pytest", "status"},
+}
+
+
 def commands_for(page, name, option=None):
+    if name == "L4":
+        blocks = done_blocks(page, name)
+        markers = [marker for marker, _ in blocks]
+        assert len(markers) == len(L4_REQUIRED) and set(markers) == set(L4_REQUIRED), (
+            "A2: L4 needs one data-option block each for rule, skill and headless")
+        assert option in L4_REQUIRED
+        for marker, commands in blocks:
+            kinds = {command_kind(args) for args in commands}
+            assert kinds == L4_REQUIRED[marker], f"A2: wrong checks for L4 {marker}: {kinds}"
+        return next(commands for marker, commands in blocks if marker == option)
     commands = done_commands(page, name)
     kinds = {command_kind(args) for args in commands}
     assert REQUIRED[name] <= kinds, f"A2: missing {name} done checks: {REQUIRED[name] - kinds}"
     assert kinds <= REQUIRED[name], f"A2: unrelated done checks in {name}: {kinds}"
-    if name == "L4":
-        selected = ({"rule", "contract-diff"} if option == "rule" else
-                    {"skill", "contract-diff"} if option == "skill" else REQUIRED["L2"])
-        commands = [args for args in commands if command_kind(args) in selected]
     return commands
 
 
-def execute_done(commands, cwd, name):
+def execute_done(commands, cwd, name, option=None, executed=None):
     outcomes = []
     for args in commands:
         kind = command_kind(args)
         invocation = ([sys.executable, "-m", "pytest"] if kind == "pytest" else
                       [sys.executable, *args[3:]] if kind == "certificate" else args)
         result = run(invocation, cwd)
+        if executed is not None:
+            executed.append(list(args))
         passed = result.returncode == 0
         if kind in {"tests-diff", "contract-diff", "l3-contract"}:
             passed = passed and not result.stdout.strip()
         elif kind == "status":
             lines = result.stdout.splitlines()
-            passed = passed and (not lines if name == "L1" else
-                                 all(line[3:] == "p00_model.py" for line in lines))
+            paths = {line[3:] for line in lines}
+            if name == "L1":
+                allowed = not lines
+            elif name == "L4" and option == "rule":
+                allowed = paths == {"AGENTS.md", "p00_model.py"}
+            elif name == "L4" and option == "skill":
+                allowed = "p00_model.py" in paths and all(
+                    path == "p00_model.py" or path in {".claude/", ".agents/"}
+                    or path.startswith((".claude/", ".agents/")) for path in paths)
+            else:
+                allowed = all(path == "p00_model.py" for path in paths)
+            passed = passed and allowed
         elif kind in {"rule", "skill", "citation"}:
             passed = passed and bool(result.stdout.strip())
         elif kind == "certificate":
             passed = passed and bool(re.search(r"^PASS\s*$", result.stdout, re.M))
             passed = passed and bool(re.search(r"gap.*bound", result.stdout, re.I))
         outcomes.append((kind, passed, result))
+    return outcomes
+
+
+def execute_l4(page, cwd, option):
+    """Audit execution against the whole selected page block, not a kind filter."""
+    commands = commands_for(page, "L4", option)
+    block_commands = next(commands for marker, commands in done_blocks(page, "L4")
+                          if marker == option)
+    executed = []
+    outcomes = execute_done(commands, cwd, "L4", option, executed)
+    assert executed == block_commands, "A2: execute every block command in page order"
+    assert len(outcomes) == len(executed) == len(block_commands)
+    assert {kind for kind, _, _ in outcomes} == L4_REQUIRED[option]
     return outcomes
 
 
@@ -480,14 +527,18 @@ def test_done_commands_l3_protects_checker(page, tmp_path):
 
 
 @pytest.mark.parametrize("option", ["rule", "claude-skill", "codex-skill", "headless"])
-@pytest.mark.parametrize("protected", ["tests/test_p00_contract.py", "data/costs.csv", "p00_checker.py"])
-def test_done_commands_l4_options(page, exports, tmp_path, option, protected):
+@pytest.mark.parametrize("mutation", ["tests", "data", "checker", "staged-tests",
+                                      "untracked-tests", "stray"])
+def test_done_commands_l4_options(page, exports, tmp_path, option, mutation):
     selected = "skill" if option.endswith("-skill") else option
-    commands = commands_for(page, "L4", selected)
     directory = copy_export(exports, tmp_path, "dropped-demand")
     shutil.copyfile(P00 / "p00_model.py", directory / "p00_model.py")
+    for harness in (".claude", ".agents"):
+        assert not (directory / harness).exists(), "Exercise Git's collapsed untracked-directory status"
     if selected != "headless":
-        assert_done(execute_done(commands, directory, "L4"), False)
+        before = execute_l4(page, directory, selected)
+        assert_done(before, False)
+        assert not next(passed for kind, passed, _ in before if kind == selected)
     if option == "rule":
         with (directory / "AGENTS.md").open("a", encoding="utf-8") as stream:
             stream.write("\nAlways report the command and exit status used to verify a repair.\n")
@@ -497,10 +548,51 @@ def test_done_commands_l4_options(page, exports, tmp_path, option, protected):
         skill.parent.mkdir(parents=True)
         skill.write_text("---\nname: verify-repair\ndescription: Verify a repair.\n---\n"
                          "Run uv run pytest and report its exit status.\n", encoding="utf-8")
-    assert_done(execute_done(commands, directory, "L4"), True)
-    with (directory / protected).open("a", encoding="utf-8") as stream:
+    valid = execute_l4(page, directory, selected)
+    assert_done(valid, True)
+    if selected == "skill":
+        status = next(result.stdout for kind, _, result in valid if kind == "status")
+        assert f"?? {harness}/" in status.splitlines(), status
+    if selected == "rule":
+        # HEAD-relative rule evidence must also work for a staged-only rule.
+        success(["git", "add", "AGENTS.md"], directory)
+        assert success(["git", "diff", "--", "AGENTS.md"], directory) == ""
+        assert_done(execute_l4(page, directory, selected), True)
+    paths = {"tests": "tests/test_p00_contract.py", "data": "data/costs.csv",
+             "checker": "p00_checker.py", "staged-tests": "tests/test_p00_contract.py",
+             "untracked-tests": "tests/extra_test.py", "stray": "unexpected.txt"}
+    with (directory / paths[mutation]).open("a", encoding="utf-8") as stream:
         stream.write("\n")
-    assert_done(execute_done(commands, directory, "L4"), False)
+    if mutation == "staged-tests":
+        success(["git", "add", paths[mutation]], directory)
+    tampered = execute_l4(page, directory, selected)
+    assert_done(tampered, False)
+    if mutation in {"staged-tests", "untracked-tests", "stray"}:
+        diff_kind = "tests-diff" if selected == "headless" else "contract-diff"
+        assert next(passed for kind, passed, _ in tampered if kind == diff_kind), (
+            "The mutation must be invisible to the unstaged diff")
+        assert {kind for kind, passed, _ in tampered if not passed} == {"status"}, (
+            "Full status must reject staged-only and untracked contract changes")
+
+
+@pytest.mark.parametrize("option", ["l2", "rule", "headless"])
+def test_done_commands_l2_l4_claude_local_settings(page, exports, tmp_path, option):
+    directory = copy_export(exports, tmp_path, "dropped-demand")
+    shutil.copyfile(P00 / "p00_model.py", directory / "p00_model.py")
+    settings = directory / ".claude/settings.local.json"
+    settings.parent.mkdir()
+    settings.write_text("{}\n", encoding="utf-8")
+    ignored = success(["git", "check-ignore", "--verbose", ".claude/settings.local.json"], directory)
+    assert re.fullmatch(r"\.gitignore:\d+:\.claude/settings\.local\.json\t"
+                        r"\.claude/settings\.local\.json\n?", ignored), (
+        "The exported .gitignore must ignore local settings without relying on global Git config")
+    if option == "rule":
+        with (directory / "AGENTS.md").open("a", encoding="utf-8") as stream:
+            stream.write("\nReport the verification command and its observed exit status.\n")
+        success(["git", "add", "AGENTS.md"], directory)
+    outcomes = (execute_done(commands_for(page, "L2"), directory, "L2") if option == "l2"
+                else execute_l4(page, directory, option))
+    assert_done(outcomes, True)
 
 
 def normalized(value):
