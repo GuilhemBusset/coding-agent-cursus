@@ -350,6 +350,7 @@ git status --short</code></pre>
             <li>Typical pink notes: "all tests pass" without the agent ever running them; a fix that also edits <code>tests/</code> or <code>p00_checker.py</code>; a model that returns the known optimum as a constant. The done commands catch the first two only. They cannot catch the third: the contract tests solve only the bundled instance, so a <code>p00_model.py</code> that returns a fixed optimal plan passes the tests and both Git checks without solving anything. To rule out hard-coding, read the model diff with <code>git diff -- p00_model.py</code> and check that the change fixes the model rather than returning a plan or a number.</li>
             <li>Codex may need approval to run <code>uv</code> outside its sandbox (the package cache sits outside the folder). That is expected; the student approves the command.</li>
             <li>A student whose agent fixed the bug but cannot name the contract is not done: the done-means paragraph in the export's <code>AGENTS.md</code> asks for it.</li>
+            <li>The done commands compare against the last commit, so a contract edit the agent committed would slip past them. If <code>git log --oneline</code> shows more than <code>Initial commit</code>, inspect each extra commit with <code>git show --stat</code>.</li>
           </ul>
         </details>
       </section>
@@ -429,12 +430,12 @@ git status --short -- check.py data wrong</code></pre>
           </div>
         </div>
         <p>Write on your card one thing the agent did differently because of your rule or skill.</p>
-        <p>Done when, from <code>p00-fix</code>, for a rule: the first prints your rule, the second prints nothing, and the third prints exactly two lines, <code>M AGENTS.md</code> and <code>M p00_model.py</code> (your L2 fix):</p>
-        <pre data-done tabindex="0" aria-label="L4 rule done commands"><code>git diff -- AGENTS.md
+        <p>Done when, from <code>p00-fix</code>, for a rule: the first prints your rule, whether or not it is staged; the second prints nothing; and the third prints exactly two lines, one for <code>AGENTS.md</code> and one for <code>p00_model.py</code> (your L2 fix):</p>
+        <pre data-done data-option="rule" tabindex="0" aria-label="L4 rule done commands"><code>git diff HEAD -- AGENTS.md
 git diff --stat -- tests/ data p00_checker.py
 git status --short</code></pre>
         <p>For a skill: the first lists your new skill folder, the second prints nothing, and the third prints only <code>M p00_model.py</code> and your new <code>.claude/</code> or <code>.agents/</code> folder:</p>
-        <pre data-done tabindex="0" aria-label="L4 skill done commands"><code>git status --short -- .claude/skills .agents/skills
+        <pre data-done data-option="skill" tabindex="0" aria-label="L4 skill done commands"><code>git status --short -- .claude/skills .agents/skills
 git diff --stat -- tests/ data p00_checker.py
 git status --short</code></pre>
         <p>Why the last command: <code>git diff --stat</code> only sees unstaged edits. A change to <code>tests/</code>, <code>data/</code> or <code>p00_checker.py</code> that the agent staged with <code>git add</code>, or a new file it dropped there, shows up only in <code>git status --short</code>. Any line beyond the ones above means the contract was touched.</p>
@@ -456,7 +457,7 @@ cd ../../../p00-headless</code></pre>
           </div>
         </div>
         <p>Done when, from <code>p00-headless</code>, the L2 done commands pass:</p>
-        <pre data-done tabindex="0" aria-label="L4 headless done commands"><code>git diff --stat -- tests/
+        <pre data-done data-option="headless" tabindex="0" aria-label="L4 headless done commands"><code>git diff --stat -- tests/
 uv run pytest
 git status --short</code></pre>
         <p>Write on your card how the headless run differed from your interactive L2: what it could and could not run, whether it verified its own claim, and how long it took.</p>

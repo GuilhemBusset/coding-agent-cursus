@@ -61,10 +61,12 @@ python export.py --tests-dir --bug <name> --out <dir>
 
 The opt-in `--tests-dir` flag moves the unchanged contract suite to
 `tests/test_p00_contract.py`, adds an empty `tests/__init__.py`, and makes the generated
-`AGENTS.md` name `tests/` as part of the contract. Everything else is the same as above, and
-without the flag the export is byte-for-byte what it was before. The
-[lab ladder](../lab-ladder.html) uses this layout so that its L2 done check,
-`git diff --stat -- tests/`, covers the whole test suite.
+`AGENTS.md` name `tests/` as part of the contract. It also adds one line,
+`.claude/settings.local.json`, to the generated `.gitignore`: Claude Code writes that file when a
+student allows a command, and it would otherwise show up in the done checks'
+`git status --short`. Everything else is the same as above, and without the flag the export is
+byte-for-byte what it was before. The [lab ladder](../lab-ladder.html) uses this layout so that
+its L2 done check, `git diff --stat -- tests/`, covers the whole test suite.
 
 ## Running the lab ladder
 

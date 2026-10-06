@@ -7,9 +7,10 @@ Instructor-only: this file and README.md are never copied into an export. The ex
 student statement, the model (patched for the chosen bug), the independent checker, the
 contract tests, the data and the session's pinned Python setup, committed in a fresh git repo.
 Nothing written to the export names the chosen bug. With --tests-dir, the contract suite goes to
-tests/test_p00_contract.py (beside an empty tests/__init__.py) and AGENTS.md names tests/; the
-lab ladder's L2 done check (`git diff --stat -- tests/`) relies on that layout. Without it, the
-export is unchanged.
+tests/test_p00_contract.py (beside an empty tests/__init__.py), AGENTS.md names tests/ and
+.gitignore also ignores .claude/settings.local.json; the lab ladder's done checks
+(`git diff --stat -- tests/`, `git status --short`) rely on that layout. Without it, the export
+is unchanged.
 """
 
 import argparse
@@ -100,6 +101,9 @@ AGENTS_MD_TESTS_DIR = AGENTS_TEMPLATE.format(suite="everything in `tests/`")
 CLAUDE_MD = "@AGENTS.md\n"
 
 GITIGNORE = ".venv/\n__pycache__/\n.pytest_cache/\n"
+# --tests-dir: also ignore Claude Code's per-user permission file, so `git status --short`
+# in the lab ladder's done checks only shows what the agent changed.
+GITIGNORE_TESTS_DIR = GITIGNORE + ".claude/settings.local.json\n"
 
 # Variables that would point git at another repository instead of the export.
 GIT_REDIRECTS = (
@@ -144,7 +148,7 @@ def write_export(out, bug, tests_dir=False):
         files["tests/test_p00_contract.py"] = files.pop("test_p00_contract.py")
         files["tests/__init__.py"] = b""
     files["CLAUDE.md"] = CLAUDE_MD.encode("utf-8")
-    files[".gitignore"] = GITIGNORE.encode("utf-8")
+    files[".gitignore"] = (GITIGNORE_TESTS_DIR if tests_dir else GITIGNORE).encode("utf-8")
     for name, content in files.items():
         path = out / name
         path.parent.mkdir(parents=True, exist_ok=True)
