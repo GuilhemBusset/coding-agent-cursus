@@ -429,12 +429,15 @@ git status --short -- check.py data wrong</code></pre>
           </div>
         </div>
         <p>Write on your card one thing the agent did differently because of your rule or skill.</p>
-        <p>Done when, from <code>p00-fix</code>, for a rule (the first prints your rule, the second prints nothing):</p>
+        <p>Done when, from <code>p00-fix</code>, for a rule: the first prints your rule, the second prints nothing, and the third prints exactly two lines, <code>M AGENTS.md</code> and <code>M p00_model.py</code> (your L2 fix):</p>
         <pre data-done tabindex="0" aria-label="L4 rule done commands"><code>git diff -- AGENTS.md
-git diff --stat -- tests/ data p00_checker.py</code></pre>
-        <p>For a skill (the first lists your new skill folder, the second prints nothing):</p>
+git diff --stat -- tests/ data p00_checker.py
+git status --short</code></pre>
+        <p>For a skill: the first lists your new skill folder, the second prints nothing, and the third prints only <code>M p00_model.py</code> and your new <code>.claude/</code> or <code>.agents/</code> folder:</p>
         <pre data-done tabindex="0" aria-label="L4 skill done commands"><code>git status --short -- .claude/skills .agents/skills
-git diff --stat -- tests/ data p00_checker.py</code></pre>
+git diff --stat -- tests/ data p00_checker.py
+git status --short</code></pre>
+        <p>Why the last command: <code>git diff --stat</code> only sees unstaged edits. A change to <code>tests/</code>, <code>data/</code> or <code>p00_checker.py</code> that the agent staged with <code>git add</code>, or a new file it dropped there, shows up only in <code>git status --short</code>. Any line beyond the ones above means the contract was touched.</p>
         <h3>Option B · Rerun L2 headless and compare</h3>
         <p>From <code>sessions/01-fundamentals</code>, export the same variant again to a fresh folder:</p>
         <pre tabindex="0" aria-label="L4 export commands"><code>uv run python exercises/p00-lab/export.py --tests-dir --bug &lt;variant&gt; --out ../../../p00-headless
