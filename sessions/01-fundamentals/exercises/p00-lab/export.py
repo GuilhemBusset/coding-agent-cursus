@@ -1,11 +1,16 @@
 """Export a standalone P00 lab repository, optionally with one bug planted in the model.
 
     python export.py --bug <name> --out <dir>
+    python export.py --tests-dir --bug <name> --out <dir>
 
 Instructor-only: this file and README.md are never copied into an export. The export holds the
 student statement, the model (patched for the chosen bug), the independent checker, the
 contract tests, the data and the session's pinned Python setup, committed in a fresh git repo.
-Nothing written to the export names the chosen bug.
+Nothing written to the export names the chosen bug. With --tests-dir, the contract suite goes to
+tests/test_p00_contract.py (beside an empty tests/__init__.py), AGENTS.md names tests/ and
+.gitignore also ignores .claude/settings.local.json; the lab ladder's done checks
+(`git diff --stat -- tests/`, `git status --short`) rely on that layout. Without it, the export
+is unchanged.
 """
 
 import argparse
@@ -56,7 +61,7 @@ COPIED = [
     (SESSION / "mise.toml", "mise.toml"),
 ]
 
-AGENTS_MD = """\
+AGENTS_TEMPLATE = """\
 # Agent instructions
 
 This directory is the whole task. Do not read, search or edit anything outside it: no parent
@@ -69,7 +74,7 @@ directories, no other repositories, no web search for this exercise.
 
 ## The contract
 
-`p00_checker.py`, `test_p00_contract.py` and everything in `data/` are the contract. Never edit,
+`p00_checker.py`, {suite} and everything in `data/` are the contract. Never edit,
 weaken, skip, mark as expected to fail or special-case them, and never hard-code an expected
 answer. If a test fails, the fix belongs in `p00_model.py`.
 
@@ -89,9 +94,16 @@ Every test passes, and you can name the contract that was broken (status, feasib
 integrality or objective) and the line in `p00_model.py` that broke it, or state that none was.
 """
 
+AGENTS_MD = AGENTS_TEMPLATE.format(suite="`test_p00_contract.py`")
+# --tests-dir: the same text, with the suite named by its folder.
+AGENTS_MD_TESTS_DIR = AGENTS_TEMPLATE.format(suite="everything in `tests/`")
+
 CLAUDE_MD = "@AGENTS.md\n"
 
 GITIGNORE = ".venv/\n__pycache__/\n.pytest_cache/\n"
+# --tests-dir: also ignore Claude Code's per-user permission file, so `git status --short`
+# in the lab ladder's done checks only shows what the agent changed.
+GITIGNORE_TESTS_DIR = GITIGNORE + ".claude/settings.local.json\n"
 
 # Variables that would point git at another repository instead of the export.
 GIT_REDIRECTS = (
@@ -128,12 +140,15 @@ def git(out, *args):
     subprocess.run(["git", *args], cwd=out, env=env, check=True)
 
 
-def write_export(out, bug):
+def write_export(out, bug, tests_dir=False):
     files = {destination: source.read_bytes() for source, destination in COPIED}
     files["p00_model.py"] = patched_model(bug).encode("utf-8")
-    files["AGENTS.md"] = AGENTS_MD.encode("utf-8")
+    files["AGENTS.md"] = (AGENTS_MD_TESTS_DIR if tests_dir else AGENTS_MD).encode("utf-8")
+    if tests_dir:
+        files["tests/test_p00_contract.py"] = files.pop("test_p00_contract.py")
+        files["tests/__init__.py"] = b""
     files["CLAUDE.md"] = CLAUDE_MD.encode("utf-8")
-    files[".gitignore"] = GITIGNORE.encode("utf-8")
+    files[".gitignore"] = (GITIGNORE_TESTS_DIR if tests_dir else GITIGNORE).encode("utf-8")
     for name, content in files.items():
         path = out / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -153,6 +168,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Export a standalone P00 lab repository.")
     parser.add_argument("--bug", required=True, choices=sorted(BUGS), help="bug to plant ('none' for the reference)")
     parser.add_argument("--out", required=True, type=Path, help="new or empty directory outside the course repo")
+    parser.add_argument("--tests-dir", action="store_true", help="put the contract suite in tests/ (lab ladder layout)")
     args = parser.parse_args(argv)
 
     out = args.out.expanduser().resolve()
@@ -165,7 +181,7 @@ def main(argv=None):
     created = not out.exists()
     out.mkdir(parents=True, exist_ok=True)
     try:
-        write_export(out, args.bug)
+        write_export(out, args.bug, args.tests_dir)
     except BaseException:
         if created:
             shutil.rmtree(out, ignore_errors=True)

@@ -53,6 +53,40 @@ status says nothing about whether the model is the right one. The last bug is in
 this instance, because HiGHS finishes in milliseconds. Only the status-mapping test, which
 asks what a `kTimeLimit` stop would be reported as, exposes it.
 
+### `--tests-dir`: the lab ladder layout
+
+```sh
+python export.py --tests-dir --bug <name> --out <dir>
+```
+
+The opt-in `--tests-dir` flag moves the unchanged contract suite to
+`tests/test_p00_contract.py`, adds an empty `tests/__init__.py`, and makes the generated
+`AGENTS.md` name `tests/` as part of the contract. It also adds one line,
+`.claude/settings.local.json`, to the generated `.gitignore`: Claude Code writes that file when a
+student allows a command, and it would otherwise show up in the done checks'
+`git status --short`. Everything else is the same as above, and without the flag the export is
+byte-for-byte what it was before. The [lab ladder](../lab-ladder.html) uses this layout so that
+its L2 done check, `git diff --stat -- tests/`, covers the whole test suite.
+
+## Running the lab ladder
+
+Students make their own exports from `sessions/01-fundamentals` in their course checkout:
+`--bug none` into `p00-explore` for L1, and the variant you write on the board into `p00-fix`
+for L2 (and again into `p00-headless` for the L4 headless option). The page never names a
+variant; write one name on the board for the whole room just before L2.
+
+- **Use `dropped-demand` or `relaxed-binary`.** Both fail visibly in `uv run pytest`, name a
+  contract in their first failure message, and are fixed by one line in `p00_model.py`.
+  The [rehearsal](../../cursus/labs/lab-ladder-rehearsal.md) used `dropped-demand`.
+- **Avoid `flipped-sense` for L2.** L1 has just trained everyone's attention on where the
+  objective sense is set, so the bug is found by memory, not by reading the failure.
+- **Avoid `timelimit-as-optimal` for a first run.** Its only symptom is the status-mapping
+  test, which is a good discussion but a poor 12-minute exercise.
+- **The done commands do not rule out hard-coding.** The contract suite solves only the
+  bundled instance, so a `p00_model.py` that returns a fixed optimal plan (keeping the real
+  `contract_status`) passes `uv run pytest` and both Git checks. Read
+  `git diff -- p00_model.py` to confirm the fix repairs the model.
+
 ## The known optimum, derived without a solver
 
 Total demand is 20 + 30 + 25 + 15 + 10 = 100. No single plant (capacity 70, 60, 50) can cover

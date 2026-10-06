@@ -1,0 +1,913 @@
+
+$ git clone -q -b feat/s1-lab-ladder ~/projects/coding-agent-cursus.loop/issue-16/issue-43 <rehearsal>/course    [cwd: <rehearsal>]  [2026-10-06T18:11:28+00:00]
+[exit 0]
+
+$ git rev-parse --short HEAD    [cwd: <rehearsal>/course]  [2026-10-06T18:11:28+00:00]
+8b2937c
+[exit 0]
+
+$ git status --short    [cwd: <rehearsal>/course]  [2026-10-06T18:11:28+00:00]
+ M sessions/01-fundamentals/exercises/p00-lab/export.py
+?? sessions/01-fundamentals/exercises/lab-ladder.html
+[exit 0]
+
+$ uv sync --locked    [cwd: <rehearsal>/course/sessions/01-fundamentals]  [2026-10-06T18:11:28+00:00]
+[stderr]
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+Resolved 59 packages in 0.58ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 7 packages in 30ms
+ + highspy==1.15.1
+ + iniconfig==2.3.0
+ + numpy==2.5.3
+ + packaging==26.3
+ + pluggy==1.6.0
+ + pygments==2.21.0
+ + pytest==9.1.1
+[exit 0]
+
+PROMPTS (extracted from the page):
+{
+ "L1 prompt": "Do not edit any file. Answer three questions about this repository and cite file:line for each answer.\n1. Where is the objective sense (minimise or maximise) set?\n2. How is the feasibility of a solution checked: which function, and which constraints does it recompute?\n3. Which of these checks are independent of the solver, and which trust what the solver reports?\nFor each location, quote one symbol I can search for with git grep.",
+ "L2 prompt": "uv run pytest fails in this repository. Make every test pass by editing only p00_model.py. Do not edit, move, skip or weaken anything in tests/, p00_checker.py or data/, and do not hard-code an expected answer. When you are done, name the contract that was broken (status, feasibility, integrality or objective), cite the line you changed, and show the last lines of uv run pytest.",
+ "L3 plan prompt": "Plan only: do not create or edit any file yet. Read README.md in this folder. Propose a model for this problem using HiGHS through highspy: the decision variables and their type, the coverage constraint for each day including the wraparound, and the objective. Say how we will verify the result without trusting the solver (check.py in this folder) and what gap to the LP bound to expect. The code will go in work/ and write solution.json in this folder. check.py, data/ and wrong/ must not change.",
+ "L3 build prompt": "Implement the plan. Put the model in work/, run it so that it writes solution.json in this folder, then run uv run python check.py and show its full output. Do not edit check.py, data/ or wrong/."
+}
+
+$ claude --version    [cwd: <rehearsal>]  [2026-10-06T18:11:28+00:00]
+2.1.291 (Claude Code)
+[exit 0]
+
+
+######## L1 ########
+
+$ uv run python exercises/p00-lab/export.py --tests-dir --bug none --out ../../../p00-explore    [cwd: <rehearsal>/course/sessions/01-fundamentals]  [2026-10-06T18:11:28+00:00]
+<rehearsal>/p00-explore
+[exit 0]
+
+$ claude -p "<prompt>" --output-format stream-json --verbose --permission-mode plan    [cwd: <rehearsal>/p00-explore]  [2026-10-06T18:11:28+00:00]
+[init] model=claude-opus-5-5 permissionMode=plan claude_code_version=2.1.291
+[tool call] Bash {"command": "git ls-files && wc -l $(git ls-files | grep -E '\\.(py|md|toml)$')", "description": "List tracked files and line counts"}
+[tool result] .gitignore
+AGENTS.md
+CLAUDE.md
+README.md
+data/costs.csv
+data/customers.csv
+data/plants.csv
+mise.toml
+p00_checker.py
+p00_model.py
+pyproject.toml
+tests/__init__.py
+tests/test_p00_contract.py
+uv.lock
+   30 AGENTS.md
+    1 CLAUDE.md
+   85 README.md
+    3 mise.toml
+  149 p00_checker.py
+   82 p00_model.py
+   17 pyproject.toml
+    0 tests/__init__.py
+  252 tests/test_p00_contract.py
+  619 total
+[tool call] Read {"file_path": "<rehearsal>/p00-explore/README.md"}
+[tool result] 1	# P00 · Fixed-charge transport
+2	
+3	A small optimization repository. The tests can come out green while the model is
+4	quietly wrong, so this lab is about checking what a solve means, not just running it.
+5	
+6	## The problem
+7	
+8	A company has 3 plants (`P1`, `P2`, `P3`) and 5 customers (`C1` to `C5`).
+9	
+10	- Each plant has a **capacity** (units it can ship in total) and a **fixed cost** paid only
+11	  if it is opened. A closed plant ships nothing.
+12	- Each customer has a **demand** that mus … [3226 more chars clipped]
+[tool call] Read {"file_path": "<rehearsal>/p00-explore/p00_model.py"}
+[tool result] 1	"""P00 model: fixed-charge transportation MILP solved with HiGHS through highspy.
+2	
+3	Run `python p00_model.py` to solve the instance in data/ and print the solution as JSON.
+4	"""
+5	
+6	import csv
+7	import json
+8	from pathlib import Path
+9	
+10	import highspy
+11	
+12	
+13	DATA_DIR = Path(__file__).parent / "data"
+14	
+15	
+16	def read_rows(path):
+17	    with Path(path).open(newline="", encoding="utf-8") as stream:
+18	        return list(csv.DictReader(stream))
+19	
+20	
+21	def contract_status(model_ … [2723 more chars clipped]
+[tool call] Read {"file_path": "<rehearsal>/p00-explore/p00_checker.py"}
+[tool result] 1	"""Independent P00 checker: recompute feasibility and the objective without a solver.
+2	
+3	Standard library only. It reads the CSVs itself and never imports the model or a solver,
+4	so a bug in the model cannot also hide in the check.
+5	"""
+6	
+7	import csv
+8	import math
+9	from pathlib import Path
+10	
+11	
+12	DATA_DIR = Path(__file__).parent / "data"
+13	
+14	
+15	def _rows(path):
+16	    with Path(path).open(newline="", encoding="utf-8") as stream:
+17	        return list(csv.DictReader(stream))
+18	 … [5474 more chars clipped]
+[tool call] Read {"file_path": "<rehearsal>/p00-explore/tests/test_p00_contract.py"}
+[tool result] 1	"""Solver contracts: independently check what a successful solve actually means."""
+2	
+3	from copy import deepcopy
+4	import math
+5	
+6	import highspy
+7	import pytest
+8	
+9	import p00_checker
+10	import p00_model
+11	
+12	
+13	ACCEPTED = {"optimal", "feasible"}
+14	# Hand proof: demand totals 100, so no single plant suffices. For each remaining
+15	# subset, fixed costs plus each customer's cheapest available route is a lower
+16	# bound: {P1,P2}: 485; {P1,P3}: 600; {P2,P3}: 635; {P1,P2,P3}: 595.
+17	# A … [11209 more chars clipped]
+[tool call] Bash {"command": "for s in changeObjectiveSense 'def feasibility_problems' 'def ids' _number open_value received 'def objective' 'def integrality_problems' contract_status primal_solution_status getObjectiveValue 'h.val' KNOWN_OPTIMUM test_known_optimum_by_enumeration test_status_contract 'reported objective disagrees' 'import highspy'; do echo \"== $s\"; git grep -n -- \"$s\"; done", "description": "Check where each candidate symbol appears"}
+[tool result] == changeObjectiveSense
+p00_model.py:66:    h.changeObjectiveSense(highspy.ObjSense.kMinimize)
+== def feasibility_problems
+p00_checker.py:64:def feasibility_problems(data, solution, tol=1e-6):
+== def ids
+p00_checker.py:72:    def ids(found, expected, what):
+== _number
+p00_checker.py:37:def _number(value):
+p00_checker.py:87:        value = _number(opening[p])
+p00_checker.py:107:            value = _number(row[c])
+p00_checker.py:142:        number = _number(value)
+== open_value
+p00_checker.py:83:  … [2610 more chars clipped]
+[assistant] I didn't edit, write or run anything. I only read the files and used `git grep`, so these answers come from reading the code, not from a test run.
+
+## 1. Where the objective sense is set
+
+**`p00_model.py:66`**: `h.changeObjectiveSense(highspy.ObjSense.kMinimize)`. Search: `changeObjectiveSense`
+
+- The cost coefficients are attached to each variable separately: `obj=fixed_cost[p]` at `p00_model.py:52` and `obj=unit_cost[p, c]` at `p00_model.py:56`.
+- No other file sets a sense. The checker just adds up a cost. If line 66 said `kMaximize`, the status, feasibility and integrality checks would all still pass, because every feasible plan passes them. Only the objective contract (`tests/test_p00_contract.py:88`) would catch it.
+
+## 2. How feasibility is checked
+
+The function is **`feasibility_problems`** at `p00_checker.py:64`. Search: `def feasibility_problems`
+
+It reads the CSVs itself through `load_data` (`p00_checker.py:20`) and recomputes these checks from the returned decisions:
+
+| What it checks | Lines | Search |
+|---|---|---|
+| `open` and `flow` are mappings | `p00_checker.py:68-69` | `needs 'open' and 'flow'` |
+| No missing or extra plant or customer IDs | `p00_checker.py:72-81`, `:103` | `def ids` |
+| Each opening is a finite number in [0, 1] | `p00_checker.py:84-93` | `_number` |
+| Each flow is finite and not negative (x ≥ 0) | `p00_checker.py:107-112` | `is negative` |
+| Each customer's demand is met exactly, with a tolerance relative to the demand | `p00_checker.py:115-119` | `received` |
+| Each plant ships no more than capacity × opening | `p00_checker.py:121-129` | `open_value` |
+
+Three things this function does not do:
+- **It does not check integrality.** The capacity check uses the opening value as returned, so an opening of 0.2 passes. Integrality is checked separately by `integrality_problems` (`p00_checker.py:133`), and the test at `tests/test_p00_contract.py:136-148` confirms this split.
+- **It does not check the objective.** `objective()` (`p00_checker.py:45`, search `def objective`) recomputes the cost from the decisions and ignores the reported value. The comparison with the reported objective happens in the test, at `tests/test_p00_contract.py:70-72` (search `reported objective disagrees`). The README (`README.md:63-65`) counts that comparison as part of the feasibility contract.
+- **It skips the capacity check for a plant whose opening is invalid** (`p00_checker.py:122-123`). The bad opening has already been reported at that point, so the result still flags the plan.
+
+## 3. Which checks are independent of the solver, and which trust it
+
+**Independent of the solver:**
+- **The whole checker.** It imports only the standard library (`p00_checker.py:7-9`) and parses the CSVs with its own `_rows` (`p00_checker.py:15`), separately from the model's `read_rows` (`p00_model.py:16`). It checks the solver's numbers but takes none of the solver's claims about them on trust.
+- **The objective cross-check** at `tests/test_p00_contract.py:70`: the recomputed cost must match the reported one.
+- **The rounding test** at `tests/test_p00_contract.py:78-84` (search `rounding must preserve`): it rounds the openings and runs the checker again.
+- **The known optimum.** `KNOWN_OPTIMUM = 485.0` is derived by hand (`tests/test_p00_contract.py:19`) and again by enumeration in `test_known_optimum_by_enumeration` (`tests/test_p00_contract.py:93`), with no solver.
+- **The checker's own tests** at `tests/test_p00_contract.py:119-252`. They run on `hand_plan` and never call the model.
+
+**Trust what the solver reports:**
+- **Status.** It comes straight from HiGHS: `primal_solution_status` at `p00_model.py:69` and `h.getModelStatus()` at `p00_model.py:70`, translated by `contract_status` (`p00_model.py:21`).
+  - `test_status_contract` (`tests/test_p00_contract.py:49-50`) only checks that the string is "optimal" or "feasible".
+  - `test_status_mapping_contract` (`tests/test_p00_contract.py:53-64`) tests the translation with made-up status values, not the solver's actual verdict.
+  - The checker never reads `solution["status"]`. Nothing confirms a reported "optimal" is really optimal except the known-optimum comparison.
+- **Optimality.** It rests on the solver honouring `mip_rel_gap` = 0 (`p00_model.py:48`, search `mip_rel_gap`). The only independent safety net is `KNOWN_OPTIMUM`.
+- **Reported objective.** `getObjectiveValue` (`p00_model.py:75`) comes from the solver. `test_objective_contract` (`tests/test_p00_contract.py:88`) compares this reported value, not the recomputed one, with `KNOWN_OPTIMUM`. It is only tied to the actual decisions through the cross-check at line 70.
+- **Decision values.** `h.val` (`p00_model.py:76-77`) is solver output, but the checker verifies it fully, so it isn't trusted blindly.
+[result] subtype=success turns=7 duration_ms=84913 denials=0
+[final answer]
+I didn't edit, write or run anything. I only read the files and used `git grep`, so these answers come from reading the code, not from a test run.
+
+## 1. Where the objective sense is set
+
+**`p00_model.py:66`**: `h.changeObjectiveSense(highspy.ObjSense.kMinimize)`. Search: `changeObjectiveSense`
+
+- The cost coefficients are attached to each variable separately: `obj=fixed_cost[p]` at `p00_model.py:52` and `obj=unit_cost[p, c]` at `p00_model.py:56`.
+- No other file sets a sense. The checker just adds up a cost. If line 66 said `kMaximize`, the status, feasibility and integrality checks would all still pass, because every feasible plan passes them. Only the objective contract (`tests/test_p00_contract.py:88`) would catch it.
+
+## 2. How feasibility is checked
+
+The function is **`feasibility_problems`** at `p00_checker.py:64`. Search: `def feasibility_problems`
+
+It reads the CSVs itself through `load_data` (`p00_checker.py:20`) and recomputes these checks from the returned decisions:
+
+| What it checks | Lines | Search |
+|---|---|---|
+| `open` and `flow` are mappings | `p00_checker.py:68-69` | `needs 'open' and 'flow'` |
+| No missing or extra plant or customer IDs | `p00_checker.py:72-81`, `:103` | `def ids` |
+| Each opening is a finite number in [0, 1] | `p00_checker.py:84-93` | `_number` |
+| Each flow is finite and not negative (x ≥ 0) | `p00_checker.py:107-112` | `is negative` |
+| Each customer's demand is met exactly, with a tolerance relative to the demand | `p00_checker.py:115-119` | `received` |
+| Each plant ships no more than capacity × opening | `p00_checker.py:121-129` | `open_value` |
+
+Three things this function does not do:
+- **It does not check integrality.** The capacity check uses the opening value as returned, so an opening of 0.2 passes. Integrality is checked separately by `integrality_problems` (`p00_checker.py:133`), and the test at `tests/test_p00_contract.py:136-148` confirms this split.
+- **It does not check the objective.** `objective()` (`p00_checker.py:45`, search `def objective`) recomputes the cost from the decisions and ignores the reported value. The comparison with the reported objective happens in the test, at `tests/test_p00_contract.py:70-72` (search `reported objective disagrees`). The README (`README.md:63-65`) counts that comparison as part of the feasibility contract.
+- **It skips the capacity check for a plant whose opening is invalid** (`p00_checker.py:122-123`). The bad opening has already been reported at that point, so the result still flags the plan.
+
+## 3. Which checks are independent of the solver, and which trust it
+
+**Independent of the solver:**
+- **The whole checker.** It imports only the standard library (`p00_checker.py:7-9`) and parses the CSVs with its own `_rows` (`p00_checker.py:15`), separately from the model's `read_rows` (`p00_model.py:16`). It checks the solver's numbers but takes none of the solver's claims about them on trust.
+- **The objective cross-check** at `tests/test_p00_contract.py:70`: the recomputed cost must match the reported one.
+- **The rounding test** at `tests/test_p00_contract.py:78-84` (search `rounding must preserve`): it rounds the openings and runs the checker again.
+- **The known optimum.** `KNOWN_OPTIMUM = 485.0` is derived by hand (`tests/test_p00_contract.py:19`) and again by enumeration in `test_known_optimum_by_enumeration` (`tests/test_p00_contract.py:93`), with no solver.
+- **The checker's own tests** at `tests/test_p00_contract.py:119-252`. They run on `hand_plan` and never call the model.
+
+**Trust what the solver reports:**
+- **Status.** It comes straight from HiGHS: `primal_solution_status` at `p00_model.py:69` and `h.getModelStatus()` at `p00_model.py:70`, translated by `contract_status` (`p00_model.py:21`).
+  - `test_status_contract` (`tests/test_p00_contract.py:49-50`) only checks that the string is "optimal" or "feasible".
+  - `test_status_mapping_contract` (`tests/test_p00_contract.py:53-64`) tests the translation with made-up status values, not the solver's actual verdict.
+  - The checker never reads `solution["status"]`. Nothing confirms a reported "optimal" is really optimal except the known-optimum comparison.
+- **Optimality.** It rests on the solver honouring `mip_rel_gap` = 0 (`p00_model.py:48`, search `mip_rel_gap`). The only independent safety net is `KNOWN_OPTIMUM`.
+- **Reported objective.** `getObjectiveValue` (`p00_model.py:75`) comes from the solver. `test_objective_contract` (`tests/test_p00_contract.py:88`) compares this reported value, not the recomputed one, with `KNOWN_OPTIMUM`. It is only tied to the actual decisions through the cross-check at line 70.
+- **Decision values.** `h.val` (`p00_model.py:76-77`) is solver output, but the checker verifies it fully, so it isn't trusted blindly.
+[exit 0]
+
+[symbol taken from the agent's answer: changeObjectiveSense]
+
+$ git status --short    [cwd: <rehearsal>/p00-explore]  [2026-10-06T18:12:54+00:00]
+[exit 0]
+
+$ git diff --exit-code HEAD    [cwd: <rehearsal>/p00-explore]  [2026-10-06T18:12:54+00:00]
+[exit 0]
+
+$ git grep -n changeObjectiveSense    [cwd: <rehearsal>/p00-explore]  [2026-10-06T18:12:54+00:00]
+p00_model.py:66:    h.changeObjectiveSense(highspy.ObjSense.kMinimize)
+[exit 0]
+
+=== L1 DONE {'start': '2026-10-06T18:11:28Z', 'end': '2026-10-06T18:12:54Z', 'minutes': 1.43, 'done_exit': 0, 'symbol': 'changeObjectiveSense'} ===
+
+
+######## L2 ########
+
+$ uv run python exercises/p00-lab/export.py --tests-dir --bug dropped-demand --out ../../../p00-fix    [cwd: <rehearsal>/course/sessions/01-fundamentals]  [2026-10-06T18:12:54+00:00]
+<rehearsal>/p00-fix
+[exit 0]
+
+$ uv run pytest -q    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:12:54+00:00]
+..FFF.........................                                           [100%]
+=================================== FAILURES ===================================
+__________________________ test_feasibility_contract ___________________________
+
+data = {'plants': ['P1', 'P2', 'P3'], 'customers': ['C1', 'C2', 'C3', 'C4', 'C5'], 'capacity': {'P1': 70.0, 'P2': 60.0, 'P3': 50.0}, 'fixed_cost': {'P1': 100.0, 'P2': 100.0, 'P3': 150.0}, ...}
+solution = {'status': 'optimal', 'objective': 425.0, 'open': {'P1': 1.0, 'P2': 1.0, 'P3': 0.0}, 'flow': {'P1': {'C1': 20.0, 'C2':...}, 'P2': {'C1': 0.0, 'C2': 0.0, 'C3': 25.0, 'C4': 15.0, ...}, 'P3': {'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, ...}}}
+
+    def test_feasibility_contract(data, solution):
+        errors = p00_checker.feasibility_problems(data, solution)
+>       assert not errors, "feasibility contract: " + "; ".join(errors)
+E       AssertionError: feasibility contract: feasibility contract: customer C5 receives 0.0, demand is 10.0
+E       assert not ['feasibility contract: customer C5 receives 0.0, demand is 10.0']
+
+tests/test_p00_contract.py:69: AssertionError
+__________________________ test_integrality_contract ___________________________
+
+data = {'plants': ['P1', 'P2', 'P3'], 'customers': ['C1', 'C2', 'C3', 'C4', 'C5'], 'capacity': {'P1': 70.0, 'P2': 60.0, 'P3': 50.0}, 'fixed_cost': {'P1': 100.0, 'P2': 100.0, 'P3': 150.0}, ...}
+solution = {'status': 'optimal', 'objective': 425.0, 'open': {'P1': 1.0, 'P2': 1.0, 'P3': 0.0}, 'flow': {'P1': {'C1': 20.0, 'C2':...}, 'P2': {'C1': 0.0, 'C2': 0.0, 'C3': 25.0, 'C4': 15.0, ...}, 'P3': {'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, ...}}}
+
+    def test_integrality_contract(data, solution):
+        errors = p00_checker.integrality_problems(data, solution)
+        assert not errors, "integrality contract: " + "; ".join(errors)
+        rounded = deepcopy(solution)
+        rounded["open"] = {plant: round(value) for plant, value in solution["open"].items()}
+        errors = p00_checker.problems(data, rounded)
+>       assert not errors, "integrality contract: rounding must preserve feasibility: " + "; ".join(errors)
+E       AssertionError: integrality contract: rounding must preserve feasibility: feasibility contract: customer C5 receives 0.0, demand is 10.0
+E       assert not ['feasibility contract: customer C5 receives 0.0, demand is 10.0']
+
+tests/test_p00_contract.py:81: AssertionError
+___________________________ test_objective_contract ____________________________
+
+solution = {'status': 'optimal', 'objective': 425.0, 'open': {'P1': 1.0, 'P2': 1.0, 'P3': 0.0}, 'flow': {'P1': {'C1': 20.0, 'C2':...}, 'P2': {'C1': 0.0, 'C2': 0.0, 'C3': 25.0, 'C4': 15.0, ...}, 'P3': {'C1': 0.0, 'C2': 0.0, 'C3': 0.0, 'C4': 0.0, ...}}}
+
+    def test_objective_contract(solution):
+>       assert close(solution["objective"], KNOWN_OPTIMUM), (
+            "objective contract: objective must agree with the independently proven optimum"
+        )
+E       AssertionError: objective contract: objective must agree with the independently proven optimum
+E       assert False
+E        +  where False = close(425.0, 485.0)
+
+tests/test_p00_contract.py:88: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_p00_contract.py::test_feasibility_contract - AssertionError...
+FAILED tests/test_p00_contract.py::test_integrality_contract - AssertionError...
+FAILED tests/test_p00_contract.py::test_objective_contract - AssertionError: ...
+3 failed, 27 passed in 0.16s
+[stderr]
+Using CPython 3.12.13
+Creating virtual environment at: .venv
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 7 packages in 29ms
+[exit 1]
+
+$ claude -p "<prompt>" --output-format stream-json --verbose --permission-mode acceptEdits --allowedTools Bash(uv run pytest:*)    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:12:55+00:00]
+[init] model=claude-opus-5-5 permissionMode=acceptEdits claude_code_version=2.1.291
+[tool call] Bash {"command": "ls -la && cat README.md && cat p00_model.py", "description": "List files and read README and model"}
+[tool result] total 116
+drwxr-xr-x 8 <user> <user>   340 Oct  6 20:12 .
+drwxr-xr-x 5 <user> <user>   140 Oct  6 20:12 ..
+drwxr-xr-x 7 <user> <user>   240 Oct  6 20:12 .git
+-rw-r--r-- 1 <user> <user>    35 Oct  6 20:12 .gitignore
+drwxr-xr-x 3 <user> <user>   120 Oct  6 20:12 .pytest_cache
+drwxr-xr-x 4 <user> <user>   180 Oct  6 20:12 .venv
+-rw-r--r-- 1 <user> <user>   996 Oct  6 20:12 AGENTS.md
+-rw-r--r-- 1 <user> <user>    11 Oct  6 20:12 CLAUDE.md
+-rw-r--r-- 1 <user> <user>  3478 Oct  6 20: … [6945 more chars clipped]
+[tool call] Bash {"command": "uv run pytest 2>&1 | tail -30; grep -n \"customer_ids\\[:-1\\]\" p00_model.py", "description": "Run tests and locate the demand loop"}
+[tool result]     def test_integrality_contract(data, solution):
+        errors = p00_checker.integrality_problems(data, solution)
+        assert not errors, "integrality contract: " + "; ".join(errors)
+        rounded = deepcopy(solution)
+        rounded["open"] = {plant: round(value) for plant, value in solution["open"].items()}
+        errors = p00_checker.problems(data, rounded)
+>       assert not errors, "integrality contract: rounding must preserve feasibility: " + "; ".join(errors)
+E       AssertionErr … [1457 more chars clipped]
+[assistant] The demand loop at `p00_model.py:61` skips the last customer (`C5`), so the solver is free to ship it nothing. Fixing it:
+[tool call] Edit {"replace_all": false, "file_path": "<rehearsal>/p00-fix/p00_model.py", "old_string": "    for c in customer_ids[:-1]:", "new_string": "    for c in customer_ids:"}
+[tool result] The file <rehearsal>/p00-fix/p00_model.py has been updated successfully.
+[tool call] Bash {"command": "uv run pytest 2>&1 | tail -5; uv run python p00_model.py; git diff --stat", "description": "Re-run tests, print solution, check diff"}
+[tool result (error)] This Bash command contains multiple operations. The following part requires approval: tail -5; uv run python p00_model.py; git diff --stat
+[tool call] Bash {"command": "uv run pytest 2>&1 | tail -5", "description": "Re-run the test suite"}
+[tool result] collected 30 items
+
+tests/test_p00_contract.py ..............................                [100%]
+
+============================== 30 passed in 0.06s ==============================
+[tool call] Bash {"command": "git diff", "description": "Show the change"}
+[tool result] diff --git a/p00_model.py b/p00_model.py
+index 27f880b..de60087 100644
+--- a/p00_model.py
++++ b/p00_model.py
+@@ -58,7 +58,7 @@ def solve(data_dir=DATA_DIR, time_limit=10.0):
+         for c in customer_ids
+     }
+ 
+-    for c in customer_ids[:-1]:
++    for c in customer_ids:
+         h.addConstr(sum(x[p, c] for p in plant_ids) == demand[c])
+     for p in plant_ids:
+         h.addConstr(sum(x[p, c] for c in customer_ids) - capacity[p] * y[p] <= 0)
+[assistant] All 30 tests pass now. The only change is one line in `p00_model.py`.
+
+**Broken contract: feasibility.** The model never required customer C5's demand to be met. Line 61 in `p00_model.py` was:
+
+```python
+for c in customer_ids[:-1]:      # before
+for c in customer_ids:           # after
+```
+
+The `[:-1]` skipped the demand equality for the last customer. That left C5 with no constraint, so the cheapest choice for the solver was to ship it nothing. The checker caught this ("customer C5 receives 0.0, demand is 10.0"). The other two failures came from the same bug:
+- **Integrality:** the openings were already 0/1. The test failed only because it re-runs the feasibility check after rounding.
+- **Objective:** without the C5 constraint the solver reported 425.0. The known optimum is 485.0.
+
+**Why the solver alone didn't tell you:** HiGHS solved the model it was given to proven optimality and reported `optimal`. That model just wasn't the problem in the README. The status was correct, so the status contract passed. Only the independent checker, which measures shipments against the real data, could see the missing demand.
+
+Last lines of `uv run pytest`:
+
+```
+collected 30 items
+
+tests/test_p00_contract.py ..............................                [100%]
+
+============================== 30 passed in 0.06s ==============================
+```
+[result] subtype=success turns=7 duration_ms=24323 denials=1
+[final answer]
+All 30 tests pass now. The only change is one line in `p00_model.py`.
+
+**Broken contract: feasibility.** The model never required customer C5's demand to be met. Line 61 in `p00_model.py` was:
+
+```python
+for c in customer_ids[:-1]:      # before
+for c in customer_ids:           # after
+```
+
+The `[:-1]` skipped the demand equality for the last customer. That left C5 with no constraint, so the cheapest choice for the solver was to ship it nothing. The checker caught this ("customer C5 receives 0.0, demand is 10.0"). The other two failures came from the same bug:
+- **Integrality:** the openings were already 0/1. The test failed only because it re-runs the feasibility check after rounding.
+- **Objective:** without the C5 constraint the solver reported 425.0. The known optimum is 485.0.
+
+**Why the solver alone didn't tell you:** HiGHS solved the model it was given to proven optimality and reported `optimal`. That model just wasn't the problem in the README. The status was correct, so the status contract passed. Only the independent checker, which measures shipments against the real data, could see the missing demand.
+
+Last lines of `uv run pytest`:
+
+```
+collected 30 items
+
+tests/test_p00_contract.py ..............................                [100%]
+
+============================== 30 passed in 0.06s ==============================
+```
+[exit 0]
+
+$ git diff --stat -- tests/    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:13:21+00:00]
+[exit 0]
+
+$ uv run pytest    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:13:21+00:00]
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: <rehearsal>/p00-fix
+configfile: pyproject.toml
+collected 30 items
+
+tests/test_p00_contract.py ..............................                [100%]
+
+============================== 30 passed in 0.06s ==============================
+[exit 0]
+
+$ git status --short    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:13:21+00:00]
+ M p00_model.py
+[exit 0]
+
+$ git diff    [cwd: <rehearsal>/p00-fix]  [2026-10-06T18:13:21+00:00]
+diff --git a/p00_model.py b/p00_model.py
+index 27f880b..de60087 100644
+--- a/p00_model.py
++++ b/p00_model.py
+@@ -58,7 +58,7 @@ def solve(data_dir=DATA_DIR, time_limit=10.0):
+         for c in customer_ids
+     }
+ 
+-    for c in customer_ids[:-1]:
++    for c in customer_ids:
+         h.addConstr(sum(x[p, c] for p in plant_ids) == demand[c])
+     for p in plant_ids:
+         h.addConstr(sum(x[p, c] for c in customer_ids) - capacity[p] * y[p] <= 0)
+[exit 0]
+
+=== L2 DONE {'start': '2026-10-06T18:12:54Z', 'end': '2026-10-06T18:13:21Z', 'minutes': 0.45, 'done_exit': 0} ===
+
+
+######## L3 ########
+
+$ claude -p "<prompt>" --output-format stream-json --verbose --permission-mode plan    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:13:21+00:00]
+[init] model=claude-opus-5-5 permissionMode=plan claude_code_version=2.1.291
+[tool call] Bash {"command": "ls -laR && cat README.md", "description": "List exercise folder and show README"}
+[tool result] .:
+total 16
+drwxr-xr-x 4 <user> <user>  120 Oct  6 20:11 .
+drwxr-xr-x 4 <user> <user>  120 Oct  6 20:11 ..
+-rw-r--r-- 1 <user> <user> 3759 Oct  6 20:11 README.md
+-rw-r--r-- 1 <user> <user> 9705 Oct  6 20:11 check.py
+drwxr-xr-x 2 <user> <user>   60 Oct  6 20:11 data
+drwxr-xr-x 2 <user> <user>  100 Oct  6 20:11 wrong
+
+./data:
+total 4
+drwxr-xr-x 2 <user> <user>  60 Oct  6 20:11 .
+drwxr-xr-x 4 <user> <user> 120 Oct  6 20:11 ..
+-rw-r--r-- 1 <user> <user>  53 Oct  6 20:11 demand.csv
+ … [4062 more chars clipped]
+[tool call] Bash {"command": "cat check.py; echo ----; cat data/demand.csv; echo ----; for f in wrong/*.json; do echo \"== $f\"; cat \"$f\"; echo; done; echo ----; ls ..; ls ../..; cat ../../../../AGENTS.md 2>/dev/null | head -100", "description": "Show checker, data, wrong solutions, and AGENTS.md"}
+[tool result] """Independent L3 checker: recompute feasibility and headcount from a solution file.
+
+Standard library only, no solver. It trusts nothing in the solution file: coverage and
+headcount are recomputed from the weekly starts, and the reported objective is only compared.
+
+Usage, from this folder:
+
+    uv run python check.py [solution.json]
+    python check.py [solution.json]
+
+The first output line is PASS or FAIL. Each problem line starts with the contract it breaks
+(data, format, feasibility, integr … [14898 more chars clipped]
+[tool call] Bash {"command": "cat ../../pyproject.toml; echo ----; grep -n -i -A3 'name = \"highspy\"' ../../uv.lock | head; echo ----; ls ../p00-lab; ls ../../tests; grep -rln \"l3-word-problem\\|l3_word\\|KNOWN_OPTIMUM\" ../../tests ../../../../tests 2>/dev/null | head", "description": "Check session pyproject, highspy pin, and related tests"}
+[tool result] [project]
+name = "cursus-session-01-fundamentals"
+version = "0.1.0"
+description = "Session 1 (Fundamentals): labs, demos and exercises."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "highspy>=1.15.1",
+    "numpy>=2.5.3",
+    "pytest>=9.1.1",
+]
+
+[dependency-groups]
+fixtures = [
+    "torch>=2.14.1",
+    "transformers>=5.18.0",
+]
+----
+128:    { name = "highspy" },
+129-    { name = "numpy" },
+130-    { name = "pytest" },
+131-]
+--
+141:    { name = "highspy", specifier =  … [395 more chars clipped]
+[tool call] Bash {"command": "cat ../p00-lab/p00_model.py; echo ----; cat ../../tests/test_l3_word_problem.py; echo ----; git -C . check-ignore -v work/x.py solution.json 2>&1; cat .gitignore ../.gitignore ../../.gitignore 2>/dev/null", "description": "Show existing highspy model, L3 tests, and ignore rules"}
+[tool result (error)] Exit code 3
+"""P00 model: fixed-charge transportation MILP solved with HiGHS through highspy.
+
+Run `python p00_model.py` to solve the instance in data/ and print the solution as JSON.
+"""
+
+import csv
+import json
+from pathlib import Path
+
+import highspy
+
+
+DATA_DIR = Path(__file__).parent / "data"
+
+
+def read_rows(path):
+    with Path(path).open(newline="", encoding="utf-8") as stream:
+        return list(csv.DictReader(stream))
+
+
+def contract_status(model_status, has_solution):
+    """Translate a  … [9540 more chars clipped]
+[tool call] Bash {"command": "grep -n -i \"work\\|glob\\|\\.py\\\"\\|solution.json\\|iterdir\\|listdir\" ../../tests/test_l3_word_problem.py | head -40; echo ----; git check-ignore -v work/model.py solution.json; echo \"rc=$?\"; git ls-files . ", "description": "Look for pack layout rules in tests and git ignore status"}
+[tool result] 39:        "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX",
+58:    script = pack / "check.py"
+110:    # Construct each shift's five working days, independently of the checker.
+140:    tree = ast.parse((PACK / "check.py").read_text(encoding="utf-8"))
+164:    for name in ("README.md", "check.py", "data/demand.csv"):
+176:    assert re.search(r"headcount|staff|people|employees|workers", problem, re.I)
+177:    assert "data/demand.csv" in readme and "solution.json" in read … [730 more chars clipped]
+[tool call] Bash {"command": "sed -n 155,200p ../../tests/test_l3_word_problem.py; python3 -c \"import sys;print(sys.version)\"; ls ../../.venv 2>/dev/null | head -3", "description": "Show the pack-layout assertions in the L3 test"}
+[tool result] def section(markdown, title):
+    heading = re.search(rf"(?mi)^(#{{1,6}})\s+{re.escape(title)}\s*#*\s*$", markdown)
+    assert heading, f"Documentation needs a {title!r} section"
+    rest = markdown[heading.end():]
+    end = re.search(rf"(?m)^#{{1,{len(heading[1])}}}\s+", rest)
+    return rest[:end.start() if end else len(rest)].strip()
+
+
+def test_layout_and_statement():
+    for name in ("README.md", "check.py", "data/demand.csv"):
+        assert (PACK / name).is_file(), f"D1: missing {name}"
+   … [2575 more chars clipped]
+[assistant] I have what I need. The scope is one small script, so I'll write the plan directly without a Plan agent.
+[tool call] Write {"file_path": "~/.claude/plans/plan-only-do-not-reactive-otter.md", "content": "# L3 weekly staffing \u2014 model plan (HiGHS via highspy)\n\n## Context\nExercise `sessions/01-fundamentals/exercises/l3-word-problem`: choose how many people start a\n5-on/2-off block on each weekday (the pattern wraps around the week) so each day meets\n`data/demand.csv` (Mon..Sun = 8,7,8,9,8,5,6), using as few people as possible. Write\n`solution.json` here and prove it with the stdlib-only `check.py`, without trusting the solver.\n`check.py`, `data/` and `wrong/` stay untouched.\n\n## Model\n- Days … [4183 more chars clipped]
+[tool result] File created successfully at: ~/.claude/plans/plan-only-do-not-reactive-otter.md (file state is current in your context — no need to Read it back)
+[assistant] Here's the plan. I haven't created or edited any file in the repo; the plan is saved at `~/.claude/plans/plan-only-do-not-reactive-otter.md`.
+
+## Model (HiGHS via highspy)
+
+- **Decision variables:** one per day, `x[s]` = the number of people who start their five-day block on day `s`. Each is a whole number (`HighsVarType.kInteger`), at least 0, with no upper limit. Days are read in file order from `data/demand.csv`, so the JSON keys match exactly.
+- **Coverage, including the wraparound:** someone who starts on day `s` works `s` through `s+4`, counting modulo 7. So day `d` is covered by everyone who started on `d, d-1, …, d-4` (mod 7). That is everyone except the people who start on `d+1` and `d+2`. The constraint for each day is `sum_{k=0..4} x[(d-k) % 7] >= demand[d]`:
+
+  | Day | People on duty (by start day) | Need | Off that day |
+  |---|---|---|---|
+  | Mon | Thu+Fri+Sat+Sun+Mon | ≥ 8 | Tue, Wed |
+  | Tue | Fri+Sat+Sun+Mon+Tue | ≥ 7 | Wed, Thu |
+  | Wed | Sat+Sun+Mon+Tue+Wed | ≥ 8 | Thu, Fri |
+  | Thu | Sun+Mon+Tue+Wed+Thu | ≥ 9 | Fri, Sat |
+  | Fri | Mon+Tue+Wed+Thu+Fri | ≥ 8 | Sat, Sun |
+  | Sat | Tue+Wed+Thu+Fri+Sat | ≥ 5 | Sun, Mon |
+  | Sun | Wed+Thu+Fri+Sat+Sun | ≥ 6 | Mon, Tue |
+
+  This matches the README's example: a Friday start covers Fri, Sat, Sun, Mon and Tue.
+- **Objective:** minimise `Σ x[s]`. Each person starts exactly once a week, so this sum is the headcount.
+- **Solver settings:** output off, `mip_rel_gap = 0` so the solver proves optimality, and a 10-second time limit. If HiGHS doesn't return "optimal", the script writes nothing and exits with an error.
+
+## Code: `work/solve.py`
+
+It follows the style of `p00-lab/p00_model.py`.
+
+- It solves the model twice: first with fractional values allowed, as a cross-check that should give 10.2, then with whole numbers.
+- It confirms every value is within 1e-6 of a whole number, then writes `solution.json` in this folder.
+- The `"objective"` field takes the solver's reported objective, not `sum(start)`. That way the checker's `objective:` check really tests the model.
+
+Run it with `uv run python work/solve.py`. `uv` picks up the session's `pyproject.toml`, which provides Python 3.12 and highspy.
+
+## Gap to expect
+
+Add the seven coverage rows together: each `x` appears five times, so 5·headcount ≥ 51, which means headcount ≥ 10.2. That is the LP bound. Headcount must be a whole number, so it is at least 11.
+
+- **Expected result:** headcount **11**, gap **0.8 people (7.27% of 11)**.
+- The gap comes only from needing whole people; the model isn't weak.
+- Several rosters of 11 work, so HiGHS may pick any of them, and `check.py` accepts any one that covers every day.
+
+## Verifying without trusting the solver
+
+1. Run `uv run python check.py`. It should print `PASS`, then: recomputed headcount 11, LP bound 10.2, known optimum 11, gap `0.8 (7.27%)`. We report that output, not what the solver says.
+2. **Why the checker is independent:**
+   - It uses only the standard library and never calls a solver.
+   - It has the demand values built in, so it catches an edited CSV.
+   - It recomputes who is on duty each day from `start` with its own wraparound rule (`(d - s) % 7 < 5`).
+   - It recomputes the headcount and compares it with the reported objective and with the optimum of 11, which was worked out by hand.
+   - Because of the sum argument above, any valid whole-number roster of 11 is optimal on paper. We don't have to take the solver's word for optimality.
+3. **Show the checker can fail:**
+   - `wrong/understaffed.json` should fail on coverage (Mon 7/8, Thu 8/9, Sun 5/6) and on optimality.
+   - `wrong/fractional.json` should fail on whole numbers and on optimality.
+   - `wrong/misreported.json` should fail on the objective and on optimality.
+4. `git status --porcelain -- check.py data wrong` should print nothing, showing those files didn't change.
+
+## Decision for you: don't commit `solution.json`
+
+The instructor test (`sessions/01-fundamentals/tests/test_l3_word_problem.py::test_layout_and_statement`) requires that `solution.json` does **not** exist in this folder. It will fail locally while the file is there.
+
+My recommendation is to leave `solution.json` and `work/` uncommitted; neither is ignored by git. A script inside `work/` doesn't break the test's "only `check.py` at the top" rule, which only looks at the top level of this folder.
+
+Tell me to go ahead and I'll build it.
+[result] subtype=success turns=8 duration_ms=88115 denials=0
+[final answer]
+Here's the plan. I haven't created or edited any file in the repo; the plan is saved at `~/.claude/plans/plan-only-do-not-reactive-otter.md`.
+
+## Model (HiGHS via highspy)
+
+- **Decision variables:** one per day, `x[s]` = the number of people who start their five-day block on day `s`. Each is a whole number (`HighsVarType.kInteger`), at least 0, with no upper limit. Days are read in file order from `data/demand.csv`, so the JSON keys match exactly.
+- **Coverage, including the wraparound:** someone who starts on day `s` works `s` through `s+4`, counting modulo 7. So day `d` is covered by everyone who started on `d, d-1, …, d-4` (mod 7). That is everyone except the people who start on `d+1` and `d+2`. The constraint for each day is `sum_{k=0..4} x[(d-k) % 7] >= demand[d]`:
+
+  | Day | People on duty (by start day) | Need | Off that day |
+  |---|---|---|---|
+  | Mon | Thu+Fri+Sat+Sun+Mon | ≥ 8 | Tue, Wed |
+  | Tue | Fri+Sat+Sun+Mon+Tue | ≥ 7 | Wed, Thu |
+  | Wed | Sat+Sun+Mon+Tue+Wed | ≥ 8 | Thu, Fri |
+  | Thu | Sun+Mon+Tue+Wed+Thu | ≥ 9 | Fri, Sat |
+  | Fri | Mon+Tue+Wed+Thu+Fri | ≥ 8 | Sat, Sun |
+  | Sat | Tue+Wed+Thu+Fri+Sat | ≥ 5 | Sun, Mon |
+  | Sun | Wed+Thu+Fri+Sat+Sun | ≥ 6 | Mon, Tue |
+
+  This matches the README's example: a Friday start covers Fri, Sat, Sun, Mon and Tue.
+- **Objective:** minimise `Σ x[s]`. Each person starts exactly once a week, so this sum is the headcount.
+- **Solver settings:** output off, `mip_rel_gap = 0` so the solver proves optimality, and a 10-second time limit. If HiGHS doesn't return "optimal", the script writes nothing and exits with an error.
+
+## Code: `work/solve.py`
+
+It follows the style of `p00-lab/p00_model.py`.
+
+- It solves the model twice: first with fractional values allowed, as a cross-check that should give 10.2, then with whole numbers.
+- It confirms every value is within 1e-6 of a whole number, then writes `solution.json` in this folder.
+- The `"objective"` field takes the solver's reported objective, not `sum(start)`. That way the checker's `objective:` check really tests the model.
+
+Run it with `uv run python work/solve.py`. `uv` picks up the session's `pyproject.toml`, which provides Python 3.12 and highspy.
+
+## Gap to expect
+
+Add the seven coverage rows together: each `x` appears five times, so 5·headcount ≥ 51, which means headcount ≥ 10.2. That is the LP bound. Headcount must be a whole number, so it is at least 11.
+
+- **Expected result:** headcount **11**, gap **0.8 people (7.27% of 11)**.
+- The gap comes only from needing whole people; the model isn't weak.
+- Several rosters of 11 work, so HiGHS may pick any of them, and `check.py` accepts any one that covers every day.
+
+## Verifying without trusting the solver
+
+1. Run `uv run python check.py`. It should print `PASS`, then: recomputed headcount 11, LP bound 10.2, known optimum 11, gap `0.8 (7.27%)`. We report that output, not what the solver says.
+2. **Why the checker is independent:**
+   - It uses only the standard library and never calls a solver.
+   - It has the demand values built in, so it catches an edited CSV.
+   - It recomputes who is on duty each day from `start` with its own wraparound rule (`(d - s) % 7 < 5`).
+   - It recomputes the headcount and compares it with the reported objective and with the optimum of 11, which was worked out by hand.
+   - Because of the sum argument above, any valid whole-number roster of 11 is optimal on paper. We don't have to take the solver's word for optimality.
+3. **Show the checker can fail:**
+   - `wrong/understaffed.json` should fail on coverage (Mon 7/8, Thu 8/9, Sun 5/6) and on optimality.
+   - `wrong/fractional.json` should fail on whole numbers and on optimality.
+   - `wrong/misreported.json` should fail on the objective and on optimality.
+4. `git status --porcelain -- check.py data wrong` should print nothing, showing those files didn't change.
+
+## Decision for you: don't commit `solution.json`
+
+The instructor test (`sessions/01-fundamentals/tests/test_l3_word_problem.py::test_layout_and_statement`) requires that `solution.json` does **not** exist in this folder. It will fail locally while the file is there.
+
+My recommendation is to leave `solution.json` and `work/` uncommitted; neither is ignored by git. A script inside `work/` doesn't break the test's "only `check.py` at the top" rule, which only looks at the top level of this folder.
+
+Tell me to go ahead and I'll build it.
+[exit 0]
+
+[plan-mode check: files changed under l3-word-problem after the plan turn]
+
+$ git status --short --untracked-files=all -- .    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:14:51+00:00]
+[exit 0]
+
+[leaving plan mode: resuming session <session-id> with edits allowed]
+
+$ claude -p "<prompt>" --output-format stream-json --verbose --resume <session-id> --permission-mode acceptEdits --allowedTools Bash(uv run:*)    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:14:51+00:00]
+[init] model=claude-opus-5-5 permissionMode=acceptEdits claude_code_version=2.1.291
+[tool call] Write {"file_path": "<rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem/work/solve.py", "content": "[redacted: L3 answer key (work/ file content); see the rehearsal report]"}
+[tool result] File created successfully at: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem/work/solve.py (file state is current in your context — no need to Read it back)
+[tool call] Bash {"command": "git status --porcelain -- check.py data wrong; git rev-parse HEAD:sessions/01-fundamentals/exercises/l3-word-problem/check.py 2>/dev/null; sha256sum check.py data/* wrong/*", "description": "Record protected files' state before running"}
+[tool result] 280573201c7377227e644a4e5c7fae8a7a09a134
+e8bd9b06e7862c386570fa1eb20a21adfb63ec225dfde58ade3c78dc271d9a2f  check.py
+6376748c6b85ed5fbf09a775be248b3c3029bf2a204711c23590cf5a421ffe7b  data/demand.csv
+c61272c8f0615e47911ba726024ecc7cd30d2caee2d3a1b87456aa1994b4a483  wrong/fractional.json
+e0228d245ed5f8d005c5d4ab9154d8419f87b9e7bd8165fd1754c9d8fea6a552  wrong/misreported.json
+a10772f9524531c327409fc06c53644cdf7a41e95c47d0d3a789774f100baa22  wrong/understaffed.json
+[tool call] Bash {"command": "uv run python work/solve.py && echo ---- && cat solution.json", "description": "Solve the model and write solution.json", "timeout": 300000}
+[tool result] LP relaxation: 10.2
+MIP optimum: 11
+Gap: 0.8 (7.27%)
+Wrote <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem/solution.json
+----
+[redacted: L3 answer key (roster); see the rehearsal report]
+[tool call] Bash {"command": "uv run python check.py; echo \"exit=$?\"", "description": "Run the independent checker on solution.json"}
+[tool result (error)] This Bash command contains multiple operations. The following part requires approval: echo "exit=$?"
+[tool call] Bash {"command": "for f in wrong/*.json; do echo \"== $f\"; uv run python check.py \"$f\"; echo \"exit=$?\"; done; echo \"== protected files\"; git status --porcelain -- check.py data wrong; sha256sum check.py data/* wrong/*; git status --porcelain .", "description": "Run checker on wrong solutions and confirm protected files unchanged"}
+[tool result (error)] A variable in this command can't be checked before it runs
+[tool call] Bash {"command": "uv run python check.py", "description": "Run the independent checker on solution.json"}
+[tool result] PASS
+
+Recomputed headcount: 11
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: 0.8 (7.27%)
+[tool call] Bash {"command": "uv run python check.py wrong/understaffed.json", "description": "Run checker on the understaffed wrong solution"}
+[tool result (error)] Exit code 1
+FAIL
+feasibility: Mon has 7 on duty, needs 8
+feasibility: Thu has 8 on duty, needs 9
+feasibility: Sun has 5 on duty, needs 6
+optimality: recomputed headcount 10 is below the known optimum 11
+
+Recomputed headcount: 10
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: -0.2 (-2.00%)
+[tool call] Bash {"command": "uv run python check.py wrong/fractional.json", "description": "Run checker on the fractional wrong solution"}
+[tool result (error)] Exit code 1
+FAIL
+integrality: start Mon is 3.6, not a whole number
+integrality: start Tue is 0.6, not a whole number
+integrality: start Wed is 1.6, not a whole number
+integrality: start Thu is 1.6, not a whole number
+integrality: start Fri is 0.6, not a whole number
+integrality: start Sat is 0.6, not a whole number
+integrality: start Sun is 1.6, not a whole number
+optimality: recomputed headcount 10.2 is below the known optimum 11
+
+Recomputed headcount: 10.2
+LP-relaxation bound: 10.2
+Known optim … [37 more chars clipped]
+[tool call] Bash {"command": "uv run python check.py wrong/misreported.json", "description": "Run checker on the misreported wrong solution"}
+[tool result (error)] Exit code 1
+FAIL
+objective: reported 11, recomputed 12 from the starts
+optimality: recomputed headcount 12 is above the known optimum 11
+
+Recomputed headcount: 12
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: 1.8 (15.00%)
+[tool call] Bash {"command": "sha256sum check.py data/demand.csv wrong/fractional.json wrong/misreported.json wrong/understaffed.json", "description": "Hash protected files to confirm they are unchanged"}
+[tool result] e8bd9b06e7862c386570fa1eb20a21adfb63ec225dfde58ade3c78dc271d9a2f  check.py
+6376748c6b85ed5fbf09a775be248b3c3029bf2a204711c23590cf5a421ffe7b  data/demand.csv
+c61272c8f0615e47911ba726024ecc7cd30d2caee2d3a1b87456aa1994b4a483  wrong/fractional.json
+e0228d245ed5f8d005c5d4ab9154d8419f87b9e7bd8165fd1754c9d8fea6a552  wrong/misreported.json
+a10772f9524531c327409fc06c53644cdf7a41e95c47d0d3a789774f100baa22  wrong/understaffed.json
+[tool call] Bash {"command": "git status --porcelain --untracked-files=all .", "description": "Show working tree status for the exercise folder"}
+[tool result] ?? sessions/01-fundamentals/exercises/l3-word-problem/solution.json
+?? sessions/01-fundamentals/exercises/l3-word-problem/work/solve.py
+[assistant] The roster passes: `check.py` prints `PASS` with a headcount of 11 and a gap of **0.8 people (7.27%)** to the LP bound.
+
+## The model: `work/solve.py`
+- **Variables:** one whole number per day, `x[day]` ≥ 0, the number of people who start their five-day block that day.
+- **Constraints:** for each day `d`, the people who started on `d, d-1, …, d-4` (counting round the week) must meet that day's demand.
+- **Objective:** minimise the sum of the starts, which is the headcount.
+- **Solver settings:** `mip_rel_gap = 0`; if HiGHS doesn't report "optimal", the script stops without writing anything.
+- **What it writes:** the solver's own objective goes into `"objective"`. Every value must be within 1e-6 of a whole number before it is written.
+- **Cross-check:** it also solves with fractional values allowed, which gives the 10.2 bound.
+
+## Running the model
+```
+$ uv run python work/solve.py
+LP relaxation: 10.2
+MIP optimum: 11
+Gap: 0.8 (7.27%)
+```
+It wrote `solution.json`:
+```json
+[redacted: L3 answer key (roster); see the rehearsal report]
+```
+
+## Full output of `uv run python check.py` (exit code 0)
+```
+PASS
+
+Recomputed headcount: 11
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: 0.8 (7.27%)
+```
+
+I also added up who is on duty each day by hand:
+
+| | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
+|---|---|---|---|---|---|---|---|
+| On duty | 8 | 7 | 8 | 9 | 8 | 6 | 9 |
+| Needed | 8 | 7 | 8 | 9 | 8 | 5 | 6 |
+
+Monday to Friday are met exactly, with 4 extra person-days at the weekend (5 × 11 = 55 against 51 needed). The 51 needed person-days mean at least 10.2 people, so 11 whole people is the minimum on paper. We don't need to trust the solver's claim of optimality.
+
+## The checker rejects the three wrong answers (each exits with code 1)
+- **`wrong/understaffed.json`:** fails on coverage (Mon 7/8, Thu 8/9, Sun 5/6), and its headcount of 10 is below the optimum.
+- **`wrong/fractional.json`:** fails because all seven starts are fractions, and 10.2 is below the optimum.
+- **`wrong/misreported.json`:** it reports 11 but its starts add up to 12, which is also above the optimum.
+
+## Files
+- **Unchanged:** `check.py`, `data/demand.csv` and the three `wrong/*.json` files have the same SHA-256 hashes as before the run.
+- **New, uncommitted:** `work/solve.py` and `solution.json`. Leave them uncommitted: the instructor test `test_layout_and_statement` fails while `solution.json` exists in this folder.
+[result] subtype=success turns=12 duration_ms=34292 denials=2
+[final answer]
+The roster passes: `check.py` prints `PASS` with a headcount of 11 and a gap of **0.8 people (7.27%)** to the LP bound.
+
+## The model: `work/solve.py`
+- **Variables:** one whole number per day, `x[day]` ≥ 0, the number of people who start their five-day block that day.
+- **Constraints:** for each day `d`, the people who started on `d, d-1, …, d-4` (counting round the week) must meet that day's demand.
+- **Objective:** minimise the sum of the starts, which is the headcount.
+- **Solver settings:** `mip_rel_gap = 0`; if HiGHS doesn't report "optimal", the script stops without writing anything.
+- **What it writes:** the solver's own objective goes into `"objective"`. Every value must be within 1e-6 of a whole number before it is written.
+- **Cross-check:** it also solves with fractional values allowed, which gives the 10.2 bound.
+
+## Running the model
+```
+$ uv run python work/solve.py
+LP relaxation: 10.2
+MIP optimum: 11
+Gap: 0.8 (7.27%)
+```
+It wrote `solution.json`:
+```json
+[redacted: L3 answer key (roster); see the rehearsal report]
+```
+
+## Full output of `uv run python check.py` (exit code 0)
+```
+PASS
+
+Recomputed headcount: 11
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: 0.8 (7.27%)
+```
+
+I also added up who is on duty each day by hand:
+
+| | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
+|---|---|---|---|---|---|---|---|
+| On duty | 8 | 7 | 8 | 9 | 8 | 6 | 9 |
+| Needed | 8 | 7 | 8 | 9 | 8 | 5 | 6 |
+
+Monday to Friday are met exactly, with 4 extra person-days at the weekend (5 × 11 = 55 against 51 needed). The 51 needed person-days mean at least 10.2 people, so 11 whole people is the minimum on paper. We don't need to trust the solver's claim of optimality.
+
+## The checker rejects the three wrong answers (each exits with code 1)
+- **`wrong/understaffed.json`:** fails on coverage (Mon 7/8, Thu 8/9, Sun 5/6), and its headcount of 10 is below the optimum.
+- **`wrong/fractional.json`:** fails because all seven starts are fractions, and 10.2 is below the optimum.
+- **`wrong/misreported.json`:** it reports 11 but its starts add up to 12, which is also above the optimum.
+
+## Files
+- **Unchanged:** `check.py`, `data/demand.csv` and the three `wrong/*.json` files have the same SHA-256 hashes as before the run.
+- **New, uncommitted:** `work/solve.py` and `solution.json`. Leave them uncommitted: the instructor test `test_layout_and_statement` fails while `solution.json` exists in this folder.
+[exit 0]
+
+$ uv run python check.py    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:15:27+00:00]
+PASS
+
+Recomputed headcount: 11
+LP-relaxation bound: 10.2
+Known optimum: 11
+Gap to the LP bound: 0.8 (7.27%)
+[exit 0]
+
+$ git status --short -- check.py data wrong    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:15:27+00:00]
+[exit 0]
+
+$ git status --short --untracked-files=all -- .    [cwd: <rehearsal>/course/sessions/01-fundamentals/exercises/l3-word-problem]  [2026-10-06T18:15:27+00:00]
+?? solution.json
+?? work/solve.py
+[exit 0]
+
+solution.json: [redacted: L3 answer key (roster); see the rehearsal report]
+
+=== L3 DONE {'start': '2026-10-06T18:13:21Z', 'end': '2026-10-06T18:15:27Z', 'minutes': 2.1, 'done_exit': 0, 'gap_line': 'Gap to the LP bound: 0.8 (7.27%)'} ===
+
+FINAL {"cli": "claude", "version": "2.1.291 (Claude Code)", "revision": "8b2937c", "variant": "dropped-demand", "levels": {"L1": {"start": "2026-10-06T18:11:28Z", "end": "2026-10-06T18:12:54Z", "minutes": 1.43, "done_exit": 0, "symbol": "changeObjectiveSense"}, "L2": {"start": "2026-10-06T18:12:54Z", "end": "2026-10-06T18:13:21Z", "minutes": 0.45, "done_exit": 0}, "L3": {"start": "2026-10-06T18:13:21Z", "end": "2026-10-06T18:15:27Z", "minutes": 2.1, "done_exit": 0, "gap_line": "Gap to the LP bound: 0.8 (7.27%)"}}}
