@@ -77,7 +77,6 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
-| `exercises/lab-ladder.html` | The Act IV lab ladder (L1 to L4, 40 minutes): exploring, fixing and building with Claude Code or Codex, each level closed by a command students run; pair protocol, sticky-note signals, debrief card and collapsed instructor hints |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
 | `exercises/l3-word-problem/` | L3, a weekly staffing MILP to model from a word problem: statement, data, the solution-file format, an independent stdlib checker (`check.py`) and three seeded wrong solutions |
 | `tests/` | The session's pytest suite |
