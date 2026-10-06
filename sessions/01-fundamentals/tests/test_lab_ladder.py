@@ -4,6 +4,11 @@ Run with ``uv run pytest -q tests/test_lab_ladder.py`` from the session.
 These checks support, but do not replace, review of the teaching content,
 screenshots, CLI help evidence and authentic rehearsal transcripts (ADR 0011).
 
+The engine executes command checks only, but accounts for every test here.
+Keep the L3 location and rehearsal checks in the ``done_commands`` selection
+used by A2 as well as the ``l3``/``rehearsal`` artifact-review selections.
+These check where the done commands run and their recorded completion times.
+
 The agreed HTML interface is section[data-level][data-box], data-agent and
 data-done. A done block contains newline-separated commands in pre/code;
 L4 may group its alternative commands in separate code blocks. No additional
@@ -259,7 +264,7 @@ def relative_targets(element):
             if href and not re.match(r"(?:[a-zA-Z][\w+.-]*:|/)", href)}
 
 
-def test_l3_relative_problem_link(page):
+def test_done_commands_l3_relative_problem_link(page):
     assert (L3 / "README.md").resolve() in relative_targets(level(page, "L3"))
     assert (L3 / "README.md").is_file()
 
@@ -533,7 +538,7 @@ def rehearsal_rows(source):
     return rows
 
 
-def test_rehearsal_both_clis_within_page_boxes(page):
+def test_done_commands_rehearsal_both_clis_within_page_boxes(page):
     assert REHEARSAL.is_file(), "A1 unproven: missing rehearsal report"
     rows = rehearsal_rows(REHEARSAL.read_text(encoding="utf-8"))
     observed = set()
