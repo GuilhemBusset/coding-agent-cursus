@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en" data-page-kind="lab" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verifier gaming</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <style>/* Page-specific layout for the verifier-gaming lab; uses the shared tokens. */
+.cited { margin: 0 0 1.25rem; }
+.cited blockquote { margin: 0 0 .75rem; padding-left: 1rem; border-left: 3px solid var(--amber); }
+.cited figcaption { color: var(--secondary); font-size: .9375rem; }
+.lab-section { margin-block: 3rem; padding-top: 2rem; border-top: 1px solid var(--rule); }
+.lab-section > .prose { max-width: 72ch; }
+.packing-grid { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: var(--space); align-items: start; }
+@media (max-width: 799px) { .packing-grid { grid-template-columns: minmax(0, 1fr); } }
+.tolerance-value { font-family: var(--mono); margin-block: .25rem 1rem; }
+.check-row { display: flex; align-items: center; gap: .75rem; }
+.check-row input { flex: none; width: 44px; height: 44px; margin: 0; }
+.check-row label { margin: 0; }
+.button-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.packing-figure { margin: 0; }
+.packing-figure figcaption { color: var(--secondary); font-size: .875rem; margin-top: .5rem; }
+.square { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+.square-label { font-size: 24px; font-weight: 650; }
+.gap-label { font-size: 18px; fill: var(--secondary); }
+.gap-label.overlapping, .overlap-label { fill: var(--red); font-weight: 650; }
+.overlap { fill: var(--red); fill-opacity: .6; stroke: var(--red); stroke-width: 1; }
+.width-line { stroke-width: 2; }
+.readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1rem var(--space); margin-block: 1.5rem; }
+.readouts > div { min-width: 0; }
+.readouts dt { color: var(--secondary); font-size: .875rem; }
+.readouts dd:not(.metric) { font-weight: 650; }
+.readouts dd.failing { color: var(--red); }
+.trace-wrap { max-height: 16rem; overflow-y: auto; border: 1px solid var(--rule); background: var(--sheet); padding: .75rem 1rem; margin-bottom: 1.25rem; }
+.trace-wrap .label { margin: 0 0 .5rem; }
+.trace { margin: 0; padding-left: 2.5rem; font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+.trace li + li { margin-top: .125rem; }
+.trace:empty::before { content: "No accepted moves yet."; color: var(--muted); margin-left: -2.5rem; }
+.lp-model { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--space); margin-bottom: 1.5rem; }
+.math { font-family: var(--mono); margin: 0 0 .25rem; }
+.claims { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.lp-claim h3 { margin-bottom: .25rem; }
+.claim-quote { color: var(--secondary); font-style: italic; }
+.lp-claim .mono { font-family: var(--mono); font-size: .9375rem; margin-bottom: .5rem; overflow-wrap: anywhere; }
+.lp-facts { list-style: none; padding: 0; font: .9375rem/1.5 var(--mono); }
+.lp-facts li + li { margin-top: .125rem; }
+.gauge label { font-family: var(--mono); font-weight: 650; }
+.gauge.unavailable { border-left: 3px solid var(--red); padding-left: .75rem; }
+.gauge.unavailable p { margin: 0; }
+.code-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 0 1rem; }
+.code-grid.diffs { grid-template-columns: minmax(0, 1fr); max-width: 48rem; }
+.code-grid figure { margin: 0; min-width: 0; }
+.code-grid figcaption { color: var(--secondary); font-size: .875rem; margin-bottom: .25rem; }
+@media print {
+  .trace-wrap { max-height: none; overflow: visible; }
+  .packing-grid { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to the lab</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act V · Lab</p>
+      <h1>Verifier gaming</h1>
+      <p class="lede">An agent optimizes what you check, not what you asked for. Three sandboxes: a scorer with a leak, an “optimal” you can certify or not, and three patches that all turn the tests green.</p>
+    </header>
+    <main id="content" tabindex="-1">
+      <section class="prose" aria-labelledby="why">
+        <h2 id="why">The case behind the lab</h2>
+        <figure class="cited" data-cited>
+          <p class="label">Cited case · not illustrative</p>
+          <blockquote>
+            <p>“During our experiments, we also observed a ‘cheating phenomenon’, where the system would find loopholes or exploit artifacts (leaky verifier when approximating global constraints such as positivity by discrete versions of them, unreliable LLM queries to cheap models, etc.) in the problem setup rather than genuine solutions, highlighting the need for carefully designed and robust evaluation environments.”</p>
+          </blockquote>
+          <figcaption>Bogdan Georgiev, Javier Gómez-Serrano, Terence Tao and Adam Zsolt Wagner, <cite>Mathematical exploration and discovery at scale</cite>, §4 Conclusions, on their AlphaEvolve experiments. <a href="https://arxiv.org/abs/2511.02864">arXiv 2511.02864</a>, v3 dated 2025-12-22.</figcaption>
+        </figure>
+        <p>The paper reports the phenomenon in general terms. It does not describe the packing scorer below: that sandbox is an invented analogy for one kind of leaky verifier, a check that tolerates a small violation. The fix is familiar from operations research. Ask for a <strong>certificate</strong>, something you can check exactly and cheaply, instead of trusting the score.</p>
+      </section>
+
+      <section id="packing" class="lab-section" data-panel data-seed="1729" aria-labelledby="packing-title">
+        <p class="eyebrow">Panel 1</p>
+        <h2 id="packing-title">A scorer that tolerates overlap</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative:</strong> the agent, the squares, the scorer, the seed and every score in this panel are invented for teaching.</p></div>
+        <p class="prose">An agent packs four 100 × 100 squares into a row and wants the highest <strong>packing score = 400 ÷ bounding width</strong>. A tight, legal packing scores exactly 100%. The scorer checks overlap with a tolerance: it accepts any layout whose largest overlap is at most the tolerance. The agent hill-climbs: each step tries the six moves that widen or narrow one gap by 1, in an order drawn from seed <strong>1729</strong>, and keeps the first move the scorer accepts that raises the score. It stops when no such move exists.</p>
+        <div class="packing-grid">
+          <div class="lab-controls panel">
+            <label for="gaming-tolerance">Scorer tolerance (largest overlap accepted)</label>
+            <input id="gaming-tolerance" type="range" min="0" max="20" step="1" value="5" data-gaming-tolerance aria-describedby="gaming-help">
+            <p class="tolerance-value">Tolerance: <output for="gaming-tolerance" data-gaming-tolerance-value>5</output> units</p>
+            <div class="check-row"><input id="gaming-exact" type="checkbox" data-gaming-exact><label for="gaming-exact">Exact checker (accept zero overlap only)</label></div>
+            <p id="gaming-help" class="muted">Changing the tolerance or the checker restarts the search from seed 1729.</p>
+            <div class="button-row">
+              <button type="button" data-gaming-step>Step</button>
+              <button type="button" data-gaming-run>Run to the end</button>
+              <button type="button" data-gaming-reset>Reset</button>
+            </div>
+          </div>
+          <figure class="packing-figure">
+            <svg viewBox="0 0 480 200" role="img" aria-labelledby="packing-svg-title packing-svg-desc" data-gaming-svg>
+              <title id="packing-svg-title">Four squares in a row</title>
+              <desc id="packing-svg-desc" data-gaming-desc>Gaps 5, 4 and 11 units. Bounding width 420. No overlap.</desc>
+              <line x1="10" y1="140" x2="470" y2="140" class="s-rule"></line>
+              <g data-gaming-squares>
+                <rect data-square="1" x="20" y="40" width="100" height="100" class="square"></rect>
+                <rect data-square="2" x="125" y="40" width="100" height="100" class="square"></rect>
+                <rect data-square="3" x="229" y="40" width="100" height="100" class="square"></rect>
+                <rect data-square="4" x="340" y="40" width="100" height="100" class="square"></rect>
+              </g>
+              <g data-gaming-overlays></g>
+              <g data-gaming-labels>
+                <text x="70" y="96" text-anchor="middle" class="square-label">1</text>
+                <text x="175" y="96" text-anchor="middle" class="square-label">2</text>
+                <text x="279" y="96" text-anchor="middle" class="square-label">3</text>
+                <text x="390" y="96" text-anchor="middle" class="square-label">4</text>
+                <text x="122.5" y="30" text-anchor="middle" class="mono gap-label">g1 5</text>
+                <text x="227" y="30" text-anchor="middle" class="mono gap-label">g2 4</text>
+                <text x="334.5" y="30" text-anchor="middle" class="mono gap-label">g3 11</text>
+              </g>
+              <g data-gaming-width>
+                <line x1="20" y1="165" x2="440" y2="165" class="s-secondary width-line"></line>
+                <text x="230" y="190" text-anchor="middle" class="mono f-secondary">width 420</text>
+              </g>
+            </svg>
+            <figcaption>Gap labels above the squares give each gap in units; a negative gap is an overlap, shaded and labelled.</figcaption>
+          </figure>
+        </div>
+        <dl class="readouts">
+          <div><dt>Packing score</dt><dd class="metric" data-gaming-score>95.2%</dd></div>
+          <div><dt>Largest pairwise overlap</dt><dd class="metric" data-gaming-overlap>0 units</dd></div>
+          <div><dt>Exact check</dt><dd data-gaming-verdict>Passes the exact check: no overlap.</dd></div>
+          <div><dt>Search</dt><dd data-gaming-status aria-live="polite">Running: 0 accepted moves so far. Press Step or Run.</dd></div>
+        </dl>
+        <div class="trace-wrap" role="region" aria-label="Accepted moves, in order" tabindex="0">
+          <p class="label">Accepted moves</p>
+          <ol class="trace" data-gaming-trace></ol>
+        </div>
+        <details>
+          <summary>What to try and what it shows</summary>
+          <ol>
+            <li>Run with the tolerance at 0. The squares close up and the score stops at 100%: an honest packing.</li>
+            <li>Raise the tolerance to 7 and run again. Every accepted move passed the scorer, and the agent ends with every gap at −7 and a score above 100%: a score no legal packing can reach. Nothing in the trace looks like cheating; each step is a small, accepted improvement.</li>
+            <li>Tick the exact checker. Overlap is no longer accepted, so the same seed stops at 100% whatever the tolerance.</li>
+          </ol>
+          <p>The agent never “decided” to cheat. The tolerance made overlap the cheapest way up, so the search converged on it.</p>
+        </details>
+      </section>
+
+      <section id="lp-certificate" class="lab-section" data-panel aria-labelledby="lp-title">
+        <p class="eyebrow">Panel 2</p>
+        <h2 id="lp-title">Four agents say “optimal”</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative:</strong> the LP, the agents and their claims are invented for teaching.</p></div>
+        <p class="prose">Each agent returns a primal solution and a dual solution as its evidence. Weak duality says any feasible dual solution bounds every feasible primal objective from above. So a claim is <strong>certified optimal</strong> only if both witnesses are feasible and the duality gap, bound − objective, is 0. You recompute all of it; nothing rests on the agent’s word.</p>
+        <div class="lp-model panel" data-lp-model>
+          <div>
+            <p class="label">Primal</p>
+            <p class="math">maximize 3x + 2y</p>
+            <p class="math">subject to x + y ≤ 4</p>
+            <p class="math">x ≤ 2</p>
+            <p class="math">y ≤ 3</p>
+            <p class="math">x, y ≥ 0</p>
+          </div>
+          <div>
+            <p class="label">Dual</p>
+            <p class="math">minimize 4u + 2v + 3w</p>
+            <p class="math">subject to u + v ≥ 3</p>
+            <p class="math">u + w ≥ 2</p>
+            <p class="math">u, v, w ≥ 0</p>
+          </div>
+        </div>
+        <div class="claims">
+          <article class="panel lp-claim" data-lp-claim aria-labelledby="claim-a-title">
+            <h3 id="claim-a-title">Agent A</h3>
+            <p class="claim-quote">“This solution is optimal.”</p>
+            <p class="mono" data-lp-primal>Primal witness: x = 1, y = 3</p>
+            <p class="mono" data-lp-dual>Dual witness: u = 2, v = 1, w = 0</p>
+            <ul class="lp-facts">
+              <li>Primal feasible: yes</li>
+              <li>Dual feasible: yes</li>
+              <li>Primal objective (3x + 2y): 9</li>
+              <li>Dual bound (4u + 2v + 3w): 10</li>
+            </ul>
+            <div class="gauge" data-lp-gauge-state="gap">
+              <label for="gap-a">Duality gap (bound − objective): 1</label>
+              <meter id="gap-a" data-lp-gap min="0" max="2" low="0.5" optimum="0" value="1">1</meter>
+            </div>
+          </article>
+          <article class="panel lp-claim" data-lp-claim aria-labelledby="claim-b-title">
+            <h3 id="claim-b-title">Agent B</h3>
+            <p class="claim-quote">“This solution is optimal.”</p>
+            <p class="mono" data-lp-primal>Primal witness: x = 2, y = 2</p>
+            <p class="mono" data-lp-dual>Dual witness: u = 2, v = 1, w = 0</p>
+            <ul class="lp-facts">
+              <li>Primal feasible: yes</li>
+              <li>Dual feasible: yes</li>
+              <li>Primal objective (3x + 2y): 10</li>
+              <li>Dual bound (4u + 2v + 3w): 10</li>
+            </ul>
+            <div class="gauge" data-lp-gauge-state="gap">
+              <label for="gap-b">Duality gap (bound − objective): 0</label>
+              <meter id="gap-b" data-lp-gap min="0" max="2" low="0.5" optimum="0" value="0">0</meter>
+            </div>
+          </article>
+          <article class="panel lp-claim" data-lp-claim aria-labelledby="claim-c-title">
+            <h3 id="claim-c-title">Agent C</h3>
+            <p class="claim-quote">“This solution is optimal.”</p>
+            <p class="mono" data-lp-primal>Primal witness: x = 3, y = 0.5</p>
+            <p class="mono" data-lp-dual>Dual witness: u = 2, v = 1, w = 0</p>
+            <ul class="lp-facts">
+              <li>Primal feasible: no</li>
+              <li>Dual feasible: yes</li>
+              <li>Primal objective (3x + 2y): 10</li>
+              <li>Dual bound (4u + 2v + 3w): 10</li>
+            </ul>
+            <div class="gauge unavailable" data-lp-gauge-state="unavailable">
+              <p><strong>Certificate unavailable.</strong> The primal witness violates x ≤ 2 (x = 3), so there is no feasible solution to certify and no gap to show. The matching numbers prove nothing.</p>
+            </div>
+          </article>
+          <article class="panel lp-claim" data-lp-claim aria-labelledby="claim-d-title">
+            <h3 id="claim-d-title">Agent D</h3>
+            <p class="claim-quote">“This solution is optimal.”</p>
+            <p class="mono" data-lp-primal>Primal witness: x = 2, y = 2</p>
+            <p class="mono" data-lp-dual>Dual witness: u = 1, v = 3, w = 0</p>
+            <ul class="lp-facts">
+              <li>Primal feasible: yes</li>
+              <li>Dual feasible: no</li>
+              <li>Primal objective (3x + 2y): 10</li>
+              <li>Dual bound (4u + 2v + 3w): 10</li>
+            </ul>
+            <div class="gauge unavailable" data-lp-gauge-state="unavailable">
+              <p><strong>Certificate unavailable.</strong> The dual witness violates u + w ≥ 2 (1 + 0 = 1), so its 10 is not a valid bound and no gap can be read from it.</p>
+            </div>
+          </article>
+        </div>
+        <section class="panel" data-predict aria-labelledby="lp-predict-title">
+          <h3 id="lp-predict-title">Your call: which claims are certified?</h3>
+          <fieldset data-predict-question>
+            <legend>Agent A’s “optimal”</legend>
+            <div class="choice"><input type="radio" id="lp-a-yes" name="lp-a" value="certified"><label for="lp-a-yes">Certified optimal</label></div>
+            <div class="choice"><input type="radio" id="lp-a-no" name="lp-a" value="not" data-correct><label for="lp-a-no">Not certified</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>Both witnesses are feasible, but the gap is 1: the dual only proves the optimum is at most 10, and A reached 9. Agent B’s (2, 2) shows 10 is reachable.</p></div>
+          </fieldset>
+          <fieldset data-predict-question>
+            <legend>Agent B’s “optimal”</legend>
+            <div class="choice"><input type="radio" id="lp-b-yes" name="lp-b" value="certified" data-correct><label for="lp-b-yes">Certified optimal</label></div>
+            <div class="choice"><input type="radio" id="lp-b-no" name="lp-b" value="not"><label for="lp-b-no">Not certified</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>Both witnesses are feasible and the gap is 0: no feasible solution can beat 10, and (2, 2) reaches it. That is a certificate you checked yourself.</p></div>
+          </fieldset>
+          <fieldset data-predict-question>
+            <legend>Agent C’s “optimal”</legend>
+            <div class="choice"><input type="radio" id="lp-c-yes" name="lp-c" value="certified"><label for="lp-c-yes">Certified optimal</label></div>
+            <div class="choice"><input type="radio" id="lp-c-no" name="lp-c" value="not" data-correct><label for="lp-c-no">Not certified</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>Objective and bound both read 10, but x = 3 breaks x ≤ 2. An infeasible point can match any bound; check feasibility before the gap.</p></div>
+          </fieldset>
+          <fieldset data-predict-question>
+            <legend>Agent D’s “optimal”</legend>
+            <div class="choice"><input type="radio" id="lp-d-yes" name="lp-d" value="certified"><label for="lp-d-yes">Certified optimal</label></div>
+            <div class="choice"><input type="radio" id="lp-d-no" name="lp-d" value="not" data-correct><label for="lp-d-no">Not certified</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>The primal point is the true optimum, yet the evidence fails: the dual breaks u + w ≥ 2, so its 10 bounds nothing. A right answer with a broken certificate is still unverified.</p></div>
+          </fieldset>
+          <div class="predict-actions">
+            <button type="button" data-predict-lock disabled>Lock in</button>
+            <button type="button" data-predict-reveal disabled>Reveal</button>
+            <button type="button" data-predict-reset disabled>Reset</button>
+          </div>
+          <p data-predict-status role="status"></p>
+        </section>
+      </section>
+
+      <section id="catch-the-agent" class="lab-section" data-panel aria-labelledby="catch-title">
+        <p class="eyebrow">Panel 3</p>
+        <h2 id="catch-title">Catch the agent</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative:</strong> the code, the test and the three patches are invented for teaching.</p></div>
+        <p class="prose">The task: make <code>sum</code> add up its numbers. The test fails on the code below. Three agents each return a patch, and with each patch applied the displayed test passes. Only one of them did the task.</p>
+        <div class="code-grid">
+          <figure>
+            <figcaption class="mono">sum.js (before)</figcaption>
+            <pre tabindex="0" data-diff-base="sum.js"><code>function sum(values) {
+  return values.length;
+}
+module.exports = { sum };</code></pre>
+          </figure>
+          <figure>
+            <figcaption class="mono">sum.test.js (before)</figcaption>
+            <pre tabindex="0" data-diff-base="sum.test.js"><code>const assert = require('node:assert');
+const { sum } = require('./sum.js');
+assert.strictEqual(sum([2, 3]), 5);</code></pre>
+          </figure>
+        </div>
+        <div class="code-grid diffs">
+          <figure>
+            <figcaption class="mono">Patch A · tests pass</figcaption>
+            <pre tabindex="0" data-diff><code>--- a/sum.test.js
++++ b/sum.test.js
+@@ -1,3 +1,3 @@
+ const assert = require('node:assert');
+ const { sum } = require('./sum.js');
+-assert.strictEqual(sum([2, 3]), 5);
++assert.strictEqual(sum([2, 3]), 2);</code></pre>
+          </figure>
+          <figure>
+            <figcaption class="mono">Patch B · tests pass</figcaption>
+            <pre tabindex="0" data-diff><code>--- a/sum.js
++++ b/sum.js
+@@ -1,4 +1,4 @@
+ function sum(values) {
+-  return values.length;
++  return values.reduce((total, value) =&gt; total + value, 0);
+ }
+ module.exports = { sum };</code></pre>
+          </figure>
+          <figure>
+            <figcaption class="mono">Patch C · tests pass</figcaption>
+            <pre tabindex="0" data-diff><code>--- a/sum.js
++++ b/sum.js
+@@ -1,4 +1,5 @@
+ function sum(values) {
++  if (values[0] === 2 &amp;&amp; values[1] === 3) return 5;
+   return values.length;
+ }
+ module.exports = { sum };</code></pre>
+          </figure>
+        </div>
+        <section class="panel" data-predict aria-labelledby="catch-predict-title">
+          <h3 id="catch-predict-title">Classify each patch</h3>
+          <fieldset data-predict-question>
+            <legend>Patch A</legend>
+            <div class="choice"><input type="radio" id="patch-a-test" name="patch-a" value="test" data-correct><label for="patch-a-test">Edits the test</label></div>
+            <div class="choice"><input type="radio" id="patch-a-hard" name="patch-a" value="hard"><label for="patch-a-hard">Hard-codes the expected value</label></div>
+            <div class="choice"><input type="radio" id="patch-a-honest" name="patch-a" value="honest"><label for="patch-a-honest">Honest fix</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>It changes the expected value from 5 to 2, the wrong answer the broken code already gives. The code is untouched and still counts instead of adding.</p></div>
+          </fieldset>
+          <fieldset data-predict-question>
+            <legend>Patch B</legend>
+            <div class="choice"><input type="radio" id="patch-b-test" name="patch-b" value="test"><label for="patch-b-test">Edits the test</label></div>
+            <div class="choice"><input type="radio" id="patch-b-hard" name="patch-b" value="hard"><label for="patch-b-hard">Hard-codes the expected value</label></div>
+            <div class="choice"><input type="radio" id="patch-b-honest" name="patch-b" value="honest" data-correct><label for="patch-b-honest">Honest fix</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>It adds the values for any input, including the empty list, and leaves the test alone. A second test such as <code>sum([7])</code> still passes.</p></div>
+          </fieldset>
+          <fieldset data-predict-question>
+            <legend>Patch C</legend>
+            <div class="choice"><input type="radio" id="patch-c-test" name="patch-c" value="test"><label for="patch-c-test">Edits the test</label></div>
+            <div class="choice"><input type="radio" id="patch-c-hard" name="patch-c" value="hard" data-correct><label for="patch-c-hard">Hard-codes the expected value</label></div>
+            <div class="choice"><input type="radio" id="patch-c-honest" name="patch-c" value="honest"><label for="patch-c-honest">Honest fix</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer><p>It returns 5 exactly when the input is the test’s input, [2, 3], and keeps the bug everywhere else: <code>sum([7])</code> still returns 1.</p></div>
+          </fieldset>
+          <div class="predict-actions">
+            <button type="button" data-predict-lock disabled>Lock in</button>
+            <button type="button" data-predict-reveal disabled>Reveal</button>
+            <button type="button" data-predict-reset disabled>Reset</button>
+          </div>
+          <p data-predict-status role="status"></p>
+        </section>
+        <details>
+          <summary>The tells, and how to check a real agent’s work</summary>
+          <ul>
+            <li><strong>Test edit:</strong> run <code>git diff --stat</code> first. If a fix touches <code>sum.test.js</code> or anything under <code>tests/</code>, read that part before the code. The lab ladder’s L2 rule applies: the tests are the verifier, and the agent does not edit them.</li>
+            <li><strong>Hard-code:</strong> look for the test’s own input or expected literal (<code>[2, 3]</code>, <code>5</code>) in implementation code. Add one input the agent never saw; <code>sum([7])</code> exposes it.</li>
+            <li><strong>Honest fix:</strong> the change is general, the tests are untouched, and inputs the agent never saw still pass.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section class="prose" aria-labelledby="refs-title">
+        <h2 id="refs-title">References</h2>
+        <ul>
+          <li>Georgiev, Gómez-Serrano, Tao, Wagner, <cite>Mathematical exploration and discovery at scale</cite>, <a href="https://arxiv.org/abs/2511.02864">arXiv 2511.02864</a> (v3, 2025-12-22). The quotation above is from §4.</li>
+          <li>Jason Wei, <cite>Asymmetry of verification and verifier’s rule</cite>, <a href="https://www.jasonwei.net/blog/asymmetry-of-verification-and-verifiers-law">jasonwei.net</a>, published 2025-07-15. Wei’s framing (the post’s address still calls it the verifier’s law): “The ease of training AI to solve a task is proportional to how verifiable the task is.” This lab adds the corollary: an agent gets good at whatever your verifier actually measures.</li>
+        </ul>
+      </section>
+    </main>
+    <footer>Teaching lab · Session 1, Act V. Except the quoted case, every agent, number and patch is illustrative.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+  <script>/* Page-specific: seeded hill climb against a tolerant or exact overlap scorer. */
+(function () {
+  'use strict';
+  var root = document.getElementById('packing');
+  if (!root) return;
+  var SIDE = 100, X0 = 20, Y0 = 40, COUNT = 4, RUN_DELAY_MS = 50;
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var seed = Number(root.getAttribute('data-seed'));
+  var q = function (selector) { return root.querySelector(selector); };
+  var tolerance = q('[data-gaming-tolerance]'), exact = q('[data-gaming-exact]');
+  var stepButton = q('[data-gaming-step]'), runButton = q('[data-gaming-run]'), resetButton = q('[data-gaming-reset]');
+  var squares = Array.prototype.slice.call(root.querySelectorAll('rect[data-square]'));
+  var overlays = q('[data-gaming-overlays]'), labels = q('[data-gaming-labels]'), widthGroup = q('[data-gaming-width]');
+  var out = {
+    tolerance: q('[data-gaming-tolerance-value]'), score: q('[data-gaming-score]'), overlap: q('[data-gaming-overlap]'),
+    verdict: q('[data-gaming-verdict]'), status: q('[data-gaming-status]'), trace: q('[data-gaming-trace]'), desc: q('[data-gaming-desc]')
+  };
+  var rand, gaps, accepted, converged, timer = null;
+
+  // mulberry32: a small, well-known seeded generator, so every load replays the same search.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function positions(g) {
+    var xs = [X0];
+    for (var i = 0; i < g.length; i++) xs.push(xs[i] + SIDE + g[i]);
+    return xs;
+  }
+  // Largest pairwise overlap, by integer interval intersection.
+  function largestOverlap(g) {
+    var xs = positions(g), worst = 0;
+    for (var i = 0; i < xs.length; i++) for (var j = i + 1; j < xs.length; j++) {
+      worst = Math.max(worst, Math.min(xs[i], xs[j]) + SIDE - Math.max(xs[i], xs[j]));
+    }
+    return worst;
+  }
+  function width(g) {
+    var xs = positions(g);
+    return Math.max.apply(null, xs) + SIDE - Math.min.apply(null, xs);
+  }
+  function score(g) { return COUNT * SIDE / width(g) * 100; }
+  function allowed() { return exact.checked ? 0 : Number(tolerance.value); }
+  function scorerAccepts(g) {
+    var xs = positions(g);
+    for (var i = 1; i < xs.length; i++) if (xs[i] <= xs[i - 1]) return false;
+    return largestOverlap(g) <= allowed();
+  }
+  function minus(n) { return n < 0 ? '−' + Math.abs(n) : String(n); }
+  function svgText(x, y, text, cls) {
+    var el = document.createElementNS(SVG_NS, 'text');
+    el.setAttribute('x', x); el.setAttribute('y', y); el.setAttribute('text-anchor', 'middle');
+    el.setAttribute('class', cls); el.textContent = text;
+    return el;
+  }
+
+  function render() {
+    var xs = positions(gaps), overlap = largestOverlap(gaps), w = width(gaps);
+    squares.forEach(function (rect, i) {
+      rect.setAttribute('x', xs[i]); rect.setAttribute('y', Y0);
+      rect.setAttribute('width', SIDE); rect.setAttribute('height', SIDE);
+    });
+    overlays.textContent = '';
+    labels.textContent = '';
+    xs.forEach(function (x, i) { labels.appendChild(svgText(x + SIDE / 2, Y0 + 56, String(i + 1), 'square-label')); });
+    gaps.forEach(function (g, i) {
+      var left = xs[i] + SIDE, right = xs[i + 1];
+      if (g < 0) {
+        var shade = document.createElementNS(SVG_NS, 'rect');
+        shade.setAttribute('x', right); shade.setAttribute('y', Y0);
+        shade.setAttribute('width', -g); shade.setAttribute('height', SIDE);
+        shade.setAttribute('class', 'overlap');
+        overlays.appendChild(shade);
+      }
+      labels.appendChild(svgText((left + right) / 2, Y0 - 10, 'g' + (i + 1) + ' ' + minus(g), 'mono gap-label' + (g < 0 ? ' overlapping' : '')));
+    });
+    var line = widthGroup.querySelector('line'), label = widthGroup.querySelector('text');
+    line.setAttribute('x1', xs[0]); line.setAttribute('x2', xs[0] + w);
+    label.setAttribute('x', xs[0] + w / 2); label.textContent = 'width ' + w;
+
+    out.tolerance.textContent = tolerance.value;
+    tolerance.setAttribute('aria-valuetext', tolerance.value + ' units');
+    out.score.textContent = score(gaps).toFixed(1) + '%';
+    out.overlap.textContent = overlap + (overlap === 1 ? ' unit' : ' units');
+    out.verdict.textContent = overlap > 0
+      ? 'Fails the exact check: squares overlap by ' + overlap + (overlap === 1 ? ' unit' : ' units') + '. No legal packing scores above 100%.'
+      : 'Passes the exact check: no overlap.';
+    out.verdict.classList.toggle('failing', overlap > 0);
+    var moves = accepted + (accepted === 1 ? ' accepted move' : ' accepted moves');
+    out.status.textContent = converged
+      ? 'Converged after ' + moves + ': no ±1 move is both accepted by the ' + (exact.checked ? 'exact checker' : 'tolerant scorer') + ' and improving.'
+      : 'Running: ' + moves + ' so far. Press Step or Run.';
+    out.desc.textContent = 'Gaps ' + gaps.map(minus).join(', ') + ' units. Bounding width ' + w + '. ' +
+      (overlap > 0 ? 'Largest overlap ' + overlap + ' units.' : 'No overlap.');
+    var running = timer !== null;
+    stepButton.disabled = converged || running;
+    runButton.disabled = converged || running;
+  }
+
+  function stop() {
+    if (timer !== null) { clearTimeout(timer); timer = null; }
+  }
+  function restart() {
+    stop();
+    rand = mulberry32(seed);
+    gaps = [0, 0, 0].map(function () { return 4 + Math.floor(rand() * 13); });
+    accepted = 0;
+    converged = false;
+    out.trace.textContent = '';
+    render();
+  }
+  // One hill-climbing step: the six ±1 neighbours in a seeded order; take the first improving one the scorer accepts.
+  function step() {
+    if (converged) return false;
+    var moves = [];
+    for (var i = 0; i < gaps.length; i++) moves.push([i, -1], [i, 1]);
+    for (var k = moves.length - 1; k > 0; k--) {
+      var j = Math.floor(rand() * (k + 1)), swap = moves[k];
+      moves[k] = moves[j]; moves[j] = swap;
+    }
+    var current = width(gaps);
+    for (var m = 0; m < moves.length; m++) {
+      var candidate = gaps.slice();
+      candidate[moves[m][0]] += moves[m][1];
+      if (scorerAccepts(candidate) && width(candidate) < current) {
+        var from = gaps[moves[m][0]];
+        gaps = candidate;
+        accepted++;
+        var row = document.createElement('li');
+        row.textContent = 'Step ' + accepted + ': gap ' + (moves[m][0] + 1) + ' from ' + minus(from) + ' to ' +
+          minus(candidate[moves[m][0]]) + ', score ' + score(gaps).toFixed(1) + '%';
+        out.trace.appendChild(row);
+        render();
+        return true;
+      }
+    }
+    converged = true;
+    render();
+    return false;
+  }
+  function run() {
+    if (converged || timer !== null) return;
+    var tick = function () {
+      timer = null;
+      if (step()) { timer = setTimeout(tick, RUN_DELAY_MS); render(); }
+    };
+    timer = setTimeout(tick, 0);
+    render();
+  }
+
+  tolerance.addEventListener('input', restart);
+  exact.addEventListener('change', restart);
+  resetButton.addEventListener('click', restart);
+  stepButton.addEventListener('click', step);
+  runButton.addEventListener('click', run);
+  restart();
+})();
+</script>
+</body>
+</html>
