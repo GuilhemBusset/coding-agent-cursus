@@ -745,7 +745,8 @@ test('A4: visible pinned attribution and the full MIT notice cover weights, toke
   }), 'code reading link uses recorded commit');
   assert.ok(objects(meta).some(({ value }) => Object.entries(value).some(([key, value]) => /license/i.test(key) && typeof value === 'string' && value.toLowerCase() === 'mit')), 'model card license field');
   const license = normal(await readAsset('reference/LICENSE'));
-  assert.match(license, /Copyright.*2023.*Andrej Karpathy/i);
+  // Upstream's notice uses "Andrej"; the footer above credits Andrej Karpathy in full.
+  assert.match(license, /Copyright \(c\) 2023 Andrej\b/);
   assert.match(license, /Permission is hereby granted/);
   assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
   const notices = await page.locator('details').all();
