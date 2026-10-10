@@ -13,7 +13,7 @@ every demo, they run on the instructor's Linux machine only (ADR 0010). Students
 | --- | --- |
 | [`ask.txt`](ask.txt), [`pivot.txt`](pivot.txt) | The two strawberry prompts. `{WORD}` is filled in by `strawberry.py --print-prompts` |
 | [`llm_api.py`](llm_api.py) | A stdlib client for the Anthropic and OpenAI APIs. Keys are read from the environment only |
-| [`recorded/`](recorded/) | Dated recordings: naive answers, pivot transcripts and the code the agents wrote, sampling runs, the temperature probe |
+| [`recorded/`](recorded/) | Dated recordings: naive answers, pivot transcripts and the code the agents wrote, and, once someone with an API key records them, the sampling run and an optional temperature probe |
 
 Keys: `sampling.py` and the API modes of `strawberry.py` read `ANTHROPIC_API_KEY` or
 `OPENAI_API_KEY` from the environment and stop with a one-line message if it is unset. The CLI

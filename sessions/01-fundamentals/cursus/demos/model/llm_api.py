@@ -15,8 +15,8 @@ BASE_VARS = {"anthropic": "ANTHROPIC_BASE_URL", "openai": "OPENAI_BASE_URL"}
 DEFAULT_BASES = {"anthropic": "https://api.anthropic.com", "openai": "https://api.openai.com"}
 PATHS = {"anthropic": "/v1/messages", "openai": "/v1/chat/completions"}
 VENDORS = {"anthropic": "Anthropic", "openai": "OpenAI"}
-# Defaults for --model. sampling.md's "Temperature support" table says which of these a
-# recorded probe accepted; change them only together with a new probe.
+# Defaults for --model. Each must have a "Yes" row in sampling.md's dated, sourced
+# "Temperature support" table; change one only together with that table.
 DEFAULT_MODELS = {"anthropic": "claude-opus-4-6", "openai": "gpt-4.1-mini"}
 ANTHROPIC_VERSION = "2023-06-01"
 TIMEOUT_S = 60

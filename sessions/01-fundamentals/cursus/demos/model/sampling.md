@@ -6,28 +6,43 @@ times at a low and five times at a high temperature and count the distinct answe
 
 **Status (2026-10-10): not recorded yet.** The implementation run had no `ANTHROPIC_API_KEY` or
 `OPENAI_API_KEY`, and a Claude Code or Codex login cannot set a temperature. The script and its
-request shape are tested against a local stub server for both vendors, but there is no probe and no
-`recorded/sampling.json` yet. Recording them is the first item of [Before class](#before-class).
+request shape are tested against a local stub server for both vendors, but there is no
+`recorded/sampling.json` yet. Recording it is the first item of [Before class](#before-class).
 
 ## Before class
 
 1. Set up the session once (`uv sync --locked` in `sessions/01-fundamentals/`).
 2. Export a key: `export ANTHROPIC_API_KEY=…` (or `OPENAI_API_KEY`). The script reads it from the
    environment only and stops with a one-line message if it is unset or blank.
-3. Probe which models accept a temperature, then record a run with one that does:
+3. From this folder, record a run with the default model, which the
+   [Temperature support](#temperature-support) table lists as accepting `temperature`:
 
    ```sh
-   uv run --no-project python sampling.py --probe --provider anthropic --model claude-opus-4-6 --model claude-haiku-4-5-20251001 --model claude-haiku-5-5
    uv run --no-project python sampling.py --provider anthropic --record recorded/sampling.json
    ```
 
-   For OpenAI, use `--provider openai` with `gpt-4.1-mini` and two current reasoning models. Never
-   edit a recording by hand. A new recording of the same configuration increments `meta.attempt`.
-4. Rehearse once, then run the [reset](#reset).
+   With an OpenAI key, use `--provider openai` instead. Never edit a recording by hand. A new
+   recording of the same configuration increments `meta.attempt`.
+4. Optional: confirm the table against the live API. The probe asks each model once with a
+   temperature and writes `recorded/temperature_probe.json`:
+
+   ```sh
+   uv run --no-project python sampling.py --probe --provider anthropic --model claude-opus-4-6 --model claude-haiku-4-5-20251001 --model claude-haiku-5-5
+   ```
+
+   For OpenAI, probe `gpt-4.1-mini` and two current reasoning models.
+5. Edit this runbook to match: replace the status note above and the
+   [Expected outcome](#expected-outcome) paragraph with the observed distinct counts and the
+   attempt number, and turn each `Recorded runs` row into a link with the model and run date from
+   the recording's `meta`. Commit the recordings together with these edits.
+6. Rehearse once, then run the [reset](#reset).
 
 ## Temperature support
 
-As of 2026-10-10, from the vendors' documentation. The probe has not confirmed any of these yet.
+As of 2026-10-10, from the vendors' documentation, not from a live call. The Anthropic Messages
+API reference says: "Models released after Claude Opus 4.6 do not support setting temperature. A
+value of 1.0 will be accepted for backwards compatibility, all other values will be rejected with
+a 400 error."
 
 | Model | Accepts `temperature`? | Source |
 | --- | --- | --- |
@@ -35,9 +50,10 @@ As of 2026-10-10, from the vendors' documentation. The probe has not confirmed a
 | `claude-haiku-4-5-20251001`, `claude-opus-4-5-20251101` | Yes, same rule. Retirement possible from 2026-10-15 and 2026-11-24 | same |
 | `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1` | No: "a value of 1.0 will be accepted for backwards compatibility, all other values will be rejected with a 400 error" | [Messages API](https://platform.claude.com/docs/en/api/messages) |
 | `gpt-4.1-mini` (OpenAI default here) | Yes per the Chat Completions reference (0 to 2); described as a model "without a reasoning step" | [Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [model page](https://developers.openai.com/api/docs/models/gpt-4.1-mini) |
-| `gpt-6-*`, `gpt-5.6-*` (reasoning models) | Not stated on the pages above: probe before relying on them | same |
+| `gpt-6-*`, `gpt-5.6-*` (reasoning models) | Not stated on the pages above | same |
 
-The defaults live in `llm_api.DEFAULT_MODELS`. Change one only together with a new probe.
+The defaults live in `llm_api.DEFAULT_MODELS`. Change one only together with this table. For any
+other model, the optional probe in [Before class](#before-class) settles it.
 
 ## Timing
 
@@ -56,10 +72,11 @@ names do we get? And at temperature 1?" Take a show of hands for 1, 2–3 and 4�
 
 ## Expected outcome
 
-Expected, not yet observed: one or two distinct names at the low temperature, and three to five at
-the high one. Even temperature 0 is not guaranteed to be deterministic (the Messages API reference
-says so). Once a run is recorded, replace this paragraph with its observed counts and attempt
-number.
+Expected, not yet observed: several distinct names at the high temperature. At the low
+temperature, mostly or all the same name, but identical answers are not guaranteed: the vendors
+document that even temperature 0 is not fully deterministic, so a second name may still appear.
+The observed counts get filled in from `recorded/sampling.json` once someone with a key records it
+(see [Before class](#before-class)).
 
 ## Run
 
@@ -87,8 +104,7 @@ uv run --no-project --offline python sampling.py --replay
 
 | Recording | Model | Run date | Attempt |
 | --- | --- | --- | --- |
-| `recorded/sampling.json` | not recorded yet (needs an API key) | — | — |
-| `recorded/temperature_probe.json` | not recorded yet (needs an API key) | — | — |
+| `recorded/sampling.json` | not recorded yet (needs an API key, see Before class) | — | — |
 
 ## Reset
 
