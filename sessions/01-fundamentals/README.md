@@ -111,6 +111,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
+| `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times at low and high temperature). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |

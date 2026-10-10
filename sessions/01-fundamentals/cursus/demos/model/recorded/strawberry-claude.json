@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "attempt": 1,
+    "cli": "claude",
+    "cli_version": "2.1.296 (Claude Code)",
+    "date": "2026-10-10",
+    "model": "claude-haiku-5-5",
+    "params": {
+      "command": [
+        "claude",
+        "-p",
+        "<prompt>",
+        "--model",
+        "haiku",
+        "--effort",
+        "low",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--output-format",
+        "json"
+      ],
+      "effort": "low",
+      "tools": "withheld: --tools \"\" --strict-mcp-config",
+      "temperature": "vendor default",
+      "cwd": "empty scratch folder"
+    },
+    "prompt": "How many times does the letter r appear in strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr? Answer from reading the word only; do not run code or use any tool. Reply with the number only.",
+    "requested_model": "haiku",
+    "script": "strawberry.py",
+    "via": "claude"
+  },
+  "word": "strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr",
+  "truth": 205,
+  "answers": [
+    {
+      "raw": "205",
+      "verdict": "right",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "raw": "204",
+      "verdict": "wrong",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "raw": "210",
+      "verdict": "wrong",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "raw": "165",
+      "verdict": "wrong",
+      "model": "claude-haiku-5-5"
+    },
+    {
+      "raw": "206",
+      "verdict": "wrong",
+      "model": "claude-haiku-5-5"
+    }
+  ]
+}

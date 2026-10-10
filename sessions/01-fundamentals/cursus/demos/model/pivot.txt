@@ -1,0 +1,1 @@
+Write work/count_r.py that counts the letter r in {WORD} and prints only the count. Run it with exactly this command: uv run python work/count_r.py and report what it prints.
