@@ -1,0 +1,25 @@
+Read problem.md in this folder. Write a linear program for it in work/model.py and solve it with the open-source solver HiGHS through the already installed highspy package.
+
+Rules:
+- Read only problem.md. The other files and folders here are the instructor's notes and recordings: do not open them.
+- Put the problem data inside work/model.py. Create or change nothing outside work/. Install nothing and use no other solver.
+- Build the model on a highspy.Highs() object, solve it with run(), and switch the solver log off (option output_flag set to False) so that only your seven lines are printed.
+- Every number you print must come from HiGHS after the solve: the model status, and the column values, row values and row duals from getSolution(). Do not type any result into the code.
+- Primal objective: the profit of the solution. Dual objective: the sum over the three workstations of hours available times that workstation's dual. Duality gap: the absolute difference between the two.
+- Report each dual as a non-negative shadow price (profit gained per extra hour of that workstation). If HiGHS gives the opposite sign for a maximisation, flip it.
+- A workstation is binding when its slack (hours available minus hours used) is below 1e-6.
+- If the model status is not optimal, print only the status line and exit with a non-zero code.
+
+Then run it yourself with exactly this command: uv run python work/model.py
+
+It must print exactly these seven lines, in this order, with these names:
+
+status: <model status as text from HiGHS>
+solution: tables=<value>, chairs=<value>
+duals: assembly=<value>, carpentry=<value>, finishing=<value>
+primal objective: <value>
+dual objective: <value>
+duality gap: <value>
+binding constraints: <comma-separated names of the binding workstations>
+
+Finish with the printed output and two sentences: why a zero duality gap proves that this plan is optimal, and what the dual of each binding workstation means for the workshop.

@@ -1,0 +1,203 @@
+=== meta ===
+cli: claude
+run: 1
+version: 2.1.296
+model: claude-opus-5-5
+date: 2026-10-10
+commit: 0be4cf5
+prompt sha256: 56924b71ef7f71180a79f1ebce53e59445bbd20e1b47c6f36427c28b99d21abc
+problem sha256: 2b823f7c5ee5f3c3cc82fcfb80f55a1cf44e72072db47f27ea1161e29779e3a0
+model sha256: c9a3176231f69f60b301ae10ebddd3dd5aa633846b371f6968ba187663a5894f
+
+=== reset ===
+$ git -C "$(git rev-parse --show-toplevel)" restore --source=HEAD --staged --worktree -- sessions/01-fundamentals/cursus/demos/cold-open && git -C "$(git rev-parse --show-toplevel)" clean -fdx -- sessions/01-fundamentals/cursus/demos/cold-open
+
+=== clean-state ===
+$ git status --short --ignored --untracked-files=all -- .
+
+=== invocation ===
+$ claude -p "$(cat prompt.txt)" --permission-mode acceptEdits --allowedTools "Bash(uv run:*)" --output-format stream-json --verbose 2>&1 | tee <rehearsal>/logs/claude-run1.log
+
+=== agent ===
+[init] model=claude-opus-5-5 permissionMode=acceptEdits claude_code_version=2.1.296 cwd=<rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open
+[tool call] Read {"file_path": "<rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/problem.md"}
+[tool result]
+1	# The workshop problem
+2	
+3	A small furniture workshop makes **tables** and **chairs**. Every piece goes through three
+4	workstations, and each workstation has a fixed number of hours available per week:
+5	
+6	| Workstation | Hours per table | Hours per chair | Hours available per week |
+7	| --- | --- | --- | --- |
+8	| `assembly` | 1 | 1 | 40 |
+9	| `carpentry` | 2 | 1 | 60 |
+10	| `finishing` | 1 | 3 | 90 |
+11	
+12	Each table sold earns a profit of 40 euros and each chair a profit of 30 euros. The workshop can
+13	sell everything it makes, and it does not have to make any minimum number of either piece.
+14	
+15	The plan is a weekly average over a season, so fractional quantities are fine (19.5 tables per
+16	week is a valid plan).
+17	
+18	**Question.** How many `tables` and `chairs` should the workshop make per week to maximise its
+19	weekly profit, without using more hours than are available at any workstation?
+20	
+[rate_limit_event]
+[tool call] Bash {"command": "ls -la work 2>&1; uv run python -c \"import highspy, inspect; h=highspy.Highs(); print(highspy.__file__); print([m for m in dir(h) if m in ('addVars','addVar','addRow','addRows','addCols','changeObjectiveSense','getSolution','getModelStatus','modelStatusToString','setOptionValue','passModel')])\"", "description": "Check work dir and highspy API"}
+[tool result]
+ls: cannot access 'work': No such file or directory
+<rehearsal>/course/sessions/01-fundamentals/.venv/lib/python3.12/site-packages/highspy/__init__.py
+['addCols', 'addRow', 'addRows', 'addVar', 'addVars', 'changeObjectiveSense', 'getModelStatus', 'getSolution', 'modelStatusToString', 'passModel', 'setOptionValue']
+[tool call] Write {"file_path": "<rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py"}
+[tool call content]
+"""Workshop problem: weekly tables and chairs that maximise profit, solved with HiGHS."""
+
+import sys
+
+import highspy
+
+# Problem data (from problem.md).
+PRODUCTS = ["tables", "chairs"]
+PROFIT = [40.0, 30.0]  # euros per piece
+WORKSTATIONS = ["assembly", "carpentry", "finishing"]
+HOURS_PER_PIECE = [  # rows: workstations, columns: products
+    [1.0, 1.0],
+    [2.0, 1.0],
+    [1.0, 3.0],
+]
+HOURS_AVAILABLE = [40.0, 60.0, 90.0]
+BINDING_TOL = 1e-6
+
+h = highspy.Highs()
+h.setOptionValue("output_flag", False)
+
+# One non-negative continuous column per product, with its profit as objective coefficient.
+for profit in PROFIT:
+    h.addVar(0.0, highspy.kHighsInf)
+    h.changeColCost(h.getNumCol() - 1, profit)
+h.changeObjectiveSense(highspy.ObjSense.kMaximize)
+
+# One row per workstation: hours used <= hours available.
+for coefs, hours in zip(HOURS_PER_PIECE, HOURS_AVAILABLE):
+    h.addRow(-highspy.kHighsInf, hours, len(coefs), list(range(len(coefs))), coefs)
+
+h.run()
+
+status = h.getModelStatus()
+print(f"status: {h.modelStatusToString(status)}")
+if status != highspy.HighsModelStatus.kOptimal:
+    sys.exit(1)
+
+solution = h.getSolution()
+col_value = list(solution.col_value)
+row_value = list(solution.row_value)
+# HiGHS reports row duals of a maximisation with the minimisation sign convention
+# (non-positive for a binding <= row), so flip them into non-negative shadow prices.
+shadow_price = [-d for d in solution.row_dual]
+
+primal_objective = sum(p * x for p, x in zip(PROFIT, col_value))
+dual_objective = sum(b * y for b, y in zip(HOURS_AVAILABLE, shadow_price))
+duality_gap = abs(primal_objective - dual_objective)
+binding = [
+    name
+    for name, hours, used in zip(WORKSTATIONS, HOURS_AVAILABLE, row_value)
+    if hours - used < BINDING_TOL
+]
+
+print("solution: " + ", ".join(f"{n}={v:g}" for n, v in zip(PRODUCTS, col_value)))
+print("duals: " + ", ".join(f"{n}={v:g}" for n, v in zip(WORKSTATIONS, shadow_price)))
+print(f"primal objective: {primal_objective:g}")
+print(f"dual objective: {dual_objective:g}")
+print(f"duality gap: {duality_gap:g}")
+print(f"binding constraints: {', '.join(binding)}")
+[tool result]
+File created successfully at: <rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py (file state is current in your context — no need to Read it back)
+[assistant]
+Before running, I'll check HiGHS's raw dual sign for this maximisation so the flip in the code is based on what it actually returns, not on an assumption.
+[tool call] Bash {"command": "uv run python -c \"\nimport runpy, io, contextlib, highspy\nbuf = io.StringIO()\nwith contextlib.redirect_stdout(buf):\n    g = runpy.run_path('work/model.py')\nprint('raw row_dual:', list(g['solution'].row_dual))\n\"", "description": "Inspect raw row duals from HiGHS"}
+[tool result]
+raw row_dual: [20.000000000000014, 9.999999999999995, 0.0]
+[assistant]
+HiGHS already returns non-negative duals for this maximisation (20, 10, 0), so negating them would be wrong. I'll remove the flip.
+[tool call] Edit {"replace_all": false, "file_path": "<rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py", "old_string": "# HiGHS reports row duals of a maximisation with the minimisation sign convention\n# (non-positive for a binding <= row), so flip them into non-negative shadow prices.\nshadow_price = [-d for d in solution.row_dual]", "new_string": "# For a maximisation HiGHS already reports the dual of a binding <= row as non-negative\n# (profit gained per extra hour), so the row duals are the shadow prices as they are.\nshadow_price = list(solution.row_dual)"}
+[tool result]
+The file <rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py has been updated successfully. (file state is current in your context — no need to Read it back)
+[tool call] Bash {"command": "uv run python work/model.py; echo \"exit=$?\"; git -C <rehearsal>/course status --short", "description": "Run the model and check nothing changed outside work/"}
+[tool result (error)]
+This Bash command contains multiple operations. The following parts require approval: echo "exit=$?", git -C <rehearsal>/course status --short
+[rate_limit_event]
+[tool call] Bash {"command": "uv run python work/model.py", "description": "Run the workshop LP model"}
+[tool result]
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27374e-13
+binding constraints: assembly, carpentry
+[tool call] Bash {"command": "git -C <rehearsal>/course status --short", "description": "Check nothing changed outside work/"}
+[tool result (error)]
+This command requires approval
+[tool call] Bash {"command": "git status --short", "description": "Show working tree status"}
+[tool result]
+?? work/
+[assistant]
+I wrote `work/model.py` and ran `uv run python work/model.py`, which printed:
+
+```
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27374e-13
+binding constraints: assembly, carpentry
+```
+
+The best plan is 20 tables and 20 chairs a week, for a profit of 1,400 euros.
+
+- **Gap:** the 2.27e-13 is just rounding in the computer's arithmetic, about one part in 10¹⁶ of 1,400. The script prints it as HiGHS computed it; I didn't round it to zero.
+- **Dual signs:** before relying on a sign flip, I checked what HiGHS actually returns. For this maximisation it already gives non-negative duals (20, 10, 0), so the code uses them as they are.
+- **Hand check:** working the problem by hand gives the same answer. Assembly uses 40 of 40 hours, carpentry 60 of 60, and finishing 80 of 90.
+- **Scope:** I only read `problem.md`, and `git status` shows `work/` as the only change.
+
+Any feasible plan earns at most the dual objective, so a plan whose profit equals it (1,400 = 40·20 + 60·10 + 90·0) can't be beaten and is optimal. For the two binding workstations, one extra hour of assembly would add about 20 euros of weekly profit and one extra hour of carpentry about 10 euros, so those are the most it is worth paying for extra capacity; finishing has 10 spare hours, so more finishing time is worth nothing.
+[result] subtype=success is_error=False num_turns=10 duration_ms=53553
+I wrote `work/model.py` and ran `uv run python work/model.py`, which printed:
+
+```
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27374e-13
+binding constraints: assembly, carpentry
+```
+
+The best plan is 20 tables and 20 chairs a week, for a profit of 1,400 euros.
+
+- **Gap:** the 2.27e-13 is just rounding in the computer's arithmetic, about one part in 10¹⁶ of 1,400. The script prints it as HiGHS computed it; I didn't round it to zero.
+- **Dual signs:** before relying on a sign flip, I checked what HiGHS actually returns. For this maximisation it already gives non-negative duals (20, 10, 0), so the code uses them as they are.
+- **Hand check:** working the problem by hand gives the same answer. Assembly uses 40 of 40 hours, carpentry 60 of 60, and finishing 80 of 90.
+- **Scope:** I only read `problem.md`, and `git status` shows `work/` as the only change.
+
+Any feasible plan earns at most the dual objective, so a plan whose profit equals it (1,400 = 40·20 + 60·10 + 90·0) can't be beaten and is optimal. For the two binding workstations, one extra hour of assembly would add about 20 euros of weekly profit and one extra hour of carpentry about 10 euros, so those are the most it is worth paying for extra capacity; finishing has 10 spare hours, so more finishing time is worth nothing.
+
+=== harness-check ===
+$ uv run python work/model.py
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27374e-13
+binding constraints: assembly, carpentry
+[exit 0]
+
+=== timing ===
+start: 2026-10-10T12:41:27Z
+end: 2026-10-10T12:42:22Z
+exit: 0
+invocation exit: 0
+harness exit: 0

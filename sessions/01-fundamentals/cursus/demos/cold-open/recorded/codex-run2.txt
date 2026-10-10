@@ -1,0 +1,411 @@
+=== meta ===
+cli: codex
+run: 2
+version: 0.160.0
+model: gpt-6-astra
+date: 2026-10-10
+commit: 0be4cf5
+prompt sha256: 56924b71ef7f71180a79f1ebce53e59445bbd20e1b47c6f36427c28b99d21abc
+problem sha256: 2b823f7c5ee5f3c3cc82fcfb80f55a1cf44e72072db47f27ea1161e29779e3a0
+model sha256: c0a0b36085c4d0f0a0715af0db664d76b78166d6c2edb4bda6e5651d4ca2c75b
+
+=== reset ===
+$ git -C "$(git rev-parse --show-toplevel)" restore --source=HEAD --staged --worktree -- sessions/01-fundamentals/cursus/demos/cold-open && git -C "$(git rev-parse --show-toplevel)" clean -fdx -- sessions/01-fundamentals/cursus/demos/cold-open
+Removing sessions/01-fundamentals/cursus/demos/cold-open/work/
+
+=== clean-state ===
+$ git status --short --ignored --untracked-files=all -- .
+
+=== invocation ===
+$ UV_CACHE_DIR="$PWD/work/.uv-cache" codex exec --sandbox workspace-write "$(cat prompt.txt)" 2>&1 | tee <rehearsal>/logs/codex-run2.log
+
+=== agent ===
+Reading additional input from stdin...
+OpenAI Codex v0.160.0
+--------
+workdir: <rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: xhigh
+reasoning summaries: none
+session id: <session-id>
+--------
+user
+[user prompt elided: the contents of prompt.txt, sha256 56924b71ef7f71180a79f1ebce53e59445bbd20e1b47c6f36427c28b99d21abc, sent unchanged]
+codex
+I’ll read `problem.md`, build and solve the LP in `work/model.py` with HiGHS, then check the seven-line output.
+
+exec
+/bin/bash -lc 'cat problem.md' in <rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open
+ succeeded in 0ms:
+# The workshop problem
+
+A small furniture workshop makes **tables** and **chairs**. Every piece goes through three
+workstations, and each workstation has a fixed number of hours available per week:
+
+| Workstation | Hours per table | Hours per chair | Hours available per week |
+| --- | --- | --- | --- |
+| `assembly` | 1 | 1 | 40 |
+| `carpentry` | 2 | 1 | 60 |
+| `finishing` | 1 | 3 | 90 |
+
+Each table sold earns a profit of 40 euros and each chair a profit of 30 euros. The workshop can
+sell everything it makes, and it does not have to make any minimum number of either piece.
+
+The plan is a weekly average over a season, so fractional quantities are fine (19.5 tables per
+week is a valid plan).
+
+**Question.** How many `tables` and `chairs` should the workshop make per week to maximise its
+weekly profit, without using more hours than are available at any workstation?
+
+apply patch
+patch: completed
+<rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+diff --git a/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b41507de0baef01b8cee3fbd0a8a03644ad72eda
+--- /dev/null
++++ b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+@@ -0,0 +1,66 @@
++"""Maximise weekly furniture profit subject to workstation capacity."""
++
++import sys
++
++import highspy
++
++
++def main():
++    products = ("tables", "chairs")
++    profits = (40.0, 30.0)
++    workstations = (
++        ("assembly", (1.0, 1.0), 40.0),
++        ("carpentry", (2.0, 1.0), 60.0),
++        ("finishing", (1.0, 3.0), 90.0),
++    )
++
++    # Maximise 40*tables + 30*chairs with non-negative continuous quantities.
++    model = highspy.Highs()
++    model.setOptionValue("output_flag", False)
++    for profit in profits:
++        model.addCol(profit, 0.0, highspy.kHighsInf, 0, [], [])
++    for _, hours_per_piece, available in workstations:
++        model.addRow(
++            -highspy.kHighsInf, available, 2, [0, 1], hours_per_piece
++        )
++    model.changeObjectiveSense(highspy.ObjSense.kMaximize)
++    model.run()
++
++    status = model.getModelStatus()
++    print(f"status: {model.modelStatusToString(status)}")
++    if status != highspy.HighsModelStatus.kOptimal:
++        sys.exit(1)
++
++    solution = model.getSolution()
++    quantities = solution.col_value
++    # Upper-bound capacity duals are non-negative shadow prices for this LP.
++    shadow_prices = [abs(dual) for dual in solution.row_dual]
++    primal_objective = sum(
++        profit * quantity for profit, quantity in zip(profits, quantities)
++    )
++    dual_objective = sum(
++        available * dual
++        for (_, _, available), dual in zip(workstations, shadow_prices)
++    )
++    gap = abs(primal_objective - dual_objective)
++    binding = [
++        name
++        for (name, _, available), used in zip(workstations, solution.row_value)
++        if available - used < 1e-6
++    ]
++
++    print("solution: " + ", ".join(
++        f"{name}={value:.12g}" for name, value in zip(products, quantities)
++    ))
++    print("duals: " + ", ".join(
++        f"{station[0]}={dual:.12g}"
++        for station, dual in zip(workstations, shadow_prices)
++    ))
++    print(f"primal objective: {primal_objective:.12g}")
++    print(f"dual objective: {dual_objective:.12g}")
++    print(f"duality gap: {gap:.12g}")
++    print("binding constraints: " + ", ".join(binding))
++
++
++if __name__ == "__main__":
++    main()
+
+diff --git a/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b41507de0baef01b8cee3fbd0a8a03644ad72eda
+--- /dev/null
++++ b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+@@ -0,0 +1,66 @@
++"""Maximise weekly furniture profit subject to workstation capacity."""
++
++import sys
++
++import highspy
++
++
++def main():
++    products = ("tables", "chairs")
++    profits = (40.0, 30.0)
++    workstations = (
++        ("assembly", (1.0, 1.0), 40.0),
++        ("carpentry", (2.0, 1.0), 60.0),
++        ("finishing", (1.0, 3.0), 90.0),
++    )
++
++    # Maximise 40*tables + 30*chairs with non-negative continuous quantities.
++    model = highspy.Highs()
++    model.setOptionValue("output_flag", False)
++    for profit in profits:
++        model.addCol(profit, 0.0, highspy.kHighsInf, 0, [], [])
++    for _, hours_per_piece, available in workstations:
++        model.addRow(
++            -highspy.kHighsInf, available, 2, [0, 1], hours_per_piece
++        )
++    model.changeObjectiveSense(highspy.ObjSense.kMaximize)
++    model.run()
++
++    status = model.getModelStatus()
++    print(f"status: {model.modelStatusToString(status)}")
++    if status != highspy.HighsModelStatus.kOptimal:
++        sys.exit(1)
++
++    solution = model.getSolution()
++    quantities = solution.col_value
++    # Upper-bound capacity duals are non-negative shadow prices for this LP.
++    shadow_prices = [abs(dual) for dual in solution.row_dual]
++    primal_objective = sum(
++        profit * quantity for profit, quantity in zip(profits, quantities)
++    )
++    dual_objective = sum(
++        available * dual
++        for (_, _, available), dual in zip(workstations, shadow_prices)
++    )
++    gap = abs(primal_objective - dual_objective)
++    binding = [
++        name
++        for (name, _, available), used in zip(workstations, solution.row_value)
++        if available - used < 1e-6
++    ]
++
++    print("solution: " + ", ".join(
++        f"{name}={value:.12g}" for name, value in zip(products, quantities)
++    ))
++    print("duals: " + ", ".join(
++        f"{station[0]}={dual:.12g}"
++        for station, dual in zip(workstations, shadow_prices)
++    ))
++    print(f"primal objective: {primal_objective:.12g}")
++    print(f"dual objective: {dual_objective:.12g}")
++    print(f"duality gap: {gap:.12g}")
++    print("binding constraints: " + ", ".join(binding))
++
++
++if __name__ == "__main__":
++    main()
+
+exec
+/bin/bash -lc 'uv run python work/model.py' in <rehearsal>/course/sessions/01-fundamentals/cursus/demos/cold-open
+ succeeded in 27ms:
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27373675443e-13
+binding constraints: assembly, carpentry
+
+diff --git a/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b41507de0baef01b8cee3fbd0a8a03644ad72eda
+--- /dev/null
++++ b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+@@ -0,0 +1,66 @@
++"""Maximise weekly furniture profit subject to workstation capacity."""
++
++import sys
++
++import highspy
++
++
++def main():
++    products = ("tables", "chairs")
++    profits = (40.0, 30.0)
++    workstations = (
++        ("assembly", (1.0, 1.0), 40.0),
++        ("carpentry", (2.0, 1.0), 60.0),
++        ("finishing", (1.0, 3.0), 90.0),
++    )
++
++    # Maximise 40*tables + 30*chairs with non-negative continuous quantities.
++    model = highspy.Highs()
++    model.setOptionValue("output_flag", False)
++    for profit in profits:
++        model.addCol(profit, 0.0, highspy.kHighsInf, 0, [], [])
++    for _, hours_per_piece, available in workstations:
++        model.addRow(
++            -highspy.kHighsInf, available, 2, [0, 1], hours_per_piece
++        )
++    model.changeObjectiveSense(highspy.ObjSense.kMaximize)
++    model.run()
++
++    status = model.getModelStatus()
++    print(f"status: {model.modelStatusToString(status)}")
++    if status != highspy.HighsModelStatus.kOptimal:
++        sys.exit(1)
++
++    solution = model.getSolution()
++    quantities = solution.col_value
++    # Upper-bound capacity duals are non-negative shadow prices for this LP.
++    shadow_prices = [abs(dual) for dual in solution.row_dual]
++    primal_objective = sum(
++        profit * quantity for profit, quantity in zip(profits, quantities)
++    )
++    dual_objective = sum(
++        available * dual
++        for (_, _, available), dual in zip(workstations, shadow_prices)
++    )
++    gap = abs(primal_objective - dual_objective)
++    binding = [
++        name
++        for (name, _, available), used in zip(workstations, solution.row_value)
++        if available - used < 1e-6
++    ]
++
++    print("solution: " + ", ".join(
++        f"{name}={value:.12g}" for name, value in zip(products, quantities)
++    ))
++    print("duals: " + ", ".join(
++        f"{station[0]}={dual:.12g}"
++        for station, dual in zip(workstations, shadow_prices)
++    ))
++    print(f"primal objective: {primal_objective:.12g}")
++    print(f"dual objective: {dual_objective:.12g}")
++    print(f"duality gap: {gap:.12g}")
++    print("binding constraints: " + ", ".join(binding))
++
++
++if __name__ == "__main__":
++    main()
+
+codex
+```text
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27373675443e-13
+binding constraints: assembly, carpentry
+```
+
+The gap is zero to numerical precision, proving optimality because the feasible plan’s profit equals the feasible dual’s upper bound on profit. The binding workstations’ duals mean an extra assembly hour is worth €20 and an extra carpentry hour €10 in weekly profit, while these shadow prices remain valid.
+diff --git a/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..b41507de0baef01b8cee3fbd0a8a03644ad72eda
+--- /dev/null
++++ b/sessions/01-fundamentals/cursus/demos/cold-open/work/model.py
+@@ -0,0 +1,66 @@
++"""Maximise weekly furniture profit subject to workstation capacity."""
++
++import sys
++
++import highspy
++
++
++def main():
++    products = ("tables", "chairs")
++    profits = (40.0, 30.0)
++    workstations = (
++        ("assembly", (1.0, 1.0), 40.0),
++        ("carpentry", (2.0, 1.0), 60.0),
++        ("finishing", (1.0, 3.0), 90.0),
++    )
++
++    # Maximise 40*tables + 30*chairs with non-negative continuous quantities.
++    model = highspy.Highs()
++    model.setOptionValue("output_flag", False)
++    for profit in profits:
++        model.addCol(profit, 0.0, highspy.kHighsInf, 0, [], [])
++    for _, hours_per_piece, available in workstations:
++        model.addRow(
++            -highspy.kHighsInf, available, 2, [0, 1], hours_per_piece
++        )
++    model.changeObjectiveSense(highspy.ObjSense.kMaximize)
++    model.run()
++
++    status = model.getModelStatus()
++    print(f"status: {model.modelStatusToString(status)}")
++    if status != highspy.HighsModelStatus.kOptimal:
++        sys.exit(1)
++
++    solution = model.getSolution()
++    quantities = solution.col_value
++    # Upper-bound capacity duals are non-negative shadow prices for this LP.
++    shadow_prices = [abs(dual) for dual in solution.row_dual]
++    primal_objective = sum(
++        profit * quantity for profit, quantity in zip(profits, quantities)
++    )
++    dual_objective = sum(
++        available * dual
++        for (_, _, available), dual in zip(workstations, shadow_prices)
++    )
++    gap = abs(primal_objective - dual_objective)
++    binding = [
++        name
++        for (name, _, available), used in zip(workstations, solution.row_value)
++        if available - used < 1e-6
++    ]
++
++    print("solution: " + ", ".join(
++        f"{name}={value:.12g}" for name, value in zip(products, quantities)
++    ))
++    print("duals: " + ", ".join(
++        f"{station[0]}={dual:.12g}"
++        for station, dual in zip(workstations, shadow_prices)
++    ))
++    print(f"primal objective: {primal_objective:.12g}")
++    print(f"dual objective: {dual_objective:.12g}")
++    print(f"duality gap: {gap:.12g}")
++    print("binding constraints: " + ", ".join(binding))
++
++
++if __name__ == "__main__":
++    main()
+
+tokens used
+7,893
+```text
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27373675443e-13
+binding constraints: assembly, carpentry
+```
+
+The gap is zero to numerical precision, proving optimality because the feasible plan’s profit equals the feasible dual’s upper bound on profit. The binding workstations’ duals mean an extra assembly hour is worth €20 and an extra carpentry hour €10 in weekly profit, while these shadow prices remain valid.
+
+=== harness-check ===
+$ uv run python work/model.py
+status: Optimal
+solution: tables=20, chairs=20
+duals: assembly=20, carpentry=10, finishing=0
+primal objective: 1400
+dual objective: 1400
+duality gap: 2.27373675443e-13
+binding constraints: assembly, carpentry
+[exit 0]
+
+=== timing ===
+start: 2026-10-10T12:44:15Z
+end: 2026-10-10T12:45:01Z
+exit: 0
+invocation exit: 0
+harness exit: 0
