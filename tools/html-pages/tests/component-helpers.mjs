@@ -9,7 +9,7 @@ import { createPage } from '../create-page.mjs';
 export const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 export const sample = path.join(repoRoot, 'sessions/01-fundamentals/cursus/demos/components.html');
 export const sizes = [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 390, height: 844 }];
-export const suites = ['predict', 'probability-chart', 'formula-slider', 'stepper', 'components-tooling', 'components-a11y', 'browser-env', 'verifier-gaming', 'opening-close', 'tiny-lm'];
+export const suites = ['predict', 'probability-chart', 'formula-slider', 'stepper', 'components-tooling', 'components-a11y', 'browser-env', 'verifier-gaming', 'opening-close', 'tiny-lm', 'next-token'];
 export const read = relative => readFile(path.join(repoRoot, relative), 'utf8');
 
 export async function scratch(t) {
