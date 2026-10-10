@@ -18,7 +18,7 @@ versions. Anything less is listed as untested on the page.
 | Platform | Status | Evidence |
 | --- | --- | --- |
 | Native Linux | untested | No full run on a native Linux kernel recorded. |
-| WSL 2 (Ubuntu 26.04) | untested | Fixture-tested on WSL2 only (see [Fixture runs on WSL2](#fixture-runs-on-wsl2)): real git, uv and agents, local stand-ins for gh, the network and GitHub. No full real run recorded: the implementing agent has no GitHub credentials for a real push. |
+| WSL 2 (Ubuntu 26.04) | untested | Fixture-tested on WSL2 only (see [Fixture runs on WSL2](#fixture-runs-on-wsl2)): real git, uv and agents, local stand-ins for gh, the network and GitHub. No full real run recorded: the implementation loop's agent is not permitted to use `gh` on this host (its `gh auth status` calls were denied on 2026-10-10), so it cannot make the real login check and push. The owner's run is pending. |
 | macOS | untested | No run recorded. |
 | Windows PowerShell 5.1 | untested | `check-setup.ps1` parses under PowerShell 7.6.6 with no 7-only syntax (test `test_ps51_syntax_and_launch_contract`); never run on Windows. |
 | Windows Git Bash | untested | No run recorded. |
