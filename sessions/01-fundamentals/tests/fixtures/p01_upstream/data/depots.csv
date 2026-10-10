@@ -1,0 +1,9 @@
+depot_id,depot,chargers_slow,chargers_fast,slow_kw,fast_kw
+D1,D_A,3,2,80,180
+D2,D_B,4,3,90,150
+D3,D_C,5,1,70,180
+D4,D_D,2,2,80,150
+D5,D_E,3,3,90,180
+D6,D_F,4,1,70,150
+D7,D_G,5,2,80,180
+D8,D_H,2,3,90,150
