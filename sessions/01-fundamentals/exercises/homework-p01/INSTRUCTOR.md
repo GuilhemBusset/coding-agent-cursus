@@ -104,12 +104,17 @@ not part of the locked checks:
 | revised, but with upstream `max_soc_kwh` and `initial_soc_kwh` | 755.70 |
 | revised, but with upstream charger counts | 832.58 |
 
-## Solve time (A2)
+## Solve time
 
-The issue asks for 5 to 60 seconds of HiGHS time, and under 60 seconds on a laptop.
-`test_reference_solve_time` runs three fresh-process solves. It times only `highs.run()` (the
-model reports it as `solve_seconds`, taken from `getRunTime()`) and asserts that each is in
-`[5, 60)`. Measured on 2026-10-10:
+The issue asks for two things: instance sizing so that HiGHS needs 5 to 60 seconds (D1), and a
+reference solve under 60 seconds on a laptop (A2). `test_reference_solve_time` runs three
+fresh-process solves. It times only `highs.run()` (the model reports it as `solve_seconds`,
+taken from `getRunTime()`) and asserts that each is in `[5, 60)`. The test cannot tell what kind
+of machine it runs on, so a pass proves the sizing on that host and nothing about laptops.
+
+### Sizing measurement (D1), on the instructor's desktop
+
+Measured on 2026-10-10:
 
 | Run | Status | Primal = dual | HiGHS `solve_seconds` | End-to-end wall (load, build, solve, write) |
 | --- | --- | --- | --- | --- |
@@ -120,11 +125,31 @@ model reports it as `solve_seconds`, taken from `getRunTime()`) and asserts that
 Host: Intel Core Ultra 9 285K, 24 logical CPUs, 32,581,280 kB RAM, Ubuntu 26.04 LTS on WSL2 (`Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43`), HiGHS 1.15.1, Python 3.12 in the locked session environment. The run is single-threaded and HiGHS is deterministic at a fixed thread
 count, so repeated runs on one machine differ only by machine load.
 
-**Limitation.** The host is the instructor's machine under WSL2, and WSL cannot read the
-chassis type. Its Intel Core Ultra 9 285K is a desktop-class part, so this is not a laptop
-measurement. The claim for laptops rests on margin: a solve of about 12 seconds would need to
-run five times slower to reach 60 seconds. Rerun `test_reference_solve_time` on a laptop to
-confirm it.
+The host is the instructor's machine under WSL2, and WSL cannot read the chassis type. The
+Intel Core Ultra 9 285K is a desktop-class part, so **this is not a laptop measurement**.
+
+### Laptop benchmark (A2): outstanding owner obligation
+
+**Status: not proven.** No laptop run has been recorded. A2 stays an open owner obligation
+(ADR 0011, decision 1). It is not satisfied by the desktop run above, nor by the passing
+`test_reference_solve_time` on that host. The desktop margin (about 12 s against a 60 s limit)
+makes a laptop pass likely, but likely is not measured.
+
+To close A2, on a laptop with the private reference installed (see below):
+
+1. Clone the repository, run `setup/` as for a fresh clone, and `cd sessions/01-fundamentals`.
+2. Plug the laptop in and leave its power profile on the default.
+3. Run `uv run pytest -q -s tests/instructor_p01_reference.py -k solve_time`. The test prints
+   each run's HiGHS `solve_seconds` and the host's CPU, cores, RAM and OS.
+4. Fill in the table below with the date, the laptop model (it should be a laptop, not WSL on a
+   desktop), and the three times, then land that change through a PR.
+
+| Date | Laptop model | CPU / cores / RAM / OS | Run 1 | Run 2 | Run 3 | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| _not yet run_ | | | | | | open |
+
+If any run reaches 60 s, A2 fails. In that case, shrink the instance (fewer legs or trucks) and
+re-derive `KNOWN_OPTIMUM`, `DATA_SHA256` and the binding evidence. Do not raise the limit.
 
 ## The private reference
 
