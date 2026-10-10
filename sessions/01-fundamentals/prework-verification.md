@@ -87,7 +87,7 @@ All on the WSL2 host described below, 2026-10-10.
 - OS: Ubuntu 26.04 LTS on WSL2, kernel `6.18.33.2-microsoft-standard-WSL2`.
 - git 2.53.0, uv 0.11.28, Python 3.12.13 (uv-managed), PowerShell 7.6.6 (`bash setup/pwsh.sh`).
 - Claude Code 2.1.296, Codex CLI 0.160.0 (`codex exec --skip-git-repo-check --output-last-message` used by the smoke test).
-- Script hashes (SHA-256): `check_setup.py` 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349,
+- Script hashes (SHA-256): `check_setup.py` c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207,
   `check-setup.sh` 63f19d05f4f0aae349a87f85dfcb4e1711cd0466bed24fed5f8afc6480bcd348,
   `check-setup.ps1` 67df3101828e2253931a904c57373ae6ef666eda4395c01025c517d55dff0ce7.
 
@@ -99,11 +99,33 @@ clone, with real git and uv, stub gh, mise and agents, a local HTTP server for t
 local bare repositories (with pre-receive hooks) standing in for the course repo and the fork.
 This is fixture-tested on WSL2, not a full real run.
 
-The whole session suite (`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q`, the D2
-check) passed: 349 tests in 881.8 s. Of that, 722 s are the four agent smoke-timeout scenarios,
-which each wait out the checker's 180 s smoke timeout by design, and 22 s the two 10 s network
-timeouts. That is close to the implementation loop's 900 s default check timeout, so the D2
-check should carry an explicit `timeout_s` (1800 s leaves room).
+### Push cleanup
+
+The push probe is a parentless, empty-tree commit whose message carries a random per-run line,
+so two runs never produce the same commit, even in the same second. It is pushed without force,
+so an existing `setup-check/<handle>` branch is never overwritten (the push is refused). After
+`git ls-remote` shows the probe arrived, or when `ls-remote` cannot be read, the branch is
+deleted with `git push --force-with-lease=refs/heads/setup-check/<handle>:<probe> <url>
+:refs/heads/setup-check/<handle>`. Git only deletes it while it still holds this run's commit.
+If the branch holds a different commit, nothing is deleted, and a `note:` says the branch was
+left alone and gives no delete command. If the probe is still there after the delete, the note
+gives the `gh api -X DELETE` command. If the branch cannot be read, the note says to delete it
+only if it still points at the probe's first 12 hex digits. Cleanup never turns `push` into
+FAIL. `push` passes only when `ls-remote` shows the probe.
+
+`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework_cleanup.py` proves
+this through both entry points against real local bare repositories: 12 passed in 9.5 s. Covered:
+a branch moved before verification, a branch moved between verification and the delete (the
+lease refuses it), same-second runs, a pre-existing empty-tree branch with the old fixed message,
+and unreadable `ls-remote` after the delete or at verification. In every case `main` and
+`homework/*` stay untouched.
+
+The whole session suite (`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests`)
+passed: 331 tests in 893.0 s. About 720 s of that are the four agent smoke-timeout scenarios,
+each of which waits out the checker's 180 s smoke timeout by design. The acceptance checks
+therefore split them by entry point. The D2 selection (bash half) passed 114 tests in 462.4 s.
+The A2 selection (PowerShell half) passed 46 in 391.6 s. The D3 push selection passed 38 in
+48.1 s, plus the 12 cleanup tests. Each stays under the loop's 900 s default.
 
 ### A1: each agent alone, live
 
@@ -120,7 +142,7 @@ date: 2026-10-10 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349
+script: check_setup.py sha256 c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
@@ -128,7 +150,7 @@ gh: PASS 2.65.1 (>= 2.0.0)
 gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:43241: PASS reachable (HTTP 200)
+network 127.0.0.1:43705: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
 claude: PASS 2.1.296
 claude-smoke: PASS replied OK
@@ -146,7 +168,7 @@ date: 2026-10-10 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349
+script: check_setup.py sha256 c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
@@ -154,7 +176,7 @@ gh: PASS 2.65.1 (>= 2.0.0)
 gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:44881: PASS reachable (HTTP 200)
+network 127.0.0.1:35683: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
 claude: not installed (fine)
 codex: PASS 0.160.0

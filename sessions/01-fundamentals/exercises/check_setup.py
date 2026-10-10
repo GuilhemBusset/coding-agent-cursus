@@ -15,8 +15,8 @@ that students paste into the form their instructor gives them. The checks:
 - gh-auth: ``gh auth status`` exits 0 (its output is never shown).
 - push: a real push of an empty-tree commit to ``setup-check/<handle>`` on the course
   repo, or on your fork when you cannot push to the course repo (the same rule turn-in
-  uses), then a check that it arrived, then its deletion. HEAD, the index, the working
-  tree and every existing branch are left alone.
+  uses), then a check that it arrived, then its deletion if the branch still holds that
+  commit. HEAD, the index, the working tree and every existing branch are left alone.
 - claude, codex: the version of each agent that is installed, and a smoke test that
   asks it to "Reply with exactly: OK". An agent that is not installed is fine; the
   ``agent`` line FAILs only when neither is.
@@ -46,6 +46,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import secrets
 import shutil
 import signal
 import ssl
@@ -422,13 +423,16 @@ def push_destination(gh, origin_repo, info, handle):
 
 
 def probe_commit(git, env):
-    """A new commit with an empty tree and no parent, or None. Only adds an object."""
+    """A new commit with an empty tree and no parent, or None. Only adds an object.
+
+    A random line in the message makes every run's commit unique, even two runs in the
+    same second, so a run never mistakes another run's branch for its own."""
     code, tree = run([git, "mktree"], cwd=HERE, env=env, input="")
     tree = tree.strip()
     if code != 0 or not tree:
         return None
-    code, commit = run([git, "commit-tree", tree, "-m", "Cursus setup check: safe to delete"],
-                       cwd=HERE, env=env)
+    message = f"Cursus setup check: safe to delete\n\nrun {secrets.token_hex(8)}\n"
+    code, commit = run([git, "commit-tree", tree], cwd=HERE, env=env, input=message)
     commit = commit.strip()
     return commit if code == 0 and commit else None
 
@@ -506,16 +510,30 @@ def check_push(report, auth_job):
         else:
             report.fail("push", f"git could not push {where}; {access_hint}")
         return
-    arrived = remote_tip() == commit
-    run([git, "push", "--quiet", url, "--delete", ref], cwd=HERE, env=env, timeout=180)
-    gone = remote_tip() == ""
+    tip = remote_tip()
+    arrived = tip == commit
     if arrived:
         report.ok("push", where)
     else:
         report.fail("push", f"pushed {where} but could not confirm the branch arrived; {access_hint}")
-    if not gone:
-        report.note(f"the temporary branch {branch} may still be on {repo}; delete it on GitHub "
-                    f"or run gh api -X DELETE repos/{repo}/git/{ref}")
+    not_ours = (f"the branch {branch} on {repo} holds a different commit, one this check did "
+                "not push, so the check left it alone")
+    if tip and not arrived:
+        report.note(not_ours)
+    elif arrived or tip is None:
+        # The lease makes the deletion atomic: git deletes the branch only while it still
+        # holds this run's commit, so a branch someone else moved is never deleted.
+        run([git, "push", "--quiet", f"--force-with-lease={ref}:{commit}", url, f":{ref}"],
+            cwd=HERE, env=env, timeout=180)
+        left = remote_tip()
+        if left == commit:
+            report.note(f"the temporary branch {branch} is still on {repo}; delete it on GitHub "
+                        f"or run gh api -X DELETE repos/{repo}/git/{ref}")
+        elif left is None:
+            report.note(f"the temporary branch {branch} may still be on {repo}; delete it only if "
+                        f"it still points at commit {commit[:12]}")
+        elif left:
+            report.note(not_ours)
 
 
 def check_agent(report, name):

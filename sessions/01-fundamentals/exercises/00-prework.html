@@ -473,7 +473,7 @@ bash setup/session-01-fundamentals.sh</code></pre>
         </div>
         <div class="callout">
           <h3>The push check uses a temporary branch</h3>
-          <p>To prove that <code>/turn-in</code> will work, the check pushes an empty commit to a temporary branch <code>setup-check/&lt;your GitHub handle&gt;</code>, checks that it arrived, then deletes it. If you cannot push to the course repository, it uses your fork instead, exactly as turn-in does, and creates the fork with gh if you do not have one yet. It never touches your own branches, commits, staged changes or files. If deleting the branch fails, a <code>note:</code> line tells you how to remove it.</p>
+          <p>To prove that <code>/turn-in</code> will work, the check pushes an empty commit to a temporary branch <code>setup-check/&lt;your GitHub handle&gt;</code>, checks that it arrived, then deletes it if it still holds that test commit. If you cannot push to the course repository, it uses your fork instead, exactly as turn-in does, and creates the fork with gh if you do not have one yet. It never touches your own branches, commits, staged changes or files. If the branch is left behind, a <code>note:</code> line says why and when it is safe to remove it.</p>
         </div>
         <h3>4. Paste the summary</h3>
         <p>The check ends with a block between <code>----- BEGIN SETUP SUMMARY -----</code> and <code>----- END SETUP SUMMARY -----</code>. Copy the whole block, both marker lines included, and paste it into the form your instructor gives you. It contains no secrets: no token, key or remote URL. Here is an illustrative block (yours will differ):</p>
