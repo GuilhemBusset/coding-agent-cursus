@@ -38,7 +38,34 @@ uv run pytest
 `uv sync` installs only the runtime dependencies (`pytest`, `highspy`, `numpy`) into this
 session's `.venv/`, at the versions pinned in `uv.lock`. The `fixtures` dependency group
 (`torch`, `transformers`) is for building the files in `cursus/fixtures/` only. Students never
-need it; instructors who rebuild fixtures opt in with `uv sync --group fixtures`.
+need it, and `uv sync` never installs torch. Instructors who rebuild fixtures opt in per command
+with `uv run --group fixtures` (see [Regenerating fixtures](#regenerating-fixtures)).
+
+## Regenerating fixtures
+
+The Act I labs read real model traces from `cursus/fixtures/`: `next_token.json` (GPT-2 small,
+top-20 next-token logits for 20 prompts), `attention.json` (every GPT-2 attention layer and
+head on one coreference sentence) and `base_vs_instruct.json` (greedy completions from
+SmolLM2-135M base and instruct). They are committed, so nobody needs to rebuild them to teach.
+To rebuild them (instructors only, Linux), run from this directory:
+
+```sh
+uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
+```
+
+- The first run needs network. On Linux x86_64 the locked torch wheel pulls large CUDA
+  packages, and the models download to `~/.cache/huggingface`. The build itself runs on CPU
+  and takes under a minute.
+- Model revisions and the export date are pinned in `REVISIONS` and `EXPORT_DATE` at the top of
+  the script. Bump them together to move to newer models, then commit the new JSON.
+- The output is byte-identical across runs (CPU float32, one thread, greedy decoding, logits
+  rounded to 3 decimals, attention quantized to 0–255). After a rebuild with unchanged pins,
+  `git status` must be clean. This holds on Linux x86_64 with the locked libraries; a different
+  CPU or BLAS could in theory flip a value that sits on a rounding boundary.
+- To check that the committed JSON is real output from the pinned models (offline, after one
+  build has filled the cache):
+  `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
+  The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
 
 ## Opening pages
 
