@@ -111,6 +111,8 @@ reference solve under 60 seconds on a laptop (A2). `test_reference_solve_time` r
 fresh-process solves. It times only `highs.run()` (the model reports it as `solve_seconds`,
 taken from `getRunTime()`) and asserts that each is in `[5, 60)`. The test cannot tell what kind
 of machine it runs on, so a pass proves the sizing on that host and nothing about laptops.
+`test_laptop_benchmark` is the separate A2 procedure below: the same three fresh solves, an
+upper bound only, and a printed evidence line for the laptop table.
 
 ### Sizing measurement (D1), on the instructor's desktop
 
@@ -131,10 +133,11 @@ Intel Core Ultra 9 285K is a desktop-class part, so **this is not a laptop measu
 ### Laptop benchmark (A2): outstanding owner obligation
 
 **Status: not proven.** No laptop run has been recorded. A2 stays an open owner obligation
-(ADR 0011, decision 1). It is not satisfied by the desktop run above, nor by the passing
-`test_reference_solve_time` on that host. The margin below makes a laptop pass likely, but likely
-is not measured. The issue therefore ends as *delivered*, not *done*, until the table at the end
-of this section has a laptop row.
+(ADR 0011, decision 1). It is not satisfied by the desktop run above, by the throttled-core
+runs below, or by `test_reference_solve_time` or `test_laptop_benchmark` passing on that
+desktop. The margin below makes a laptop pass likely, but likely is not measured. The issue
+therefore ends as *delivered*, not *done*, until the table at the end of this section has a
+laptop row that matches the current pins.
 
 **Slowdown margin (supporting evidence, not a laptop run).** On 2026-10-10, on the same desktop,
 `test_reference_solve_time` was run pinned to one core (`taskset -c 2`) while one or two busy-loop
@@ -152,18 +155,38 @@ core's single-thread throughput (12.4 s × 4.8 ≈ 60 s) to fail A2. The run tim
 core, so it does not model a laptop's smaller caches, lower memory bandwidth or thermal
 throttling. That is why it does not close A2.
 
-To close A2, on a laptop with the private reference installed (see below):
+To close A2, on a laptop (Linux, macOS or Windows) with the private reference installed (see
+[The private reference](#the-private-reference); on Windows, or anywhere the reference is not at
+the default path, set `P01_REFERENCE_DIR` to its directory):
 
 1. Clone the repository, run `setup/` as for a fresh clone, and `cd sessions/01-fundamentals`.
 2. Plug the laptop in and leave its power profile on the default.
-3. Run `uv run pytest -q -s tests/instructor_p01_reference.py -k solve_time`. The test prints
-   each run's HiGHS `solve_seconds` and the host's CPU, cores, RAM and OS.
-4. Fill in the table below with the date, the laptop model (it should be a laptop, not WSL on a
-   desktop), and the three times, then land that change through a PR.
+3. Run `uv run pytest -q -s tests/instructor_p01_reference.py -k laptop_benchmark`. It runs
+   three fresh single-thread solves of the reference. Each must reach `kOptimal` with a closed
+   gap, pass `p01_checker.py` with exit 0, and report `solve_seconds` under 60. There is no lower
+   bound, unlike the D1 sizing test. On success it prints one JSON evidence line: the host's
+   CPU, logical CPUs, RAM and OS (best effort; `unknown` where the platform does not say), the
+   Python and HiGHS versions, the checkout revision, the SHA-256 of the reference and of each
+   `data/*.csv` (CRLF normalised to LF, as the checker pins them), and each run's
+   `solve_seconds`, wall seconds, status, primal, dual and gap.
+4. Add a row to the table below and paste the full evidence line under it. Record the laptop's
+   manufacturer and model and its power profile by hand: the test cannot tell a laptop from a
+   desktop. Land that change through a PR.
 
-| Date | Laptop model | CPU / cores / RAM / OS | Run 1 | Run 2 | Run 3 | Result |
-| --- | --- | --- | --- | --- | --- | --- |
-| _not yet run_ | | | | | | open |
+A row counts only if its reference SHA-256 equals the pin in
+[The private reference](#the-private-reference) and its data digests equal `DATA_SHA256` in
+`p01_checker.py` at that revision. A row that does not match the current pins is history, not
+evidence. A2 stays unproven until a matching row exists.
+
+| Date | Laptop manufacturer / model | CPU | RAM | OS | Power profile | Checkout revision | Reference SHA-256 | Data digests | HiGHS | Run 1 | Run 2 | Run 3 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| _not yet run_ | | | | | | | | | | | | |
+
+Evidence lines (one per row, as printed):
+
+```text
+(none yet)
+```
 
 If any run reaches 60 s, A2 fails. In that case, shrink the instance (fewer legs or trucks) and
 re-derive `KNOWN_OPTIMUM`, `DATA_SHA256` and the binding evidence. Do not raise the limit.
@@ -193,7 +216,7 @@ From `sessions/01-fundamentals/`:
 
 ```sh
 uv run pytest -q tests/test_p01_homework.py          # solver-free: data, checker, starter, turn-in
-uv run pytest -q tests/instructor_p01_reference.py   # needs the private reference; about 2 minutes
+uv run pytest -q tests/instructor_p01_reference.py   # needs the private reference; a few minutes
 ```
 
 `tests/instructor_p01_reference.py` is not collected by a plain `uv run pytest`. It fails rather
