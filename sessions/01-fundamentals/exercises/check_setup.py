@@ -29,6 +29,9 @@ Environment:
                     campus mirror or to test a proxy. Standard proxy variables
                     (HTTPS_PROXY, NO_PROXY) are honoured.
 
+Independent checks run at the same time, so the whole run takes about as long as the
+slowest one (usually the agent smoke test). Lines are still printed in a fixed order.
+
 Exit status: 0 when no line FAILs, 1 otherwise, and never anything else, so a wrapper
 can tell a verdict from a checker that could not start.
 
@@ -50,6 +53,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -88,17 +92,24 @@ def ascii_only(text):
 
 
 class Report:
-    def __init__(self):
-        self.lines = []
-        self.notes = []
+    """The lines of one group of checks, or (after merge) of the whole run. A group
+    records its lines quietly; main() prints each group once it is done, in order."""
+
+    def __init__(self, echo=False):
+        self.echo = echo
+        self.entries = []  # ("line" | "note", text), in the order they were reported
         self.names = set()
         self.handle = None
 
+    def _record(self, kind, text):
+        text = ascii_only(text)
+        self.entries.append((kind, text))
+        if self.echo:
+            print(text, flush=True)
+
     def add(self, name, status, detail=""):
-        line = ascii_only(f"{name}: {status}" + (f" {detail}" if detail else ""))
         self.names.add(name)
-        self.lines.append(line)
-        print(line, flush=True)
+        self._record("line", f"{name}: {status}" + (f" {detail}" if detail else ""))
 
     def ok(self, name, detail=""):
         self.add(name, "PASS", detail)
@@ -107,12 +118,51 @@ class Report:
         self.add(name, "FAIL", detail)
 
     def note(self, text):
-        line = ascii_only("note: " + text)
-        self.notes.append(line)
-        print(line, flush=True)
+        self._record("note", "note: " + text)
+
+    def merge(self, part):
+        for kind, text in part.entries:
+            self._record(kind, text)
+        self.names |= part.names
+        self.handle = self.handle or part.handle
+
+    @property
+    def lines(self):
+        return [text for kind, text in self.entries if kind == "line"]
+
+    @property
+    def notes(self):
+        return [text for kind, text in self.entries if kind == "note"]
 
     def failures(self):
         return sum(": FAIL" in line for line in self.lines)
+
+
+class Background:
+    """Run fn(*args) on a daemon thread, so an interrupted run can still exit at once.
+    result() waits for it and re-raises its error."""
+
+    def __init__(self, fn, *args):
+        self.value, self.error = None, None
+        self.thread = threading.Thread(target=self._run, args=(fn, args), daemon=True)
+        self.thread.start()
+
+    def _run(self, fn, args):
+        try:
+            self.value = fn(*args)
+        except BaseException as error:
+            self.error = error
+
+    def result(self):
+        while self.thread.is_alive():
+            self.thread.join(0.2)  # A short wait keeps Ctrl-C responsive on Windows.
+        if self.error is not None:
+            raise self.error
+        return self.value
+
+
+RUNNING_AGENTS = set()
+RUNNING_LOCK = threading.Lock()
 
 
 def run(argv, cwd=None, env=None, timeout=60, input=None):
@@ -159,6 +209,8 @@ def run_agent(argv, cwd):
             stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", **options)
     except (OSError, ValueError):
         return None, "", False
+    with RUNNING_LOCK:
+        RUNNING_AGENTS.add(process)
     try:
         stdout, _ = process.communicate(timeout=SMOKE_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -168,7 +220,17 @@ def run_agent(argv, cwd):
         except (subprocess.TimeoutExpired, OSError, ValueError):
             pass
         return None, "", True
+    finally:
+        with RUNNING_LOCK:
+            RUNNING_AGENTS.discard(process)
     return process.returncode, stdout, False
+
+
+def stop_agents():
+    with RUNNING_LOCK:
+        processes = list(RUNNING_AGENTS)
+    for process in processes:
+        kill_tree(process)
 
 
 def parse_version(text):
@@ -210,8 +272,11 @@ def check_identity(report, git):
     if not git:
         report.fail("git-identity", "needs git")
         return
-    missing = [key for key in ("user.name", "user.email")
-               if not run([git, "config", "--get", key], cwd=HERE)[1].strip()]
+    # One call for both keys; only which keys have a value is kept, never the values.
+    _, out = run([git, "config", "--get-regexp", r"^user\.(name|email)$"], cwd=HERE)
+    present = {key.lower() for key, _, value in (line.partition(" ") for line in out.splitlines())
+               if value.strip()}
+    missing = [key for key in ("user.name", "user.email") if key not in present]
     if missing:
         commands = " and ".join(f"git config --global {key} \"...\"" for key in missing)
         report.fail("git-identity", f"{' and '.join(missing)} not set; run {commands}")
@@ -246,39 +311,46 @@ def network_failure(error):
     return "could not connect"
 
 
+def probe(url):
+    """Returns (True, HTTP status) or (False, reason)."""
+    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "cursus-check-setup"})
+    try:
+        with urllib.request.urlopen(request, timeout=NETWORK_TIMEOUT) as response:
+            return True, response.status
+    except urllib.error.HTTPError as error:
+        return True, error.code
+    except Exception as error:  # Any other failure means the host is not reachable.
+        return False, network_failure(error)
+
+
 def check_network(report, agents):
     raw = os.environ.get("CHECK_SETUP_URLS", "")
     urls = raw.split() if raw.strip() else DEFAULT_URLS + [AGENT_URLS[a] for a in agents]
-    seen = set()
+    probes, seen = [], set()
     for index, url in enumerate(urls, 1):
         label = network_label(url, index)
-        if label in seen:
-            continue
-        seen.add(label)
-        name = f"network {label}"
-        request = urllib.request.Request(url, method="HEAD",
-                                         headers={"User-Agent": "cursus-check-setup"})
-        try:
-            with urllib.request.urlopen(request, timeout=NETWORK_TIMEOUT) as response:
-                status = response.status
-        except urllib.error.HTTPError as error:
-            status = error.code
-        except Exception as error:  # Any other failure means the host is not reachable.
-            report.fail(name, network_failure(error) + "; check your connection, proxy or firewall")
-            continue
-        report.ok(name, f"reachable (HTTP {status})")
+        if label not in seen:
+            seen.add(label)
+            probes.append((label, Background(probe, url)))  # All hosts at once.
+    for label, job in probes:
+        reachable, detail = job.result()
+        if reachable:
+            report.ok(f"network {label}", f"reachable (HTTP {detail})")
+        else:
+            report.fail(f"network {label}", detail + "; check your connection, proxy or firewall")
 
 
 def check_auth(report, gh):
+    """Returns (gh path, logged in)."""
     if not gh:
         report.fail("gh-auth", "needs gh")
-        return False
+        return gh, False
     code, _ = run([gh, "auth", "status"])
     if code == 0:
         report.ok("gh-auth", "logged in to GitHub")
-        return True
+        return gh, True
     report.fail("gh-auth", "not logged in; run 'gh auth login'" + (f" (exit {code})" if code else ""))
-    return False
+    return gh, False
 
 
 def github_handle(gh):
@@ -300,8 +372,8 @@ def parent_name(parent):
     return ""
 
 
-def push_destination(gh, origin_repo, handle):
-    """Turn-in's routing. Returns (repo, uses origin url, via fork) or an error string."""
+def repo_view(gh, origin_repo):
+    """The parsed 'gh repo view' reply, or an error string."""
     code, out = run([gh, "repo", "view", origin_repo, "--json", "nameWithOwner,parent,viewerPermission"])
     if code != 0:
         return f"could not look up {origin_repo} and your permission on it with gh"
@@ -311,6 +383,11 @@ def push_destination(gh, origin_repo, handle):
             raise ValueError
     except ValueError:
         return f"unexpected reply from 'gh repo view {origin_repo}'"
+    return info
+
+
+def push_destination(gh, origin_repo, info, handle):
+    """Turn-in's routing. Returns (repo, uses origin url, via fork) or an error string."""
     name = str(info.get("nameWithOwner") or "")
     if not REPO.match(name):
         name = origin_repo
@@ -328,48 +405,74 @@ def push_destination(gh, origin_repo, handle):
         return f"could not create or find your fork of {name} with 'gh repo fork'"
     lowered = handle.lower()
     query = f'.[] | select((.owner.login | ascii_downcase) == "{lowered}") | .full_name'
-    delay = 2
-    for attempt in range(1, 5):
+    # GitHub creates forks asynchronously: look again after 1, 2 and 4 seconds.
+    for delay in (1, 2, 4, None):
         code, out = run([gh, "api", "--paginate", f"repos/{name}/forks", "--jq", query], timeout=120)
         if code != 0:
             return f"could not list the forks of {name}"
         forks = [line.strip() for line in out.splitlines() if line.strip()]
-        if forks or attempt == 4:
+        if forks or delay is None:
             break
-        time.sleep(delay)  # GitHub creates forks asynchronously.
-        delay *= 2
+        time.sleep(delay)
+    if not forks:
+        return f"no fork of {name} owned by {handle} is visible yet; wait a minute, then rerun"
     if len(forks) != 1 or not REPO.match(forks[0]):
         return f"expected exactly one fork of {name} owned by {handle}, found {len(forks)}"
     return forks[0], False, True
 
 
-def check_push(report, git, gh, authenticated):
+def probe_commit(git, env):
+    """A new commit with an empty tree and no parent, or None. Only adds an object."""
+    code, tree = run([git, "mktree"], cwd=HERE, env=env, input="")
+    tree = tree.strip()
+    if code != 0 or not tree:
+        return None
+    code, commit = run([git, "commit-tree", tree, "-m", "Cursus setup check: safe to delete"],
+                       cwd=HERE, env=env)
+    commit = commit.strip()
+    return commit if code == 0 and commit else None
+
+
+def origin_url(git):
+    """(origin URL, its ORIGIN match or None). Git finds the clone from this script's folder."""
+    code, origin = run([git, "config", "--get", "remote.origin.url"], cwd=HERE)
+    origin = origin.strip()
+    trimmed = origin.rstrip("/")
+    if trimmed.endswith(".git"):
+        trimmed = trimmed[:-4]
+    return origin, (ORIGIN.match(trimmed) if code == 0 else None)
+
+
+def check_push(report, auth_job):
+    git, gh = shutil.which("git"), shutil.which("gh")
+    origin, match, jobs = "", None, None
+    if git:
+        origin, match = origin_url(git)
+    env = dict(os.environ, GIT_TERMINAL_PROMPT="0", **PROBE_IDENTITY)
+    if gh and match:
+        # Look these up while gh-auth runs. Nothing is pushed unless gh-auth passes.
+        jobs = (Background(github_handle, gh), Background(repo_view, gh, match.group(2)),
+                Background(probe_commit, git, env))
+    gh, authenticated = auth_job.result()
     if not authenticated:
         report.fail("push", "needs gh-auth")
         return
     if not git:
         report.fail("push", "needs git")
         return
-    handle = github_handle(gh)
+    if not match:
+        report.fail("push", "run the check from your clone of the course repository; its 'origin' "
+                            "must be the course repository (or your fork) on GitHub")
+        return
+    handle, info, commit = (job.result() for job in jobs)
     if not handle:
         report.fail("push", "could not read your GitHub handle with 'gh api user'")
         return
     report.handle = handle
-    code, top = run([git, "rev-parse", "--show-toplevel"], cwd=HERE)
-    top = top.strip()
-    if code != 0 or not top:
-        report.fail("push", "run the check from your clone of the course repository")
+    if isinstance(info, str):
+        report.fail("push", info)
         return
-    code, origin = run([git, "config", "--get", "remote.origin.url"], cwd=top)
-    origin = origin.strip()
-    trimmed = origin.rstrip("/")
-    if trimmed.endswith(".git"):
-        trimmed = trimmed[:-4]
-    match = ORIGIN.match(trimmed)
-    if code != 0 or not match:
-        report.fail("push", "this clone's 'origin' is not a GitHub repository; clone the course repository from GitHub")
-        return
-    destination = push_destination(gh, match.group(2), handle)
+    destination = push_destination(gh, match.group(2), info, handle)
     if isinstance(destination, str):
         report.fail("push", destination)
         return
@@ -378,41 +481,33 @@ def check_push(report, git, gh, authenticated):
     url = origin if use_origin else f"{match.group(1)}{repo}.git"
     branch = f"setup-check/{handle}"
     ref = f"refs/heads/{branch}"
-    env = dict(os.environ, GIT_TERMINAL_PROMPT="0", **PROBE_IDENTITY)
     where = f"to {repo} " + ("(your fork; turn-in will use it)" if via_fork else "(course repo)")
     access_hint = "check 'gh auth setup-git' (HTTPS) or your SSH key"
 
     def remote_tip():
-        code, out = run([git, "ls-remote", url, ref], cwd=top, env=env, timeout=120)
+        code, out = run([git, "ls-remote", url, ref], cwd=HERE, env=env, timeout=120)
         if code != 0:
             return None
         fields = out.split()
         return fields[0] if fields else ""
 
-    existing = remote_tip()
-    if existing is None:
-        report.fail("push", f"git could not reach {repo}; {access_hint}")
-        return
-    if existing:
-        report.fail("push", f"{branch} already exists on {repo}; delete that branch on GitHub, then rerun")
-        return
-    code, tree = run([git, "mktree"], cwd=top, env=env, input="")
-    tree = tree.strip()
-    if code != 0 or not tree:
+    if not commit:
         report.fail("push", "git could not create the probe commit")
         return
-    code, commit = run([git, "commit-tree", tree, "-m", f"Setup check for {handle}: safe to delete"],
-                       cwd=top, env=env)
-    commit = commit.strip()
-    if code != 0 or not commit:
-        report.fail("push", "git could not create the probe commit")
-        return
-    code, _ = run([git, "push", "--quiet", url, f"{commit}:{ref}"], cwd=top, env=env, timeout=180)
+    # Never forced: if the branch already exists, the push of this parentless commit is
+    # refused and the branch is left as it was.
+    code, _ = run([git, "push", "--quiet", url, f"{commit}:{ref}"], cwd=HERE, env=env, timeout=180)
     if code != 0:
-        report.fail("push", f"git could not push {where}; {access_hint}")
+        existing = remote_tip()
+        if existing is None:
+            report.fail("push", f"git could not reach {repo}; {access_hint}")
+        elif existing:
+            report.fail("push", f"{branch} already exists on {repo}; delete that branch on GitHub, then rerun")
+        else:
+            report.fail("push", f"git could not push {where}; {access_hint}")
         return
     arrived = remote_tip() == commit
-    run([git, "push", "--quiet", url, "--delete", ref], cwd=top, env=env, timeout=180)
+    run([git, "push", "--quiet", url, "--delete", ref], cwd=HERE, env=env, timeout=180)
     gone = remote_tip() == ""
     if arrived:
         report.ok("push", where)
@@ -502,20 +597,42 @@ def guarded(report, name, check, *args):
         return None
 
 
+def step(part, name, check, *args):
+    return guarded(part, name, check, part, *args)
+
+
+def git_checks(part):
+    git = step(part, "git", check_version, "git", FLOORS["git"])
+    step(part, "git-identity", check_identity, git)
+    return git
+
+
+def auth_checks(part):
+    return step(part, "gh-auth", check_auth, shutil.which("gh")) or (None, False)
+
+
+def group(fn, *args):
+    """Start a group of checks in the background. Returns (its report, its job)."""
+    part = Report()
+    return part, Background(fn, part, *args)
+
+
 def main():
-    report = Report()
+    report = Report(echo=True)
     try:
-        git = guarded(report, "git", check_version, report, "git", FLOORS["git"])
-        guarded(report, "git-identity", check_identity, report, git)
-        gh = guarded(report, "gh", check_version, report, "gh", FLOORS["gh"])
-        guarded(report, "uv", check_version, report, "uv", FLOORS["uv"])
-        guarded(report, "mise", check_version, report, "mise", FLOORS["mise"])
         agents = [name for name in ("claude", "codex") if shutil.which(name)]
-        guarded(report, "network", check_network, report, agents)
-        authenticated = guarded(report, "gh-auth", check_auth, report, gh)
-        guarded(report, "push", check_push, report, git, gh, authenticated)
-        for name in ("claude", "codex"):
-            guarded(report, f"{name}-smoke", check_agent, report, name)
+        auth = group(auth_checks)
+        groups = [group(git_checks),
+                  group(step, "gh", check_version, "gh", FLOORS["gh"]),
+                  auth,
+                  group(step, "uv", check_version, "uv", FLOORS["uv"]),
+                  group(step, "mise", check_version, "mise", FLOORS["mise"]),
+                  group(step, "network", check_network, agents),
+                  group(step, "push", check_push, auth[1]),
+                  *[group(step, f"{name}-smoke", check_agent, name) for name in ("claude", "codex")]]
+        for part, job in groups:  # Print in this fixed order, each as soon as it is done.
+            job.result()
+            report.merge(part)
         installed = [AGENT_NAMES[name] for name in agents]
         if "ANTHROPIC_API_KEY" in os.environ:
             report.note(f"ANTHROPIC_API_KEY is set (value hidden); if Claude Code login fails, {LOGIN_HINT}")
@@ -524,6 +641,7 @@ def main():
         else:
             report.fail("agent", f"neither Claude Code nor Codex is installed; install one ({INSTALL_HINT})")
     except BaseException as error:  # Including Ctrl-C: still print the summary.
+        stop_agents()
         reason = "interrupted" if isinstance(error, KeyboardInterrupt) else f"internal error ({type(error).__name__})"
         report.fail("checker", reason)
     try:

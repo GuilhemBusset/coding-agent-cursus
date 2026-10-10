@@ -21,18 +21,38 @@
 #
 # Written for Windows PowerShell 5.1 as well as PowerShell 7: keep it ASCII and avoid
 # 7-only syntax (pipeline chains, ternaries, null-coalescing operators, $IsWindows).
+# It calls .NET directly rather than cmdlets such as Get-Command, which would load
+# PowerShell modules and slow every run down.
 
 $ErrorActionPreference = 'Continue'
-$checker = Join-Path $PSScriptRoot 'check_setup.py'
+$checker = [System.IO.Path]::Combine($PSScriptRoot, 'check_setup.py')
+$onWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
 
-Write-Output 'Checking your setup for Session 1. The agent smoke test can take a minute or two.'
+function Write-Line([string]$Text) {
+    [Console]::Out.WriteLine($Text)
+}
 
-function Get-Tool([string]$Name) {
-    return Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+Write-Line 'Checking your setup for Session 1. The agent smoke test can take a minute or two.'
+
+# The first program called $Name on PATH (with a PATHEXT extension on Windows), or $null.
+function Find-Tool([string]$Name) {
+    $extensions = @('')
+    if ($onWindows) {
+        $extensions = @($env:PATHEXT -split ';' | Where-Object { $_ })
+        if ($extensions.Count -eq 0) { $extensions = @('.COM', '.EXE', '.BAT', '.CMD') }
+    }
+    foreach ($dir in ($env:PATH -split [System.IO.Path]::PathSeparator)) {
+        if (-not $dir) { continue }
+        foreach ($extension in $extensions) {
+            $candidate = [System.IO.Path]::Combine($dir, $Name + $extension)
+            if ([System.IO.File]::Exists($candidate)) { return $candidate }
+        }
+    }
+    return $null
 }
 
 function Get-OsName {
-    if ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT) {
+    if ($onWindows) {
         return 'Windows'
     }
     if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)) {
@@ -41,8 +61,8 @@ function Get-OsName {
     $wsl = $false
     if ($env:WSL_DISTRO_NAME) {
         $wsl = $true
-    } elseif (Test-Path '/proc/version') {
-        if ((Get-Content '/proc/version' -Raw) -match 'microsoft') { $wsl = $true }
+    } elseif ([System.IO.File]::Exists('/proc/version')) {
+        if ([System.IO.File]::ReadAllText('/proc/version') -match 'microsoft') { $wsl = $true }
     }
     if ($wsl) { return 'Linux (WSL)' }
     return 'Linux'
@@ -53,7 +73,7 @@ function Write-Fallback([string]$First) {
     $lines = New-Object System.Collections.Generic.List[string]
     $lines.Add($First)
     foreach ($name in @('git', 'gh', 'mise')) {
-        if (Get-Tool $name) {
+        if (Find-Tool $name) {
             $lines.Add("${name}: PASS found (version not checked)")
         } else {
             $lines.Add("${name}: FAIL not found on PATH; see 'Install the tools' on the pre-work page")
@@ -61,7 +81,7 @@ function Write-Fallback([string]$First) {
     }
     $agents = @()
     foreach ($name in @('claude', 'codex')) {
-        if (Get-Tool $name) {
+        if (Find-Tool $name) {
             $lines.Add("${name}: PASS found (not smoke-tested)")
             $agents += $name
         } else {
@@ -73,18 +93,21 @@ function Write-Fallback([string]$First) {
     } else {
         $lines.Add('agent: FAIL neither Claude Code nor Codex is installed')
     }
-    foreach ($line in $lines) { Write-Output $line }
-    $failures = @($lines | Where-Object { $_ -like '*: FAIL*' }).Count
-    Write-Output '----- BEGIN SETUP SUMMARY -----'
-    Write-Output ('date: ' + [DateTime]::UtcNow.ToString('yyyy-MM-dd') + ' (UTC)')
-    Write-Output ('os: ' + (Get-OsName))
-    Write-Output 'github: unknown'
-    foreach ($line in $lines) { Write-Output $line }
-    Write-Output "result: FAIL ($failures FAIL)"
-    Write-Output '----- END SETUP SUMMARY -----'
+    $failures = 0
+    foreach ($line in $lines) {
+        Write-Line $line
+        if ($line -like '*: FAIL*') { $failures += 1 }
+    }
+    Write-Line '----- BEGIN SETUP SUMMARY -----'
+    Write-Line ('date: ' + [DateTime]::UtcNow.ToString('yyyy-MM-dd') + ' (UTC)')
+    Write-Line ('os: ' + (Get-OsName))
+    Write-Line 'github: unknown'
+    foreach ($line in $lines) { Write-Line $line }
+    Write-Line "result: FAIL ($failures FAIL)"
+    Write-Line '----- END SETUP SUMMARY -----'
 }
 
-$uv = Get-Tool 'uv'
+$uv = Find-Tool 'uv'
 if ($null -eq $uv) {
     Write-Fallback "uv: FAIL not found on PATH; install uv (see 'Install the tools' on the pre-work page), open a new terminal and rerun"
     exit 1
@@ -92,7 +115,7 @@ if ($null -eq $uv) {
 
 # uv's own messages (for example a first-time Python download) go to stderr and are
 # not shown; the checker prints everything it reports on stdout.
-& $uv.Path run --no-project --python 3.12 python $checker 2>$null
+& $uv run --no-project --python 3.12 python $checker 2>$null
 $status = $LASTEXITCODE
 if ($status -eq 0 -or $status -eq 1) {
     exit $status

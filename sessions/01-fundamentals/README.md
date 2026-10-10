@@ -38,7 +38,9 @@ uv run pytest
 The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
 PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell once
 from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that
-directory on `PATH`, or set `CURSUS_PWSH`). `tests/prework_live_agents.py` is not collected by
+directory on `PATH`, or set `CURSUS_PWSH`). The whole suite takes about 15 minutes, 12 of them in
+four scenarios that wait out the check's 180 s agent timeout; add `-k "not smoke_timeout"` for a
+quick run. `tests/prework_live_agents.py` is not collected by
 `uv run pytest`: run it by hand with `uv run python tests/prework_live_agents.py` to repeat the
 live proof that the check passes with only Claude Code and with only Codex. It needs both agents
 installed and logged in, and costs one short prompt to each.

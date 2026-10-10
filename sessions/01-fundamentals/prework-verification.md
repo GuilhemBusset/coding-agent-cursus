@@ -87,9 +87,9 @@ All on the WSL2 host described below, 2026-10-10.
 - OS: Ubuntu 26.04 LTS on WSL2, kernel `6.18.33.2-microsoft-standard-WSL2`.
 - git 2.53.0, uv 0.11.28, Python 3.12.13 (uv-managed), PowerShell 7.6.6 (`bash setup/pwsh.sh`).
 - Claude Code 2.1.296, Codex CLI 0.160.0 (`codex exec --skip-git-repo-check --output-last-message` used by the smoke test).
-- Script hashes (SHA-256): `check_setup.py` 4380971dc2a0046617a05985422a9b0909ea4dfdba97aeb3fb2513ee4c92fbc7,
+- Script hashes (SHA-256): `check_setup.py` 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349,
   `check-setup.sh` 63f19d05f4f0aae349a87f85dfcb4e1711cd0466bed24fed5f8afc6480bcd348,
-  `check-setup.ps1` 17b4371c7ff124b1cb668d9a21be3c0d4dd6b0b3ef926c532237e3d1ad9f65d0.
+  `check-setup.ps1` 67df3101828e2253931a904c57373ae6ef666eda4395c01025c517d55dff0ce7.
 
 ### Fixture runs on WSL2
 
@@ -98,6 +98,12 @@ scenario through both `bash check-setup.sh` and `pwsh -File check-setup.ps1` in 
 clone, with real git and uv, stub gh, mise and agents, a local HTTP server for the network, and
 local bare repositories (with pre-receive hooks) standing in for the course repo and the fork.
 This is fixture-tested on WSL2, not a full real run.
+
+The whole session suite (`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q`, the D2
+check) passed: 349 tests in 881.8 s. Of that, 722 s are the four agent smoke-timeout scenarios,
+which each wait out the checker's 180 s smoke timeout by design, and 22 s the two 10 s network
+timeouts. That is close to the implementation loop's 900 s default check timeout, so the D2
+check should carry an explicit `timeout_s` (1800 s leaves room).
 
 ### A1: each agent alone, live
 
@@ -114,15 +120,15 @@ date: 2026-10-10 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 4380971dc2a0046617a05985422a9b0909ea4dfdba97aeb3fb2513ee4c92fbc7
+script: check_setup.py sha256 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
 gh: PASS 2.65.1 (>= 2.0.0)
+gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:34469: PASS reachable (HTTP 200)
-gh-auth: PASS logged in to GitHub
+network 127.0.0.1:43241: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
 claude: PASS 2.1.296
 claude-smoke: PASS replied OK
@@ -140,15 +146,15 @@ date: 2026-10-10 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 4380971dc2a0046617a05985422a9b0909ea4dfdba97aeb3fb2513ee4c92fbc7
+script: check_setup.py sha256 26217dd86f69709255d39797195e15b64b9e13b0370eb83a5915a168c2617349
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
 gh: PASS 2.65.1 (>= 2.0.0)
+gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:39043: PASS reachable (HTTP 200)
-gh-auth: PASS logged in to GitHub
+network 127.0.0.1:44881: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
 claude: not installed (fine)
 codex: PASS 0.160.0
