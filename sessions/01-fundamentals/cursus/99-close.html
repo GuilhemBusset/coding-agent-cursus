@@ -304,7 +304,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <section class="ticket" data-predict aria-labelledby="exit-ticket-2-title">
           <div class="ticket-questions">
             <fieldset data-predict-question>
-              <legend>Act III · Why does message 30 cost more than message 1?</legend>
+              <legend>Act III · Why does turn 30 cost more than turn 1?</legend>
               <div class="choice-grid">
                 <div class="choice"><input type="radio" id="q3-resend" name="exit-act-3" value="resend" data-correct><label for="q3-resend">The transcript is re-sent</label></div>
                 <div class="choice"><input type="radio" id="q3-bigger" name="exit-act-3" value="bigger"><label for="q3-bigger">Later turns use a bigger model</label></div>
@@ -312,19 +312,19 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               </div>
               <p data-predict-result></p>
               <div data-predict-answer>
-                <p>The model has no memory between calls, so the harness re-sends the whole transcript every turn.</p>
+                <p>No memory between calls: the harness re-sends the whole transcript.</p>
               </div>
             </fieldset>
             <fieldset data-predict-question>
               <legend>Act IV · The agent says “fixed”. What makes L2 done?</legend>
               <div class="choice-grid">
                 <div class="choice"><input type="radio" id="q4-summary" name="exit-act-4" value="summary"><label for="q4-summary">Its summary says so</label></div>
-                <div class="choice"><input type="radio" id="q4-diff" name="exit-act-4" value="diff" data-correct><label for="q4-diff">Empty <code>git diff --stat -- tests/</code>, green suite</label></div>
+                <div class="choice"><input type="radio" id="q4-diff" name="exit-act-4" value="diff" data-correct><label for="q4-diff">Green, and only <code>p00_model.py</code> changed</label></div>
                 <div class="choice"><input type="radio" id="q4-green" name="exit-act-4" value="green"><label for="q4-green">A green suite</label></div>
               </div>
               <p data-predict-result></p>
               <div data-predict-answer>
-                <p>Green only counts if the agent left the verifier alone: the empty diff shows the tests were not touched.</p>
+                <p><code>git status --short</code> lists only <code>p00_model.py</code>. <code>git diff --stat</code> misses staged test edits.</p>
               </div>
             </fieldset>
           </div>
@@ -335,7 +335,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <p data-predict-status role="status"></p>
           </div>
         </section>
-        <p class="cite">Source: <cite>Session 1 plan</cite>, Acts III and IV, <code>docs/cursus-narrative.md</code>, as of 2026-10-10.</p>
+        <p class="cite">Source: <cite>Session 1 plan</cite>, Acts III and IV, <code>docs/cursus-narrative.md</code>, as of 2026-10-10; L2 done commands, <code>exercises/lab-ladder.html</code>.</p>
       </section>
 
       <section id="exit-ticket-3" data-slide tabindex="-1" aria-labelledby="exit-ticket-3-title">
