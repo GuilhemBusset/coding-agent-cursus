@@ -4,7 +4,7 @@ Agent review by the implementer, 2026-10-10. Reviewed files (sha256):
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 57,179 | `a7ca70415aeae7a3c2069da2bcc4e80fae54fea0ff4a73c235570102ec5f6b32` |
+| `../tokenizer.html` | 57,285 | `8c8eb9617517527a6ddab95c228d3f3f0d00f412529ca999347293230887ea89` |
 | `vendor/r50k_base.js` | 502,907 | `e95692224049d99b15601019c4b1cad61e3ff7b17d0870fe20e668bd82c15717` |
 | `vendor/o200k_base.js` | 2,047,463 | `fbc7419f14fb3a1460b56b156b94adb3480ec375a1dd404b0d0bd807fbff97e1` |
 
@@ -46,6 +46,10 @@ playground and the predict card in interaction states at 1440×900 and 390×844.
   a light outline; the neighbouring chips and IDs are unchanged. The chip before it (ID `127`) shows
   the ⋯ mark, because the first byte of "ù" decodes to no text on its own (explained under the chips).
   The test suite also checks hovering an ID, and arrow-key focus moving the highlighted pair.
+  Pointer then keyboard, checked by hand with a disposable Playwright script on "the the the":
+  clicking chip 0 and leaving the pointer on it, then pressing ArrowRight twice, moves the
+  highlighted pair to index 1 then 2 (focus drops the stale hover); hovering ID 0 then moves it back
+  to index 0, and moving the pointer away returns it to the focused index 2.
 - **Revealed prediction:** after Lock in and Reveal, each question shows "Correct." or "Not quite.
   The answer is …" and the answer blocks with IDs 101830 and 41236 and the three-r explanation.
 - **2,000-character input:** 2,000 characters → 585 o200k_base tokens. Chips wrap (about six per

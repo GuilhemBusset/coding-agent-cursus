@@ -46,10 +46,10 @@ when the page opens.
 
 | File | Bytes | MB |
 | --- | --- | --- |
-| `tokenizer.html` | 57,179 | 0.057 |
+| `tokenizer.html` | 57,285 | 0.057 |
 | `vendor/r50k_base.js` | 502,907 | 0.503 |
 | `vendor/o200k_base.js` | 2,047,463 | 2.047 |
-| o200k-only subtotal (`tokenizer.html` + `o200k_base.js`) | 2,104,642 | 2.105 |
-| Full total (all three files) | 2,607,549 | 2.608 |
+| o200k-only subtotal (`tokenizer.html` + `o200k_base.js`) | 2,104,748 | 2.105 |
+| Full total (all three files) | 2,607,655 | 2.608 |
 
 The issue estimated "about 2.5 MB with o200k". Measured, the o200k-only subtotal is 2.105 MB and the whole page, with GPT-2's encoder as well, is 2.608 MB. The page footer shows the total rounded to one decimal. Neither encoder is trimmed to reach a target.

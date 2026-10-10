@@ -892,6 +892,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     list.addEventListener('focusin', function (event) {
       var item = itemOf(event.target);
       if (!item) return;
+      // The latest interaction wins: moving focus drops a pointer hover left behind.
+      hover = null;
       focus = Number(item.getAttribute('data-index'));
       setRoving(listIndex, focus);
       apply();
