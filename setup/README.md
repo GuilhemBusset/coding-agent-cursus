@@ -49,6 +49,12 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
+The tiny-lm suite also needs a C compiler on `PATH` as `cc` (OS-level; for example
+`sudo apt-get install gcc` on Debian or Ubuntu, which GitHub's Ubuntu runners already have). It
+compiles llama2.c's `run.c`, vendored at a pinned commit in
+`sessions/01-fundamentals/cursus/labs/tiny-lm/reference/`, as the reference for the page's
+logits. `node setup/doctor.mjs` reports the compiler and fails without it.
+
 Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI runs this
 same setup and test sequence on Linux, the only platform teaching pages need (ADR 0010).
 
