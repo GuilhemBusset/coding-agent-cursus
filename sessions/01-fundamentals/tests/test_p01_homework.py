@@ -83,6 +83,52 @@ def rows(path):
         return result
 
 
+def test_statement_covers_contracts_and_data():
+    """Keep the student's specification aligned with the executable contract.
+
+    This is a coverage guard, not proof of semantic faithfulness: the reviewer
+    must also compare the statement with the archived upstream and revision rules.
+    Read literal diagnostic prefixes (including f-strings) without importing the
+    checker; derive dynamically formatted schedule tags from its declaration.
+    """
+    source = required(PACK / "p01_checker.py")
+    tags = set(literal("SCHEDULE_CONTRACTS", source))
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            match = re.match(r"^([a-z]+(?:-[a-z]+)*):\s", node.value)
+            if match:
+                tags.add(match[1])
+    assert tags, "statement: no checker contract tags found"
+    statement = required(PACK / "PROBLEM.md").lower()
+    missing = sorted(tag for tag in tags if not re.search(
+        rf"(?<![\w-]){re.escape(tag)}(?![\w-])", statement
+    ))
+    assert not missing, f"statement: missing checker contract tags: {missing}"
+    for row in rows(PACK / "data/parameters.csv"):
+        key = row["parameter"]
+        assert re.search(rf"(?<!\w){re.escape(key)}(?!\w)", statement), (
+            f"statement: missing parameter {key}"
+        )
+    data_files = sorted((PACK / "data").glob("*.csv"))
+    assert data_files, "statement: missing instance CSVs"
+    for path in data_files:
+        assert path.name.lower() in statement, f"statement: missing data file {path.name}"
+    # Accept equivalent prose while requiring the numerical grid and boundary
+    # convention. Semantic review checks that these words describe the rules.
+    plain = re.sub(r"[*`_]", "", statement)
+    assert re.search(r"\b30(?:[-\s]+)(?:minute|min)s?\b", plain), "statement: missing 30-minute grid"
+    assert re.search(r"\b(?:slots?|grid)\b", plain), "statement: missing slot grid"
+    assert "00:00" in plain and "00:30" in plain and "23:30" in plain, (
+        "statement: specify the daily slot grid from 00:00 through 23:30"
+    )
+    assert re.search(r"half[-\s]+open", plain) and re.search(
+        r"\[\s*start\s*,\s*end\s*\)", plain
+    ), "statement: missing half-open [start,end) convention"
+    assert re.search(r"tariff[^.]*\b(?:slot|boundar|half[-\s]+open)", plain, re.S), (
+        "statement: explain how tariff blocks use the slot/boundary convention"
+    )
+
+
 def minute(value):
     assert re.fullmatch(r"\d\d:\d\d", value), f"data: bad time {value!r}"
     h, m = map(int, value.split(":"))

@@ -16,6 +16,7 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import subprocess
 import sys
 import time
 
@@ -175,11 +176,150 @@ def test_reference_matches_known_optimum(solved):
 
 
 def host_description():
-    cpuinfo = Path("/proc/cpuinfo").read_text(encoding="utf-8")
-    memory = Path("/proc/meminfo").read_text(encoding="utf-8")
-    cpu = next(line.split(":", 1)[1].strip() for line in cpuinfo.splitlines() if line.startswith("model name"))
-    ram = next(line.split(":", 1)[1].strip() for line in memory.splitlines() if line.startswith("MemTotal:"))
-    return {"cpu": cpu, "logical_cpus": os.cpu_count(), "ram": ram, "os": platform.platform(), "uname": list(platform.uname())}
+    """Best-effort evidence on Linux, macOS and Windows; never block a solve."""
+    def attempt(function):
+        try:
+            return function() or "unknown"
+        except Exception:
+            # Host metadata is advisory: missing commands, permissions, malformed
+            # proc files and platform API errors must not break the benchmark.
+            return "unknown"
+
+    def proc_value(filename, key):
+        path = Path(filename)
+        if path.is_file():
+            for line in path.read_text(encoding="utf-8").splitlines():
+                name, separator, value = line.partition(":")
+                if separator and name.strip() == key:
+                    return value.strip()
+        return "unknown"
+
+    def sysctl(key):
+        result = subprocess.run(
+            ["sysctl", "-n", key], capture_output=True, text=True,
+            check=False, timeout=5,
+        )
+        return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+    cpu = attempt(lambda: proc_value("/proc/cpuinfo", "model name"))
+    ram = attempt(lambda: proc_value("/proc/meminfo", "MemTotal"))
+    if attempt(platform.system) == "Darwin":
+        if cpu == "unknown":
+            cpu = attempt(lambda: sysctl("machdep.cpu.brand_string"))
+        if ram == "unknown":
+            memory = attempt(lambda: sysctl("hw.memsize"))
+            ram = memory + " bytes" if memory.isdigit() else "unknown"
+    if cpu == "unknown":
+        cpu = attempt(platform.processor)
+    if cpu == "unknown":
+        cpu = attempt(platform.machine)
+    return {
+        "cpu": cpu, "logical_cpus": attempt(os.cpu_count), "ram": ram,
+        "os": attempt(platform.platform), "uname": attempt(lambda: list(platform.uname())),
+    }
+
+
+def test_laptop_benchmark(reference, tmp_path, capsys):
+    """A2 evidence protocol; the owner must attest this was an actual laptop.
+
+    Unlike D1 sizing, a laptop solve faster than five seconds is acceptable.
+    Never reuse the session-scoped solved fixture: collect three fresh runs.
+    """
+    try:
+        revision = run(["git", "rev-parse", "HEAD"], SESSION, timeout=10)
+        checkout_revision = revision.stdout.strip() if revision.returncode == 0 else "unknown"
+    except (OSError, subprocess.SubprocessError):
+        checkout_revision = "unknown"
+    evidence = {
+        "host": host_description(), "python": platform.python_version(),
+        "checkout_revision": checkout_revision or "unknown",
+        "reference_sha256": hashlib.sha256(reference.read_bytes()).hexdigest(),
+        # Match the checker's LF-normalised pins across Windows Git checkouts.
+        "data_sha256": {
+            path.name: hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+            for path in sorted((PACK / "data").glob("*.csv"))
+        },
+        "data_sha256_normalisation": "CRLF -> LF (matches checker pins)",
+        "runs": [],
+    }
+    assert evidence["data_sha256"], "laptop: no data CSVs to identify"
+    for i in range(3):
+        record = execute_reference(reference, tmp_path / f"laptop-fresh-{i}")
+        assert_optimal(record)
+        verdict(record["checked"], 0)
+        observed = record["observed"]
+        seconds = observed["solve_seconds"]
+        assert math.isfinite(seconds) and seconds < 60, (
+            f"laptop: each fresh single-thread solve must finish under 60 s, got {seconds}"
+        )
+        evidence["highs_version"] = observed["highs_version"]
+        evidence["runs"].append({
+            **observed, "wall_seconds": record["wall_seconds"],
+            "status": record["solution"]["status"], "checker_exit": record["checked"].returncode,
+        })
+    with capsys.disabled():
+        print("\n" + json.dumps(evidence, sort_keys=True))
+
+
+def normalised_source_lines(source):
+    """Ignore indentation, comments, docstrings, imports and short boilerplate.
+
+    Work on text rather than requiring Python syntax, so snippets copied into
+    Markdown or another source language are checked too.
+    """
+    lines = []
+    docstring_quote = None
+    for raw in source.splitlines():
+        line = raw.strip()
+        if docstring_quote:
+            if docstring_quote in line:
+                docstring_quote = None
+            continue
+        start = re.match(r"(?i)^[ru]?(\"\"\"|''')", line)
+        if start:
+            quote = start[1]
+            if quote not in line[start.end():]:
+                docstring_quote = quote
+            continue
+        if len(line) < 25 or line.startswith("#") or re.match(r"^(?:import|from)\s", line):
+            continue
+        lines.append(line)
+    return lines
+
+
+def test_reference_not_disclosed(reference):
+    """Detect copied reference fragments throughout the public checkout.
+
+    This supports, but cannot replace, full-diff review for reformulations and
+    committed optimal plans. Never print the matching private source on failure.
+    """
+    private_lines = normalised_source_lines(reference.read_text(encoding="utf-8"))
+    assert len(private_lines) >= 4, "release: reference has too few substantive lines to audit"
+    windows = {tuple(private_lines[i:i + 4]) for i in range(len(private_lines) - 3)}
+    root = SESSION.parents[1]
+    excluded = {".git", ".venv", "node_modules", "__pycache__", "artifacts"}
+    disclosed = []
+
+    def walk_error(error):
+        raise error  # An unreadable subtree must not silently pass the audit.
+
+    for directory, subdirectories, filenames in os.walk(root, onerror=walk_error):
+        subdirectories[:] = sorted(name for name in subdirectories if name not in excluded)
+        for name in sorted(filenames):
+            if name in excluded:
+                continue
+            path = Path(directory) / name
+            content = path.read_bytes()
+            if b"\x00" in content:
+                continue
+            try:
+                source = content.decode("utf-8")
+            except UnicodeDecodeError:
+                continue  # Binary assets are outside this source-disclosure check.
+            lines = normalised_source_lines(source)
+            if any(tuple(lines[i:i + 4]) in windows for i in range(len(lines) - 3)):
+                disclosed.append(str(path.relative_to(root)))
+    assert not disclosed, f"release: private reference source disclosed in {disclosed}"
 
 
 def test_reference_solve_time(reference, solved, tmp_path, capsys):
