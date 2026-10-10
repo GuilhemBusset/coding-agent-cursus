@@ -1,7 +1,7 @@
 # Tiny LM lab: review evidence
 
 Agent review by the implementer, 2026-10-10. Reviewed file: `../tiny-lm.html`,
-1,499,132 bytes, sha256 `994fb5007b072ab391129d76948b930971ac5db865cff8567bd68cf90c4a46dc`.
+1,500,681 bytes, sha256 `ba3a6a80191f9f4d4a308e5195527e883ba6aafd8f79edb90f60adda4d9129df`.
 Any edit to the page invalidates this review; re-review and update the hash.
 
 ## Screenshot review (all views)
@@ -25,6 +25,14 @@ generated token 21, at 1440×900 and 390×844.
 - **Print:** light palette. Caption visible; buttons hidden; both disclosures ("The model in
   numbers" and the MIT licence text) are expanded; the layout is one column.
 - **Reduced motion:** identical to desktop; the page has no animation.
+- **Characters split across byte tokens:** the prompt "Tom said 你好 to", six Steps, then a rewind at
+  generated token 2, at 1440×900 and 390×844. The tokenizer has no piece for 你 or 好, so each is three
+  byte-fallback tokens. Each shows as an explicit byte label (`<0xE4><0xBD><0xA0><0xE5><0xA5><0xBD>`),
+  not as a replacement character, and a "Read as UTF-8" line under the stream decodes the whole
+  sequence across token boundaries: "Tom said 你好 to make Re". This equals `TinyLM.decode`. The
+  previous-branch line gets the same joined reading when its tail holds such bytes. Both lines are
+  hidden when no token is a byte above 0x7F, so the default view is unchanged. On mobile the labels wrap
+  inside the stream box.
 
 ## Caption prose review
 
@@ -61,16 +69,16 @@ click to the painted token. Fresh browser context per trial, offline, `file://`.
 
 | CPU throttle | Trial | Cold (ms) | Step (ms) |
 | --- | --- | --- | --- |
-| 1× | 1 | 63.0 | 12.5 |
-| 1× | 2 | 62.0 | 14.7 |
-| 1× | 3 | 58.1 | 11.2 |
-| 1× | 4 | 56.9 | 11.2 |
-| 1× | 5 | 62.8 | 16.4 |
-| 4× (CDP) | 1 | 236.7 | 44.4 |
-| 4× (CDP) | 2 | 225.0 | 41.1 |
-| 4× (CDP) | 3 | 231.6 | 40.7 |
-| 4× (CDP) | 4 | 236.6 | 37.4 |
-| 4× (CDP) | 5 | 234.8 | 40.3 |
+| 1× | 1 | 63.0 | 11.7 |
+| 1× | 2 | 62.1 | 14.2 |
+| 1× | 3 | 58.4 | 11.6 |
+| 1× | 4 | 62.6 | 15.9 |
+| 1× | 5 | 64.2 | 13.0 |
+| 4× (CDP) | 1 | 231.9 | 42.3 |
+| 4× (CDP) | 2 | 227.6 | 48.0 |
+| 4× (CDP) | 3 | 231.6 | 42.4 |
+| 4× (CDP) | 4 | 224.6 | 42.5 |
+| 4× (CDP) | 5 | 226.0 | 43.7 |
 
 All trials are under 1000 ms, by more than 4× even under 4× throttling. These are proxy numbers only.
 

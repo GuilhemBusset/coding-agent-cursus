@@ -232,6 +232,8 @@ button.tlm-chip:focus-visible { outline: 2px solid var(--accent); outline-offset
 .tlm-previous { font-family: var(--mono); color: var(--muted); border-left: 3px solid var(--rule); padding-left: .75rem; overflow-wrap: anywhere; }
 .tlm-previous .label { margin-right: .5rem; color: var(--amber); }
 .tlm-prev-token { white-space: pre-wrap; text-decoration: line-through; }
+.tlm-joined, .tlm-joined-inline { white-space: pre-wrap; }
+.tlm-joined .label, .tlm-joined-inline .label { color: var(--muted); font-size: .75rem; margin-right: .25rem; }
 .tlm-chart { margin: 0 0 1.5rem; }
 .tlm-chart [data-prob-row] { grid-template-columns: clamp(5rem, 30%, 9rem) minmax(0, 1fr) 4rem 4.5rem; padding: .125rem .25rem; border-left: 3px solid transparent; }
 .tlm-chart [data-prob-row][data-nucleus] { background: var(--sheet); border-left-color: var(--accent); }
@@ -281,8 +283,9 @@ button.tlm-chip:focus-visible { outline: 2px solid var(--accent); outline-offset
           <div id="tlm-text" class="tlm-text" role="group" aria-label="Text so far: prompt tokens, then generated tokens">
             <span class="tlm-prompt-token">BOS</span><span class="tlm-prompt-token">Once upon a time</span>
           </div>
+          <p id="tlm-joined" class="tlm-joined" hidden><span class="label">Read as UTF-8</span> <span id="tlm-joined-text"></span></p>
           <p id="tlm-status" class="tlm-status">Prompt: “Once upon a time”, 5 tokens including BOS.</p>
-          <p id="tlm-previous" class="tlm-previous" data-tlm-previous hidden><span class="label">Previous branch</span> <span id="tlm-previous-tokens"></span></p>
+          <p id="tlm-previous" class="tlm-previous" data-tlm-previous hidden><span class="label">Previous branch</span> <span id="tlm-previous-tokens"></span><span id="tlm-previous-joined" class="tlm-joined-inline" hidden> <span class="label">read as UTF-8</span> <span id="tlm-previous-joined-text"></span></span></p>
           <p id="tlm-announce" class="visually-hidden" aria-live="polite"></p>
         </section>
         <section class="tlm-side" aria-labelledby="tlm-sampler-title">
@@ -12838,11 +12841,23 @@ wwEAAAB+AAB8wwMAAADigIo=
     });
   }
 
-  // How one token reads on the page: its own bytes, so a split character shows as U+FFFD.
+  // A byte-fallback token above 0x7F is one byte of a multi-byte character, not a character.
+  function rawByte(token) {
+    var raw = /^<0x([0-9A-Fa-f]{2})>$/.exec(tokenizer.pieces[token] || '');
+    return raw && parseInt(raw[1], 16) >= 0x80 ? raw[1].toUpperCase() : null;
+  }
+  function visible(s) { return s.replace(/\n/g, '↵').replace(/\t/g, '⇥'); }
+
+  // How one token reads on its own: its text, or an explicit byte label such as <0xE4>.
+  // joined() decodes a whole run across token boundaries, so split characters read correctly.
   function display(token) {
     if (token === BOS) return '⏎ new story';
-    return decoder.decode(new Uint8Array(pieceBytes(tokenizer, -1, token))).replace(/\n/g, '↵').replace(/\t/g, '⇥');
+    var hex = rawByte(token);
+    if (hex) return '<0x' + hex + '>';
+    return visible(decoder.decode(new Uint8Array(pieceBytes(tokenizer, -1, token))));
   }
+  function hasRawBytes(tokens) { return tokens.some(function (token) { return rawByte(token) !== null; }); }
+  function joined(tokens) { return visible(text(tokens)); }
   function chartLabel(token) {
     if (token === BOS) return '⏎ new story';
     return display(token).replace(/ /g, '␣');
@@ -12854,6 +12869,8 @@ wwEAAAB+AAB8wwMAAADigIo=
   var temperatureInput = $('tlm-temperature'), topPInput = $('tlm-top-p');
   var textBox = $('tlm-text'), statusLine = $('tlm-status'), message = $('tlm-message');
   var previousLine = $('tlm-previous'), previousTokens = $('tlm-previous-tokens');
+  var joinedLine = $('tlm-joined'), joinedText = $('tlm-joined-text');
+  var previousJoined = $('tlm-previous-joined'), previousJoinedText = $('tlm-previous-joined-text');
   var chart = document.querySelector('ol[data-prob-chart]'), chartCaption = $('tlm-chart-caption');
   var chartEmpty = $('tlm-chart-empty'), outside = $('tlm-outside'), announce = $('tlm-announce');
   var rows = Array.from(chart.querySelectorAll('[data-prob-row]'));
@@ -12973,12 +12990,16 @@ wwEAAAB+AAB8wwMAAADigIo=
       chip.addEventListener('click', rewind.bind(null, i - session.promptLength));
       textBox.appendChild(chip);
     }
+    joinedLine.hidden = !hasRawBytes(t);
+    joinedText.textContent = joinedLine.hidden ? '' : joined(t);
   }
 
   function renderPrevious() {
     if (!session.previous) { previousLine.hidden = true; return; }
     previousTokens.textContent = '';
     session.previous.forEach(function (token) { previousTokens.appendChild(tokenSpan(token, 'tlm-prev-token')); });
+    previousJoined.hidden = !hasRawBytes(session.previous);
+    previousJoinedText.textContent = previousJoined.hidden ? '' : joined(session.previous);
     previousLine.hidden = false;
   }
 

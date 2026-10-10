@@ -12,7 +12,7 @@ server and no network.
 - A JavaScript port of llama2.c `run.c` (forward pass, `encode`, `decode`) and the sampler,
   in classic inline script on the main thread: no WebAssembly, worker, module or network request.
 
-Page weight: about 1.5 MB (1,498,945 bytes when this README was written), almost all of it
+Page weight: about 1.5 MB (1,500,681 bytes when this README was written), almost all of it
 the base64 weights. Each data block's `data-sha256` is the sha256 of its decoded bytes.
 
 ## Files here
