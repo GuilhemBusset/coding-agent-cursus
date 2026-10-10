@@ -68,6 +68,37 @@ and `mise exec -- uv sync --locked` (the runtime dependencies from its `uv.lock`
 install the build-only `fixtures` group. Repeating it is safe. The session's own
 [README](../sessions/01-fundamentals/README.md) covers running and validating it.
 
+### Session 1: PowerShell and shellcheck for the pre-work tests
+
+The pre-work setup check that students run (`sessions/01-fundamentals/exercises/check-setup.sh`
+and `check-setup.ps1`) is tested through both entry points, so the session's test suite needs
+PowerShell 7. On Linux:
+
+```sh
+bash setup/pwsh.sh
+```
+
+- **What:** PowerShell 7.6.6, the official `powershell-7.6.6-linux-x64.tar.gz` (or `-arm64`)
+  from <https://github.com/PowerShell/PowerShell/releases/tag/v7.6.6>, checked against the
+  pinned SHA-256 (`ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc` for x64,
+  `924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729` for arm64, from the
+  release's `hashes.sha256`, checked 2026-10-10). A mismatch installs nothing.
+- **Where:** unpacked into `~/.local/share/coding-agent-cursus/pwsh/7.6.6/`, linked as
+  `~/.local/bin/pwsh`. No sudo, package manager or shell profile change. A PowerShell 7 or newer
+  already on `PATH` is left alone. The tests look for `CURSUS_PWSH`, then `pwsh` or `powershell`
+  on `PATH`, then `~/.local/bin/pwsh`.
+- **Needs:** `curl`, `tar`, `sha256sum` or `shasum`, and the ICU library (`libicu`, from your
+  distribution's packages). Without ICU, PowerShell does not start; install the package, or run
+  it with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`.
+- **Remove:** `rm -rf ~/.local/share/coding-agent-cursus/pwsh ~/.local/bin/pwsh`.
+
+The Bash wrapper must also pass shellcheck, pinned through PyPI's `shellcheck-py` and fetched
+into uv's cache, with nothing installed globally:
+
+```sh
+uv run --no-project --with shellcheck-py==0.10.0.1 shellcheck sessions/01-fundamentals/exercises/check-setup.sh
+```
+
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
@@ -212,6 +243,8 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Linux browser libraries without root | `browser-libs.py`: the pinned Chromium packages, plus dependencies apt says are missing, fetched with `apt-get download` and unpacked with `dpkg -x` under `--dest` only (the loop: its state directory under `.git/implementation-loop/`); used only by browser processes, through `CURSUS_BROWSER_LIBS` |
 | Pinned pytest for the implement loop | `uv run --no-project --with pytest==8.3.5` fetches pytest, and a Python if needed, into uv's per-user cache |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
+| PowerShell 7 for the Session 1 pre-work tests | `pwsh.sh`: the pinned, SHA-256-checked PowerShell 7.6.6 Linux tarball under `~/.local/share/coding-agent-cursus/pwsh/7.6.6/`, linked as `~/.local/bin/pwsh` |
+| shellcheck for the pre-work check script | `uv run --no-project --with shellcheck-py==0.10.0.1` fetches the pinned shellcheck binary into uv's per-user cache |
 | Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |

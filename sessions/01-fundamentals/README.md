@@ -35,6 +35,14 @@ Then run the session's tests:
 uv run pytest
 ```
 
+The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
+PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell once
+from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that
+directory on `PATH`, or set `CURSUS_PWSH`). `tests/prework_live_agents.py` is not collected by
+`uv run pytest`: run it by hand with `uv run python tests/prework_live_agents.py` to repeat the
+live proof that the check passes with only Claude Code and with only Codex. It needs both agents
+installed and logged in, and costs one short prompt to each.
+
 `uv sync` installs only the runtime dependencies (`pytest`, `highspy`, `numpy`) into this
 session's `.venv/`, at the versions pinned in `uv.lock`. The `fixtures` dependency group
 (`torch`, `transformers`) is for building the files in `cursus/fixtures/` only. Students never
@@ -78,6 +86,9 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
+| `exercises/00-prework.html` | Pre-work page: install steps for git, gh, uv, mise and Claude Code or Codex on macOS, Linux, WSL and Windows, login troubleshooting, the setup check and the pre-reading |
+| `exercises/check-setup.sh`, `exercises/check-setup.ps1`, `exercises/check_setup.py` | The students' setup check: Bash and PowerShell wrappers around one stdlib Python core, run through uv. PASS or FAIL per tool, network, `gh` login, a push to a temporary `setup-check/<handle>` branch, an agent smoke test, then a summary block to paste |
+| `prework-verification.md` | Evidence for the pre-work: install and reading sources with the date checked, platform status, recorded runs. Kept outside `exercises/` so it never lands in homework branches |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
 | `exercises/l3-word-problem/` | L3, a weekly staffing MILP to model from a word problem: statement, data, the solution-file format, an independent stdlib checker (`check.py`) and three seeded wrong solutions |
 | `tests/` | The session's pytest suite |
