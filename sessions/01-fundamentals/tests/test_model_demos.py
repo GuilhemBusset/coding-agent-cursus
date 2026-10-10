@@ -48,8 +48,7 @@ KEYS = {p: p.upper() + "_API_KEY" for p in PROVIDERS}
 BASES = {p: p.upper() + "_BASE_URL" for p in PROVIDERS}
 ENDPOINTS = {"anthropic": "/v1/messages", "openai": "/v1/chat/completions"}
 PROMPT = "Invent a name for a new optimization solver. Reply with the name only."
-JSON_FILES = ("strawberry-claude.json", "strawberry-codex.json", "sampling.json",
-              "temperature_probe.json")
+JSON_FILES = ("strawberry-claude.json", "strawberry-codex.json", "sampling.json")
 RECORDINGS = (*JSON_FILES, "claude-pivot.txt", "codex-pivot.txt",
               "claude_count_r.py", "codex_count_r.py")
 SECTIONS = ("Before class", "Timing", "Predict", "Expected outcome", "Run",
@@ -531,6 +530,16 @@ def test_d2_word_recordings_and_prompt_binding(tmp_path):
     for cli in CLIS:
         data = recording(f"strawberry-{cli}.json")
         assert data["word"] == word and data["truth"] == word.count("r")
+        meta = data["meta"]
+        valid_model(meta["model"])
+        if cli == "claude":
+            assert meta["model"].startswith("claude-"), "Record the resolved Claude model ID, not its alias"
+            assert meta["requested_model"] == "haiku"
+        assert meta["model"].lower() not in {"haiku", "sonnet", "opus", "default", "latest"}
+        assert meta["params"].get("effort") == "low"
+        outcome = section("strawberry.md", "Expected outcome")
+        assert any(meta["model"] in line and re.search(r"\beffort\b.*\blow\b", line, re.I)
+                   for line in outcome.splitlines()), "Name each naive model and its low effort setting"
         assert data["meta"]["prompt"].strip() == document("ask.txt").replace("{WORD}", word).strip()
         for answer in answers(data):
             try:
@@ -560,6 +569,123 @@ def test_d2_word_recordings_and_prompt_binding(tmp_path):
     assert re.search(r"\bcodex\s+exec\b", runbook)
     assert "--permission-mode acceptEdits" in runbook and 'Bash(uv run:*)' in runbook
     assert "--sandbox workspace-write" in runbook
+
+
+@pytest.mark.parametrize("cli", CLIS)
+def test_d2_pivot_transcripts_show_agent_wrote_and_ran_code(cli):
+    import shlex
+
+    word = word_constant()
+    expected = word.count("r")
+    data = recording(f"strawberry-{cli}.json")
+    assert data["word"] == word and data["truth"] == expected
+    source = read(DEMO / "recorded" / f"{cli}-pivot.txt")
+    pivot = document("pivot.txt").replace("{WORD}", word).strip()
+    assert " ".join(pivot.split()) in " ".join(rendered(source).split())
+    events = [json.loads(line) for line in source.splitlines() if line.lstrip().startswith("{")]
+    assert events and all(isinstance(event, dict) for event in events), "Need raw JSON tool events"
+
+    def count_path(value):
+        return isinstance(value, str) and Path(value).parts[-2:] == ("work", "count_r.py")
+
+    def shell_body(command):
+        parts = shlex.split(command)
+        if len(parts) == 3 and Path(parts[0]).name in {"bash", "sh", "zsh"} and parts[1] in {"-c", "-lc"}:
+            return parts[2]
+        return command
+
+    def runs_counter(command):
+        return re.fullmatch(r"\s*uv\s+run\s+python\s+(?:\./)?work/count_r\.py\s*", shell_body(command))
+
+    def has_count(output):
+        return re.search(rf"^\s*{expected}\s*$", output, re.M)
+
+    def writes_counter(command):
+        command = shell_body(command)
+        if word not in command:
+            return False
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&<>|")
+        lexer.whitespace_split = True
+        tokens = list(lexer)
+        start = 0
+        for index, token in enumerate(tokens[:-1]):
+            if token in {";", "&&", "||", "|"}:
+                start = index + 1
+            if (token in {">", ">>"} and count_path(tokens[index + 1]) and start < index
+                    and tokens[start] in {"cat", "printf", "echo"}):
+                return True
+        # Python -c is another common write shape. Inspect executable syntax,
+        # not strings that merely mention Path(...).write_text(...).
+        args = shlex.split(command)
+        if len(args) == 3 and Path(args[0]).name in {"python", "python3"} and args[1] == "-c":
+            for node in ast.parse(args[2]).body:
+                if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
+                    continue
+                call = node.value
+                if not isinstance(call.func, ast.Attribute) or call.func.attr != "write_text" or not call.args:
+                    continue
+                target = call.func.value
+                if (isinstance(target, ast.Call) and isinstance(target.func, ast.Name)
+                        and target.func.id == "Path" and len(target.args) == 1
+                        and isinstance(target.args[0], ast.Constant) and count_path(target.args[0].value)
+                        and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)
+                        and word in call.args[0].value):
+                    return True
+        return False
+
+    if cli == "claude":
+        content = read(DEMO / "recorded" / "claude_count_r.py")
+        assert word in content
+        # Retain event/block order and message roles: prose about a tool call
+        # cannot substitute for tool_use and its matching tool_result.
+        blocks_in_order = []
+        for event in events:
+            message = event.get("message", {})
+            parts = message.get("content", [])
+            if isinstance(parts, list):
+                blocks_in_order.extend((event.get("type"), part) for part in parts if isinstance(part, dict))
+        writes = [index for index, (role, block) in enumerate(blocks_in_order)
+                  if role == "assistant" and block.get("type") == "tool_use"
+                  and block.get("name") in {"Write", "Edit", "MultiEdit"}
+                  and count_path(block.get("input", {}).get("file_path"))
+                  and " ".join(block["input"].get("content", "").split()) == " ".join(content.split())]
+        assert writes, "Claude must write the recorded counting code to work/count_r.py"
+        for index, (role, block) in enumerate(blocks_in_order):
+            if (role != "assistant" or block.get("type") != "tool_use" or block.get("name") != "Bash"
+                    or not any(write < index for write in writes)
+                    or not runs_counter(block.get("input", {}).get("command", ""))):
+                continue
+            tool_id = block.get("id")
+            assert tool_id, "Bash invocation needs its tool-use ID"
+            for result_role, result in blocks_in_order[index + 1:]:
+                if (result_role != "user" or result.get("type") != "tool_result"
+                        or result.get("tool_use_id") != tool_id or result.get("is_error", False)):
+                    continue
+                output = result.get("content", "")
+                if isinstance(output, list):
+                    output = "\n".join(part.get("text", "") for part in output if part.get("type") == "text")
+                if isinstance(output, str) and has_count(output):
+                    return
+        pytest.fail("Claude needs a later uv execution and a successful, ID-linked result containing the computed count")
+    else:
+        completed = [event["item"] for event in events
+                     if event.get("type") == "item.completed" and isinstance(event.get("item"), dict)]
+        writes = []
+        for index, item in enumerate(completed):
+            if (item.get("type") == "file_change" and item.get("status") == "completed"
+                    and any(count_path(change.get("path")) and change.get("kind") in {"add", "update"}
+                            for change in item.get("changes", []))):
+                writes.append(index)
+            elif item.get("type") == "command_execution" and item.get("exit_code") == 0:
+                # A successful shell write is also valid creation evidence;
+                # merely mentioning the path or reading it is insufficient.
+                if writes_counter(item.get("command", "")):
+                    writes.append(index)
+        assert writes, "Codex must complete a file change or a successful command writing work/count_r.py"
+        assert any(item.get("type") == "command_execution" and item.get("exit_code") == 0
+                   and any(write < index for write in writes)
+                   and runs_counter(item.get("command", "")) and has_count(item.get("aggregated_output", ""))
+                   for index, item in enumerate(completed)), "Codex needs a later successful uv execution with the computed count"
 
 
 def test_d2_print_prompts_substitutes_custom_word(sandbox):
@@ -664,44 +790,48 @@ def test_d3_probe_records_success_and_rejection(sandbox, provider):
             assert entry["error"] in (None, "")
 
 
-def test_d3_committed_sampling_and_temperature_evidence(sandbox):
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_d3_temperature_support_table_matches_script_defaults(sandbox, provider):
     _, base, env = sandbox
+    with api_server(provider) as (port, calls):
+        env = api_env(env, provider, port)
+        success(script(base, "sampling.py", ["--provider", provider], env))
+    assert len(calls) == 10
+    models = {call["body"]["model"] for call in calls}
+    assert len(models) == 1
+    model = models.pop()
+    valid_model(model)
+    for call in calls:
+        assert_request(call, provider, env)
+        assert "temperature" in call["body"] and user_prompt(call["body"]) == PROMPT
+    support = section("sampling.md", "Temperature support")
+    as_of = re.search(r"as of\s+(\d{4}-\d\d-\d\d)", support, re.I)
+    assert as_of, "Date the temperature-support documentation check"
+    valid_date(as_of[1])
+    urls = [urlsplit(url) for url in re.findall(r"https://[^\s)>|]+", support)]
+    assert any(url.hostname == "platform.claude.com" and "/api/messages" in url.path for url in urls)
+    assert any(url.hostname == "platform.claude.com" and "model-deprecations" in url.path for url in urls)
+    openai_urls = [url for url in urls if url.hostname in {"platform.openai.com", "developers.openai.com"}]
+    assert any("reference" in url.path and "chat" in url.path and "completions" in url.path for url in openai_urls)
+    assert any("/models/gpt-4.1-mini" in url.path for url in openai_urls)
+    assert "Models released after Claude Opus 4.6 do not support setting temperature" in " ".join(support.split())
+    rows = [row for row in support.splitlines() if "|" in row
+            and re.search(r"(?<![\w.-])" + re.escape(model) + r"(?![\w.-])", row)]
+    assert any(re.search(r"\|\s*(?:\*\*)?(?:yes|accepts)\b", row, re.I) for row in rows), (
+        f"Temperature support needs an accepting table row for the actual {provider} default {model}")
+
+
+def test_d4_sampling_recording_is_vendor_api_run_with_spread():
     data = recording("sampling.json")
+    meta = metadata(data, "sampling")
     low, high = sampling_runs(data)
     assert 0 <= low["temperature"] <= 0.3 and high["temperature"] >= 0.9
     assert len(set(answers(high))) >= max(2, len(set(answers(low))))
-    probes = recording("temperature_probe.json")
-    valid_date(probes["meta"]["date"])
-    entries = probe_entries(probes)
-    assert len({(entry["provider"], entry["model"]) for entry in entries}) == len(entries)
-    counts = Counter(entry["provider"] for entry in entries)
-    assert set(counts) <= set(PROVIDERS) and all(count >= 3 for count in counts.values())
-    accepted = set()
-    for entry in entries:
-        provider = entry["provider"]
-        valid_model(entry["model"])
-        assert urlsplit(entry["endpoint"]).path == ENDPOINTS[provider]
-        assert type(entry["temperature"]) in {int, float}
-        assert type(entry["accepted"]) is bool
-        assert type(entry["http_status"]) is int
-        if entry["accepted"]:
-            assert 200 <= entry["http_status"] < 300 and entry["error"] in (None, "")
-            accepted.add((provider, entry["model"]))
-        else:
-            assert 400 <= entry["http_status"] < 600 and str(entry["error"]).strip()
-    meta = data["meta"]
-    assert (meta["provider"], meta["model"]) in accepted
     support = section("sampling.md", "Temperature support")
-    assert "|" in support and re.search(r"https://[^\s)>|]+", support)
-    assert re.search(r"as of\s+\d{4}-\d\d-\d\d", support, re.I)
-    assert meta["model"] in support
-    assert re.search(r"default[^\n]*" + re.escape(meta["model"]) + r"|" + re.escape(meta["model"]) + r"[^\n]*default", document("sampling.md"), re.I)
-    # The actual default, not merely a claim in the prose, must be the recorded
-    # accepted model. Supplying only provider avoids assuming a default vendor.
-    with api_server(meta["provider"]) as (port, calls):
-        env = api_env(env, meta["provider"], port)
-        success(script(base, "sampling.py", ["--provider", meta["provider"]], env))
-    assert len(calls) == 10 and all(call["body"]["model"] == meta["model"] for call in calls)
+    rows = [row for row in support.splitlines() if "|" in row
+            and re.search(r"(?<![\w.-])" + re.escape(meta["model"]) + r"(?![\w.-])", row)]
+    assert any(re.search(r"\|\s*(?:\*\*)?(?:yes|accepts)\b", row, re.I) for row in rows), (
+        "The recorded vendor model needs an accepting Temperature support row")
 
 
 @pytest.mark.parametrize("name,via", [("strawberry.py", "claude"), ("strawberry.py", "codex"), ("sampling.py", None)])
@@ -777,14 +907,25 @@ def test_d4_documented_fallback_commands_run_literally(sandbox, tmp_path, book, 
         assert all(value in output for value in values)
 
 
-def test_d4_recordings_are_tracked_and_dated(tmp_path):
+def test_d4_strawberry_recordings_are_tracked_and_dated(tmp_path):
     tracked = success(run(["git", "ls-files", "--", RELATIVE / "recorded"], ROOT, child_env(tmp_path)))
     paths = set(tracked.splitlines())
     for name in RECORDINGS:
+        if name == "sampling.json":
+            continue
         read(DEMO / "recorded" / name)
         assert (RELATIVE / "recorded" / name).as_posix() in paths, f"Recording must be tracked: {name}"
-    for name in JSON_FILES:
-        valid_date(recording(name)["meta"]["date"])
+    for cli in CLIS:
+        valid_date(recording(f"strawberry-{cli}.json")["meta"]["date"])
+        pivot, _ = pivot_metadata(cli)
+        valid_date(pivot["date"])
+
+
+def test_d4_sampling_recording_is_tracked_and_dated(tmp_path):
+    data = recording("sampling.json")
+    tracked = success(run(["git", "ls-files", "--", RELATIVE / "recorded"], ROOT, child_env(tmp_path)))
+    assert (RELATIVE / "recorded/sampling.json").as_posix() in set(tracked.splitlines()), "Recording must be tracked: sampling.json"
+    valid_date(data["meta"]["date"])
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
@@ -865,6 +1006,9 @@ def test_a2_runbook_sections_timing_and_reset(sandbox, book):
     for heading in SECTIONS:
         section(book, heading)
     assert 0 < timing_total(section(book, "Timing")) <= 300
+    if book == "sampling.md":
+        assert re.search(r"not (fully )?deterministic|not guaranteed|may (still )?differ",
+                         section(book, "Expected outcome"), re.I), "Explain that low-temperature identity is not guaranteed"
     reset = blocks(section(book, "Reset"))
     assert len(reset) == 1 and reset[0].strip() == RESET
     (root / ".gitignore").write_text(".uv-cache/\n*.pyc\n", encoding="utf-8")
@@ -922,10 +1066,16 @@ def table_mentions(table, filename, model, run_date):
     assert any(model in row and run_date in row for row in rows), f"Metadata mismatch for {filename}: {model}, {run_date}"
 
 
-def test_a3_all_recording_metadata_and_runbook_tables_agree():
+def test_a3_every_committed_recording_has_model_and_date():
+    required = set(RECORDINGS) - {"sampling.json"}
+    for name in required:
+        read(DEMO / "recorded" / name)
     for cli in CLIS:
         name = f"strawberry-{cli}.json"
         meta = metadata(recording(name), cli)
+        assert meta["model"].lower() not in {"haiku", "sonnet", "opus", "default", "latest"}
+        if cli == "claude":
+            assert meta["model"].startswith("claude-"), "Record the resolved Claude model ID"
         table = section("strawberry.md", "Recorded runs")
         linked = links(table)
         assert DEMO / "recorded" / name in linked
@@ -936,17 +1086,46 @@ def test_a3_all_recording_metadata_and_runbook_tables_agree():
         for filename in (f"{cli}-pivot.txt", f"{cli}_count_r.py"):
             assert DEMO / "recorded" / filename in linked
             table_mentions(table, filename, pivot["model"], pivot["date"])
-    data = recording("sampling.json")
+    # Optional recordings are not prerequisites, but none may escape metadata
+    # and runbook checks when added. Unknown formats fail rather than vanish.
+    for path in sorted((DEMO / "recorded").rglob("*")):
+        if not path.is_file():
+            continue
+        name = path.relative_to(DEMO / "recorded").as_posix()
+        if name in required:
+            continue
+        assert name in {"sampling.json", "temperature_probe.json"}, f"No metadata contract for recording: {name}"
+        data = recording(name)
+        table = section("sampling.md", "Recorded runs")
+        linked = links(table)
+        assert path in linked
+        if name == "sampling.json":
+            meta = metadata(data, "sampling")
+            table_mentions(table, name, meta["model"], meta["date"])
+        else:
+            metadata(data, "probe")
+            for entry in probe_entries(data):
+                table_mentions(table, name, entry["model"], entry.get("date", data["meta"]["date"]))
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_a3_sampling_record_writes_model_and_run_date(sandbox, tmp_path, provider):
+    _, base, env = sandbox
+    model = "alternate-record-model-73"
+    target = tmp_path / "new recording.json"
+    today = date.today().isoformat()
+    with api_server(provider) as (port, calls):
+        env = api_env(env, provider, port)
+        success(script(base, "sampling.py", ["--provider", provider, "--model", model,
+                                            "--record", str(target)], env))
+    assert len(calls) == 10
+    for call in calls:
+        assert_request(call, provider, env)
+        assert call["body"]["model"] == model
+    data = json.loads(read(target))
     meta = metadata(data, "sampling")
-    table = section("sampling.md", "Recorded runs")
-    linked = links(table)
-    assert DEMO / "recorded/sampling.json" in linked
-    table_mentions(table, "sampling.json", meta["model"], meta["date"])
-    probes = recording("temperature_probe.json")
-    metadata(probes, "probe")
-    assert DEMO / "recorded/temperature_probe.json" in linked
-    for entry in probe_entries(probes):
-        table_mentions(table, "temperature_probe.json", entry["model"], entry.get("date", probes["meta"]["date"]))
+    assert meta["model"] == model and meta["date"] == today
+    assert meta["provider"] == provider and urlsplit(meta["endpoint"]).path == ENDPOINTS[provider]
 
 
 def test_d3_harness_oracles_reject_bad_sampling_data():
