@@ -132,8 +132,25 @@ Intel Core Ultra 9 285K is a desktop-class part, so **this is not a laptop measu
 
 **Status: not proven.** No laptop run has been recorded. A2 stays an open owner obligation
 (ADR 0011, decision 1). It is not satisfied by the desktop run above, nor by the passing
-`test_reference_solve_time` on that host. The desktop margin (about 12 s against a 60 s limit)
-makes a laptop pass likely, but likely is not measured.
+`test_reference_solve_time` on that host. The margin below makes a laptop pass likely, but likely
+is not measured. The issue therefore ends as *delivered*, not *done*, until the table at the end
+of this section has a laptop row.
+
+**Slowdown margin (supporting evidence, not a laptop run).** On 2026-10-10, on the same desktop,
+`test_reference_solve_time` was run pinned to one core (`taskset -c 2`) while one or two busy-loop
+processes shared that core. The solver then got about a half or a third of the core. HiGHS
+`getRunTime()` measures wall-clock time, so the shared core shows in `solve_seconds`:
+
+| Share of one desktop core | Run 1 | Run 2 | Run 3 | Under 60 s |
+| --- | --- | --- | --- | --- |
+| all (no competing process) | 12.39 s | 12.37 s | 12.35 s | yes |
+| about 1/2 (one busy loop) | 25.07 s | 24.94 s | 25.13 s | yes |
+| about 1/3 (two busy loops) | 38.01 s | 38.02 s | 37.98 s | yes |
+
+Time scales linearly with the CPU share. A laptop core would need about a fifth of this desktop
+core's single-thread throughput (12.4 s × 4.8 ≈ 60 s) to fail A2. The run time-shares a fast
+core, so it does not model a laptop's smaller caches, lower memory bandwidth or thermal
+throttling. That is why it does not close A2.
 
 To close A2, on a laptop with the private reference installed (see below):
 
