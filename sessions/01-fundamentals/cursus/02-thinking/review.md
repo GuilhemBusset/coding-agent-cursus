@@ -1,7 +1,7 @@
 # Act II deck: review evidence
 
 Agent review by the implementer, 2026-10-11. Reviewed file: `../02-thinking.html`,
-82495 bytes, sha256 `c5ef8b9308be0e451ff933d3257eb81b2bf84b349f7097697c0f2cd2cec9424a`.
+83341 bytes, sha256 `839a250f15a00d0feb414ab86024a5f379c3f0af886fc3f441275d10ffd7e207`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every source below was opened on 2026-10-11 while authoring, and each date was copied from the
@@ -15,9 +15,14 @@ OpenReview forum page via the Internet Archive, since openreview.net served a bo
   slide fits without internal scrolling at desktop and laptop sizes, no horizontal overflow at
   390 px, no-JS, reduced motion, print).
 - `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking.test.mjs`: the full
-  locked suite, all passing.
-- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/components-tooling.test.mjs`:
-  passes with `thinking` registered in `component-helpers.mjs` and `setup/package.json`.
+  locked suite passed before the planner amendment. In the tree reviewed here the file is
+  missing (deleted by the acceptance-checks commit a164509), so this command and
+  `components-tooling.test.mjs` (which reads it) fail with ENOENT; reported to the loop as a
+  check defect, not something the deck can fix.
+- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking-planner.test.mjs`:
+  the five deck and lab cases pass (href, fresh lab, recovery from seed 92821 / error 1.00,
+  replay, reduced-motion Step), plus the parser and geometry-oracle cases. Its registration case
+  fails because `thinking-planner` is not yet in `component-helpers.mjs` or `setup/package.json`.
 - `uv run --locked pytest -q tests/test_pages.py tests/test_self_contained.py` in
   `sessions/01-fundamentals/`: 10 passed (all links relative and inside the session).
 
@@ -43,6 +48,10 @@ I opened the check-page screenshots and looked at each one.
 - Extra, with a disposable Playwright probe (deleted after use): opening the effort-demo reveal
   fits at 1280×720 and 1440×900 (the predict prompt and runbook give way to the results once the
   bets are in). An opened speaker-notes panel overlays the slide and scrolls inside itself.
+- After the planner-recipe amendment (2026-10-11) I rechecked `repo-model`: it still fits at
+  1280×720 and 1440×900 with the longer "moderately wrong picture" sentence; no-JS, print and
+  reduced motion are unchanged. With a disposable probe I opened its notes at 1280×720 and
+  390×844: the Seed / Model error / Then list is legible and wraps cleanly.
 
 ## Timing plan (A2, agent half)
 
@@ -178,8 +187,18 @@ practical accuracy.
 - Meaning 3: `repo-model` maps the closed loop to belief (repo picture), act, observe (test
   output) and replan, citing LeCun 2022 §3 and §3.1 (world model adjusted once the next
   observation is available; Mode-2 as model-predictive control). The planner panel is labelled
-  illustrative; at its defaults the open loop misses and the closed loop reaches the goal
-  (world-model lab review).
+  illustrative.
+- Planner demo, amended 2026-10-11: the old note ("raise the model-error slider … open loop
+  misses the goal, closed loop reaches it") was not reproducible, because at high error both
+  loops can fail and the lab's Reset keeps the seed and error. The notes now give a labelled
+  recipe (Seed 20261011, Model error 0.50, Reset, Run; Step under reduced motion), which is also
+  the lab's default, and state the outcome: the open loop hits the obstacle (step 11), the
+  closed loop replans and reaches the goal (step 25 of a 30-step horizon), checked with
+  `WorldModel.runOpenLoop` and `runClosedLoop`. A spoken caveat says a much worse model can
+  defeat the closed loop too, matching the lab's closing card; the slide now says the closed
+  loop "can recover from a moderately wrong picture" instead of "tolerates a wrong picture".
+  `thinking-planner.test.mjs` applies the recipe through the lab's controls and recomputes both
+  outcomes from the trajectories.
 
 ## A1 · Claim inventory
 
@@ -231,4 +250,4 @@ older sources the deck links. "Contested" follows the deck's visible labels.
 | simulators | Cosmos 3: open world foundation model with vision reasoning, world generation, action prediction | 2026-05-31 | https://nvidianews.nvidia.com/news/nvidia-launches-cosmos-3-the-open-frontier-foundation-model-for-physical-ai | Lead paragraph | yes | Supported as the maker's claim |
 | simulators | AMI Labs aims at world models predicting in representation space and planning; launched with a $1.03B round | 2026-03-10 | https://amilabs.xyz/updates | Official launch update; homepage aims | yes | Stated as goals, not a product |
 | repo-model | World model adjusted once the next observation is available; Mode-2 as model-predictive control | 2022-06-27 | https://openreview.net/forum?id=BZ5a1r-kVsf | §3 and §3.1 | no | Supported |
-| repo-model | Planner panel: at default model error the open loop misses and the closed loop reaches the goal | 2026-10-11 | sessions/01-fundamentals/cursus/labs/world-model.html | Planner panel; labs/world-model/review.md | no | Matches the lab review; illustrative simulation |
+| repo-model | Planner panel, seed 20261011, model error 0.50, Reset, Run: open loop hits the obstacle (step 11), closed loop reaches the goal | 2026-10-11 | labs/world-model.html#planner | Planner panel; verified by thinking-planner.test.mjs | no | Illustrative simulation; reproduced locally 2026-10-11 |

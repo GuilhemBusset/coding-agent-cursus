@@ -241,6 +241,11 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .notes summary { color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .notes > :not(summary) { color: var(--secondary); font-size: .9375rem; line-height: 1.5; }
 .notes > p { margin-bottom: .5rem; }
+.notes .recipe { margin-bottom: .5rem; }
+.notes .recipe div { display: flex; flex-wrap: wrap; gap: 0 .5rem; }
+.notes .recipe dt { font-weight: 600; color: var(--ink); }
+.notes .recipe dt::after { content: ":"; }
+.notes .recipe dd { flex: 1 1 12rem; }
 @media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
   [data-deck-paged] [data-slide] { font-size: .98rem; line-height: 1.5; }
 }
@@ -686,12 +691,19 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <li><span class="label">Replan</span><strong>Update the belief</strong><span>Then act again</span></li>
           </ol>
         </figure>
-        <p>Open loop plans once from the picture. Closed loop replans after each observation and tolerates a wrong picture. Try both in <a href="labs/world-model.html#planner">World model · Plan once, or replan</a> (illustrative).</p>
+        <p>Open loop plans once from the picture. Closed loop replans after each observation and can recover from a moderately wrong picture. Try both in <a href="labs/world-model.html#planner">World model · Plan once, or replan</a> (illustrative).</p>
         <p class="cite">Source: Yann LeCun, <cite>A Path Towards Autonomous Machine Intelligence</cite>, §3 (the world model is adjusted once the next observation is available) and §3.1 (Mode-2 as model-predictive control), <a href="https://openreview.net/forum?id=BZ5a1r-kVsf">openreview.net</a>, 2022-06-27.</p>
         <p class="drive"><strong>Driving:</strong> make observations cheap and frequent: a fast test command, clear errors, an AGENTS.md that says how to run things. Correct the agent’s picture early.</p>
         <details class="notes" data-minutes="3"><summary>Speaker notes · 3 min</summary>
           <p>1 min, the slide. Meaning 3 is the one you control. The agent’s picture comes from what it read; test output is the observation that corrects it.</p>
-          <p>2 min, lab. Open the planner panel of the world-model lab. Raise the model-error slider and run open loop and closed loop side by side: open loop misses the goal, closed loop replans and reaches it. Map it: dynamics model is the picture of the repo, observation is test output, replanning is the agent loop.</p>
+          <p>2 min, lab. Open the planner panel of the world-model lab and set it exactly like this; these are also the lab’s defaults:</p>
+          <dl class="recipe" aria-label="Planner demo settings">
+            <div><dt>Seed</dt><dd>20261011</dd></div>
+            <div><dt>Model error</dt><dd>0.50</dd></div>
+            <div><dt>Then</dt><dd>Reset, then Run. Under reduced motion, press Step until both runs show an outcome.</dd></div>
+          </dl>
+          <p>At these settings the open loop hits the obstacle and the closed loop replans and reaches the goal. Map it: dynamics model is the picture of the repo, observation is test output, replanning is the agent loop.</p>
+          <p>Say the limit out loud: this is an illustrative run where feedback corrects a moderate error in the picture; with a much worse model the closed loop can fail too, as the lab’s closing card says.</p>
         </details>
       </section>
 
