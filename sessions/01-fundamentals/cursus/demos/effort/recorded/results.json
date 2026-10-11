@@ -1,0 +1,162 @@
+{
+  "run_date": "2026-10-11",
+  "note": "Costs are list-price equivalents from prices.json, in USD; subscription logins are not billed per token.",
+  "puzzle": {
+    "capacity": 63,
+    "optimum": 229,
+    "prompt_sha256": "f5e2a7ab6c6f8c175bae05f6397fdce7ce6766794d58c2448fd064e4f6922163"
+  },
+  "docs": {
+    "claude_effort": "https://platform.claude.com/docs/en/build-with-claude/effort",
+    "codex_config": "https://developers.openai.com/codex/config-reference"
+  },
+  "prices": {
+    "as_of": "2026-10-11",
+    "currency": "USD",
+    "unit": "USD per million tokens, standard (non-batch) list prices",
+    "anthropic": {
+      "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "note": "cache_write_5m and cache_write_1h are the 5-minute and 1-hour cache write rates; the demo prices cache writes at the 5-minute rate (see README); cache_read is the cache hit rate. Haiku 5.5 rates are for prompts up to 100,000 tokens.",
+      "models": {
+        "claude-opus-5-5": {
+          "input": 4,
+          "output": 20,
+          "cache_write_5m": 5,
+          "cache_write_1h": 8,
+          "cache_read": 0.2
+        },
+        "claude-sonnet-5-5": {
+          "input": 2,
+          "output": 10,
+          "cache_write_5m": 2.5,
+          "cache_write_1h": 4,
+          "cache_read": 0.1
+        },
+        "claude-haiku-5-5": {
+          "input": 0.1,
+          "output": 0.5,
+          "cache_write_5m": 0.125,
+          "cache_write_1h": 0.2,
+          "cache_read": 0.01
+        }
+      }
+    },
+    "openai": {
+      "source": "https://platform.openai.com/docs/pricing",
+      "note": "Standard tier, short-context rates. The page also lists cache writes at 12.50 USD per million for gpt-6-astra; Codex reported none in the recording, and the demo does not price them.",
+      "models": {
+        "gpt-6-astra": {
+          "input": 10,
+          "output": 50,
+          "cached_input": 1
+        }
+      }
+    }
+  },
+  "runs": [
+    {
+      "cli": "claude",
+      "cli_version": "2.1.296 (Claude Code)",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "tokens": {
+        "input": 2,
+        "output": 783,
+        "cache_read": 0,
+        "cache_write": 2666,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "thinking": 286,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.028998,
+      "reported_cost_usd": 0.036996,
+      "cost_delta_usd": -0.007998000000000002,
+      "wall_seconds": 9.903,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/claude-low.jsonl",
+      "meta": "raw/claude-low.meta.json",
+      "started_at": "2026-10-11T12:28:30.107Z"
+    },
+    {
+      "cli": "claude",
+      "cli_version": "2.1.296 (Claude Code)",
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "tokens": {
+        "input": 2,
+        "output": 964,
+        "cache_read": 0,
+        "cache_write": 2666,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "thinking": 447,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.032618,
+      "reported_cost_usd": 0.040616,
+      "cost_delta_usd": -0.007997999999999998,
+      "wall_seconds": 11.155,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/claude-high.jsonl",
+      "meta": "raw/claude-high.meta.json",
+      "started_at": "2026-10-11T12:28:40.011Z"
+    },
+    {
+      "cli": "codex",
+      "cli_version": "codex-cli 0.162.1",
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "tokens": {
+        "input": 14348,
+        "output": 467,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cached_input": 12288,
+        "reasoning_output": 286,
+        "thinking": 0,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.056238,
+      "wall_seconds": 18.62,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/codex-low.jsonl",
+      "meta": "raw/codex-low.meta.json",
+      "started_at": "2026-10-11T12:28:51.173Z"
+    },
+    {
+      "cli": "codex",
+      "cli_version": "codex-cli 0.162.1",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "tokens": {
+        "input": 14348,
+        "output": 705,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cached_input": 12288,
+        "reasoning_output": 516,
+        "thinking": 0,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.068138,
+      "wall_seconds": 30.514,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/codex-high.jsonl",
+      "meta": "raw/codex-high.meta.json",
+      "started_at": "2026-10-11T12:29:09.794Z"
+    }
+  ]
+}
