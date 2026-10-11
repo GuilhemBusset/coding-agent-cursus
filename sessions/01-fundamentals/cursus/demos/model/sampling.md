@@ -12,6 +12,9 @@ low effort: `claude-haiku-5-5` or `gpt-6-luna`. No API key: the CLI uses its own
 1. Log in to the CLI you will use: run `claude` and type /login, or run `codex login`.
 2. Rehearse once from this folder (see [Run](#run)). The script prints which CLI it picked.
 3. Keep the [Fallback](#fallback) command ready in a second terminal.
+4. The script pins a small model (`claude-haiku-5-5` for Claude Code, `gpt-6-luna` for Codex),
+   which must be available on your account. A refused model can show up as a login error; if that
+   happens, use the [Fallback](#fallback) replay.
 
 ## Why no temperature
 
@@ -91,8 +94,9 @@ kept in `meta.model_evidence`.
 ## Reset
 
 From this folder. It restores the folder to the last commit and deletes `work/` and anything an
-agent left here, so commit a new recording before you reset.
+agent left here, so commit a new recording before you reset. It first checks that `strawberry.py`
+and `sampling.py` are in the current directory, so it refuses to run anywhere but this folder.
 
 ```sh
-git restore --source=HEAD --staged --worktree -- . && git clean -fdx -- .
+test -f strawberry.py && test -f sampling.py && git restore --source=HEAD --staged --worktree -- . && git clean -fdx -- .
 ```
