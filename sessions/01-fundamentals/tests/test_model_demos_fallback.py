@@ -4,7 +4,11 @@ Selected by A3's ``test_a3_ or test_d4_`` expression. These tests deliberately
 fail if issue 27's committed next_token.json is unavailable. Synthetic changes
 are confined to disposable copies and are not recordings or provenance evidence.
 Helpers are independent so collection does not depend on the inherited check
-file being present; that locked file must still be restored by the loop engine.
+file being present. This does not replace that file or its command checks.
+The engine must restore tests/test_model_demos.py from e458066^ and bring in
+issue 27's committed cursus/fixtures/next_token.json from main before acceptance
+can pass. Both repairs are outside this check author's allowed file set. Missing
+prerequisites are failures, never skips or generated stand-ins for real evidence.
 """
 
 import ast
@@ -204,6 +208,20 @@ def default_seed():
     value = constants().get("SEED")
     assert type(value) is int, "sampling.py must declare its default SEED"
     return value
+
+
+def test_a3_engine_prerequisites_are_present():
+    prerequisites = {
+        SESSION / "tests/test_model_demos.py":
+            "engine must restore the inherited locked checks from e458066^; "
+            "all six command checks still require this file",
+        FIXTURE:
+            "engine must bring the branch up to date with main to include "
+            "issue 27's committed next_token.json",
+    }
+    missing = [f"{path.relative_to(SESSION)}: {remedy}"
+               for path, remedy in prerequisites.items() if not path.is_file()]
+    assert not missing, "Missing engine prerequisites:\n" + "\n".join(missing)
 
 
 def test_d4_fixture_five_paired_draws_and_argmax_without_a_key(tmp_path):
