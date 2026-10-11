@@ -1,7 +1,7 @@
 # Act II deck: review evidence
 
 Agent review by the implementer, 2026-10-11. Reviewed file: `../02-thinking.html`,
-81562 bytes, sha256 `042c617a681e47fc3019f6285983a2bdb10974af149924377a78db0222251559`.
+82038 bytes, sha256 `77d3c90a76623ce2209feb5f0d193f6f8789abe671d15b889ac298e60aa030f8`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every source below was opened on 2026-10-11 while authoring, and each date was copied from the
@@ -182,6 +182,8 @@ older sources the deck links. "Contested" follows the deck's visible labels.
 | --- | --- | --- | --- | --- | --- | --- |
 | forward-pass | Transformers that answer immediately cannot solve some simple problems such as graph connectivity (under standard complexity assumptions) | 2023-10-11 | https://arxiv.org/abs/2310.07923 | Abstract, first sentence | no | Supported; the hedge reflects the conjecture-based results the abstract cites |
 | loop | Each generated token is consumed as input for the next step | 2017-06-12 | https://arxiv.org/abs/1706.03762 | §3 Model Architecture | no | Supported, quoted verbatim |
+| loop | Speaker notes: output tokens cost 5 times input tokens for claude-opus-5-5 ($4 / $20 per million) | 2026-10-11 | https://platform.claude.com/docs/en/about-claude/pricing | prices.json `anthropic.models.claude-opus-5-5` | no | Matches prices.json (20 / 4 = 5); dated in a notes `.cite` |
+| loop | Speaker notes: output tokens cost 5 times input tokens for gpt-6-astra ($10 / $50 per million) | 2026-10-11 | https://platform.openai.com/docs/pricing | prices.json `openai.models.gpt-6-astra` | no | Matches prices.json (50 / 10 = 5); dated in a notes `.cite` |
 | system-1-2 | Bengio: deep learning mostly did System 1 tasks; System 2 is reasoning, planning, causality | December 2019 | https://neurips.cc/virtual/2019/invited-talk/15488 | Posner lecture abstract | no | Supported, paraphrase of the abstract |
 | system-1-2 | LeCun: Mode-1 is a single pass through a policy, Mode-2 plans through a world model, both by analogy with Kahneman | 2022-06-27 | https://openreview.net/forum?id=BZ5a1r-kVsf | v0.9.2 §3.1 and §3.1.3 | no | Supported; "by analogy" is LeCun's wording |
 | cot-depth | Log steps add little, linear steps recognize regular languages, polynomial steps give exactly P (under assumptions) | 2023-10-11 | https://arxiv.org/abs/2310.07923 | Abstract | no | Supported; assumptions named in notes |

@@ -333,7 +333,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
           <p>Draw the loop with your hand: pass, sample, append, repeat. The key word is serial. Pass 500 can use the result of pass 499 because that result is now text in the context.</p>
           <p>This is the whole mechanism behind “thinking” models: they write more tokens before the final answer. Nothing else changes in the network.</p>
-          <p>Cost link: on the demo’s price list an output token costs 5 times an input token, for both models. Thinking is output.</p>
+          <p>Cost link: on the demo’s price list an output token costs 5 times an input token, for both models (claude-opus-5-5: $4 in, $20 out; gpt-6-astra: $10 in, $50 out, per million tokens). Thinking is output.</p>
+          <p class="cite">Prices as of 2026-10-11: <code>cursus/demos/effort/prices.json</code>, copied from Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>, and OpenAI, <cite>Pricing</cite>, <a href="https://platform.openai.com/docs/pricing">platform.openai.com</a>. List prices change; recheck before quoting.</p>
         </details>
       </section>
 
