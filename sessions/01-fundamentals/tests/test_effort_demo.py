@@ -5,6 +5,10 @@ real model CLIs: live tests use disposable executable stubs; recorded evidence i
 independently decoded. Authenticity of recordings, pricing-page verification and
 teaching prose still require review. Consistent JSON is not proof of provenance.
 
+Every collected test has a ledger prefix so the engine's five filtered commands
+cover the entire file. The extra greedy-puzzle and default-replay design checks
+belong to D2 and D3 respectively; their assertions are unchanged.
+
 Only the agreed filenames, CLI interface, event formats and evidence fields are
 contracts. Helpers accept flat or nested token counters and common price layouts;
 no implementation function or constant name is required. Puzzle data are read
@@ -879,7 +883,7 @@ def test_d2_rejects_unpriced_auxiliary_claude_model(tmp_path):
     assert re.search(r"price|rate|model", result.stderr + result.stdout, re.I)
 
 
-def test_greedy_density_misses_exhaustive_optimum():
+def test_d2_greedy_density_misses_exhaustive_optimum():
     _, parcels, capacity, optimum = puzzle()
     remaining, greedy = capacity, 0
     for weight, value in sorted(parcels, key=lambda item: item[1] / item[0], reverse=True):
@@ -889,7 +893,7 @@ def test_greedy_density_misses_exhaustive_optimum():
     assert greedy < optimum, "Choose a parcel instance that rewards combinatorial thinking"
 
 
-def test_default_invocation_is_offline_replay(recorded, replay):
+def test_d3_default_invocation_is_offline_replay(recorded, replay):
     output = success(["uv", "run", "--offline", "effort.py"], DEMO)
     assert table_lines(output, recorded[1]) == table_lines(replay, recorded[1])
 
