@@ -43,12 +43,13 @@
     },
     "openai": {
       "source": "https://platform.openai.com/docs/pricing",
-      "note": "Standard tier, short-context rates. The page also lists cache writes at 12.50 USD per million for gpt-6-astra; Codex reported none in the recording, and the demo does not price them.",
+      "note": "Standard tier, short-context rates. cache_write prices Codex's cache_write_input_tokens, which replace ordinary input pricing for those tokens; Codex reported none in the recording.",
       "models": {
         "gpt-6-astra": {
           "input": 10,
           "output": 50,
-          "cached_input": 1
+          "cached_input": 1,
+          "cache_write": 12.5
         }
       }
     }

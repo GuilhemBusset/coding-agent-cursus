@@ -49,8 +49,8 @@ DOCS = {
     "codex_config": "https://developers.openai.com/codex/config-reference",
 }
 # thinking (Claude) and reasoning_output (Codex) are already inside output; cache_write_1h is
-# the part of Claude's cache_write written to the 1-hour cache. cache_write_input is a Codex
-# counter that the cost contract does not price; a nonzero value triggers a warning.
+# the part of Claude's cache_write written to the 1-hour cache. cached_input and
+# cache_write_input (Codex) are both already inside input.
 TOKEN_FIELDS = ("input", "output", "cache_read", "cache_write", "cache_write_1h", "cached_input",
                 "reasoning_output", "thinking", "cache_write_input")
 
@@ -205,7 +205,8 @@ def codex_row(events, prices, model):
         raise DemoError("Codex output has no turn.completed usage")
     tokens = dict.fromkeys(TOKEN_FIELDS, 0)
     # Codex's counters are inclusive: input_tokens includes cached_input_tokens and
-    # output_tokens includes reasoning_output_tokens. Refuse usage that breaks this.
+    # cache_write_input_tokens, and output_tokens includes reasoning_output_tokens. Refuse
+    # usage that breaks this.
     for usage in turns:
         counts = {name: int(usage.get(key, 0)) for name, key in (
             ("input", "input_tokens"), ("output", "output_tokens"),
@@ -213,16 +214,20 @@ def codex_row(events, prices, model):
             ("cache_write_input", "cache_write_input_tokens"))}
         if counts["cached_input"] > counts["input"]:
             raise DemoError(f"Codex usage has more cached tokens than input tokens: {usage}")
+        if counts["cached_input"] + counts["cache_write_input"] > counts["input"]:
+            raise DemoError(f"Codex usage has more cached and cache-write tokens than input tokens: {usage}")
         if counts["reasoning_output"] > counts["output"]:
             raise DemoError(f"Codex usage has more reasoning tokens than output tokens: {usage}")
         for name, count in counts.items():
             tokens[name] += count
-    if tokens["cache_write_input"]:
-        print(f"warning: Codex reported {tokens['cache_write_input']} cache-write tokens, which this "
-              "cost formula does not price", file=sys.stderr)
     rate = rate_card(prices, "openai", model)
-    cost = ((tokens["input"] - tokens["cached_input"]) * rate["input"]
-            + tokens["cached_input"] * rate["cached_input"] + tokens["output"] * rate["output"]) / 1_000_000
+    if tokens["cache_write_input"] and "cache_write" not in rate:
+        raise DemoError(f"Codex reported {tokens['cache_write_input']} cache-write tokens but prices.json "
+                        f"has no cache_write rate for {model!r}; add it first")
+    uncached = tokens["input"] - tokens["cached_input"] - tokens["cache_write_input"]
+    cost = (uncached * rate["input"] + tokens["cached_input"] * rate["cached_input"]
+            + tokens["cache_write_input"] * rate.get("cache_write", 0)
+            + tokens["output"] * rate["output"]) / 1_000_000
     tools = set()
     for index, event in enumerate(events):
         item = event.get("item") or {}

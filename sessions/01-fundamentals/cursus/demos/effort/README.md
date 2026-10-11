@@ -157,11 +157,12 @@ How the cost is computed (USD list-price equivalent: a subscription login is not
   the 5-minute rate ($5). Both recorded Claude runs wrote their 2,666-token system prompt to the
   1-hour cache, kept as `cache_write_1h` next to `cache_write` in `results.json`. Without a
   reported split, every write is priced at the 5-minute rate.
-- Codex reports inclusive counters per turn: `input_tokens` includes `cached_input_tokens`, and
-  `output_tokens` includes `reasoning_output_tokens`. Cost = (input − cached) × input rate +
-  cached × cached-input rate + output × output rate. The script refuses usage where cached exceeds
-  input or reasoning exceeds output. Both recorded runs report `cache_write_input_tokens` of 0;
-  the script keeps that counter separate and warns if it is ever nonzero, since it is not priced.
+- Codex reports inclusive counters per turn: `input_tokens` includes `cached_input_tokens` and
+  `cache_write_input_tokens`, and `output_tokens` includes `reasoning_output_tokens`. Cost =
+  (input − cached − cache write) × input rate + cached × cached-input rate + cache write ×
+  cache-write rate + output × output rate. The script refuses usage where cached plus cache-write
+  tokens exceed input or reasoning exceeds output, and a nonzero cache write for a model with no
+  `cache_write` rate in `prices.json`. Both recorded runs report `cache_write_input_tokens` of 0.
 - Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. In both Claude
   runs it equals the script's cost exactly: low (2 × $4 + 2,666 × $8 + 783 × $20)
   per million = $0.036996, high (2 × $4 + 2,666 × $8 + 964 × $20) per million = $0.040616, so
@@ -214,15 +215,15 @@ same day (as of 2026-10-11).
 
 Prices used, standard list prices in USD per million tokens (MTok), as of 2026-10-11:
 
-| Model | Input | Output | Cache write, 5 min | Cache write, 1 h | Cache read / cached input |
+| Model | Input | Output | Cache write (Claude: 5 min) | Cache write, 1 h | Cache read / cached input |
 | --- | --- | --- | --- | --- | --- |
 | claude-opus-5-5 | $4 | $20 | $5 | $8 | $0.20 |
-| gpt-6-astra | $10 | $50 | n/a | n/a | $1 |
+| gpt-6-astra | $10 | $50 | $12.50 | n/a | $1 |
 
 Sources: Anthropic, https://platform.claude.com/docs/en/about-claude/pricing (Opus 5.5 row of the
 model pricing table); OpenAI, https://platform.openai.com/docs/pricing (gpt-6-astra, standard tier,
-short context; that page also lists cache writes at $12.50 per million, which Codex did not report
-here). `prices.json` also holds the Sonnet 5.5 and Haiku 5.5 rates, for runs where Claude Code calls
+short context; Codex reported no cache writes in these runs, so their $12.50 rate did not apply).
+`prices.json` also holds the Sonnet 5.5 and Haiku 5.5 rates, for runs where Claude Code calls
 an auxiliary model. The recorded runs used only `claude-opus-5-5`.
 
 Notes on the recording:
