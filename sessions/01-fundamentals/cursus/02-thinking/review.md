@@ -1,7 +1,7 @@
 # Act II deck: review evidence
 
 Agent review by the implementer, 2026-10-11. Reviewed file: `../02-thinking.html`,
-82038 bytes, sha256 `77d3c90a76623ce2209feb5f0d193f6f8789abe671d15b889ac298e60aa030f8`.
+82495 bytes, sha256 `c5ef8b9308be0e451ff933d3257eb81b2bf84b349f7097697c0f2cd2cec9424a`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every source below was opened on 2026-10-11 while authoring, and each date was copied from the
@@ -31,7 +31,8 @@ I opened the check-page screenshots and looked at each one.
 - Laptop 1280×720, all 20 slides: the first pass had internal scrolling on `loop`,
   `effort-dials`, `addition-36-59` and `repo-model`. Fixed by compacting the process figures in
   paged mode, shortening the effort table's labels and the `repo-model` heading. Now every
-  slide fits.
+  slide fits. After the fixed-depth correction, `forward-pass` first overflowed at 1280×720 by a
+  few pixels; a one-line heading and a shorter diagram label fixed it (screenshot rechecked).
 - Mobile 390×844: continuous page, columns stack. The first pass squeezed the effort table into
   one-word columns; the compact tables now keep a 34rem minimum width and scroll inside their
   labelled region, with no document overflow.
@@ -55,7 +56,14 @@ simulators 1, wrap 0.5. This is a plan, not a measured delivery. The live rehear
 ## D2 · The loop, System 1 and System 2
 
 - `forward-pass` restates Act I's handoff (there is no Act I deck in the repo to link): one
-  pass through a fixed stack per token. The Merrill and Sabharwal abstract supports "simple
+  pass through a fixed stack per token. The slide claims fixed depth, not fixed compute: review
+  feedback caught an earlier "fixed amount of compute per token" and "Same work, easy or hard
+  question", which are wrong because attention cost grows with the context. Vaswani et al. v7
+  (2023-08-02) §3.2.1 computes the dot products of the query with all keys, and Table 1 gives
+  self-attention O(n²·d) work per layer but O(1) sequential operations. The slide now says fixed
+  depth is not fixed work and qualifies "the same pass" by equal context length; the notes say a
+  longer context makes the pass wider, not deeper. `cot-depth` likewise says the layers bound the
+  serial steps, not the work, in one pass. The Merrill and Sabharwal abstract supports "simple
   problems … provably unsolvable by standard transformers that answer immediately"; the deck adds
   "under standard complexity assumptions", which is how those results are conditioned.
 - `loop` matches Vaswani et al. §3 verbatim: "auto-regressive, consuming the previously
@@ -76,7 +84,7 @@ simulators 1, wrap 0.5. This is a plan, not a measured delivery. The live rehear
 ## D3 · Chain of thought adds depth
 
 Checked against Merrill and Sabharwal (arXiv 2310.07923, abstract). The slide says the fixed
-network depth bounds the work in one pass and that each intermediate token buys another serial
+network depth bounds the serial steps in one pass and that each intermediate token buys another serial
 decoding step. The three regimes are the abstract's: logarithmic steps add little, linear steps
 recognize all regular languages (under the projected pre-norm assumption and standard complexity
 conjectures, both named in the notes), polynomial steps give exactly polynomial-time problems
@@ -180,6 +188,7 @@ older sources the deck links. "Contested" follows the deck's visible labels.
 
 | Slide | Claim | Date | Source URL | Source section | Contested | Outcome |
 | --- | --- | --- | --- | --- | --- | --- |
+| forward-pass | Fixed depth, not fixed work: per-layer attention cost grows with sequence length while sequential operations stay constant | 2023-08-02 | https://arxiv.org/html/1706.03762v7 | §3.2.1 and Table 1 | no | Supported; "same pass" is qualified by equal context length |
 | forward-pass | Transformers that answer immediately cannot solve some simple problems such as graph connectivity (under standard complexity assumptions) | 2023-10-11 | https://arxiv.org/abs/2310.07923 | Abstract, first sentence | no | Supported; the hedge reflects the conjecture-based results the abstract cites |
 | loop | Each generated token is consumed as input for the next step | 2017-06-12 | https://arxiv.org/abs/1706.03762 | §3 Model Architecture | no | Supported, quoted verbatim |
 | loop | Speaker notes: output tokens cost 5 times input tokens for claude-opus-5-5 ($4 / $20 per million) | 2026-10-11 | https://platform.claude.com/docs/en/about-claude/pricing | prices.json `anthropic.models.claude-opus-5-5` | no | Matches prices.json (20 / 4 = 5); dated in a notes `.cite` |

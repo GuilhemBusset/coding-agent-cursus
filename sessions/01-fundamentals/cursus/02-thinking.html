@@ -297,20 +297,20 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section id="forward-pass" data-slide tabindex="-1" aria-labelledby="forward-pass-title">
         <p class="eyebrow">01 · Where Act I stopped</p>
-        <h2 id="forward-pass-title">One forward pass: a fixed amount of compute per token.</h2>
+        <h2 id="forward-pass-title">One forward pass: a fixed depth per token.</h2>
         <figure class="process-figure">
           <figcaption>A single forward pass, as in Act I</figcaption>
           <ol class="process">
             <li><span class="label">Input</span><strong>The context</strong><span>Every token so far</span></li>
-            <li><span class="label">Fixed depth</span><strong>The same stack of layers</strong><span>Same work, easy or hard question</span></li>
+            <li><span class="label">Fixed depth</span><strong>The same stack of layers</strong><span>Same serial steps, easy or hard</span></li>
             <li><span class="label">Output</span><strong>One next-token distribution</strong><span>Then a single token is sampled</span></li>
           </ol>
         </figure>
-        <p>Theory shows simple problems, such as checking whether two nodes of a graph are connected, that a transformer answering immediately after reading its input cannot solve, under standard complexity assumptions.</p>
-        <p class="cite">Source: William Merrill, Ashish Sabharwal, <cite>The Expressive Power of Transformers with Chain of Thought</cite>, <a href="https://arxiv.org/abs/2310.07923">arXiv 2310.07923</a>, v1 2023-10-11, abstract.</p>
-        <p class="drive"><strong>Driving:</strong> an answer given in one shot got one pass of compute per token. For a hard problem, ask for the work before the answer.</p>
+        <p>Fixed depth is not fixed work: attention reads every earlier token, so a longer context costs more per pass. At equal context length, easy and hard questions get the same pass. Theory shows simple problems (are two graph nodes connected?) that a transformer answering immediately cannot solve, under standard complexity assumptions.</p>
+        <p class="cite">Sources: Vaswani et al., <cite>Attention Is All You Need</cite>, §3.2.1 and Table 1, <a href="https://arxiv.org/html/1706.03762v7">arXiv 1706.03762v7</a>, 2023-08-02; Merrill and Sabharwal, <cite>The Expressive Power of Transformers with Chain of Thought</cite>, <a href="https://arxiv.org/abs/2310.07923">arXiv 2310.07923</a>, v1 2023-10-11, abstract.</p>
+        <p class="drive"><strong>Driving:</strong> an answer given in one shot got one fixed-depth pass per token. For a hard problem, ask for the work before the answer.</p>
         <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>Recap only, no new material. The depth of the network is fixed when it is trained. Whether the question is 2 + 2 or a scheduling problem, one token costs one pass.</p>
+          <p>Recap only, no new material. The depth of the network is fixed when it is trained. Whether the question is 2 + 2 or a scheduling problem, one token gets one pass through the same layers. Do not say “same work”: a longer context makes each pass more expensive, because the new token attends to every earlier one. It makes the pass wider, not deeper.</p>
           <p>Bridge: so where could extra thinking come from? From the next slide's loop.</p>
         </details>
       </section>
@@ -365,7 +365,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <h2 id="cot-depth-title">Chain of thought adds depth: serial decoding steps the fixed network lacks.</h2>
         <div class="cols">
           <ul class="tight">
-            <li>The number of layers bounds the work in one pass. Each intermediate token buys another pass that reads all the earlier ones.</li>
+            <li>The number of layers bounds the serial steps in one pass. Each intermediate token buys another pass that reads all the earlier ones.</li>
             <li>How much power that adds depends on how many decoding steps: a logarithmic number adds little, a linear number recognizes all regular languages, a polynomial number gives exactly the polynomial-time problems.</li>
           </ul>
           <div class="callout hedge">
