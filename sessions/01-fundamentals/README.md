@@ -66,6 +66,14 @@ uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
   build has filled the cache):
   `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
   The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
+- `cursus/labs/attention.html` embeds `attention.json` verbatim in its
+  `<script id="attention-data">` block, so it opens over `file://` without a fetch. After a
+  rebuild that changes `attention.json`, paste the new file contents into that block and set
+  its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
+  plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
+  the repository root, `node tools/html-pages/tests/run-suite.mjs
+  tools/html-pages/tests/attention.test.mjs`, and re-review the page
+  (`cursus/labs/attention/review.md` records the reviewed page hash).
 
 ## Opening pages
 
