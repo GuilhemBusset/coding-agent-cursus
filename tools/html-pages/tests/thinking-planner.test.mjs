@@ -185,14 +185,31 @@ async function demonstrate(page, recipe, stepMode = false) {
   return audit(page, recipe, rendered);
 }
 
-test('check registration: planner suite is registered in the helper list and npm test', async () => {
-  assert.ok(suites.includes('thinking-planner'), 'append thinking-planner to component-helpers.mjs suites');
+test('check prerequisites: preserve the locked thinking suite and register both suites in CI', async () => {
+  // These files belong to the engine's acceptance-check integration. Report all
+  // missing prerequisites together; never recreate, register or bypass them
+  // from a test. The full locked suite still runs through the D1/D7/D8 commands.
+  const problems = [];
+  try {
+    assert.ok((await read('tools/html-pages/tests/thinking.test.mjs')).trim().length,
+      'the locked thinking suite is nonempty');
+  } catch (error) {
+    problems.push(`Restore the locked tools/html-pages/tests/thinking.test.mjs from 1c938c2: ${error.message}`);
+  }
   const pkg = JSON.parse(await read('setup/package.json'));
   const args = pkg.scripts.test.trim().split(/\s+/);
   assert.deepEqual(args.slice(0, 2), ['node', '--test']);
-  const self = fileURLToPath(import.meta.url);
-  assert.equal(args.slice(2).filter(arg => path.resolve(repoRoot, 'setup', arg) === self).length, 1,
-    'register this suite exactly once in setup/package.json scripts.test');
+  for (const name of ['thinking', 'thinking-planner']) {
+    if (suites.filter(suite => suite === name).length !== 1) {
+      problems.push(`Register ${name} exactly once in component-helpers.mjs suites`);
+    }
+    const file = name === 'thinking-planner' ? fileURLToPath(import.meta.url)
+      : path.join(repoRoot, 'tools/html-pages/tests/thinking.test.mjs');
+    if (args.slice(2).filter(arg => path.resolve(repoRoot, 'setup', arg) === file).length !== 1) {
+      problems.push(`Register ${name}.test.mjs exactly once in setup/package.json scripts.test`);
+    }
+  }
+  assert.deepEqual(problems, [], 'acceptance-check integration prerequisites; no deck edit can repair these');
 });
 
 test('recipe parser accepts ordinary labels and rejects absent or ambiguous settings', () => {
