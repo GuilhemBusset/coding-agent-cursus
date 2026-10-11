@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="en" data-page-kind="lab" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test-time compute lab</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+  <style>
+/* Page-specific layout for the test-time compute lab; shared tokens and components above. */
+.ttc-panel + .ttc-panel { margin-top: 2.5rem; }
+.ttc-panel h2 { margin-bottom: .75rem; }
+.ttc-panel > p { max-width: 72ch; }
+.ttc-formula { margin-block: 0 1.25rem; font: .9375rem/1.7 var(--mono); padding: .75rem 1rem; background: var(--paper); border: 1px solid var(--rule); border-radius: .2rem; overflow-wrap: anywhere; max-width: 80ch; }
+.ttc-formula p { margin: 0; }
+.ttc-formula p + p, .ttc-formula ul { margin-top: .5rem; }
+.ttc-formula ul { margin-bottom: 0; padding-left: 1.25rem; font-family: var(--sans); }
+.ttc-formula li + li { margin-top: .25rem; }
+.ttc-formula .ttc-eq { font-weight: 650; color: var(--ink); }
+.ttc-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem var(--space); align-items: start; margin-block: 1.5rem; }
+@media (min-width: 60rem) { .ttc-layout { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); } }
+.ttc-side { min-width: 0; }
+.ttc-controls { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.ttc-controls > div { min-width: 0; }
+.ttc-controls label { margin-bottom: 0; }
+.ttc-value { font: 650 .9375rem/1.5 var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.ttc-check { display: flex; align-items: center; gap: .75rem; margin: 0; font-weight: 650; cursor: pointer; }
+.ttc-check input { flex: none; width: 44px; height: 44px; margin: 0; }
+.ttc-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr)); gap: .5rem 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); margin-bottom: 1rem; }
+.ttc-stat { display: flex; flex-direction: column; min-width: 0; }
+.ttc-stat > :first-child { color: var(--secondary); font: .8125rem/1.4 var(--sans); }
+.ttc-stat > :last-child { font: 650 1.125rem/1.4 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ttc-limits { font: .875rem/1.5 var(--mono); color: var(--secondary); margin: 0 0 1rem; }
+figure[data-ttc-chart] { margin: 0; min-width: 0; }
+figure[data-ttc-chart] > svg { display: block; width: 100%; height: auto; max-width: 100%; }
+figure[data-ttc-chart] figcaption { color: var(--secondary); font-size: .9375rem; margin-top: .75rem; max-width: 72ch; }
+.ttc-chart text { fill: var(--secondary); font-family: var(--sans); }
+.ttc-chart .ttc-series-label { fill: var(--ink); font-weight: 650; }
+.ttc-chart .ttc-cross-label { fill: var(--ink); }
+.ttc-chart .ttc-area { fill: var(--paper); stroke: var(--rule); stroke-width: 1; }
+.ttc-chart .ttc-grid { stroke: var(--faint); stroke-width: 1; }
+.ttc-chart .ttc-tick { stroke: var(--muted); stroke-width: 1; }
+.ttc-chart .ttc-cursor { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.ttc-crossing { stroke: var(--amber); stroke-width: 1.5; stroke-dasharray: 6 3; }
+.ttc-chart .ttc-dot { stroke: var(--paper); stroke-width: 2; }
+.ttc-line { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ttc-coverage, .ttc-easy { stroke: var(--accent); }
+.ttc-majority, .ttc-medium { stroke: var(--amber); stroke-dasharray: 9 5; }
+.ttc-verifier, .ttc-hard { stroke: var(--ink); stroke-dasharray: 2 5; }
+.ttc-inverse { stroke: var(--red); stroke-dasharray: 12 4 3 4; }
+.ttc-base { stroke: var(--ink); }
+.ttc-rl { stroke: var(--accent); stroke-dasharray: 9 5; }
+.ttc-dot.ttc-coverage, .ttc-dot.ttc-easy, .ttc-dot.ttc-rl { fill: var(--accent); }
+.ttc-dot.ttc-majority, .ttc-dot.ttc-medium { fill: var(--amber); }
+.ttc-dot.ttc-verifier, .ttc-dot.ttc-hard, .ttc-dot.ttc-base { fill: var(--ink); }
+.ttc-dot.ttc-inverse { fill: var(--red); }
+.ttc-dot { stroke-dasharray: none; }
+.ttc-legend { list-style: none; padding: 0; margin: .75rem 0 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .9375rem; color: var(--secondary); }
+.ttc-legend li + li { margin-top: 0; }
+.ttc-legend li { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.ttc-key { flex: none; display: inline-block; }
+.ttc-refs { margin-top: 2.5rem; max-width: 72ch; }
+.ttc-refs li { color: var(--secondary); }
+@media print {
+  .ttc-layout { grid-template-columns: minmax(0, 1fr); }
+  [data-ttc-reset] { display: none !important; }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to experiment</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act II · Lab</p>
+      <h1>Test-time compute: System 2 as search</h1>
+      <p class="lede">Each extra token or extra sample buys more serial or parallel compute at answer time. Reasoning then behaves like an anytime search: it improves as the budget grows, but only as far as the thing that picks the answer, the verifier, can take it.</p>
+    </header>
+    <main id="content" tabindex="-1">
+      <div class="callout"><p><strong>How to read this lab.</strong> Every chart is an illustrative simulation. The charts are computed in your browser with JavaScript from the closed-form formulas printed in each panel. No model was run and no randomness is used, so the same settings always give the same numbers. The shapes follow the cited papers; the numbers are not theirs.</p></div>
+      <noscript><p class="callout">JavaScript is off, so the charts below are a static snapshot of each panel's default settings and the controls do nothing. The formulas, assumptions, predict answers and citations read the same.</p></noscript>
+
+      <section id="best-of-n" class="panel ttc-panel" data-panel aria-labelledby="best-of-n-title">
+        <h2 id="best-of-n-title">1 · Best-of-N: sampling is cheap, selecting is not</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative simulation, not a measurement.</strong> The problem set is a Beta distribution of success rates, not a benchmark, and no model was sampled.</p></div>
+        <p>Ask the same model N times. If one of the N answers is right, the problem is <em>covered</em>. Whether you actually ship that right answer depends on how you pick: by majority vote, or with a verifier that sometimes accepts wrong answers. An OR reader can see each curve as an anytime search: more samples never hurt coverage, but the selection rule sets the ceiling.</p>
+        <div class="ttc-formula" data-ttc-formula aria-label="Best-of-N formulas and assumptions">
+          <p class="ttc-eq">pass@N = E[1 − (1 − p)<sup>N</sup>] = 1 − B(a, b + N) / B(a, b), with p ~ Beta(a, b)</p>
+          <ul>
+            <li>Each problem has its own success rate p, drawn from Beta(a, b). Given p, the N samples are independent. K is the number of correct samples, so K follows a beta-binomial law.</li>
+            <li><strong>Coverage</strong> is P(K &gt; 0), which is the formula above. It is not 1 − (1 − E[p])<sup>N</sup>: with p uniform, pass@2 is 2/3, not 3/4.</li>
+            <li><strong>Majority vote</strong> uses a binary model: every wrong sample gives the same distractor answer, a single wrong answer, which is the hardest case for voting. The correct answer wins with a strict majority of correct samples, and a tie counts half (½).</li>
+            <li><strong>Verifier</strong>: true-positive rate 1 (it never rejects a correct sample) and false-positive rate f (it accepts each wrong sample with probability f). The page picks uniformly among accepted candidates, which is the same as taking the first accepted one in random order. Success = Σ<sub>K</sub> P(K) · E[K / (K + W)], with W ~ Bin(N − K, f). K = 0 contributes 0, because anything accepted is then wrong.</li>
+            <li>Limits as N → ∞: coverage → 1, majority → P(p &gt; ½), verifier → E[p / (p + f · (1 − p))].</li>
+          </ul>
+        </div>
+        <div class="ttc-layout">
+          <div class="ttc-side">
+            <div class="lab-controls ttc-controls">
+              <div>
+                <label for="bon-a">Beta shape a: <span class="ttc-value" data-ttc-value="a">0.6</span></label>
+                <input id="bon-a" type="range" min="0.2" max="5" step="0.1" value="0.6" autocomplete="off" disabled>
+              </div>
+              <div>
+                <label for="bon-b">Beta shape b: <span class="ttc-value" data-ttc-value="b">2.4</span></label>
+                <input id="bon-b" type="range" min="0.2" max="5" step="0.1" value="2.4" autocomplete="off" disabled>
+              </div>
+              <div>
+                <label for="bon-f">Verifier false-positive rate f: <span class="ttc-value" data-ttc-value="f">0.10</span></label>
+                <input id="bon-f" type="range" min="0" max="1" step="0.05" value="0.1" autocomplete="off" disabled>
+              </div>
+              <div>
+                <label for="bon-n">Samples N = 2<sup>q</sup>: <span class="ttc-value" data-ttc-value="n">16</span></label>
+                <input id="bon-n" type="range" min="0" max="10" step="1" value="4" autocomplete="off" aria-valuetext="N = 16" disabled>
+              </div>
+              <div><button type="button" data-ttc-reset disabled>Reset panel</button></div>
+            </div>
+            <output class="ttc-readout" data-ttc-readout for="bon-a bon-b bon-f bon-n">
+              <span class="ttc-stat"><span>Mean p = a / (a + b)</span><span data-ttc-mean>20.0%</span></span>
+              <span class="ttc-stat"><span>Coverage at N</span><span data-metric="coverage">71.8%</span></span>
+              <span class="ttc-stat"><span>Majority vote at N</span><span data-metric="majority">11.7%</span></span>
+              <span class="ttc-stat"><span>Verifier at N</span><span data-metric="verifier">53.6%</span></span>
+            </output>
+            <p class="ttc-limits" data-ttc-limits>As N → ∞: coverage → 100%, majority → 10.2%, verifier → 54.7%.</p>
+          </div>
+          <figure data-ttc-chart>
+            <svg class="ttc-chart" role="img" aria-label="Illustrative line chart of success rate against N samples from 1 to 1,024 for Beta(0.6, 2.4) problems and verifier false-positive rate 0.10. At N = 16: coverage 71.8%, majority vote 11.7%, verifier 53.6%." viewBox="0 0 768 404" data-x-min="0" data-x-max="10" data-y-min="0" data-y-max="1"><rect class="ttc-area" data-plot-area="" x="51" y="33" width="638" height="320"></rect><text font-size="14" x="45" y="357.9" text-anchor="end">0%</text><line class="ttc-grid" x1="51" x2="689" y1="273" y2="273"></line><text font-size="14" x="45" y="277.9" text-anchor="end">25%</text><line class="ttc-grid" x1="51" x2="689" y1="193" y2="193"></line><text font-size="14" x="45" y="197.9" text-anchor="end">50%</text><line class="ttc-grid" x1="51" x2="689" y1="113" y2="113"></line><text font-size="14" x="45" y="117.9" text-anchor="end">75%</text><text font-size="14" x="45" y="37.9" text-anchor="end">100%</text><text font-size="14" x="0" y="15">success rate</text><line class="ttc-tick" x1="51" x2="51" y1="353" y2="357"></line><text font-size="14" x="51" y="375" text-anchor="middle">1</text><line class="ttc-tick" x1="114.8" x2="114.8" y1="353" y2="357"></line><text font-size="14" x="114.8" y="375" text-anchor="middle">2</text><line class="ttc-tick" x1="178.6" x2="178.6" y1="353" y2="357"></line><text font-size="14" x="178.6" y="375" text-anchor="middle">4</text><line class="ttc-tick" x1="242.4" x2="242.4" y1="353" y2="357"></line><text font-size="14" x="242.4" y="375" text-anchor="middle">8</text><line class="ttc-tick" x1="306.2" x2="306.2" y1="353" y2="357"></line><text font-size="14" x="306.2" y="375" text-anchor="middle">16</text><line class="ttc-tick" x1="370" x2="370" y1="353" y2="357"></line><text font-size="14" x="370" y="375" text-anchor="middle">32</text><line class="ttc-tick" x1="433.8" x2="433.8" y1="353" y2="357"></line><text font-size="14" x="433.8" y="375" text-anchor="middle">64</text><line class="ttc-tick" x1="497.6" x2="497.6" y1="353" y2="357"></line><text font-size="14" x="497.6" y="375" text-anchor="middle">128</text><line class="ttc-tick" x1="561.4" x2="561.4" y1="353" y2="357"></line><text font-size="14" x="561.4" y="375" text-anchor="middle">256</text><line class="ttc-tick" x1="625.2" x2="625.2" y1="353" y2="357"></line><text font-size="14" x="625.2" y="375" text-anchor="middle">512</text><line class="ttc-tick" x1="689" x2="689" y1="353" y2="357"></line><text font-size="14" x="689" y="375" text-anchor="middle">1024</text><text font-size="14" x="370" y="396" text-anchor="middle">samples per problem, N (log scale)</text><line class="ttc-cursor" data-marker="" x1="306.2" x2="306.2" y1="33" y2="353"></line><polyline class="ttc-line ttc-coverage" data-series="coverage" points="51,289 114.8,250.6 178.6,205.34 242.4,160.87 306.2,123.35 370,94.88 433.8,74.64 497.6,60.75 561.4,51.4 625.2,45.17 689,41.04"></polyline><polyline class="ttc-line ttc-majority" data-series="majority" points="51,289 114.8,289 178.6,302.82 242.4,311.04 306.2,315.52 370,317.85 433.8,319.04 497.6,319.64 561.4,319.95 625.2,320.1 689,320.17"></polyline><polyline class="ttc-line ttc-verifier" data-series="verifier" points="51,289 114.8,254.44 178.6,219.33 242.4,193.59 306.2,181.36 370,178.3 433.8,178.03 497.6,178.03 561.4,178.03 625.2,178.03 689,178.03"></polyline><circle class="ttc-dot ttc-coverage" data-marker="" cx="306.2" cy="123.35" r="4.5"></circle><circle class="ttc-dot ttc-majority" data-marker="" cx="306.2" cy="315.52" r="4.5"></circle><circle class="ttc-dot ttc-verifier" data-marker="" cx="306.2" cy="181.36" r="4.5"></circle><text class="ttc-series-label" font-size="14" x="695" y="46.3">coverage</text><text class="ttc-series-label" font-size="14" x="695" y="182.93">verifier</text><text class="ttc-series-label" font-size="14" x="695" y="325.07">majority</text></svg>
+            <ul class="ttc-legend">
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-coverage" x1="3" y1="5" x2="29" y2="5"/></svg>coverage (pass@N), solid</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-majority" x1="3" y1="5" x2="29" y2="5"/></svg>majority vote, long dashes</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-verifier" x1="3" y1="5" x2="29" y2="5"/></svg>verifier pick, dots</li>
+            </ul>
+            <figcaption>Illustrative simulation: closed-form success probability against the number of samples N, for the Beta(a, b) problem set above. The shape follows Brown et al., <a href="https://arxiv.org/abs/2407.21787">Large Language Monkeys (arXiv 2407.21787)</a>: coverage keeps growing with samples, while majority voting and reward-model selection plateau.</figcaption>
+          </figure>
+        </div>
+        <section class="panel" data-predict aria-labelledby="bon-predict-title">
+          <h3 id="bon-predict-title">Predict, lock in, then reveal</h3>
+          <fieldset data-predict-question>
+            <legend>With a 10% false-positive verifier, as N grows without bound, which curve's limit is 100%?</legend>
+            <div class="choice"><input type="radio" id="bon-predict-coverage" name="bon-predict" value="coverage" data-correct><label for="bon-predict-coverage">Coverage (pass@N) only</label></div>
+            <div class="choice"><input type="radio" id="bon-predict-verifier" name="bon-predict" value="verifier"><label for="bon-predict-verifier">Coverage and the verifier pick, not majority vote</label></div>
+            <div class="choice"><input type="radio" id="bon-predict-all" name="bon-predict" value="all"><label for="bon-predict-all">All three curves</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer>
+              <p><strong>Answer:</strong> coverage only.</p>
+              <p>Any problem with p &gt; 0 is eventually solved by some sample, so coverage tends to 1. In the limit, majority vote tends to P(p &gt; ½): a problem the model gets right less than half the time is lost to the distractor however many votes you take. The verifier tends to E[p / (p + f(1 − p))], which stays below 1 when f &gt; 0, because the wrong samples it lets through grow in step with the right ones. Set f to 0 and the verifier curve lies on top of coverage; set f to 1 and it stays at the mean p.</p>
+            </div>
+          </fieldset>
+          <div class="predict-actions">
+            <button type="button" data-predict-lock disabled>Lock in</button>
+            <button type="button" data-predict-reveal disabled>Reveal</button>
+            <button type="button" data-predict-reset disabled>Reset</button>
+          </div>
+          <p data-predict-status role="status"></p>
+        </section>
+      </section>
+
+      <section id="effort-dial" class="panel ttc-panel" data-panel aria-labelledby="effort-dial-title">
+        <h2 id="effort-dial-title">2 · The effort dial: more thinking, by difficulty</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative simulation, not a measurement.</strong> The accuracy curves are invented sigmoids and the price is an illustrative price, not a vendor quote.</p></div>
+        <p>Reasoning models let you set how many tokens they may think for. Thinking tokens are serial compute: each one is another pass through the network. Snell et al. found that how much extra test-time compute helps, and how best to spend it, depends on how hard the prompt is, and that it pays off most where the model already has a non-trivial success rate. The curves below stylize that: easy problems saturate early, hard ones need far more tokens and still plateau lower. Some tasks go the other way: past a point, longer reasoning makes the answer worse.</p>
+        <div class="ttc-formula" data-ttc-formula aria-label="Effort dial model and assumptions">
+          <p class="ttc-eq">acc<sub>d</sub>(x) = floor + (ceil<sub>d</sub> − floor) · σ(s · (x − m<sub>d</sub>)), with σ(z) = 1 / (1 + e<sup>−z</sup>) the sigmoid and x = log<sub>2</sub>(thinking tokens)</p>
+          <ul>
+            <li>floor = 0.05, slope s = 1.2. The dial runs from x = 7 to x = 15 (128 to 32,768 thinking tokens).</li>
+            <li>easy: ceil 0.95, midpoint m 8 · medium: ceil 0.85, m 10.5 · hard: ceil 0.6, m 13.</li>
+            <li>Inverse-scaling task: acc(x) = 0.05 + (0.8 − 0.05) · σ(1.2 · (x − 9)) − 0.1 · max(0, x − 11). The penalty starts at the peak, x = 11, and removes 0.1 per doubling of tokens.</li>
+            <li>Cost per problem = thinking tokens × 10 $ / 1,000,000 tokens. This is an illustrative price, not a vendor quote; the cost axis is on top of the chart.</li>
+          </ul>
+        </div>
+        <div class="ttc-layout">
+          <div class="ttc-side">
+            <div class="lab-controls ttc-controls">
+              <div>
+                <label for="effort-x">Thinking tokens = 2<sup>x</sup>: <span class="ttc-value" data-ttc-value="tokens">1,024</span></label>
+                <input id="effort-x" type="range" min="7" max="15" step="1" value="10" autocomplete="off" aria-valuetext="1,024 thinking tokens" disabled>
+              </div>
+              <div>
+                <label class="ttc-check" for="effort-inverse"><input id="effort-inverse" type="checkbox" autocomplete="off" disabled>Show the inverse-scaling task</label>
+              </div>
+              <div><button type="button" data-ttc-reset disabled>Reset panel</button></div>
+            </div>
+            <output class="ttc-readout" data-ttc-readout for="effort-x effort-inverse">
+              <span class="ttc-stat"><span>Thinking tokens</span><span data-metric="tokens">1,024</span></span>
+              <span class="ttc-stat"><span>Cost per problem</span><span data-metric="cost">$0.0102</span></span>
+              <span class="ttc-stat"><span>Easy</span><span data-metric="easy">87.5%</span></span>
+              <span class="ttc-stat"><span>Medium</span><span data-metric="medium">33.3%</span></span>
+              <span class="ttc-stat"><span>Hard</span><span data-metric="hard">6.5%</span></span>
+              <span class="ttc-stat" data-ttc-inverse-stat hidden><span>Inverse-scaling task</span><span data-metric="inverse">62.6%</span></span>
+            </output>
+          </div>
+          <figure data-ttc-chart>
+            <svg class="ttc-chart" role="img" aria-label="Illustrative line chart of accuracy against thinking tokens from 128 to 32,768, by difficulty. At 1,024 tokens ($0.0102): easy 87.5%, medium 33.3%, hard 6.5%." viewBox="0 0 768 423" data-x-min="7" data-x-max="15" data-y-min="0" data-y-max="1"><rect class="ttc-area" data-plot-area="" x="51" y="52" width="645" height="320"></rect><text font-size="14" x="45" y="376.9" text-anchor="end">0%</text><line class="ttc-grid" x1="51" x2="696" y1="292" y2="292"></line><text font-size="14" x="45" y="296.9" text-anchor="end">25%</text><line class="ttc-grid" x1="51" x2="696" y1="212" y2="212"></line><text font-size="14" x="45" y="216.9" text-anchor="end">50%</text><line class="ttc-grid" x1="51" x2="696" y1="132" y2="132"></line><text font-size="14" x="45" y="136.9" text-anchor="end">75%</text><text font-size="14" x="45" y="56.9" text-anchor="end">100%</text><text font-size="14" x="0" y="15">accuracy</text><line class="ttc-tick" x1="51" x2="51" y1="372" y2="376"></line><text font-size="14" x="51" y="394" text-anchor="middle">128</text><line class="ttc-tick" x1="131.63" x2="131.63" y1="372" y2="376"></line><text font-size="14" x="131.63" y="394" text-anchor="middle">256</text><line class="ttc-tick" x1="212.25" x2="212.25" y1="372" y2="376"></line><text font-size="14" x="212.25" y="394" text-anchor="middle">512</text><line class="ttc-tick" x1="292.88" x2="292.88" y1="372" y2="376"></line><text font-size="14" x="292.88" y="394" text-anchor="middle">1k</text><line class="ttc-tick" x1="373.5" x2="373.5" y1="372" y2="376"></line><text font-size="14" x="373.5" y="394" text-anchor="middle">2k</text><line class="ttc-tick" x1="454.13" x2="454.13" y1="372" y2="376"></line><text font-size="14" x="454.13" y="394" text-anchor="middle">4k</text><line class="ttc-tick" x1="534.75" x2="534.75" y1="372" y2="376"></line><text font-size="14" x="534.75" y="394" text-anchor="middle">8k</text><line class="ttc-tick" x1="615.38" x2="615.38" y1="372" y2="376"></line><text font-size="14" x="615.38" y="394" text-anchor="middle">16k</text><line class="ttc-tick" x1="696" x2="696" y1="372" y2="376"></line><text font-size="14" x="696" y="394" text-anchor="middle">32k</text><text font-size="14" x="373.5" y="415" text-anchor="middle">thinking tokens per problem (log scale)</text><g data-axis="cost"><text font-size="14" x="768" y="15" text-anchor="end">cost per problem (US$)</text><line class="ttc-tick" x1="51" x2="51" y1="48" y2="52"></line><text font-size="14" x="51" y="34" text-anchor="middle" data-tokens="128">$0.00128</text><line class="ttc-tick" x1="131.63" x2="131.63" y1="48" y2="52"></line><text font-size="14" x="131.63" y="34" text-anchor="middle" data-tokens="256">$0.00256</text><line class="ttc-tick" x1="212.25" x2="212.25" y1="48" y2="52"></line><text font-size="14" x="212.25" y="34" text-anchor="middle" data-tokens="512">$0.00512</text><line class="ttc-tick" x1="292.88" x2="292.88" y1="48" y2="52"></line><text font-size="14" x="292.88" y="34" text-anchor="middle" data-tokens="1024">$0.0102</text><line class="ttc-tick" x1="373.5" x2="373.5" y1="48" y2="52"></line><text font-size="14" x="373.5" y="34" text-anchor="middle" data-tokens="2048">$0.0205</text><line class="ttc-tick" x1="454.13" x2="454.13" y1="48" y2="52"></line><text font-size="14" x="454.13" y="34" text-anchor="middle" data-tokens="4096">$0.0410</text><line class="ttc-tick" x1="534.75" x2="534.75" y1="48" y2="52"></line><text font-size="14" x="534.75" y="34" text-anchor="middle" data-tokens="8192">$0.0819</text><line class="ttc-tick" x1="615.38" x2="615.38" y1="48" y2="52"></line><text font-size="14" x="615.38" y="34" text-anchor="middle" data-tokens="16384">$0.164</text><line class="ttc-tick" x1="696" x2="696" y1="48" y2="52"></line><text font-size="14" x="696" y="34" text-anchor="middle" data-tokens="32768">$0.328</text></g><line class="ttc-cursor" data-marker="" x1="292.88" x2="292.88" y1="52" y2="372"></line><polyline class="ttc-line ttc-easy" data-series="easy" points="51,289.34 71.16,272.75 91.31,253.95 111.47,233.44 131.63,212 151.78,190.56 171.94,170.05 192.09,151.25 212.25,134.66 232.41,120.54 252.56,108.85 272.72,99.42 292.88,91.95 313.03,86.14 333.19,81.66 353.34,78.24 373.5,75.66 393.66,73.71 413.81,72.25 433.97,71.16 454.13,70.35 474.28,69.75 494.44,69.29 514.59,68.96 534.75,68.71 554.91,68.53 575.06,68.39 595.22,68.29 615.38,68.21 635.53,68.16 655.69,68.12 675.84,68.09 696,68.06"></polyline><polyline class="ttc-line ttc-medium" data-series="medium" points="51,352.22 71.16,350.92 91.31,349.19 111.47,346.89 131.63,343.86 151.78,339.88 171.94,334.71 192.09,328.07 212.25,319.69 232.41,309.3 252.56,296.74 272.72,282 292.88,265.29 313.03,247.06 333.19,228 353.34,208.94 373.5,190.71 393.66,174 413.81,159.26 433.97,146.7 454.13,136.31 474.28,127.93 494.44,121.29 514.59,116.12 534.75,112.14 554.91,109.11 575.06,106.81 595.22,105.08 615.38,103.78 635.53,102.81 655.69,102.09 675.84,101.55 696,101.15"></polyline><polyline class="ttc-line ttc-hard" data-series="hard" points="51,355.87 71.16,355.82 91.31,355.76 111.47,355.68 131.63,355.56 151.78,355.41 171.94,355.21 192.09,354.93 212.25,354.56 232.41,354.07 252.56,353.4 272.72,352.51 292.88,351.32 313.03,349.74 333.19,347.65 353.34,344.92 373.5,341.36 393.66,336.8 413.81,331.03 433.97,323.89 454.13,315.26 474.28,305.13 494.44,293.64 514.59,281.1 534.75,268 554.91,254.9 575.06,242.36 595.22,230.87 615.38,220.74 635.53,212.11 655.69,204.97 675.84,199.2 696,194.64"></polyline><circle class="ttc-dot ttc-easy" data-marker="" cx="292.88" cy="91.95" r="4.5"></circle><circle class="ttc-dot ttc-medium" data-marker="" cx="292.88" cy="265.29" r="4.5"></circle><circle class="ttc-dot ttc-hard" data-marker="" cx="292.88" cy="351.32" r="4.5"></circle><text class="ttc-series-label" font-size="14" x="702" y="72.96">easy</text><text class="ttc-series-label" font-size="14" x="702" y="106.05">medium</text><text class="ttc-series-label" font-size="14" x="702" y="199.54">hard</text></svg>
+            <ul class="ttc-legend">
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-easy" x1="3" y1="5" x2="29" y2="5"/></svg>easy, solid</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-medium" x1="3" y1="5" x2="29" y2="5"/></svg>medium, long dashes</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-hard" x1="3" y1="5" x2="29" y2="5"/></svg>hard, dots</li>
+              <li data-ttc-inverse-key hidden><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-inverse" x1="3" y1="5" x2="29" y2="5"/></svg>inverse-scaling task, dash-dot</li>
+            </ul>
+            <figcaption>Illustrative simulation: accuracy against thinking tokens (log scale, bottom) and illustrative cost (top). Difficulty-dependent gains follow Snell et al., <a href="https://arxiv.org/abs/2408.03314">scaling test-time compute optimally (arXiv 2408.03314)</a>. The bending-down curve follows Gema et al., <a href="https://arxiv.org/abs/2507.14417">Inverse Scaling in Test-Time Compute (arXiv 2507.14417)</a>, whose tasks include counting with distractors and regression with spurious features.</figcaption>
+          </figure>
+        </div>
+        <section class="panel" data-predict aria-labelledby="effort-predict-title">
+          <h3 id="effort-predict-title">Predict, lock in, then reveal</h3>
+          <fieldset data-predict-question>
+            <legend>On the inverse-scaling task, what does doubling thinking tokens past the peak do?</legend>
+            <div class="choice"><input type="radio" id="effort-predict-rise" name="effort-predict" value="rise"><label for="effort-predict-rise">Accuracy keeps rising, only more slowly</label></div>
+            <div class="choice"><input type="radio" id="effort-predict-flat" name="effort-predict" value="flat"><label for="effort-predict-flat">Accuracy stays flat: the extra tokens are wasted but harmless</label></div>
+            <div class="choice"><input type="radio" id="effort-predict-fall" name="effort-predict" value="fall" data-correct><label for="effort-predict-fall">Accuracy falls</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer>
+              <p><strong>Answer:</strong> accuracy falls, and you pay double for it.</p>
+              <p>In this model accuracy peaks at about 74% near 2,048 tokens and falls to about 40% at 32,768 tokens: each doubling past the peak adds a 10-point penalty that the saturated sigmoid no longer offsets. Gema et al. built real tasks with this shape: longer reasoning let models get distracted by irrelevant details or latch onto spurious features. For an agent, the highest effort setting is not automatically the safest one; measure it on your own task.</p>
+            </div>
+          </fieldset>
+          <div class="predict-actions">
+            <button type="button" data-predict-lock disabled>Lock in</button>
+            <button type="button" data-predict-reveal disabled>Reveal</button>
+            <button type="button" data-predict-reset disabled>Reset</button>
+          </div>
+          <p data-predict-status role="status"></p>
+        </section>
+      </section>
+
+      <section id="sharpen-or-expand" class="panel ttc-panel" data-panel aria-labelledby="sharpen-or-expand-title">
+        <h2 id="sharpen-or-expand-title">3 · Base vs RL-tuned: sharpen or expand?</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative simulation, not a measurement.</strong> Both models are invented Beta mixtures chosen to show the shape of the debate. They are not fitted to any paper's data.</p></div>
+        <p>Reinforcement learning with verifiable rewards makes a model much better at pass@1. Yue et al. reported that, at large k, the base model's pass@k catches up and overtakes, and read this as RL <em>sharpening</em> what the base model could already do rather than <em>expanding</em> it. That reading is contested: Liu et al. (<a href="https://arxiv.org/abs/2505.24864">ProRL, arXiv 2505.24864</a>) report prolonged RL runs that solve problems the base model fails at however many attempts it gets. Treat the crossing below as one possible shape, not a settled fact.</p>
+        <div class="ttc-formula" data-ttc-formula aria-label="Base and RL-tuned Beta mixtures">
+          <p class="ttc-eq">pass@k = Σ<sub>i</sub> w<sub>i</sub> · [1 − B(a<sub>i</sub>, b<sub>i</sub> + k) / B(a<sub>i</sub>, b<sub>i</sub>)] for a mixture Σ<sub>i</sub> w<sub>i</sub> · Beta(a<sub>i</sub>, b<sub>i</sub>)</p>
+          <ul>
+            <li>base = 0.6 · Beta(1, 3) + 0.4 · Beta(0.5, 8)</li>
+            <li>RL-tuned = 0.6 · Beta(4, 1) + 0.4 · Beta(0.08, 8)</li>
+            <li>RL moves the reachable problems toward p near 1 (sharpening) and pushes the hard tail toward p near 0. Every Beta component has a positive density on (0, 1), so in this model no problem is unsolvable for either model: the RL curve still tends to 100%, but it converges slowly because of its small-a component, Beta(0.08, 8).</li>
+          </ul>
+        </div>
+        <div class="ttc-layout">
+          <div class="ttc-side">
+            <div class="lab-controls ttc-controls">
+              <div>
+                <label for="rl-k">Attempts k = 2<sup>q</sup>: <span class="ttc-value" data-ttc-value="k">1</span></label>
+                <input id="rl-k" type="range" min="0" max="10" step="1" value="0" autocomplete="off" aria-valuetext="k = 1" disabled>
+              </div>
+              <div><button type="button" data-ttc-reset disabled>Reset panel</button></div>
+            </div>
+            <output class="ttc-readout" data-ttc-readout for="rl-k">
+              <span class="ttc-stat"><span>Base pass@k</span><span data-metric="base">17.4%</span></span>
+              <span class="ttc-stat"><span>RL-tuned pass@k</span><span data-metric="rl">48.4%</span></span>
+              <span class="ttc-stat"><span>First k where base ≥ RL</span><span data-metric="crossing">12</span></span>
+            </output>
+          </div>
+          <figure data-ttc-chart>
+            <svg class="ttc-chart" role="img" aria-label="Illustrative line chart of pass@k against k from 1 to 1,024 for a base and an RL-tuned Beta mixture. The curves cross at k = 12. At k = 1: base 17.4%, RL-tuned 48.4%." viewBox="0 0 768 404" data-x-min="0" data-x-max="10" data-y-min="0" data-y-max="1"><rect class="ttc-area" data-plot-area="" x="51" y="33" width="639" height="320"></rect><text font-size="14" x="45" y="357.9" text-anchor="end">0%</text><line class="ttc-grid" x1="51" x2="690" y1="273" y2="273"></line><text font-size="14" x="45" y="277.9" text-anchor="end">25%</text><line class="ttc-grid" x1="51" x2="690" y1="193" y2="193"></line><text font-size="14" x="45" y="197.9" text-anchor="end">50%</text><line class="ttc-grid" x1="51" x2="690" y1="113" y2="113"></line><text font-size="14" x="45" y="117.9" text-anchor="end">75%</text><text font-size="14" x="45" y="37.9" text-anchor="end">100%</text><text font-size="14" x="0" y="15">pass@k</text><line class="ttc-tick" x1="51" x2="51" y1="353" y2="357"></line><text font-size="14" x="51" y="375" text-anchor="middle">1</text><line class="ttc-tick" x1="114.9" x2="114.9" y1="353" y2="357"></line><text font-size="14" x="114.9" y="375" text-anchor="middle">2</text><line class="ttc-tick" x1="178.8" x2="178.8" y1="353" y2="357"></line><text font-size="14" x="178.8" y="375" text-anchor="middle">4</text><line class="ttc-tick" x1="242.7" x2="242.7" y1="353" y2="357"></line><text font-size="14" x="242.7" y="375" text-anchor="middle">8</text><line class="ttc-tick" x1="306.6" x2="306.6" y1="353" y2="357"></line><text font-size="14" x="306.6" y="375" text-anchor="middle">16</text><line class="ttc-tick" x1="370.5" x2="370.5" y1="353" y2="357"></line><text font-size="14" x="370.5" y="375" text-anchor="middle">32</text><line class="ttc-tick" x1="434.4" x2="434.4" y1="353" y2="357"></line><text font-size="14" x="434.4" y="375" text-anchor="middle">64</text><line class="ttc-tick" x1="498.3" x2="498.3" y1="353" y2="357"></line><text font-size="14" x="498.3" y="375" text-anchor="middle">128</text><line class="ttc-tick" x1="562.2" x2="562.2" y1="353" y2="357"></line><text font-size="14" x="562.2" y="375" text-anchor="middle">256</text><line class="ttc-tick" x1="626.1" x2="626.1" y1="353" y2="357"></line><text font-size="14" x="626.1" y="375" text-anchor="middle">512</text><line class="ttc-tick" x1="690" x2="690" y1="353" y2="357"></line><text font-size="14" x="690" y="375" text-anchor="middle">1024</text><text font-size="14" x="370.5" y="396" text-anchor="middle">attempts per problem, k (log scale)</text><line class="ttc-crossing" data-crossing="" x1="280.08" x2="280.08" y1="33" y2="353"></line><text class="ttc-cross-label" font-size="14" x="284.08" y="49" text-anchor="start">k = 12</text><line class="ttc-cursor" data-marker="" x1="51" x2="51" y1="33" y2="353"></line><polyline class="ttc-line ttc-base" data-series="base" points="51,297.47 114.9,262.33 178.8,219.26 242.7,175.17 306.6,136.45 370.5,105.99 434.4,83.68 498.3,67.99 562.2,57.17 626.1,49.75 690,44.66"></polyline><polyline class="ttc-line ttc-rl" data-series="rl" points="51,198.13 114.9,171.42 178.8,159.46 242.7,154.2 306.6,149.9 370.5,145.12 434.4,139.92 498.3,134.59 562.2,129.33 626.1,124.24 690,119.37"></polyline><circle class="ttc-dot ttc-base" data-marker="" cx="51" cy="297.47" r="4.5"></circle><circle class="ttc-dot ttc-rl" data-marker="" cx="51" cy="198.13" r="4.5"></circle><text class="ttc-series-label" font-size="14" x="696" y="49.56">base</text><text class="ttc-series-label" font-size="14" x="696" y="124.27">RL-tuned</text></svg>
+            <ul class="ttc-legend">
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-base" x1="3" y1="5" x2="29" y2="5"/></svg>base model, solid</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-rl" x1="3" y1="5" x2="29" y2="5"/></svg>RL-tuned model, dashes</li>
+              <li><svg class="ttc-key" width="32" height="10" aria-hidden="true"><line class="ttc-line ttc-crossing" x1="3" y1="5" x2="29" y2="5"/></svg>first k where base ≥ RL</li>
+            </ul>
+            <figcaption>Illustrative simulation: pass@k of two invented Beta mixtures against the number of attempts k (log scale). The crossing reproduces the shape reported by Yue et al., <a href="https://arxiv.org/abs/2504.13837">Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model? (arXiv 2504.13837)</a>, a contested reading.</figcaption>
+          </figure>
+        </div>
+        <section class="panel" data-predict aria-labelledby="rl-predict-title">
+          <h3 id="rl-predict-title">Predict, lock in, then reveal</h3>
+          <fieldset data-predict-question>
+            <legend>At k = 1,024, which model solves more problems in this illustrative mixture?</legend>
+            <div class="choice"><input type="radio" id="rl-predict-rl" name="rl-predict" value="rl"><label for="rl-predict-rl">The RL-tuned model, which leads at k = 1</label></div>
+            <div class="choice"><input type="radio" id="rl-predict-base" name="rl-predict" value="base" data-correct><label for="rl-predict-base">The base model</label></div>
+            <div class="choice"><input type="radio" id="rl-predict-tie" name="rl-predict" value="tie"><label for="rl-predict-tie">They tie: both reach 100%</label></div>
+            <p data-predict-result></p>
+            <div data-predict-answer>
+              <p><strong>Answer:</strong> the base model, about 96% against 73% for the RL-tuned model.</p>
+              <p>RL wins at pass@1 because it concentrates probability on problems it can already solve, but the problems it pushed toward p ≈ 0 need a huge number of attempts. This is the output of a model built to show the debate, not measured data, and the sharpen-or-expand reading is contested.</p>
+              <p>For an agent: a single run reflects the tuned behaviour, while retries and parallel attempts can recover some of the breadth of the base model.</p>
+            </div>
+          </fieldset>
+          <div class="predict-actions">
+            <button type="button" data-predict-lock disabled>Lock in</button>
+            <button type="button" data-predict-reveal disabled>Reveal</button>
+            <button type="button" data-predict-reset disabled>Reset</button>
+          </div>
+          <p data-predict-status role="status"></p>
+        </section>
+      </section>
+
+      <section class="ttc-refs" aria-labelledby="refs-title">
+        <h2 id="refs-title">Sources</h2>
+        <ul>
+          <li>Brown, Juravsky, Ehrlich, Clark, Le, Ré and Mirhoseini, <a href="https://arxiv.org/abs/2407.21787">Large Language Monkeys: Scaling Inference Compute with Repeated Sampling</a>, arXiv 2407.21787, July 2024.</li>
+          <li>Snell, Lee, Xu and Kumar, <a href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters</a>, arXiv 2408.03314, August 2024.</li>
+          <li>Yue et al., <a href="https://arxiv.org/abs/2504.13837">Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?</a>, arXiv 2504.13837, April 2025.</li>
+          <li>Liu et al., <a href="https://arxiv.org/abs/2505.24864">ProRL: Prolonged Reinforcement Learning Expands Reasoning Boundaries in Large Language Models</a>, arXiv 2505.24864, May 2025. The counterpoint to Yue et al.</li>
+          <li>Gema et al., <a href="https://arxiv.org/abs/2507.14417">Inverse Scaling in Test-Time Compute</a>, arXiv 2507.14417, July 2025.</li>
+        </ul>
+      </section>
+    </main>
+    <footer>Illustrative simulation · Closed-form best-of-N, effort dial and pass@k curves. No model was run.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+  <script>
+/* Test-time compute lab. Closed form throughout: no randomness, so every load and reset is identical. */
+(function () {
+  'use strict';
+
+  var PARAMS = {
+    effort: {
+      floor: 0.05, slope: 1.2,
+      difficulties: [{ id: 'easy', ceil: 0.95, mid: 8 }, { id: 'medium', ceil: 0.85, mid: 10.5 }, { id: 'hard', ceil: 0.6, mid: 13 }],
+      inverse: { ceil: 0.8, mid: 9, peak: 11, lambda: 0.1 },
+      pricePerMTok: 10, xMin: 7, xMax: 15,
+    },
+    mixtures: {
+      base: [{ w: 0.6, a: 1, b: 3 }, { w: 0.4, a: 0.5, b: 8 }],
+      rl: [{ w: 0.6, a: 4, b: 1 }, { w: 0.4, a: 0.08, b: 8 }],
+    },
+  };
+
+  function shape(value, name) {
+    if (typeof value !== 'number' || !isFinite(value) || value <= 0) throw new RangeError(name + ' must be a positive finite number');
+  }
+  function count(value, name) {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) throw new RangeError(name + ' must be a non-negative integer');
+  }
+  function rate(value, name) {
+    if (typeof value !== 'number' || !isFinite(value) || value < 0 || value > 1) throw new RangeError(name + ' must lie in [0, 1]');
+  }
+
+  // log P(K = 0) = log B(a, b + N) − log B(a, b) = Σ_{j<N} log((b + j) / (a + b + j)), summed with compensation.
+  function logAllWrong(a, b, n) {
+    var sum = 0, carry = 0;
+    for (var j = 0; j < n; j++) {
+      var term = Math.log1p(-a / (a + b + j)) - carry;
+      var next = sum + term;
+      carry = (next - sum) - term;
+      sum = next;
+    }
+    return sum;
+  }
+
+  function passAtN(a, b, n) {
+    shape(a, 'a'); shape(b, 'b'); count(n, 'N');
+    return n === 0 ? 0 : -Math.expm1(logAllWrong(a, b, n));
+  }
+
+  // Normalise log weights from their maximum so neither tail underflows the other.
+  function normalise(logs) {
+    var top = Math.max.apply(null, logs), total = 0;
+    var out = logs.map(function (l) { var v = Math.exp(l - top); total += v; return v; });
+    return out.map(function (v) { return v / total; });
+  }
+
+  // Beta-binomial P(K = k), k = 0..N, by the ratio recurrence in log space.
+  function betaBinomial(a, b, n) {
+    var logs = [logAllWrong(a, b, n)];
+    for (var k = 0; k < n; k++)
+      logs.push(logs[k] + Math.log((n - k) / (k + 1)) + Math.log((a + k) / (b + n - k - 1)));
+    return normalise(logs);
+  }
+
+  function binomial(n, f) {
+    var pmf = [];
+    for (var w = 0; w <= n; w++) pmf.push(0);
+    if (f === 0) { pmf[0] = 1; return pmf; }
+    if (f === 1) { pmf[n] = 1; return pmf; }
+    var logs = [n * Math.log1p(-f)], odds = Math.log(f / (1 - f));
+    for (var i = 0; i < n; i++) logs.push(logs[i] + Math.log((n - i) / (i + 1)) + odds);
+    return normalise(logs);
+  }
+
+  // Binary model: all wrong samples share one distractor. Strict majority wins; a tie counts half.
+  // With N = 0 there is no answer to vote on, so the success probability is 0.
+  function majorityAtN(a, b, n) {
+    shape(a, 'a'); shape(b, 'b'); count(n, 'N');
+    if (n === 0) return 0;
+    var pmf = betaBinomial(a, b, n), total = 0;
+    for (var k = 0; k <= n; k++) {
+      if (2 * k > n) total += pmf[k];
+      else if (2 * k === n) total += pmf[k] / 2;
+    }
+    return total;
+  }
+
+  // True-positive rate 1, false-positive rate f, uniform pick among accepted candidates. K = 0 contributes 0.
+  function verifierAtN(a, b, n, f) {
+    shape(a, 'a'); shape(b, 'b'); count(n, 'N'); rate(f, 'fpr');
+    if (n === 0) return 0;
+    var pmf = betaBinomial(a, b, n), total = 0;
+    for (var k = 1; k <= n; k++) {
+      if (pmf[k] === 0) continue;
+      var wrong = binomial(n - k, f), expected = 0;
+      for (var w = 0; w < wrong.length; w++) expected += wrong[w] * k / (k + w);
+      total += pmf[k] * expected;
+    }
+    return total;
+  }
+
+  function passAtKMixture(components, k) {
+    if (!Array.isArray(components) || !components.length) throw new RangeError('mixture must be a non-empty array');
+    return components.reduce(function (sum, c) {
+      if (typeof c.w !== 'number' || !isFinite(c.w) || c.w < 0) throw new RangeError('mixture weight must be non-negative');
+      return sum + c.w * passAtN(c.a, c.b, k);
+    }, 0);
+  }
+
+  function sigmoid(z) { return 1 / (1 + Math.exp(-z)); }
+  function effortAccuracy(x, id) {
+    var e = PARAMS.effort, d = e.difficulties.filter(function (d) { return d.id === id; })[0];
+    if (!d) throw new RangeError('unknown difficulty ' + id);
+    return e.floor + (d.ceil - e.floor) * sigmoid(e.slope * (x - d.mid));
+  }
+  function inverseAccuracy(x) {
+    var e = PARAMS.effort, d = e.inverse;
+    return e.floor + (d.ceil - e.floor) * sigmoid(e.slope * (x - d.mid)) - d.lambda * Math.max(0, x - d.peak);
+  }
+
+  var crossingCache;
+  function crossingK() {
+    if (crossingCache !== undefined) return crossingCache;
+    crossingCache = null;
+    for (var k = 1; k <= 1024; k++) {
+      if (passAtKMixture(PARAMS.mixtures.base, k) >= passAtKMixture(PARAMS.mixtures.rl, k)) { crossingCache = k; break; }
+    }
+    return crossingCache;
+  }
+
+  // ∫ p^(a−1) (1 − p)^(b−1) g(p) dp, split at ½. Substituting p = x^(1/a) on the left half and
+  // 1 − p = y^(1/b) on the right removes the endpoint singularities, so the midpoint rule converges.
+  function betaIntegral(a, b, g, lo, hi) {
+    var m = 2000, total = 0, i, h, p;
+    if (lo) {
+      h = Math.pow(0.5, a) / m;
+      for (i = 0; i < m; i++) { p = Math.pow((i + 0.5) * h, 1 / a); total += Math.pow(1 - p, b - 1) * g(p) * h / a; }
+    }
+    if (hi) {
+      h = Math.pow(0.5, b) / m;
+      for (i = 0; i < m; i++) { p = 1 - Math.pow((i + 0.5) * h, 1 / b); total += Math.pow(p, a - 1) * g(p) * h / b; }
+    }
+    return total;
+  }
+  function limits(a, b, f) {
+    var one = function () { return 1; };
+    var mass = betaIntegral(a, b, one, true, true);
+    var majority = betaIntegral(a, b, one, false, true) / mass;
+    var verifier = f === 0 ? 1 : betaIntegral(a, b, function (p) { return p / (p + f * (1 - p)); }, true, true) / mass;
+    return { majority: majority, verifier: verifier };
+  }
+
+  function freeze(value) {
+    if (value && typeof value === 'object') { Object.keys(value).forEach(function (k) { freeze(value[k]); }); Object.freeze(value); }
+    return value;
+  }
+  window.TestTimeCompute = Object.freeze({
+    passAtN: passAtN, majorityAtN: majorityAtN, verifierAtN: verifierAtN, passAtKMixture: passAtKMixture,
+    effortAccuracy: effortAccuracy, inverseAccuracy: inverseAccuracy, crossingK: crossingK,
+    PARAMS: freeze(PARAMS),
+  });
+
+  /* ---------- Rendering: SVG at the figure's real width, 1 user unit = 1 CSS pixel ---------- */
+  var SVG = 'http://www.w3.org/2000/svg';
+  function node(name, attrs, parent, text) {
+    var el = document.createElementNS(SVG, name);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    if (text !== undefined) el.textContent = text;
+    if (parent) parent.appendChild(el);
+    return el;
+  }
+  function clamp01(v) { return Math.min(1, Math.max(0, v)); }
+  function pct(v) { return (clamp01(v) * 100).toFixed(1) + '%'; }
+  function int(v) { return v.toLocaleString('en-US'); }
+  function money(v) { return '$' + v.toPrecision(3); }
+  function cost(tokens) { return tokens * PARAMS.effort.pricePerMTok / 1e6; }
+  function compact(tokens) { return tokens >= 1024 ? (tokens / 1024) + 'k' : String(tokens); }
+  function r2(v) { return Math.round(v * 100) / 100; }
+
+  function drawChart(figure, spec) {
+    var svg = figure.querySelector(':scope > svg'), W = figure.clientWidth;
+    if (!svg || !W) return;
+    var fs = W >= 560 ? 14 : 12;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    function measure(label) {
+      var t = node('text', { 'font-size': fs }, svg, label), w = t.getComputedTextLength();
+      svg.removeChild(t);
+      return w || label.length * fs * 0.62;
+    }
+    function widest(labels) { return Math.max.apply(null, labels.map(measure)); }
+
+    var gap = Math.round(fs * 1.35), b1 = Math.ceil(fs * 0.95) + 1, b2 = b1 + gap;
+    var yTicks = [0, 0.25, 0.5, 0.75, 1];
+    var L = Math.ceil(widest(yTicks.map(pct0))) + 10;
+    var R = Math.ceil(widest(spec.series.map(function (s) { return s.label; }))) + 14;
+    var area = { x: L, y: (spec.top ? b2 : b1) + fs + 4, width: W - L - R, height: Math.round(Math.max(190, Math.min(320, W * 0.42))) };
+    var bottom = area.y + area.height, tickBase = bottom + 8 + Math.ceil(fs * 0.95), titleBase = tickBase + gap + 2;
+    var H = titleBase + Math.ceil(fs * 0.3) + 3;
+    var span = spec.xMax - spec.xMin;
+    function X(u) { return area.x + (u - spec.xMin) / span * area.width; }
+    function Y(v) { return area.y + (1 - v) * area.height; }
+    function pct0(v) { return Math.round(v * 100) + '%'; }
+
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('class', 'ttc-chart');
+    svg.setAttribute('aria-label', spec.summary);
+    svg.dataset.xMin = spec.xMin; svg.dataset.xMax = spec.xMax; svg.dataset.yMin = 0; svg.dataset.yMax = 1;
+
+    node('rect', { class: 'ttc-area', 'data-plot-area': '', x: area.x, y: area.y, width: area.width, height: area.height }, svg);
+    yTicks.forEach(function (v) {
+      if (v > 0 && v < 1) node('line', { class: 'ttc-grid', x1: area.x, x2: area.x + area.width, y1: r2(Y(v)), y2: r2(Y(v)) }, svg);
+      node('text', { 'font-size': fs, x: area.x - 6, y: r2(Y(v) + fs * 0.35), 'text-anchor': 'end' }, svg, pct0(v));
+    });
+    node('text', { 'font-size': fs, x: 0, y: b1 }, svg, spec.yTitle);
+
+    // Thin tick labels until the widest label fits its slot.
+    function thin(ticks, steps) {
+      var room = area.width / span, need = widest(ticks.map(function (t) { return t.label; })) + 10;
+      var step = steps.filter(function (s) { return room * s >= need; })[0] || steps[steps.length - 1];
+      return ticks.filter(function (t) { return Math.round(t.u - spec.xMin) % step === 0; });
+    }
+    var integers = [];
+    for (var u = spec.xMin; u <= spec.xMax; u++) integers.push(u);
+    thin(integers.map(function (u) { return { u: u, label: spec.xLabel(u) }; }), spec.steps).forEach(function (t) {
+      node('line', { class: 'ttc-tick', x1: r2(X(t.u)), x2: r2(X(t.u)), y1: bottom, y2: bottom + 4 }, svg);
+      node('text', { 'font-size': fs, x: r2(X(t.u)), y: tickBase, 'text-anchor': 'middle' }, svg, t.label);
+    });
+    var xTitleWidth = measure(spec.xTitle);
+    var xTitleAt = Math.min(W - xTitleWidth / 2 - 1, Math.max(xTitleWidth / 2 + 1, area.x + area.width / 2));
+    node('text', { 'font-size': fs, x: r2(xTitleAt), y: titleBase, 'text-anchor': 'middle' }, svg, spec.xTitle);
+
+    if (spec.top) {
+      var axis = node('g', { 'data-axis': 'cost' }, svg);
+      var title = measure(spec.top.title) + measure(spec.yTitle) + 16 <= W ? spec.top.title : spec.top.shortTitle;
+      node('text', { 'font-size': fs, x: W, y: b1, 'text-anchor': 'end' }, axis, title);
+      thin(integers.map(function (u) { return { u: u, label: spec.top.label(u) }; }), spec.steps).forEach(function (t) {
+        node('line', { class: 'ttc-tick', x1: r2(X(t.u)), x2: r2(X(t.u)), y1: area.y - 4, y2: area.y }, axis);
+        node('text', { 'font-size': fs, x: r2(X(t.u)), y: b2, 'text-anchor': 'middle', 'data-tokens': Math.pow(2, t.u) }, axis, t.label);
+      });
+    }
+
+    if (spec.crossing !== undefined) {
+      var cx = r2(X(spec.crossing.u));
+      node('line', { class: 'ttc-crossing', 'data-crossing': '', x1: cx, x2: cx, y1: area.y, y2: bottom }, svg);
+      var crossLabel = spec.crossing.label, crossWidth = measure(crossLabel);
+      var right = cx + 4 + crossWidth <= area.x + area.width;
+      node('text', { class: 'ttc-cross-label', 'font-size': fs, x: right ? cx + 4 : cx - 4, y: area.y + fs + 2, 'text-anchor': right ? 'start' : 'end' }, svg, crossLabel);
+    }
+
+    var sx = r2(X(spec.selected));
+    node('line', { class: 'ttc-cursor', 'data-marker': '', x1: sx, x2: sx, y1: area.y, y2: bottom }, svg);
+    spec.series.forEach(function (s) {
+      node('polyline', { class: 'ttc-line ttc-' + s.id, 'data-series': s.id,
+        points: s.points.map(function (p) { return r2(X(p[0])) + ',' + r2(Y(p[1])); }).join(' ') }, svg);
+    });
+    spec.series.forEach(function (s) {
+      node('circle', { class: 'ttc-dot ttc-' + s.id, 'data-marker': '', cx: sx, cy: r2(Y(s.at)), r: 4.5 }, svg);
+    });
+
+    // Direct labels at line ends, pushed apart so they never collide.
+    var minC = area.y + fs * 0.6, maxC = bottom - fs * 0.6, step = fs * 1.3;
+    var labels = spec.series.map(function (s) { return { s: s, c: Y(s.points[s.points.length - 1][1]) }; })
+      .sort(function (p, q) { return p.c - q.c; });
+    labels.forEach(function (l, i) { l.c = Math.max(l.c, minC, i ? labels[i - 1].c + step : minC); });
+    for (var i = labels.length - 1; i >= 0; i--) labels[i].c = Math.min(labels[i].c, i === labels.length - 1 ? maxC : labels[i + 1].c - step);
+    labels.forEach(function (l) {
+      node('text', { class: 'ttc-series-label', 'font-size': fs, x: area.x + area.width + 6, y: r2(l.c + fs * 0.35) }, svg, l.s.label);
+    });
+  }
+
+  /* ---------- Panels ---------- */
+  function rangeValue(input) { return Number(input.value); }
+  function panelParts(id) {
+    var root = document.getElementById(id);
+    return {
+      root: root, figure: root.querySelector('figure[data-ttc-chart]'),
+      reset: root.querySelector('button[data-ttc-reset]'),
+      metric: function (name) { return root.querySelector('output[data-ttc-readout] [data-metric="' + name + '"]'); },
+      value: function (name) { return root.querySelector('[data-ttc-value="' + name + '"]'); },
+    };
+  }
+  function grid(fn) { var pts = []; for (var u = 0; u <= 10; u++) pts.push([u, fn(Math.pow(2, u))]); return pts; }
+
+  var panels = [];
+
+  function bestPanel() {
+    var p = panelParts('best-of-n'), inputs = {
+      a: p.root.querySelector('#bon-a'), b: p.root.querySelector('#bon-b'),
+      f: p.root.querySelector('#bon-f'), q: p.root.querySelector('#bon-n'),
+    };
+    var curveKey = '', curves;
+    function render() {
+      var a = rangeValue(inputs.a), b = rangeValue(inputs.b), f = rangeValue(inputs.f), q = rangeValue(inputs.q), n = Math.pow(2, q);
+      var key = a + '/' + b + '/' + f;
+      if (key !== curveKey) {
+        curveKey = key;
+        curves = {
+          coverage: grid(function (n) { return passAtN(a, b, n); }),
+          majority: grid(function (n) { return majorityAtN(a, b, n); }),
+          verifier: grid(function (n) { return verifierAtN(a, b, n, f); }),
+          limits: limits(a, b, f),
+        };
+      }
+      var at = { coverage: curves.coverage[q][1], majority: curves.majority[q][1], verifier: curves.verifier[q][1] };
+      p.value('a').textContent = a.toFixed(1);
+      p.value('b').textContent = b.toFixed(1);
+      p.value('f').textContent = f.toFixed(2);
+      p.value('n').textContent = int(n);
+      inputs.q.setAttribute('aria-valuetext', 'N = ' + int(n));
+      p.root.querySelector('[data-ttc-mean]').textContent = pct(a / (a + b));
+      Object.keys(at).forEach(function (k) { p.metric(k).textContent = pct(at[k]); });
+      p.root.querySelector('[data-ttc-limits]').textContent = 'As N → ∞: coverage → 100%, majority → ' +
+        pct(curves.limits.majority) + ', verifier → ' + pct(curves.limits.verifier) + '.';
+      drawChart(p.figure, {
+        xMin: 0, xMax: 10, steps: [1, 2, 5], selected: q,
+        xLabel: function (u) { return String(Math.pow(2, u)); },
+        yTitle: 'success rate', xTitle: 'samples per problem, N (log scale)',
+        summary: 'Illustrative line chart of success rate against N samples from 1 to 1,024 for Beta(' + a.toFixed(1) + ', ' + b.toFixed(1) +
+          ') problems and verifier false-positive rate ' + f.toFixed(2) + '. At N = ' + int(n) + ': coverage ' + pct(at.coverage) +
+          ', majority vote ' + pct(at.majority) + ', verifier ' + pct(at.verifier) + '.',
+        series: [
+          { id: 'coverage', label: 'coverage', points: curves.coverage, at: at.coverage },
+          { id: 'majority', label: 'majority', points: curves.majority, at: at.majority },
+          { id: 'verifier', label: 'verifier', points: curves.verifier, at: at.verifier },
+        ],
+      });
+    }
+    Object.keys(inputs).forEach(function (k) { inputs[k].addEventListener('input', function () { schedule(render); }); });
+    return { parts: p, inputs: [inputs.a, inputs.b, inputs.f, inputs.q], render: render };
+  }
+
+  function effortPanel() {
+    var p = panelParts('effort-dial'), dial = p.root.querySelector('#effort-x'), toggle = p.root.querySelector('#effort-inverse');
+    var e = PARAMS.effort, ids = ['easy', 'medium', 'hard'];
+    function curve(fn) { var pts = []; for (var x = e.xMin; x <= e.xMax + 1e-9; x += 0.25) pts.push([x, fn(x)]); return pts; }
+    var curves = {};
+    ids.forEach(function (id) { curves[id] = curve(function (x) { return effortAccuracy(x, id); }); });
+    curves.inverse = curve(inverseAccuracy);
+    function render() {
+      var x = rangeValue(dial), tokens = Math.pow(2, x), inverse = toggle.checked;
+      p.value('tokens').textContent = int(tokens);
+      dial.setAttribute('aria-valuetext', int(tokens) + ' thinking tokens');
+      p.metric('tokens').textContent = int(tokens);
+      p.metric('cost').textContent = money(cost(tokens));
+      ids.forEach(function (id) { p.metric(id).textContent = pct(effortAccuracy(x, id)); });
+      p.metric('inverse').textContent = pct(inverseAccuracy(x));
+      p.root.querySelector('[data-ttc-inverse-stat]').hidden = !inverse;
+      p.root.querySelector('[data-ttc-inverse-key]').hidden = !inverse;
+      var series = ids.map(function (id) { return { id: id, label: id, points: curves[id], at: effortAccuracy(x, id) }; });
+      if (inverse) series.push({ id: 'inverse', label: 'inverse', points: curves.inverse, at: inverseAccuracy(x) });
+      drawChart(p.figure, {
+        xMin: e.xMin, xMax: e.xMax, steps: [1, 2, 4, 8], selected: x,
+        xLabel: function (u) { return compact(Math.pow(2, u)); },
+        yTitle: 'accuracy', xTitle: 'thinking tokens per problem (log scale)',
+        top: { title: 'cost per problem (US$)', shortTitle: 'cost (US$)', label: function (u) { return money(cost(Math.pow(2, u))); } },
+        summary: 'Illustrative line chart of accuracy against thinking tokens from 128 to 32,768, by difficulty' +
+          (inverse ? ', with the inverse-scaling task' : '') + '. At ' + int(tokens) + ' tokens (' + money(cost(tokens)) + '): ' +
+          series.map(function (s) { return s.label + ' ' + pct(s.at); }).join(', ') + '.',
+        series: series,
+      });
+    }
+    dial.addEventListener('input', function () { schedule(render); });
+    toggle.addEventListener('change', function () { schedule(render); });
+    return { parts: p, inputs: [dial, toggle], render: render };
+  }
+
+  function rlPanel() {
+    var p = panelParts('sharpen-or-expand'), dial = p.root.querySelector('#rl-k'), m = PARAMS.mixtures;
+    var curves = {
+      base: grid(function (k) { return passAtKMixture(m.base, k); }),
+      rl: grid(function (k) { return passAtKMixture(m.rl, k); }),
+    };
+    var crossing = crossingK();
+    function render() {
+      var q = rangeValue(dial), k = Math.pow(2, q);
+      p.value('k').textContent = int(k);
+      dial.setAttribute('aria-valuetext', 'k = ' + int(k));
+      p.metric('base').textContent = pct(curves.base[q][1]);
+      p.metric('rl').textContent = pct(curves.rl[q][1]);
+      p.metric('crossing').textContent = int(crossing);
+      drawChart(p.figure, {
+        xMin: 0, xMax: 10, steps: [1, 2, 5], selected: q,
+        xLabel: function (u) { return String(Math.pow(2, u)); },
+        yTitle: 'pass@k', xTitle: 'attempts per problem, k (log scale)',
+        crossing: { u: Math.log2(crossing), label: 'k = ' + crossing },
+        summary: 'Illustrative line chart of pass@k against k from 1 to 1,024 for a base and an RL-tuned Beta mixture. The curves cross at k = ' +
+          crossing + '. At k = ' + int(k) + ': base ' + pct(curves.base[q][1]) + ', RL-tuned ' + pct(curves.rl[q][1]) + '.',
+        series: [
+          { id: 'base', label: 'base', points: curves.base, at: curves.base[q][1] },
+          { id: 'rl', label: 'RL-tuned', points: curves.rl, at: curves.rl[q][1] },
+        ],
+      });
+    }
+    dial.addEventListener('input', function () { schedule(render); });
+    return { parts: p, inputs: [dial], render: render };
+  }
+
+  // Coalesce bursts of input events into one render per frame.
+  var pending = [];
+  function schedule(render) {
+    if (pending.indexOf(render) >= 0) return;
+    pending.push(render);
+    if (pending.length === 1) requestAnimationFrame(function () {
+      var jobs = pending; pending = [];
+      jobs.forEach(function (job) { job(); });
+    });
+  }
+
+  function init() {
+    panels = [bestPanel(), effortPanel(), rlPanel()];
+    panels.forEach(function (panel) {
+      panel.inputs.forEach(function (input) { input.disabled = false; });
+      panel.parts.reset.disabled = false;
+      panel.parts.reset.addEventListener('click', function () {
+        panel.inputs.forEach(function (input) {
+          if (input.type === 'checkbox') input.checked = input.defaultChecked;
+          else input.value = input.defaultValue;
+        });
+        panel.render();
+      });
+      panel.render();
+      var width = panel.parts.figure.clientWidth;
+      if (window.ResizeObserver) new ResizeObserver(function () {
+        if (panel.parts.figure.clientWidth !== width) { width = panel.parts.figure.clientWidth; schedule(panel.render); }
+      }).observe(panel.parts.figure);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>
