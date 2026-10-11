@@ -188,6 +188,50 @@ def project(event):
         print(f"agent: {squeeze(event.get('result', ''))}")
 
 
+def runs_counter(command):
+    command = str(command)
+    return (bool(re.search(r"(?:python3?|uv\s+run)\b[^\n]*count_r\.py\b", command))
+            and not re.search(r">\s*[\"']?(?:\./)?work/count_r\.py\b", command))
+
+
+def printed(text):
+    """The integers the counter printed, one per line on its own."""
+    return {int(n) for n in re.findall(r"(?m)^\s*(\d+)\s*$", text)}
+
+
+def counter_outputs(cli, kept):
+    """Output of every successful run of work/count_r.py in the kept CLI output."""
+    if cli == "claude":
+        runs, outputs = set(), []
+        for event in kept:
+            for block in (event.get("message") or {}).get("content") or []:
+                if (block.get("type") == "tool_use" and block.get("name") == "Bash"
+                        and runs_counter((block.get("input") or {}).get("command", ""))):
+                    runs.add(block.get("id"))
+                elif (block.get("type") == "tool_result" and block.get("tool_use_id") in runs
+                        and not block.get("is_error", False)):
+                    outputs.append(result_text(block.get("content", "")))
+        return outputs
+    outputs = []
+    for block in re.split(r"(?:^|\n)exec\s*\n", kept)[1:]:
+        block = re.split(r"\n(?:exec|thinking|codex|tokens used|file update|apply_patch)\s*\n", block)[0]
+        status = re.search(r"(?m)^\s*(succeeded|exited \d+|failed)\b[^\n]*:\s*$", block)
+        if status and status.group(1) == "succeeded" and runs_counter(block[:status.start()]):
+            outputs.append(block[status.end():])
+    return outputs
+
+
+def check_counted(cli, kept, truth):
+    """Fail unless the agent ran the counter successfully and it printed the true count."""
+    seen = set().union(*(printed(text) for text in counter_outputs(cli, kept)))
+    if truth in seen:
+        return
+    problem = (f"it printed {', '.join(map(str, sorted(seen)))}, not {truth}" if seen else
+               "no successful run of work/count_r.py in its output")
+    raise Failure(f"{cli} did not run the counter successfully: {problem}; nothing recorded\n"
+                  f"Or replay the recording: {agent_cli.replay_command(SCRIPT, cli, True)}")
+
+
 class Transcript:
     """Print a Codex plain-mode transcript, minus its config banner and the echoed prompt."""
 
@@ -231,6 +275,7 @@ def pivot_claude(record):
         stderr = errors.read()
     if code != 0:
         raise agent_cli.cli_failed("claude", code, stderr, SCRIPT, pivot=True)
+    check_counted("claude", kept, WORD.count("r"))
     if record:
         return {"meta": meta("claude", "pivot", argv, PIVOT, agent_cli.reported_models("claude", kept)),
                 "exit_code": code, "events": kept}
@@ -260,6 +305,7 @@ def pivot_codex(record):
     transcript = agent_cli.scrub_transcript("".join(lines))
     if code != 0:
         raise agent_cli.cli_failed("codex", code, transcript + stdout, SCRIPT, pivot=True)
+    check_counted("codex", transcript, WORD.count("r"))
     if record:
         evidence = agent_cli.banner_lines([transcript])
         shown = pivot_argv("codex")
