@@ -1,0 +1,19 @@
+A courier van has a weight capacity of 63 kg. Choose which parcels to load so
+that the total value of the load is as large as possible without going over the limit.
+Each parcel is either loaded whole or left behind, and there is only one of each.
+
+| Parcel | Weight (kg) | Value (EUR) |
+| --- | --- | --- |
+| A | 28 | 67 |
+| B | 9 | 52 |
+| C | 6 | 20 |
+| D | 10 | 64 |
+| E | 27 | 68 |
+| F | 27 | 29 |
+| G | 16 | 45 |
+| H | 30 | 61 |
+
+Rules:
+- Do not use tools: no code, no shell commands, no files, no search. Reason in text only.
+- End your reply with one final line of the form ANSWER: <total value>, where <total value>
+  is the best total value as a plain integer, with no units and no formatting.
