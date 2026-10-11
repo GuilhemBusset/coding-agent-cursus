@@ -1,105 +1,106 @@
 # Strawberry pivot · runbook
 
-A model reads tokens, not letters, so counting the r's in a word is a guess dressed as an answer.
-Ask a fast model, run headless with every tool withheld, how many r's are in a 401-letter
-invented word, five times. Then ask the same model to write and run code. Works in Claude Code
-and in Codex. The word is the `WORD` constant in [`strawberry.py`](strawberry.py) (205 r's).
+A model reads tokens, not letters, so counting the r's in a long word is a guess. An agent that
+writes and runs code does not guess. Show the guess failing, then the pivot to code. Works with
+Claude Code or with Codex: pick the one you have (`--via claude` is the default).
+
+The word is a 300-letter invention with **146** r's, fixed in `strawberry.py` as `WORD` so
+recordings stay comparable. The ask runs headless five times with tools off (`claude -p --tools ""`
+or `codex exec --sandbox read-only` with the shell tool disabled) and asks for the number only.
 
 ## Before class
 
-1. Set up the session once (`uv sync --locked` in `sessions/01-fundamentals/`). The pivot's
-   `uv run` needs the session's `.venv/`, because Codex's sandbox has no network.
-2. Check the CLI and your login: `claude --version` or `codex --version`, then a one-line prompt.
-   The naive step uses each CLI's small model (`haiku`, `gpt-6-luna`); make sure yours offers it.
-3. Rehearse once from this folder, then run the [reset](#reset).
+1. Log in to the CLI you will use (`claude` or `codex`) and check it runs.
+2. Rehearse once from this folder (commands under [Run](#run)), then run the [reset](#reset).
+3. Keep the [Fallback](#fallback) commands ready in a second terminal.
 
 ## Timing
 
 | Beat | Duration |
 | --- | --- |
-| Show the word, predict question, votes | 0:45 |
-| Naive step, five answers (Claude Code ~1:50, Codex ~0:20) | 1:50 |
-| Pivot command: the agent writes `work/count_r.py` and runs it | 0:45 |
-| Tokens, not letters; link to the tokenizer lab | 0:40 |
+| Show the word, predict question, show of hands | 0:45 |
+| Live ask: five headless runs, tools off | 1:00 |
+| Read the ✓ and ✗ against the true count | 0:30 |
+| Live pivot: the agent writes and runs `work/count_r.py` | 1:15 |
+| Debrief: tokens, not letters; hand the counting to code | 0:30 |
 | **Total** | **4:00** |
 
 ## Predict
 
-Show the word, then ask: "The model writes fluent code and prose. Asked five times how many r's
-this word has, will it get it right? Every time, close but off, or all over the place?" Take a
-show of hands before you press Enter.
-
-## Expected outcome
-
-Recorded on 2026-10-10, first attempt of this configuration. The true count is 205.
-
-- **Claude Code** (`claude-haiku-5-5`, effort `low`): wrong in 4 of 5 (205, 204, 210, 165, 206).
-- **Codex** (`gpt-6-luna`, reasoning effort `low`): wrong in 5 of 5 (213, 156, 145, 173, 140).
-- **Pivot**: both agents wrote a two-line `work/count_r.py`, ran `uv run python work/count_r.py`
-  and printed `205` (the Codex transcript is attempt 2: attempt 1, without `--json`, gave the
-  same `205` but kept no tool events). Claude added that it had copied the word by hand, so a copying slip would
-  change the count. That is the next lesson: the code is checkable, and the copy is not.
-
-An unrecorded timing rehearsal the same day gave 4 of 5 and 5 of 5 wrong again. Be ready for
-the opposite too: the CLIs' default models, which think before answering (`claude-opus-5-5`,
-`gpt-6-astra` at `xhigh`), counted this word right 10 times out of 10, and shorter words (29, 70
-and 120 letters) right in every trial. Spelling a word out in a hidden reasoning trace is the
-same pivot, done invisibly. If the room sees correct answers, say so and make that point.
+Show the word on screen. Ask: "I will ask the same model the same question five times, with no
+tools. How many of the five answers will be the right count?" Take a show of hands for 0, 1–2,
+3–4 and 5. Then: "And if it may write code?"
 
 ## Run
 
-From this folder (`sessions/01-fundamentals/cursus/demos/model/`). Naive step, five headless
-runs, tools withheld (`--tools ""` for Claude Code, `--sandbox read-only` for Codex):
+From this folder (`sessions/01-fundamentals/cursus/demos/model`):
 
 ```sh
-uv run --no-project python strawberry.py
-uv run --no-project python strawberry.py --via codex
+uv run strawberry.py                     # ask, Claude Code
+uv run strawberry.py --pivot             # pivot, Claude Code
+uv run strawberry.py --via codex         # ask, Codex
+uv run strawberry.py --via codex --pivot # pivot, Codex
 ```
 
-The pivot, same model. `strawberry.py --print-prompts` prints these prompts, word filled in.
+The ask prints one line per run (`run 3: 131  ✗`) and a summary
+(`wrong: 5 of 5 (unparseable: 0, tool-assisted: 0; true count: 146)`). A run flagged
+`[tool used]` means the agent ran a tool despite the instruction; say so, it does not count. The
+pivot prints one `tool:` line per tool call with its output, then `true count: 146`.
 
-```sh
-claude -p "Write work/count_r.py that counts the letter r in strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr and prints only the count. Run it with exactly this command: uv run python work/count_r.py and report what it prints." --model haiku --effort low --permission-mode acceptEdits --allowedTools "Bash(uv run:*)" --output-format stream-json --verbose
-```
+## Expected outcome
 
-```sh
-UV_CACHE_DIR="$PWD/work/.uv-cache" codex exec --json -m gpt-6-luna -c 'model_reasoning_effort="low"' --sandbox workspace-write "Write work/count_r.py that counts the letter r in strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr and prints only the count. Run it with exactly this command: uv run python work/count_r.py and report what it prints." < /dev/null
-```
+The true count is 146. Recorded on 2026-10-11, with tools off:
 
-The flags are the cold open's (`--permission-mode acceptEdits` and only `uv run` for Claude
-Code; `workspace-write` and a uv cache under `work/` for Codex). Both stream JSON events, so the
-room sees each tool call and its output as it happens. `--via anthropic|openai` sends
-the naive question straight to the API instead, using `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
+- Claude Code, `claude-haiku-5-5` at low effort: 118, 146, 146, 146, 142, so 2 of 5 wrong.
+- Codex, `gpt-6-luna` at low reasoning effort: 116, 86, 131, 129, 151, so 5 of 5 wrong.
+
+The answers move between runs and are wrong by up to 60. Models change, so a live run can do
+better or worse than this. If all five live answers happen to be correct, say so, then replay
+the recording (`uv run --offline strawberry.py --replay`) to show the wrong answers it captured,
+and pivot anyway: the point is that a correct guess is still a guess.
+
+In the pivot, the agent writes a two-line `work/count_r.py` (`WORD = "…"`,
+`print(WORD.count("r"))`), runs `uv run --no-project python work/count_r.py` and gets 146 every
+time. Codex may look around the folder first; Claude Code may try a combined shell command that
+is refused before it writes the file. Both happened in the recordings.
 
 ## Fallback
 
-Dead network, exhausted quota or a broken login: replay the recordings. No CLI, key or socket.
+No login, no network or a CLI error: the script prints one line pointing here. Replay the
+recordings instead. They open no socket and start no process.
 
 ```sh
-cd "$(git rev-parse --show-toplevel)/sessions/01-fundamentals/cursus/demos/model"
-uv run --no-project --offline python strawberry.py --replay
-uv run --no-project --offline python strawberry.py --replay --via codex
+uv run --offline strawberry.py --replay
+uv run --offline strawberry.py --replay --via codex
+uv run --offline strawberry.py --replay --pivot
+uv run --offline strawberry.py --replay --pivot --via codex
+uv run --no-project --offline python recorded/claude_count_r.py
+uv run --no-project --offline python recorded/codex_count_r.py
 ```
 
-They print [`strawberry-claude.json`](recorded/strawberry-claude.json) and
-[`strawberry-codex.json`](recorded/strawberry-codex.json). For the pivot, scroll through
-[`claude-pivot.txt`](recorded/claude-pivot.txt) or [`codex-pivot.txt`](recorded/codex-pivot.txt),
-then run the code the agent wrote: `uv run --offline python recorded/claude_count_r.py` prints 205.
+The last two run the code each agent wrote. Both print 146.
 
 ## Recorded runs
 
-| Recording | Model | Run date | Attempt |
-| --- | --- | --- | --- |
-| [`strawberry-claude.json`](recorded/strawberry-claude.json) | claude-haiku-5-5 | 2026-10-10 | 1 |
-| [`strawberry-codex.json`](recorded/strawberry-codex.json) | gpt-6-luna | 2026-10-10 | 1 |
-| [`claude-pivot.txt`](recorded/claude-pivot.txt), [`claude_count_r.py`](recorded/claude_count_r.py) | claude-haiku-5-5 | 2026-10-10 | 1 |
-| [`codex-pivot.txt`](recorded/codex-pivot.txt), [`codex_count_r.py`](recorded/codex_count_r.py) | gpt-6-luna | 2026-10-10 | 2 |
+Made with `uv run strawberry.py [--pivot] --via <cli> --record`, never edited by hand.
+
+| File | Step | CLI | Model | Run date |
+| --- | --- | --- | --- | --- |
+| [`recorded/strawberry-claude.json`](recorded/strawberry-claude.json) | ask | Claude Code 2.1.296 | `claude-haiku-5-5` | 2026-10-11 |
+| [`recorded/pivot-claude.json`](recorded/pivot-claude.json) | pivot | Claude Code 2.1.296 | `claude-haiku-5-5` | 2026-10-11 |
+| [`recorded/claude_count_r.py`](recorded/claude_count_r.py) | pivot | Claude Code 2.1.296 | `claude-haiku-5-5` | 2026-10-11 |
+| [`recorded/strawberry-codex.json`](recorded/strawberry-codex.json) | ask | Codex 0.162.1 | `gpt-6-luna` | 2026-10-11 |
+| [`recorded/pivot-codex.json`](recorded/pivot-codex.json) | pivot | Codex 0.162.1 | `gpt-6-luna` | 2026-10-11 |
+| [`recorded/codex_count_r.py`](recorded/codex_count_r.py) | pivot | Codex 0.162.1 | `gpt-6-luna` | 2026-10-11 |
+
+Claude Code reports the model it used (`modelUsage`). Codex does not, so its recordings repeat
+the requested ID and say so in `meta.model_reported_note`.
 
 ## Reset
 
-One command, from anywhere in the repository. It restores this folder to the committed state and
-deletes `work/`, its uv cache and anything else an agent left here. Commit your own edits first.
+From this folder. It restores the folder to the last commit and deletes `work/` and anything an
+agent left here, so commit a new recording before you reset.
 
 ```sh
-git -C "$(git rev-parse --show-toplevel)" restore --source=HEAD --staged --worktree -- sessions/01-fundamentals/cursus/demos/model && git -C "$(git rev-parse --show-toplevel)" clean -fdx -- sessions/01-fundamentals/cursus/demos/model
+git restore --source=HEAD --staged --worktree -- . && git clean -fdx -- .
 ```

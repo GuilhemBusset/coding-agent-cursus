@@ -1,68 +1,174 @@
 {
   "meta": {
-    "attempt": 1,
+    "demo": "strawberry",
+    "step": "ask",
     "cli": "codex",
-    "cli_version": "codex-cli 0.160.0",
-    "date": "2026-10-10",
+    "cli_version": "codex-cli 0.162.1",
     "model": "gpt-6-luna",
-    "params": {
-      "command": [
-        "codex",
-        "exec",
-        "--model",
-        "gpt-6-luna",
-        "-c",
-        "model_reasoning_effort=\"low\"",
-        "--sandbox",
-        "read-only",
-        "--skip-git-repo-check",
-        "--ephemeral",
-        "--color",
-        "never",
-        "<prompt>"
-      ],
-      "effort": "low",
-      "tools": "withheld: --sandbox read-only",
-      "temperature": "vendor default",
-      "cwd": "empty scratch folder"
-    },
-    "prompt": "How many times does the letter r appear in strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr? Answer from reading the word only; do not run code or use any tool. Reply with the number only.",
-    "requested_model": "gpt-6-luna",
-    "script": "strawberry.py",
-    "via": "codex"
+    "effort": "low",
+    "date": "2026-10-11",
+    "command": [
+      "codex",
+      "exec",
+      "--json",
+      "--sandbox",
+      "read-only",
+      "-m",
+      "gpt-6-luna",
+      "-c",
+      "model_reasoning_effort=\"low\"",
+      "--disable",
+      "shell_tool",
+      "--disable",
+      "unified_exec",
+      "--skip-git-repo-check",
+      "--ephemeral",
+      "<prompt>"
+    ],
+    "prompt": "How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.",
+    "model_reported": [
+      "gpt-6-luna"
+    ],
+    "model_reported_note": "codex exec --json did not report a model; this is the requested ID"
   },
-  "word": "strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr",
-  "truth": 205,
+  "word": "strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor",
+  "truth": 146,
   "answers": [
-    {
-      "raw": "213",
-      "verdict": "wrong",
-      "model": "gpt-6-luna",
-      "ran_command": false
-    },
-    {
-      "raw": "156",
-      "verdict": "wrong",
-      "model": "gpt-6-luna",
-      "ran_command": false
-    },
-    {
-      "raw": "145",
-      "verdict": "wrong",
-      "model": "gpt-6-luna",
-      "ran_command": false
-    },
-    {
-      "raw": "173",
-      "verdict": "wrong",
-      "model": "gpt-6-luna",
-      "ran_command": false
-    },
-    {
-      "raw": "140",
-      "verdict": "wrong",
-      "model": "gpt-6-luna",
-      "ran_command": false
-    }
+    "116",
+    "86",
+    "131",
+    "129",
+    "151"
+  ],
+  "classes": [
+    "incorrect",
+    "incorrect",
+    "incorrect",
+    "incorrect",
+    "incorrect"
+  ],
+  "tools_used": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "raw": [
+    [
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "agent_message",
+          "text": "116"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 14408,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    [
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "agent_message",
+          "text": "86"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 14408,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    [
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "agent_message",
+          "text": "131"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 14408,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    [
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "agent_message",
+          "text": "129"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 14408,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ],
+    [
+      {
+        "type": "turn.started"
+      },
+      {
+        "type": "item.completed",
+        "item": {
+          "id": "item_0",
+          "type": "agent_message",
+          "text": "151"
+        }
+      },
+      {
+        "type": "turn.completed",
+        "usage": {
+          "input_tokens": 14408,
+          "cached_input_tokens": 6912,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    ]
   ]
 }

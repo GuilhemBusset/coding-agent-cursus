@@ -6,17 +6,24 @@ every demo, they run on the instructor's Linux machine only (ADR 0010). Students
 
 | Demo | Runbook | Script | What the room sees |
 | --- | --- | --- | --- |
-| Strawberry pivot | [`strawberry.md`](strawberry.md) | [`strawberry.py`](strawberry.py) | A fast model miscounts the r's in a 401-letter invented word; the same model writes and runs code and gets 205 |
+| Strawberry pivot | [`strawberry.md`](strawberry.md) | [`strawberry.py`](strawberry.py) | A fast model, tools off, miscounts the r's in a 300-letter invented word; the same agent writes and runs code and gets 146 |
 | Sampling divergence | [`sampling.md`](sampling.md) | [`sampling.py`](sampling.py) | One prompt sent five times at a low and five times at a high temperature, and how many distinct answers each gives |
 
-| File | What it is |
-| --- | --- |
-| [`ask.txt`](ask.txt), [`pivot.txt`](pivot.txt) | The two strawberry prompts. `{WORD}` is filled in by `strawberry.py --print-prompts` |
-| [`llm_api.py`](llm_api.py) | A stdlib client for the Anthropic and OpenAI APIs. Keys are read from the environment only |
-| [`recorded/`](recorded/) | Dated recordings: naive answers, pivot transcripts and the code the agents wrote, and, once someone with an API key records them, the sampling run and an optional temperature probe |
+[`recorded/`](recorded/) holds the dated recordings, each made by the script's `--record` and
+never edited by hand:
 
-Keys: `sampling.py` and the API modes of `strawberry.py` read `ANTHROPIC_API_KEY` or
-`OPENAI_API_KEY` from the environment and stop with a one-line message if it is unset. The CLI
-modes of `strawberry.py` use your Claude Code or Codex login instead. `--replay` needs neither.
+- Strawberry: the naive answers and the pivot transcript for Claude Code and for Codex, and the
+  `count_r.py` each agent wrote. Recorded on 2026-10-11.
+- Sampling: **pending**. `recorded/sampling.json` needs an `ANTHROPIC_API_KEY` or
+  `OPENAI_API_KEY`, which the run that built this demo did not have. Until someone with a key
+  records it (see [`sampling.md`](sampling.md), Recorded runs), the sampling demo has no offline
+  fallback.
+
+Keys: `sampling.py` reads `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the environment, puts it in
+the auth header only, and stops with a one-line message if it is unset. `strawberry.py` reads no
+key: it drives the `claude` and `codex` CLIs, which use your own login. `--replay` needs neither.
+
+Recordings keep only what the room needs: answers, tool calls, their output and the model
+usage. Session and thread IDs are dropped, and paths are made relative to this folder or `~`.
 
 Agents write to `work/` in this folder. It is not tracked, and each runbook's reset removes it.

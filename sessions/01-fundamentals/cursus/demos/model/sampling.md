@@ -2,115 +2,107 @@
 
 One pass of a model gives a probability distribution over the next token, not an answer. The
 answer is drawn from it, and `temperature` sets how flat that distribution is. Send one prompt five
-times at a low and five times at a high temperature and count the distinct answers.
+times at a low and five times at a high temperature through the API and count the distinct
+answers. The prompt is fixed in `sampling.py`: "Invent a name for a new optimization solver.
+Reply with the name only." (20 tokens at most, no `top_p`, no extended thinking).
 
-**Status (2026-10-10): not recorded yet.** The implementation run had no `ANTHROPIC_API_KEY` or
-`OPENAI_API_KEY`, and a Claude Code or Codex login cannot set a temperature. The script and its
-request shape are tested against a local stub server for both vendors, but there is no
-`recorded/sampling.json` yet. Recording it is the first item of [Before class](#before-class).
+**Status: recording pending.** The run that built this demo had no API key, so there is no
+`recorded/sampling.json` yet and no offline fallback. Record one before class (step 3 below).
 
 ## Before class
 
-1. Set up the session once (`uv sync --locked` in `sessions/01-fundamentals/`).
-2. Export a key: `export ANTHROPIC_API_KEY=…` (or `OPENAI_API_KEY`). The script reads it from the
-   environment only and stops with a one-line message if it is unset or blank.
-3. From this folder, record a run with the default model, which the
-   [Temperature support](#temperature-support) table lists as accepting `temperature`:
+1. Export a key: `export ANTHROPIC_API_KEY=…` (or `OPENAI_API_KEY` with `--provider openai`).
+   The script reads it from the environment only and stops with a one-line message if it is
+   unset or blank. It is sent in the auth header and never printed or recorded.
+2. Rehearse once from this folder (see [Run](#run)).
+3. Record the fallback, then fill in [Expected outcome](#expected-outcome) and
+   [Recorded runs](#recorded-runs) from it and commit all three:
 
    ```sh
-   uv run --no-project python sampling.py --provider anthropic --record recorded/sampling.json
+   uv run sampling.py --provider anthropic --record
    ```
-
-   With an OpenAI key, use `--provider openai` instead. Never edit a recording by hand. A new
-   recording of the same configuration increments `meta.attempt`.
-4. Optional: confirm the table against the live API. The probe asks each model once with a
-   temperature and writes `recorded/temperature_probe.json`:
-
-   ```sh
-   uv run --no-project python sampling.py --probe --provider anthropic --model claude-opus-4-6 --model claude-haiku-4-5-20251001 --model claude-haiku-5-5
-   ```
-
-   For OpenAI, probe `gpt-4.1-mini` and two current reasoning models.
-5. Edit this runbook to match: replace the status note above and the
-   [Expected outcome](#expected-outcome) paragraph with the observed distinct counts and the
-   attempt number, and turn each `Recorded runs` row into a link with the model and run date from
-   the recording's `meta`. Commit the recordings together with these edits.
-6. Rehearse once, then run the [reset](#reset).
 
 ## Temperature support
 
-As of 2026-10-10, from the vendors' documentation, not from a live call. The Anthropic Messages
-API reference says: "Models released after Claude Opus 4.6 do not support setting temperature. A
-value of 1.0 will be accepted for backwards compatibility, all other values will be rejected with
-a 400 error."
+As of 2026-10-11, from the vendors' API references (not from a live call). Anthropic deprecates
+`temperature` for its newer models: "Models released after Claude Opus 4.6 do not support setting
+temperature. A value of 1.0 will be accepted for backwards compatibility, all other values will be
+rejected with a 400 error." The defaults in `sampling.py` are models that still accept it.
 
-| Model | Accepts `temperature`? | Source |
-| --- | --- | --- |
-| `claude-opus-4-6` (Anthropic default here) | Yes, 0.0 to 1.0: the documented cut-off is "released after Claude Opus 4.6". Active, retirement not before 2027-02-05 | [Messages API](https://platform.claude.com/docs/en/api/messages), [deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) |
-| `claude-haiku-4-5-20251001`, `claude-opus-4-5-20251101` | Yes, same rule. Retirement possible from 2026-10-15 and 2026-11-24 | same |
-| `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1` | No: "a value of 1.0 will be accepted for backwards compatibility, all other values will be rejected with a 400 error" | [Messages API](https://platform.claude.com/docs/en/api/messages) |
-| `gpt-4.1-mini` (OpenAI default here) | Yes per the Chat Completions reference (0 to 2); described as a model "without a reasoning step" | [Chat Completions](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), [model page](https://developers.openai.com/api/docs/models/gpt-4.1-mini) |
-| `gpt-6-*`, `gpt-5.6-*` (reasoning models) | Not stated on the pages above | same |
+| Model | Accepts `temperature`? | Range | Source |
+| --- | --- | --- | --- |
+| `claude-opus-4-6` (Anthropic default) | Yes; active, retirement not before 2027-02-05 | 0.0 to 1.0 | [Messages API][anthropic-messages], [deprecations][anthropic-deprecations] |
+| `claude-opus-4-5-20251101`, `claude-haiku-4-5-20251001` | Yes; retirement possible from 2026-11-24 and 2026-10-15 | 0.0 to 1.0 | [Messages API][anthropic-messages], [deprecations][anthropic-deprecations] |
+| Claude 4.7 and later, e.g. `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5` | No: only 1.0 is accepted, any other value returns a 400 error | 1.0 only | [Messages API][anthropic-messages], [deprecations][anthropic-deprecations] |
+| `gpt-4.1-mini` (OpenAI default) | Yes; a model "without a reasoning step", not on the shutdown list | 0 to 2 | [Chat Completions][openai-chat], [model page][openai-model], [deprecations][openai-deprecations] |
+| `gpt-6-*`, `gpt-5.6-*` (reasoning models) | Not stated on the pages cited; not used here | n/a | [Chat Completions][openai-chat] |
 
-The defaults live in `llm_api.DEFAULT_MODELS`. Change one only together with this table. For any
-other model, the optional probe in [Before class](#before-class) settles it.
+[anthropic-messages]: https://platform.claude.com/docs/en/api/messages/create
+[anthropic-deprecations]: https://platform.claude.com/docs/en/about-claude/model-deprecations
+[openai-chat]: https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+[openai-model]: https://developers.openai.com/api/docs/models/gpt-4.1-mini
+[openai-deprecations]: https://developers.openai.com/api/docs/deprecations
+
+Change a default only together with this table. The defaults `--low 0.0 --high 1.0` sit inside
+both documented ranges.
 
 ## Timing
 
 | Beat | Duration |
 | --- | --- |
-| Predict question, votes | 0:45 |
-| Live run, ten short API calls | 0:30 |
+| Predict question, show of hands | 0:45 |
+| Live run: ten short API calls | 0:30 |
 | Read the two columns and the distinct counts | 1:15 |
 | Link to the sampler lab and System 1 | 0:30 |
 | **Total** | **3:00** |
 
 ## Predict
 
-Before running, ask: "Same prompt, same model, five times at temperature 0. How many different
-names do we get? And at temperature 1?" Take a show of hands for 1, 2–3 and 4–5 in each case.
-
-## Expected outcome
-
-Expected, not yet observed: several distinct names at the high temperature. At the low
-temperature, mostly or all the same name, but identical answers are not guaranteed: the vendors
-document that even temperature 0 is not fully deterministic, so a second name may still appear.
-The observed counts get filled in from `recorded/sampling.json` once someone with a key records it
-(see [Before class](#before-class)).
+Ask: "Same prompt, same model, five times at temperature 0. How many different names do we get?
+And five times at temperature 1?" Take a show of hands for 1, 2–3 and 4–5 in each case.
 
 ## Run
 
-From this folder, with a key exported:
+From this folder (`sessions/01-fundamentals/cursus/demos/model`), with a key exported:
 
 ```sh
-uv run --no-project python sampling.py --provider anthropic
+uv run sampling.py                     # Anthropic, claude-opus-4-6
+uv run sampling.py --provider openai   # OpenAI, gpt-4.1-mini
 ```
 
-`--provider openai`, `--model`, `--low` and `--high` change the defaults (`--low 0.0 --high 1.0`).
-The script prints the two columns side by side, then `distinct outputs: …` for each temperature.
+`--model`, `--low` and `--high` change the defaults. The script prints five rows of
+`low | high` answers, then `distinct answers at temperature 0.0: k of 5` and the same for 1.0.
+
+## Expected outcome
+
+Observed counts: pending until `recorded/sampling.json` is recorded with a key. Usually several
+distinct names at the high temperature and one or two at the low one, but this is not guaranteed:
+sampling is not deterministic, the vendors document that even temperature 0 is not fully
+deterministic, and a short creative prompt can repeat a favourite name at any temperature. Report
+the counts you see, whichever way they fall, and tie them to the distribution in the sampler lab.
 
 ## Fallback
 
-No key, no network or a vendor error: replay the committed recording. It needs no key and opens no
-socket. There is nothing to replay until `recorded/sampling.json` has been recorded (see the status
-note above).
+No key, no network or a vendor error: the script prints one line and stops. Replay the committed
+recording instead. It needs no key and opens no socket.
 
 ```sh
-cd "$(git rev-parse --show-toplevel)/sessions/01-fundamentals/cursus/demos/model"
-uv run --no-project --offline python sampling.py --replay
+uv run --offline sampling.py --replay
 ```
+
+Until the recording exists, this prints one line saying it is missing and how to make it.
 
 ## Recorded runs
 
-| Recording | Model | Run date | Attempt |
+| File | Provider | Model | Run date |
 | --- | --- | --- | --- |
-| `recorded/sampling.json` | not recorded yet (needs an API key, see Before class) | — | — |
+| `recorded/sampling.json` | pending: record with a key | — | — |
 
 ## Reset
 
-One command, from anywhere in the repository. It restores this folder to the committed state and
-deletes `work/` and anything else an agent left here. Commit your own edits first.
+From this folder. It restores the folder to the last commit and deletes `work/` and anything an
+agent left here, so commit a new recording before you reset.
 
 ```sh
-git -C "$(git rev-parse --show-toplevel)" restore --source=HEAD --staged --worktree -- sessions/01-fundamentals/cursus/demos/model && git -C "$(git rev-parse --show-toplevel)" clean -fdx -- sessions/01-fundamentals/cursus/demos/model
+git restore --source=HEAD --staged --worktree -- . && git clean -fdx -- .
 ```

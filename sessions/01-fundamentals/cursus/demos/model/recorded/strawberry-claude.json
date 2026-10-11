@@ -1,62 +1,190 @@
 {
   "meta": {
-    "attempt": 1,
+    "demo": "strawberry",
+    "step": "ask",
     "cli": "claude",
     "cli_version": "2.1.296 (Claude Code)",
-    "date": "2026-10-10",
     "model": "claude-haiku-5-5",
-    "params": {
-      "command": [
-        "claude",
-        "-p",
-        "<prompt>",
-        "--model",
-        "haiku",
-        "--effort",
-        "low",
-        "--tools",
-        "",
-        "--strict-mcp-config",
-        "--output-format",
-        "json"
-      ],
-      "effort": "low",
-      "tools": "withheld: --tools \"\" --strict-mcp-config",
-      "temperature": "vendor default",
-      "cwd": "empty scratch folder"
-    },
-    "prompt": "How many times does the letter r appear in strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr? Answer from reading the word only; do not run code or use any tool. Reply with the number only.",
-    "requested_model": "haiku",
-    "script": "strawberry.py",
-    "via": "claude"
+    "effort": "low",
+    "date": "2026-10-11",
+    "command": [
+      "claude",
+      "-p",
+      "<prompt>",
+      "--model",
+      "claude-haiku-5-5",
+      "--effort",
+      "low",
+      "--tools",
+      "",
+      "--strict-mcp-config",
+      "--no-session-persistence",
+      "--output-format",
+      "json"
+    ],
+    "prompt": "How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.",
+    "model_reported": [
+      "claude-haiku-5-5"
+    ]
   },
-  "word": "strawberrbrarorrfurrrrieturrparrrrinderrderrorrfurrbrarrrinrroarderrquarrberrwerrverrrasorrbrarverwerrderrwerrtorrtorrrrierrumrrievererrriederrturrorrrrrrraberrberrtorrwerrquarrorrrrumrrieverbrarrrumsorrparrrrawerrtorrderrbrarersorrarerfurrrrrparrmirrbrarorrrrumerverbrarwerrfurrquarrbrarverrrarrierrierrierrofurrorrsorrverlerrparrtorrsorrerrrinrrrararrrumderrarorrerkirrturrrrinrraorrquarrbrarverparr",
-  "truth": 205,
+  "word": "strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor",
+  "truth": 146,
   "answers": [
-    {
-      "raw": "205",
-      "verdict": "right",
-      "model": "claude-haiku-5-5"
-    },
-    {
-      "raw": "204",
-      "verdict": "wrong",
-      "model": "claude-haiku-5-5"
-    },
-    {
-      "raw": "210",
-      "verdict": "wrong",
-      "model": "claude-haiku-5-5"
-    },
-    {
-      "raw": "165",
-      "verdict": "wrong",
-      "model": "claude-haiku-5-5"
-    },
-    {
-      "raw": "206",
-      "verdict": "wrong",
-      "model": "claude-haiku-5-5"
-    }
+    "118",
+    "146",
+    "146",
+    "146",
+    "142"
+  ],
+  "classes": [
+    "incorrect",
+    "correct",
+    "correct",
+    "correct",
+    "incorrect"
+  ],
+  "tools_used": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "raw": [
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "118",
+        "stop_reason": "end_turn",
+        "duration_ms": 14328,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 2713,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 4284,
+            "webSearchRequests": 0,
+            "costUSD": 0.0022135,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 2710,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "146",
+        "stop_reason": "end_turn",
+        "duration_ms": 19490,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 4362,
+            "cacheReadInputTokens": 4284,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 0.0022240400000000005,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 4359,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "146",
+        "stop_reason": "end_turn",
+        "duration_ms": 21576,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 4506,
+            "cacheReadInputTokens": 4284,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 0.00229604,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 4502,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "146",
+        "stop_reason": "end_turn",
+        "duration_ms": 15747,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 3509,
+            "cacheReadInputTokens": 4284,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 0.0017975399999999998,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 3506,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "142",
+        "stop_reason": "end_turn",
+        "duration_ms": 13962,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 3042,
+            "cacheReadInputTokens": 4284,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 0.0015640399999999998,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 3039,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ]
   ]
 }

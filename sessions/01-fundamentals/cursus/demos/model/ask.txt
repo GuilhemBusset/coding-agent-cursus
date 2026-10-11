@@ -1,1 +1,0 @@
-How many times does the letter r appear in {WORD}? Answer from reading the word only; do not run code or use any tool. Reply with the number only.
