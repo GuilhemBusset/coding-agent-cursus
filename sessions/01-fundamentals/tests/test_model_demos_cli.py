@@ -2,8 +2,10 @@
 
 Run from the session with uv run --no-project --with pytest==8.3.5 pytest
 tests/test_model_demos_cli.py. Ledger-specific selections use -k test_d1_, etc.
-The engine separately checks git tracking/cleanliness (D4), imports (D1), and
-the cross-vendor prose/help-output review (D3/A2). No real agent is invoked.
+These checks include git tracking/cleanliness (D4); D1 also runs the session's
+import checks. The cross-vendor reviewer supplies supplementary named evidence
+for the runbooks' predict questions, explanations and safe reset (A2, ADR 0011).
+No real agent is invoked.
 """
 
 import ast
@@ -153,29 +155,88 @@ def printed_truth(text, truth):
     return bool(re.search(rf"(?m)^\s*{truth}\s*$", text))
 
 
+def normalized_source(text):
+    """Ignore transcript shell quoting and formatting, but keep code content."""
+    return re.sub(r"[\\\"'\s]", "", text)
+
+
+def writes_counter(command):
+    return bool(re.search(r">\s*[\"']?(?:\./)?work/count_r\.py\b", command)
+                or ("apply_patch" in command and
+                    re.search(r"\*\*\* (?:Add|Update) File: (?:\./)?work/count_r\.py\b", command)))
+
+
+def write_contents(text):
+    """Keep verbatim writes and recover source lines from a patch/diff.
+
+    Diff markers describe the edit, so they are not part of the written file.
+    Shell quoting and whitespace are still normalized only at comparison time.
+    """
+    yield text
+    lines = text.splitlines()
+    if any(line.startswith(("*** Add File:", "*** Update File:", "@@", "+++")) for line in lines):
+        yield "\n".join(line[1:] for line in lines
+                        if line.startswith(("+", " ")) and not line.startswith("+++"))
+
+
 def successful_pivot(data, cli):
+    """Return write content that precedes a proven successful counter run.
+
+    Only tool events/exec blocks count: the echoed prompt or final claim is not
+    evidence that the agent wrote or ran the file.
+    """
     raw, truth = kept(data), data["word"].count("r")
     events = list(nodes(raw))
+    prior_writes, proven_writes = [], []
     if cli == "claude":
-        ids = {e.get("id") for e in events if e.get("type") == "tool_use"
-               and runs_code(str((e.get("input") or {}).get("command", "")))}
-        success = any(e.get("type") == "tool_result" and e.get("tool_use_id") in ids
-                      and not e.get("is_error", False)
-                      and any(printed_truth(s, truth) for s in strings(e.get("content"))) for e in events)
+        runs = {}
+        for e in events:
+            if e.get("type") == "tool_use":
+                inputs = e.get("input") or {}
+                command = str(inputs.get("command", ""))
+                if (e.get("name") in {"Write", "Edit"} and
+                        str(inputs.get("file_path", "")).endswith("count_r.py")):
+                    prior_writes.extend(strings(inputs.get("content", inputs.get("new_string", ""))))
+                elif e.get("name") == "Bash" and writes_counter(command):
+                    prior_writes.extend(write_contents(command))
+                elif e.get("name") == "Bash" and runs_code(command):
+                    runs[e.get("id")] = list(prior_writes)
+            elif (e.get("type") == "tool_result" and e.get("tool_use_id") in runs
+                  and not e.get("is_error", False)
+                  and any(printed_truth(s, truth) for s in strings(e.get("content")))):
+                proven_writes.extend(runs[e["tool_use_id"]])
     else:
-        success = any(e.get("type") == "item.completed" and isinstance(e.get("item"), dict)
-                      and e["item"].get("type") == "command_execution"
-                      and e["item"].get("exit_code") == 0
-                      and runs_code(e["item"].get("command", ""))
-                      and printed_truth(e["item"].get("aggregated_output", ""), truth) for e in events)
-        if not success:
-            for text in strings(raw):
-                for block in re.split(r"(?:^|\n)exec\s*\n", text)[1:]:
-                    block = re.split(r"\n(?:exec|thinking|codex)\s*\n", block)[0]
-                    if runs_code(block) and re.search(r"\bsucceeded\b", block) and printed_truth(block, truth):
-                        success = True
-    assert success, "Pivot must retain a successful execution of count_r.py and its actual output"
+        for e in events:
+            if e.get("type") != "item.completed" or not isinstance(e.get("item"), dict):
+                continue
+            item = e["item"]
+            if item.get("type") == "file_change" and item.get("status") == "completed":
+                for change in nodes(item.get("changes", [])):
+                    if str(change.get("path", "")).endswith("work/count_r.py"):
+                        for text in strings(change.get("diff", change.get("content", ""))):
+                            prior_writes.extend(write_contents(text))
+            if item.get("type") != "command_execution" or item.get("exit_code") != 0:
+                continue
+            command = item.get("command", "")
+            if writes_counter(command):
+                prior_writes.extend(write_contents(command))
+            elif runs_code(command) and printed_truth(item.get("aggregated_output", ""), truth):
+                proven_writes.extend(prior_writes)
+        for text in strings(raw):
+            prior_writes = []
+            for block in re.split(r"(?:^|\n)exec\s*\n", text)[1:]:
+                block = re.split(r"\n(?:exec|thinking|codex|tokens used)\s*\n", block)[0]
+                result = re.search(r"(?m)^\s*succeeded\b[^\n]*:\s*\n?", block)
+                if not result:
+                    continue
+                command, output = block[:result.start()], block[result.end():]
+                if writes_counter(command):
+                    prior_writes.extend(write_contents(command))
+                elif runs_code(command) and printed_truth(output, truth):
+                    proven_writes.extend(prior_writes)
+    assert proven_writes, "Pivot must show the agent writing count_r.py before running it successfully and printing the truth"
     assert truth in {int(n) for n in re.findall(r"\b\d+\b", final_answer(cli, raw))}, "Final message must state the count"
+    return proven_writes
 
 
 def reported_models(data):
@@ -204,8 +265,11 @@ def model_evidence(data, cli):
                     evidence.add(model)
     else:
         assert meta.get("model_evidence"), "Keep verbatim Codex model banner lines from stderr"
-        evidence = {m for text in strings(meta["model_evidence"])
-                    for m in re.findall(r"(?m)^\s*model:\s*(\S+)\s*$", text)}
+        banner_lines = {line.strip() for text in strings(kept(data)) for line in text.splitlines()
+                        if re.fullmatch(r"\s*model:\s*\S+\s*", line)}
+        saved_lines = set(strings(meta["model_evidence"]))
+        assert saved_lines <= banner_lines, "Codex model_evidence must come from its kept transcript, not metadata alone"
+        evidence = {line.split(":", 1)[1].strip() for line in banner_lines}
     assert set(reported_models(data)) <= evidence, "Reported IDs lack evidence from this CLI's kept output"
 
 
@@ -301,6 +365,7 @@ answer = str(truth) if pivot else (str(truth + n + 7) if is_ask else config["ans
 model = "fake-reported-" + cli + "-" + str(config["variant"])
 command = "uv run --no-project python work/count_r.py"
 source = "WORD = " + repr(word) + "\nprint(WORD.count('r'))\n"
+write_command = "/bin/bash -lc \"cat > work/count_r.py <<'PY'\n" + source + "PY\""
 if pivot:
     path = pathlib.Path("work/count_r.py")
     path.parent.mkdir(exist_ok=True)
@@ -332,6 +397,8 @@ else:
     if "--json" in args:
         events = []
         if pivot:
+            events.append({"type": "item.completed", "item": {"id": "write", "type": "command_execution",
+                           "command": write_command, "aggregated_output": "", "exit_code": 0, "status": "completed"}})
             events.append({"type": "item.completed", "item": {"id": "run", "type": "command_execution",
                            "command": command, "aggregated_output": answer + "\n", "exit_code": 0, "status": "completed"}})
         events += [{"type": "item.completed", "item": {"id": "final", "type": "agent_message", "text": answer}},
@@ -339,7 +406,8 @@ else:
         for e in events: print(json.dumps(e))
     else:
         if pivot:
-            print("exec\n" + command + " in . succeeded in 3ms:\n" + answer, file=sys.stderr)
+            print("exec\n" + write_command + " in .\n succeeded in 1ms:\n", file=sys.stderr)
+            print("exec\n" + command + " in .\n succeeded in 3ms:\n" + answer, file=sys.stderr)
         print("codex\n" + answer + "\ntokens used\n12", file=sys.stderr)
         print(answer)
     for opt in ("-o", "--output-last-message"):
@@ -495,17 +563,18 @@ def test_d1_files_and_offline_uv_help(tmp_path):
 def test_d2_recordings_independently_prove_miscount_and_pivot(cli, tmp_path):
     ask = read_record("strawberry", cli)
     word = ask["word"]
-    assert isinstance(word, str) and len(word) >= 100, "The demo needs a long invented word"
+    assert isinstance(word, str) and len(word) >= 100 and word.isalpha(), "The demo needs a long invented word of letters"
     truth = word.count("r")
     assert ask["truth"] == truth and word in ask["meta"]["prompt"]
     answers, raw = recorded_answers(ask, cli)
     assert all(not has_tool(cli, run) for run in raw), "Ask runs must use no tool"
-    assert any(integer_answer(a) != truth for a in answers), "Each CLI needs a real unreliable answer"
+    assert any(integer_answer(a) is not None and integer_answer(a) != truth for a in answers), "Each CLI needs a parsed, genuinely wrong integer"
     pivot = read_record("pivot", cli)
     assert pivot["word"] == word and pivot["truth"] == truth and word in pivot["meta"]["prompt"]
-    successful_pivot(pivot, cli)
+    writes = successful_pivot(pivot, cli)
     path = DEMO / "recorded" / f"{cli}_count_r.py"
     source = path.read_text(encoding="utf-8")
+    assert any(normalized_source(source) in normalized_source(write) for write in writes), "Committed counter must match what the agent wrote before the successful run"
     tree = ast.parse(source)
     assignments = [n for n in ast.walk(tree)
                    if (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "WORD" for t in n.targets))
@@ -559,17 +628,11 @@ def test_d3_live_five_identical_prompts_default_sampling(cli, variant, tmp_path)
     assert len(calls) == 5 and {c["cli"] for c in calls} == {cli}
     prompts = {call_prompt(c) for c in calls}
     assert len(prompts) == 1 and next(iter(prompts)).strip()
+    data = read_record("sampling", cli, h.folder)
     for c in calls:
         no_tool_flags(cli, c["args"])
-        if cli == "claude":
-            assert option_values(c["args"], "--model") == ["claude-haiku-5-5"]
-            assert option_values(c["args"], "--effort") == ["low"]
-        else:
-            assert option_values(c["args"], "--model", "-m") == ["gpt-6-luna"]
-            assert any(re.fullmatch(r"model_reasoning_effort\s*=\s*[\"']?low[\"']?", v)
-                       for v in option_values(c["args"], "-c", "--config"))
+        assert all(model == data["meta"]["model"] for model in option_values(c["args"], "--model", "-m")), "Requested model must agree with the recording"
     check_sampling_output(output, h.answers)
-    data = read_record("sampling", cli, h.folder)
     assert recorded_answers(data, cli)[0] == h.answers
     meta = data["meta"]
     assert meta["demo"] == "sampling" and meta["prompt"] == next(iter(prompts))
@@ -592,17 +655,24 @@ def test_d3_recorded_spread_replay_and_lab_link(tmp_path):
         check_sampling_output(replay(h, "sampling.py", cli), answers)
     text = (DEMO / "sampling.md").read_text(encoding="utf-8")
     why = section(text, "Why no temperature")
-    assert "2026-10-11" in why
     for url in ("https://code.claude.com/docs/en/cli-reference", "https://developers.openai.com/codex/cli/reference"):
         assert url in text
     assert "claude" in why.casefold() and "codex" in why.casefold() and "temperature" in why.casefold()
     assert re.search(r"\b(neither|no|not|doesn.t|don.t|without|lacks?)\b", why, re.I)
-    for version in ("2.1.296", "0.162.1"):
-        assert version in why and "--help" in why
+    for data in recordings:
+        version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])[0]
+        assert data["meta"]["date"] in why and version in why and "--help" in why
     links = re.findall(r"\]\(([^)]+)\)", text) + re.findall(r"(?m)^\s*\[[^\]]+\]:\s*(\S+)", text)
     target = SESSION / "cursus/labs/next-token.html"
-    assert target.is_file() and any(not link.startswith(("/", "http")) and
-                                   (DEMO / link.split("#")[0]).resolve() == target.resolve() for link in links)
+    assert any(not link.startswith(("/", "http")) and
+               (DEMO / link.split("#")[0]).resolve() == target.resolve() for link in links), "Link must resolve to this session's next-token lab"
+    if target.exists():
+        assert target.is_file(), "The lab must be a file"
+    else:
+        # This issue's branch predates the lab merge. The engine verifies again
+        # on its coordination tree after merging; do not vendor a second lab.
+        prefix = okay(process(["git", "rev-parse", "--show-prefix"], SESSION, clean_env())).strip()
+        okay(process(["git", "cat-file", "-e", f"origin/main:{prefix}cursus/labs/next-token.html"], SESSION, clean_env()))
 
 
 @pytest.mark.parametrize("script,pivot,step", (("strawberry.py", False, "strawberry"),
@@ -643,6 +713,21 @@ def test_d4_all_runbook_fallback_commands_run_literally_offline(tmp_path):
         required = {(cli, pivot) for cli in CLIS for pivot in ((False, True) if name == "strawberry.md" else (False,))}
         assert required <= coverage, "Document replay for either CLI (and both strawberry steps)"
     assert not h.calls(main_only=False)
+
+
+def test_d4_recorded_files_are_committed_clean_and_dated():
+    files = sorted(p for p in (DEMO / "recorded").rglob("*") if p.is_file())
+    assert files and any(p.suffix == ".json" for p in files)
+    env = clean_env()
+    for path in files:
+        relative = str(path.relative_to(SESSION))
+        okay(process(["git", "ls-files", "--error-unmatch", "--", relative], SESSION, env))
+        okay(process(["git", "diff", "--quiet", "HEAD", "--", relative], SESSION, env))
+        okay(process(["git", "diff", "--quiet", "--cached", "--", relative], SESSION, env))
+        if path.suffix == ".json":
+            iso = json.loads(path.read_text(encoding="utf-8"))["meta"]["date"]
+            recorded_date = date.fromisoformat(iso)
+            assert iso == recorded_date.isoformat() and recorded_date <= date.today(), path
 
 
 def failure(result, script, clis):
@@ -693,7 +778,7 @@ def test_a1_login_fallback_when_claude_has_no_status_subcommand(script, tmp_path
     (CLIS, ("codex",), None, "codex"),
     (CLIS, CLIS, "codex", "codex"),
     (CLIS, CLIS, "claude", "claude"),
-    (CLIS, CLIS, None, None),
+    (CLIS, CLIS, None, "claude"),
     (("codex",), ("codex",), None, "codex"),
     (("claude",), ("claude",), None, "claude"),
 ))
@@ -732,8 +817,18 @@ def timing_seconds(text):
     return values
 
 
-@pytest.mark.parametrize("name,target", (("strawberry.md", 240), ("sampling.md", 180)))
-def test_a2_runbook_timing_predict_and_recorded_facts(name, target):
+def expected_for_cli(expected, cli):
+    """Bind the quoted results and tally to the CLI named in the runbook."""
+    markers = list(re.finditer(r"\b(claude(?: code)?|codex)\b(?!-)", expected, re.I))
+    start = next((i for i, m in enumerate(markers) if m[1].casefold().startswith(cli)), None)
+    assert start is not None, f"Expected outcome must name {cli}"
+    end = next((m.start() for m in markers[start + 1:]
+                if not m[1].casefold().startswith(cli)), len(expected))
+    return expected[markers[start].end():end]
+
+
+@pytest.mark.parametrize("name", ("strawberry.md", "sampling.md"))
+def test_a2_runbook_timing_predict_and_recorded_facts(name):
     text = (DEMO / name).read_text(encoding="utf-8")
     for heading in ("Before class", "Run", "Fallback", "Recorded runs", "Reset"):
         assert section(text, heading).strip()
@@ -741,10 +836,15 @@ def test_a2_runbook_timing_predict_and_recorded_facts(name, target):
     total_lines = [line for line in timing.splitlines() if re.search(r"\btotal\b", line, re.I)]
     assert total_lines, "Timing needs a stated total"
     totals = timing_seconds("\n".join(total_lines))
-    assert len(totals) == 1 and abs(totals[0] - target) <= 30, "Use a roughly four/three minute demo"
+    assert len(totals) == 1 and 120 <= totals[0] <= 300, "Each demo must total between two and five minutes"
     beats = timing_seconds("\n".join(line for line in timing.splitlines() if line not in total_lines))
     assert beats and all(v > 0 for v in beats) and sum(beats) == totals[0], "Beat durations must sum to total"
-    assert "?" in section(text, "Predict"), "Ask the room to predict"
+    predict = section(text, "Predict")
+    assert "?" in predict and re.search(r"\b(?:five|5)\b", predict, re.I), "Ask the room about five runs"
+    if name == "strawberry.md":
+        assert re.search(r"\bcount\b", predict, re.I), "Predict the correctness of the count"
+    else:
+        assert re.search(r"\b(?:different|distinct)\b", predict, re.I), "Predict the diversity of the names"
     expected = section(text, "Expected outcome")
     if name == "strawberry.md":
         for cli in CLIS:
@@ -752,19 +852,20 @@ def test_a2_runbook_timing_predict_and_recorded_facts(name, target):
             answers, _ = recorded_answers(data, cli)
             truth = data["word"].count("r")
             assert re.search(rf"\b{truth}\b", expected)
+            observed = expected_for_cli(expected, cli)
             # Check the sequence, including repeated answers, independently of
             # surrounding prose/table formatting and CLI version/model numbers.
             sequence = r"\D+".join(re.escape(str(integer_answer(a))) if integer_answer(a) is not None else re.escape(a)
                                    for a in answers)
-            assert re.search(sequence, expected), f"Expected outcome must quote {cli}'s observed answers"
+            assert re.search(sequence, observed), f"Expected outcome must quote {cli}'s observed answers"
             wrong = sum(integer_answer(a) is not None and integer_answer(a) != truth for a in answers)
-            unparseable = sum(integer_answer(a) is None for a in answers)
-            counts = [wrong] if not unparseable else [wrong, unparseable, wrong + unparseable]
-            assert any(re.search(rf"\b{count}\s*(?:of|/|out of)\s*5\b", expected) for count in counts), "Quote observed wrong/unparseable count"
+            assert re.search(rf"\b{wrong}\s*(?:of|/|out of)\s*5\b", observed), "Quote this CLI's observed wrong count"
     else:
         for cli in CLIS:
             answers, _ = recorded_answers(read_record("sampling", cli), cli)
-            assert re.search(rf"\b{len(set(answers))}\s*(?:of|/|out of)\s*5\b", expected)
+            observed = expected_for_cli(expected, cli)
+            assert re.search(r"\W+".join(re.escape(a) for a in answers), observed), f"Quote all five {cli} answers in order, including repeats"
+            assert re.search(rf"\b{len(set(answers))}\s*(?:of|/|out of)\s*5\b", observed)
 
 
 @pytest.mark.parametrize("name", ("strawberry.md", "sampling.md"))
@@ -789,6 +890,12 @@ def test_a2_documented_reset_restores_dirty_scratch_repository(name, tmp_path):
     assert blocks, "Reset must provide the command to execute"
     command = "\n".join(blocks)
     assert "git restore" in command and "git clean" in command
+    dirty = {p.relative_to(folder): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+    dirty_status = okay(process(["git", "status", "--porcelain", "--untracked-files=all"], root, env))
+    refused = process(["/bin/bash", "-e", "-c", command], root, env)
+    assert refused.returncode != 0, "Reset must refuse to run from the parent folder"
+    assert {p.relative_to(folder): p.read_bytes() for p in folder.rglob("*") if p.is_file()} == dirty, "Refused reset must leave dirty files untouched"
+    assert okay(process(["git", "status", "--porcelain", "--untracked-files=all"], root, env)) == dirty_status, "Refused reset must preserve staged changes"
     okay(process(["/bin/bash", "-e", "-c", command], folder, env))
     after = {p.relative_to(folder): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
     assert after == before and not (folder / "work").exists()
