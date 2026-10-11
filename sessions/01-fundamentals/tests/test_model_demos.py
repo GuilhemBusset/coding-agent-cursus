@@ -1,23 +1,10 @@
-"""Issue 30 acceptance checks, authored before implementation (ADR 0011).
+"""Issue 30 acceptance contract (checks authored independently of implementation).
 
-Run each ledger selection with ``uv run pytest -q tests/test_model_demos.py -k
-test_d1`` etc. D1 must ALSO run tests/test_self_contained.py without that filter.
-No real API or CLI is called. All mutations, including git commits for the reset
-test, are confined to disposable copies. Missing deliverables fail, never skip.
-
-The design fixes metadata fields but leaves JSON containers unspecified. Readers
-accept answers/outputs (raw strings, integers, or objects containing raw/text/
-answer/output), runs as a list or low/high mapping, and probe entries under
-models/probes/results. Per-run prompt/model may inherit from top-level/meta;
-explicit per-run values must agree. This is a data interface, not an import of
-the implementation. No particular implementation functions are required.
-
-Fallback fenced shell blocks are executed literally from BOTH starting folders;
-an anchored cd prelude can make the specified short uv commands portable.
-Temperature source accuracy, current model availability, authentic unedited
-recordings, honest attempt counts, prose quality, observed-outcome descriptions,
-and realistic timing still require the named agent review in the PR. Offline
-checks cannot establish those facts and must not be cited as that review.
+Each ledger command is one pytest invocation. D4's machine-provable tests are
+selected by A3; a real sampling recording remains an owner obligation. Missing
+sampling.json is allowed, fabricated sampling data is not. Authenticity of CLI
+recordings, temperature-document accuracy, and teaching quality require review.
+No API credentials or real model CLIs are used here. Mutations are temporary.
 """
 
 import ast
@@ -26,284 +13,667 @@ from contextlib import contextmanager
 from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import math
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 from threading import Thread
+import tomllib
 from urllib.parse import unquote, urlsplit
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 ROOT = SESSION.parents[1]
 RELATIVE = Path("sessions/01-fundamentals/cursus/demos/model")
 DEMO = ROOT / RELATIVE
-PROVIDERS = ("anthropic", "openai")
 CLIS = ("claude", "codex")
+PROVIDERS = ("anthropic", "openai")
+PROMPT = "Invent a name for a new optimization solver. Reply with the name only."
 KEYS = {p: p.upper() + "_API_KEY" for p in PROVIDERS}
 BASES = {p: p.upper() + "_BASE_URL" for p in PROVIDERS}
-ENDPOINTS = {"anthropic": "/v1/messages", "openai": "/v1/chat/completions"}
-PROMPT = "Invent a name for a new optimization solver. Reply with the name only."
-JSON_FILES = ("strawberry-claude.json", "strawberry-codex.json", "sampling.json")
-RECORDINGS = (*JSON_FILES, "claude-pivot.txt", "codex-pivot.txt",
-              "claude_count_r.py", "codex_count_r.py")
-SECTIONS = ("Before class", "Timing", "Predict", "Expected outcome", "Run",
-            "Fallback", "Recorded runs", "Reset")
-RESET = ('git -C "$(git rev-parse --show-toplevel)" restore --source=HEAD '
-         '--staged --worktree -- sessions/01-fundamentals/cursus/demos/model '
-         '&& git -C "$(git rev-parse --show-toplevel)" clean -fdx -- '
-         'sessions/01-fundamentals/cursus/demos/model')
+STRAWBERRY_FILES = tuple(f"{step}-{cli}.json" for cli in CLIS for step in ("strawberry", "pivot"))
+COUNT_FILES = tuple(f"{cli}_count_r.py" for cli in CLIS)
 
-# These hooks log attempted network access before raising, so catching an audit
-# exception cannot make an offline check pass. Loopback tests allow only the
-# test server's numeric host and ephemeral port, not arbitrary local services.
-AUDIT = r'''
+# Logging BEFORE raising detects attempted I/O even when a script catches the
+# exception. Only the current stub server's numeric address/port is allowed.
+RUNNER = r'''
 import os
 import sys
-def acceptance_audit(event, args):
+def audit(event, args):
+    blocked = False
+    if event == "socket.__new__":
+        blocked = not os.environ.get("DEMO_TEST_PORT")
     if event in {"socket.connect", "socket.getaddrinfo", "socket.gethostbyname",
                  "socket.gethostbyaddr", "socket.sendto"}:
-        allowed = False
         port = os.environ.get("DEMO_TEST_PORT")
+        allowed = False
         if port and event == "socket.connect":
             address = args[1]
             allowed = isinstance(address, tuple) and address[:2] == ("127.0.0.1", int(port))
         elif port and event == "socket.getaddrinfo":
             allowed = args[0] == "127.0.0.1" and str(args[1]) == port
-        if not allowed:
-            with open(os.environ["DEMO_TEST_AUDIT_LOG"], "a") as log:
-                log.write(event + "\n")
-            raise RuntimeError("acceptance check forbids network access")
-    if event in {"subprocess.Popen", "os.system", "os.posix_spawn", "os.exec"}:
-        if os.environ.get("DEMO_TEST_NO_CHILDREN") == "1":
-            with open(os.environ["DEMO_TEST_AUDIT_LOG"], "a") as log:
-                log.write(event + "\n")
-            raise RuntimeError("offline replay must not launch a CLI or child process")
-sys.addaudithook(acceptance_audit)
-'''
-RUNNER = AUDIT + r'''
+        blocked = not allowed
+    if event in {"subprocess.Popen", "os.system", "os.posix_spawn", "os.exec", "os.fork", "os.forkpty"}:
+        blocked |= os.environ.get("DEMO_TEST_NO_CHILDREN") == "1"
+    if blocked:
+        with open(os.environ["DEMO_TEST_AUDIT_LOG"], "a", encoding="utf-8") as log:
+            log.write(event + "\n")
+        raise RuntimeError("acceptance harness forbids this I/O")
+sys.addaudithook(audit)
 from pathlib import Path
-from types import ModuleType
 path = Path(sys.argv[1]).resolve()
 sys.argv = [str(path), *sys.argv[2:]]
-# Match Python's normal script-directory import behavior, even from repo root.
-sys.path.insert(0, str(path.parent))
-main = ModuleType("__main__")
-main.__file__ = str(path)
-main.__package__ = None
-sys.modules["__main__"] = main
-exec(compile(path.read_bytes(), str(path), "exec"), main.__dict__)
+namespace = {"__name__": "__main__", "__file__": str(path), "__package__": None}
+exec(compile(path.read_bytes(), str(path), "exec"), namespace)
 '''
 
 
 def read(path):
-    assert path.is_file(), f"Missing required artifact: {path}"
-    value = path.read_text(encoding="utf-8")
-    assert value.strip(), f"Empty artifact: {path}"
+    assert path.is_file(), f"Missing artifact: {path}"
+    return path.read_text(encoding="utf-8")
+
+
+def constants(script):
+    result = {}
+    for node in ast.parse(read(script)).body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    try:
+                        result[target.id] = ast.literal_eval(node.value)
+                    except (ValueError, TypeError):
+                        pass
+    return result
+
+
+def word(base=DEMO):
+    value = constants(base / "strawberry.py").get("WORD")
+    assert isinstance(value, str) and len(value) >= 30 and value.isalpha() and value.islower()
+    assert value.count("r") >= 8
     return value
 
 
-def document(name):
-    return read(DEMO / name)
-
-
-def section(name, heading):
-    source = document(name)
-    match = re.search(rf"^## {re.escape(heading)}\s*\n(.*?)(?=^## |\Z)", source, re.M | re.S)
-    assert match and match[1].strip(), f"{name} needs non-empty ## {heading}"
-    return match[1]
+def section(name, heading, base=DEMO):
+    source = read(base / name)
+    matches = list(re.finditer(r"^##\s+([^\n]+)\n", source, re.M))
+    selected = [i for i, match in enumerate(matches) if heading.lower() in match[1].lower()
+                and not (heading.lower() == "run" and "recorded runs" in match[1].lower())]
+    assert len(selected) == 1, f"{name}: need one ## heading containing {heading}"
+    i = selected[0]
+    value = source[matches[i].end():matches[i + 1].start() if i + 1 < len(matches) else len(source)]
+    assert value.strip(), f"{name}: empty {heading} section"
+    return value
 
 
 def blocks(source):
     return re.findall(r"^```[^\n]*\n(.*?)^```\s*$", source, re.M | re.S)
 
 
-def links(source):
-    targets = re.findall(r"\[[^\]]*\]\(<?([^\s)>]+)>?(?:\s+\"[^\"]*\")?\)", source)
-    targets += re.findall(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", source, re.M)
-    found = set()
-    for target in targets:
-        parsed = urlsplit(target)
-        if parsed.scheme:
+def tables(source):
+    rows = []
+    previous = None
+    active = False
+    for line in source.splitlines():
+        if "|" not in line:
+            previous, active = None, False
             continue
-        assert not parsed.netloc, f"Remote protocol-relative link: {target}"
-        if not parsed.path:
-            continue
-        path = (DEMO / unquote(parsed.path)).resolve()
-        assert not parsed.path.startswith("/") and path.is_relative_to(SESSION), target
-        assert path.exists(), f"Broken relative link: {target}"
-        found.add(path)
-    return found
-
-
-def recording(name, base=DEMO):
-    value = json.loads(read(base / "recorded" / name))
-    assert isinstance(value, dict) and isinstance(value.get("meta"), dict), name
-    return value
-
-
-def pick(mapping, *names):
-    for name in names:
-        if name in mapping:
-            return mapping[name]
-    raise AssertionError(f"Expected one of {names}, got {list(mapping)}")
-
-
-def raw_output(value):
-    if isinstance(value, dict):
-        value = pick(value, "raw", "text", "answer", "output", "response")
-    assert isinstance(value, (str, int)) and not isinstance(value, bool), value
-    assert str(value).strip(), "Keep non-empty raw model answers"
-    return str(value)
-
-
-def answers(data):
-    values = pick(data, "answers", "outputs", "responses")
-    assert isinstance(values, list) and len(values) == 5, "Exactly five model responses required"
-    return [raw_output(value) for value in values]
-
-
-def inherited(data, run, name):
-    return run.get(name, run.get("meta", {}).get(name,
-                   data.get(name, data["meta"].get(name))))
-
-
-def sampling_runs(data):
-    runs = data.get("runs")
-    if runs is None:
-        runs = {key: data[key] for key in ("low", "high") if key in data}
-    if isinstance(runs, dict):
-        assert set(runs) == {"low", "high"}, "Need low and high sampling runs"
-        runs = list(runs.values())
-    assert isinstance(runs, list) and len(runs) == 2, "Need exactly two temperature runs"
-    assert all(isinstance(run, dict) for run in runs)
-    for run in runs:
-        assert type(run.get("temperature")) in {int, float}
-        assert inherited(data, run, "prompt") == data["meta"]["prompt"] == PROMPT
-        assert inherited(data, run, "model") == data["meta"]["model"]
-        answers(run)
-    return sorted(runs, key=lambda run: run["temperature"])
-
-
-def probe_entries(data):
-    entries = pick(data, "models", "probes", "results", "entries")
-    assert isinstance(entries, list) and entries
-    return entries
-
-
-def word_constant(base=DEMO):
-    tree = ast.parse(read(base / "strawberry.py"))
-    values = []
-    for node in tree.body:
-        if isinstance(node, (ast.Assign, ast.AnnAssign)):
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            if any(isinstance(target, ast.Name) and target.id == "WORD" for target in targets):
-                values.append(ast.literal_eval(node.value))
-    assert len(values) == 1 and isinstance(values[0], str), "One literal WORD constant required"
-    return values[0]
-
-
-def valid_date(value):
-    assert isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value), value
-    assert date.fromisoformat(value) <= date.today(), "Run dates cannot be in the future"
-
-
-def valid_model(value):
-    assert isinstance(value, str) and value.strip() == value and value
-    assert value.lower() not in {"unknown", "default", "n/a", "none", "todo", "tbd", "model", "placeholder"}
-    assert not re.search(r"[<>]|placeholder|example-model|your-model", value, re.I), value
+        row = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
+        delimiter = len(row) >= 2 and all(re.fullmatch(r"\s*:?-{3,}:?\s*", cell) for cell in row)
+        if delimiter and previous is not None and len(previous) == len(row):
+            rows.append(previous)
+            active = True
+        elif active and not delimiter:
+            rows.append(row)
+        previous = row
+    return rows
 
 
 def child_env(tmp_path):
     env = os.environ.copy()
     for name in list(env):
-        if (name.startswith("GIT_") or name in {*KEYS.values(), *BASES.values(), "PYTHONPATH",
-                "PYTHONHOME", "VIRTUAL_ENV", "PYTEST_ADDOPTS", "PYTEST_PLUGINS",
-                "DEMO_TEST_PORT", "DEMO_TEST_NO_CHILDREN"}
+        if (name.startswith(("GIT_", "PYTEST_", "DEMO_TEST_", "STUB_"))
+                or "API_KEY" in name or name in {*BASES.values(), "PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"}
                 or name.lower().endswith("_proxy")):
             env.pop(name, None)
-    env.update(PYTHONDONTWRITEBYTECODE="1", PYTEST_DISABLE_PLUGIN_AUTOLOAD="1",
-               GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
-               GIT_TERMINAL_PROMPT="0", UV_OFFLINE="1", UV_PYTHON_DOWNLOADS="never",
-               UV_CACHE_DIR=str(tmp_path / "uv-cache"), UV_PYTHON=sys.executable,
-               NO_PROXY="127.0.0.1,localhost", DEMO_TEST_AUDIT_LOG=str(tmp_path / "audit.log"))
+    env.update(UV_OFFLINE="1", UV_PYTHON_DOWNLOADS="never", UV_PYTHON=sys.executable,
+               UV_CACHE_DIR=str(tmp_path / "uv-cache"), PYTHONIOENCODING="utf-8",
+               PYTHONDONTWRITEBYTECODE="1", GIT_CONFIG_NOSYSTEM="1",
+               GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0",
+               DEMO_TEST_AUDIT_LOG=str(tmp_path / "audit.log"))
     return env
 
 
-def run(args, cwd, env):
-    return subprocess.run([str(arg) for arg in args], cwd=cwd, env=env,
-                          capture_output=True, text=True, encoding="utf-8", timeout=45, check=False)
+def run(argv, cwd, env, input_text=None):
+    return subprocess.run([str(a) for a in argv], cwd=cwd, env=env, input=input_text,
+                          capture_output=True, text=True, encoding="utf-8", timeout=60, check=False)
 
 
 def success(result):
-    assert result.returncode == 0, f"exit={result.returncode}\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, f"exit {result.returncode}\n{result.stdout}\n{result.stderr}"
     return result.stdout
 
 
 def no_forbidden_io(env):
     path = Path(env["DEMO_TEST_AUDIT_LOG"])
-    assert not path.exists() or not path.read_text().strip(), "Forbidden I/O attempted: " + path.read_text()
+    assert not path.exists() or not path.read_text().strip(), f"Forbidden I/O: {read(path)}"
 
 
 def script(base, name, args, env, cwd=None, children=False):
     read(base / name)
-    env = dict(env)
-    env["DEMO_TEST_NO_CHILDREN"] = "0" if children else "1"
-    result = run([sys.executable, "-c", RUNNER, base / name, *args], cwd or base, env)
-    no_forbidden_io(env)
+    scoped = dict(env, DEMO_TEST_NO_CHILDREN="0" if children else "1")
+    result = run([sys.executable, "-I", "-c", RUNNER, base / name, *args],
+                 cwd or base, scoped, "parent stdin must not reach the headless ask\n")
+    no_forbidden_io(scoped)
     return result
 
 
-@pytest.fixture
 def sandbox(tmp_path):
-    assert DEMO.is_dir(), f"Missing demo: {DEMO}"
+    assert DEMO.is_dir(), f"Missing {DEMO}"
     root = tmp_path / "disposable repo with spaces"
     base = root / RELATIVE
-    shutil.copytree(DEMO, base, ignore=shutil.ignore_patterns("__pycache__", ".uv-cache", "work"))
+    shutil.copytree(DEMO, base, ignore=shutil.ignore_patterns("work", "__pycache__", ".uv-cache"))
     return root, base, child_env(tmp_path)
 
 
+def recording(name, base=DEMO):
+    value = json.loads(read(base / "recorded" / name))
+    assert isinstance(value, dict) and isinstance(value.get("meta"), dict)
+    return value
+
+
+def strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from strings(item)
+
+
+def events(raw):
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            raw = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    if isinstance(raw, dict):
+        raw = [raw]
+    assert isinstance(raw, list) and raw and all(isinstance(e, dict) for e in raw)
+    return raw
+
+
+def extracted(cli, raw):
+    stream = events(raw)
+    if cli == "claude":
+        results = [e for e in stream if e.get("type") == "result"]
+        assert len(results) == 1 and isinstance(results[0].get("result"), str)
+        return results[0]["result"]
+    messages = [e["item"]["text"] for e in stream
+                if e.get("type") == "item.completed" and e.get("item", {}).get("type") == "agent_message"]
+    assert messages and all(isinstance(m, str) for m in messages)
+    return "\n".join(messages)
+
+
+def used_tools(cli, raw):
+    stream = events(raw)
+    if cli == "claude":
+        result = next(e for e in stream if e.get("type") == "result")
+        assert type(result.get("num_turns")) is int
+        return result["num_turns"] != 1
+    return any(e.get("item", {}).get("type") not in {"agent_message", "reasoning"}
+               for e in stream if isinstance(e.get("item"), dict))
+
+
+def classify(text, truth):
+    numbers = set(re.findall(r"\b\d+\b", text))
+    # Distinct INTEGER values: 08 and 8 are the same answer.
+    numbers = {int(n) for n in numbers}
+    if len(numbers) != 1:
+        return None, "unparseable"
+    number = numbers.pop()
+    return number, "correct" if number == truth else "incorrect"
+
+
+def assert_ask_output(output, answers, tools, truth):
+    counts = Counter(classify(answer, truth)[1] for answer in answers)
+    expected = (f"wrong: {counts['incorrect']} of 5 (unparseable: {counts['unparseable']}, "
+                f"tool-assisted: {sum(tools)}; true count: {truth})")
+    assert expected in output.splitlines()
+    for i, (answer, tool) in enumerate(zip(answers, tools), 1):
+        number, kind = classify(answer, truth)
+        symbol = {"correct": "✓", "incorrect": "✗", "unparseable": "?"}[kind]
+        lines = [line for line in output.splitlines() if line.startswith(f"run {i}:")]
+        assert len(lines) == 1 and lines[0].endswith("[tool used]" if tool else symbol)
+        if number is not None:
+            assert lines[0] == f"run {i}: {number}  {symbol}" + (" [tool used]" if tool else "")
+        else:
+            assert "  ?" in lines[0]
+        assert ("[tool used]" in lines[0]) == tool
+
+
+def valid_date(value):
+    assert isinstance(value, str) and re.fullmatch(r"\d{4}-\d\d-\d\d", value)
+    assert date.fromisoformat(value) <= date.today()
+
+
+def valid_model(value):
+    assert isinstance(value, str) and value.strip() == value and re.search(r"\d", value)
+    assert value.lower() not in {"opus", "sonnet", "haiku", "default", "latest"}
+    assert not re.search(r"[<>]|placeholder|example|your.model|unknown|pending|tbd|todo", value, re.I)
+
+
+def no_sensitive(source):
+    assert not re.search(r"sk-ant-|\bsk-[\w-]+|Bearer\s+[A-Za-z0-9_-]{8,}", source)
+    assert not re.search(r"/home/|/Users/|[A-Za-z]:[\\/]+Users[\\/]", source)
+    assert not re.search(r'"(?:session_id|thread_id|uuid)"\s*:', source)
+    assert not re.search(r'"type"\s*:\s*"system"', source)
+
+
+def test_d1_layout_links_and_one_page_runbooks():
+    for name in ("README.md", "strawberry.md", "sampling.md", "strawberry.py", "sampling.py", ".gitignore"):
+        assert read(DEMO / name).strip()
+    assert (DEMO / "recorded").is_dir()
+    assert any(line.strip() in {"work/", "/work/"} for line in read(DEMO / ".gitignore").splitlines())
+    assert not (DEMO / "llm_api.py").exists(), "Design specifies no shared helper module"
+    found = set()
+    for name in ("README.md", "strawberry.md", "sampling.md"):
+        source = read(DEMO / name)
+        targets = re.findall(r"\[[^\]]*\]\(<?([^\s)>]+)>?(?:\s+\"[^\"]*\")?\)", source)
+        targets += re.findall(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", source, re.M)
+        for target in targets:
+            parsed = urlsplit(target)
+            if parsed.scheme:
+                continue
+            assert not parsed.netloc and not parsed.path.startswith("/")
+            if not parsed.path:
+                continue
+            path = (DEMO / unquote(parsed.path)).resolve()
+            assert path.is_relative_to(SESSION) and path.exists(), target
+            if name == "README.md":
+                found.add(path)
+    assert {DEMO / "strawberry.md", DEMO / "sampling.md", DEMO / "recorded"} <= found
+    for name in ("strawberry", "sampling"):
+        assert len(read(DEMO / (name + ".md")).splitlines()) <= 120
+        assert re.search(rf"\buv\s+run\b[^\n]*\b{name}\.py\b", section(name + ".md", "Run"))
+    assert "cursus/demos/model" in read(SESSION / "README.md")
+    if not (DEMO / "recorded/sampling.json").exists():
+        assert re.search(r"pending", read(DEMO / "README.md"), re.I)
+
+
+def test_d1_pep723_stdlib_and_help(tmp_path):
+    _, base, env = sandbox(tmp_path)
+    for name in ("strawberry.py", "sampling.py"):
+        source = read(base / name)
+        match = re.search(r"^# /// script\n((?:#[^\n]*\n)+)# ///\s*$", source, re.M)
+        assert match, f"{name} needs PEP 723 metadata"
+        metadata = tomllib.loads("\n".join(line.removeprefix("# ").removeprefix("#") for line in match[1].splitlines()))
+        assert metadata.get("requires-python") == ">=3.12" and metadata.get("dependencies") == []
+        for node in ast.walk(ast.parse(source)):
+            names = ([a.name for a in node.names] if isinstance(node, ast.Import)
+                     else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+            assert not isinstance(node, ast.ImportFrom) or not node.level
+            assert all(n.split(".")[0] in sys.stdlib_module_names for n in names)
+        success(script(base, name, ["--help"], env))
+        assert shutil.which("uv"), "Engine prerequisite: real uv on PATH"
+        success(run(["uv", "run", "--offline", name, "--help"], base, env))
+
+# Executable stand-ins emit vendor-shaped JSON, not a substitute recording.
+# They also verify cwd/stdin and put private fields in events to test redaction.
+CLI_STUB = r'''
+import json
+import os
+from pathlib import Path
+import stat
+import sys
+cli = Path(sys.argv[0]).name
+args = sys.argv[1:]
+if "--version" in args or "-V" in args:
+    print(cli + " 1.2.3")
+    raise SystemExit(0)
+if "--help" in args:
+    print("-p --tools --disallowedTools --output-format --permission-mode --allowedTools --verbose exec --sandbox -c model_reasoning_effort")
+    raise SystemExit(0)
+pivot = "acceptEdits" in args or "workspace-write" in args or "--sandbox=workspace-write" in args
+null = os.stat(os.devnull)
+fd = os.fstat(0)
+with open(os.environ["STUB_CALLS"], "a", encoding="utf-8") as log:
+    log.write(json.dumps({"argv": args, "cwd": os.getcwd(),
+        "stdin_null": stat.S_ISCHR(fd.st_mode) and fd.st_rdev == null.st_rdev,
+        "cache": os.environ.get("UV_CACHE_DIR"), "pivot": pivot}) + "\n")
+index = len(Path(os.environ["STUB_CALLS"]).read_text().splitlines()) - 1
+if os.environ.get("STUB_FAIL") == "1":
+    print("test login expired", file=sys.stderr)
+    raise SystemExit(7)
+word = os.environ["STUB_WORD"]
+truth = word.count("r")
+reported = "claude-stub-20990101" if cli == "claude" else "gpt-stub-20990101"
+if pivot:
+    path = Path("work/count_r.py")
+    path.parent.mkdir(exist_ok=True)
+    code = "WORD = " + repr(word) + "\nprint(WORD.count('r'))\n"
+    path.write_text(code, encoding="utf-8")
+    command = "uv run --no-project python work/count_r.py"
+    if cli == "claude":
+        stream = [
+            {"type": "system", "subtype": "init", "session_id": "private", "cwd": "/home/private-owner"},
+            {"type": "assistant", "uuid": "private", "session_id": "private", "message": {"role": "assistant", "content": [
+                {"type": "tool_use", "id": "write1", "name": "Write", "input": {"file_path": str(path.resolve()), "content": code}}]}},
+            {"type": "user", "uuid": "private", "message": {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "write1", "content": "File written"}]}},
+            {"type": "assistant", "message": {"role": "assistant", "content": [
+                {"type": "tool_use", "id": "bash1", "name": "Bash", "input": {"command": command}}]}},
+            {"type": "user", "message": {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "bash1", "content": str(truth) + "\n", "is_error": False}]}},
+            {"type": "result", "subtype": "success", "result": str(truth), "num_turns": 3,
+             "session_id": "private", "modelUsage": {reported: {"inputTokens": 12, "outputTokens": 4}}}]
+    else:
+        stream = [
+            {"type": "thread.started", "thread_id": "private"},
+            {"type": "item.completed", "item": {"id": "file1", "type": "file_change", "status": "completed", "changes": [{"path": str(path), "kind": "add"}]}},
+            {"type": "item.started", "item": {"id": "cmd1", "type": "command_execution", "command": command, "status": "in_progress"}},
+            {"type": "item.completed", "item": {"id": "cmd1", "type": "command_execution", "command": command, "status": "completed", "exit_code": 0, "aggregated_output": str(truth) + "\n"}},
+            {"type": "item.completed", "item": {"id": "msg1", "type": "agent_message", "text": str(truth)}},
+            {"type": "turn.completed", "usage": {"input_tokens": 12, "output_tokens": 4}}]
+    for event in stream:
+        print(json.dumps(event))
+else:
+    answer = json.loads(os.environ["STUB_ANSWERS"])[index]
+    tool = index in json.loads(os.environ.get("STUB_TOOLS", "[]"))
+    if cli == "claude":
+        print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "session_id": "private",
+            "num_turns": 2 if tool else 1, "result": answer,
+            "modelUsage": {reported: {"inputTokens": 4, "outputTokens": 1}}}))
+    else:
+        print(json.dumps({"type": "thread.started", "thread_id": "private"}))
+        print(json.dumps({"type": "item.completed", "item": {"type": "reasoning", "text": "Counting mentally"}}))
+        if tool:
+            print(json.dumps({"type": "item.completed", "item": {"type": os.environ.get("STUB_TOOL_KIND", "command_execution"), "command": "echo tool", "aggregated_output": "tool"}}))
+        print(json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": answer}}))
+        print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 4, "output_tokens": 1}}))
+'''
+
+
+def cli_env(tmp_path, env, cli, base, answers=None, tools=(), fail=False, tool_kind="command_execution"):
+    folder = tmp_path / "stub-bin"
+    folder.mkdir(exist_ok=True)
+    executable = folder / cli
+    executable.write_text("#!" + sys.executable + "\n" + CLI_STUB, encoding="utf-8")
+    executable.chmod(0o755)
+    truth = word(base).count("r")
+    return dict(env, PATH=str(folder), STUB_CALLS=str(tmp_path / "calls.jsonl"),
+                STUB_WORD=word(base), STUB_ANSWERS=json.dumps(answers or [str(truth)] * 5),
+                STUB_TOOLS=json.dumps(list(tools)), STUB_TOOL_KIND=tool_kind, STUB_FAIL="1" if fail else "0")
+
+
+def cli_calls(env):
+    return [json.loads(line) for line in read(Path(env["STUB_CALLS"])).splitlines()]
+
+
+def option(argv, flag):
+    if flag in argv:
+        return argv[argv.index(flag) + 1]
+    matches = [arg.split("=", 1)[1] for arg in argv if arg.startswith(flag + "=")]
+    assert len(matches) == 1, f"Missing {flag} in {argv}"
+    return matches[0]
+
+
+def assert_ask_command(cli, argv, prompt, model):
+    assert prompt in argv
+    if cli == "codex":
+        assert "--json" in argv
+    assert option(argv, "-m" if cli == "codex" else "--model") == model
+    if cli == "claude":
+        assert "-p" in argv and option(argv, "--output-format") == "json"
+        if any(a == "--tools" or a.startswith("--tools=") for a in argv):
+            assert option(argv, "--tools") == ""
+        else:
+            excluded = option(argv, "--disallowedTools")
+            assert excluded == "*" or {"Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch", "WebSearch", "Task"} <= set(re.split(r"[\s,]+", excluded))
+    else:
+        assert "exec" in argv and option(argv, "--sandbox") == "read-only"
+        assert any(re.search(r"model_reasoning_effort\s*=", arg) for arg in argv), "Set the lowest supported reasoning effort"
+
+
+def compact_pivot(output, truth):
+    assert f"true count: {truth}" in output.splitlines()
+    assert re.search(r"^tool:.*(?:Write|file_change|apply_patch|command|Bash)", output, re.M | re.I)
+    assert re.search(r"^tool:.*uv run.*work/count_r\.py", output, re.M)
+    assert re.search(rf"^\s*{truth}\s*$", output, re.M), "Show the execution result"
+    for line in output.splitlines():
+        assert not line.lstrip().startswith(("{", "[")), "Projector output must be compact, not raw JSON"
+
+
+def assert_ask_record(data, cli, base):
+    literal = constants(base / "strawberry.py")
+    truth = word(base).count("r")
+    assert data["word"] == word(base) and data["truth"] == truth
+    assert data["meta"]["demo"] == "strawberry" and data["meta"]["step"] == "ask"
+    assert data["meta"]["cli"] == cli
+    assert data["meta"]["prompt"] == literal["ASK"].replace("{WORD}", word(base))
+    for field in ("answers", "classes", "tools_used", "raw"):
+        assert isinstance(data[field], list) and len(data[field]) == 5
+    assert all(type(t) is bool for t in data["tools_used"])
+    for answer, kind, tool, raw in zip(data["answers"], data["classes"], data["tools_used"], data["raw"]):
+        assert answer == extracted(cli, raw)
+        assert kind == classify(answer, truth)[1]
+        assert tool == used_tools(cli, raw)
+
+
+def pivot_blocks(data):
+    result = []
+    for event in data["events"]:
+        message = event.get("message", {})
+        for block in message.get("content", []) if isinstance(message.get("content"), list) else []:
+            if isinstance(block, dict):
+                result.append((event.get("type"), block))
+    return result
+
+
+def assert_pivot_record(data, cli, base):
+    assert data["word"] == word(base) and data["truth"] == word(base).count("r")
+    assert data["meta"]["demo"] == "strawberry" and data["meta"]["step"] == "pivot"
+    assert data["meta"]["cli"] == cli and data["exit_code"] == 0
+    assert data["meta"]["prompt"] == constants(base / "strawberry.py")["PIVOT"].replace("{WORD}", word(base))
+    assert isinstance(data["events"], list) and data["events"]
+    no_sensitive(json.dumps(data))
+    command_pattern = r"\buv\s+run\b[^\n]*\bwork/count_r\.py\b"
+    truth_pattern = rf"^\s*{data['truth']}\s*$"
+    if cli == "claude":
+        for event in data["events"]:
+            assert event.get("type") in {"assistant", "user", "result"}
+            if event["type"] != "result":
+                content = event.get("message", {}).get("content")
+                assert isinstance(content, list) and content
+                expected = "tool_use" if event["type"] == "assistant" else "tool_result"
+                assert all(block.get("type") == expected for block in content), "Only whitelisted tool blocks"
+        ordered = pivot_blocks(data)
+        writes = [i for i, (role, block) in enumerate(ordered)
+                  if role == "assistant" and block.get("name") in {"Write", "Edit", "MultiEdit"}
+                  and "count_r.py" in json.dumps(block.get("input", {}))]
+        assert writes, "Need agent file creation evidence"
+        matches = []
+        for i, (role, block) in enumerate(ordered):
+            command = block.get("input", {}).get("command", "")
+            if role == "assistant" and block.get("name") == "Bash" and re.search(command_pattern, command):
+                assert any(w < i for w in writes)
+                for result_role, result in ordered[i + 1:]:
+                    if result_role == "user" and result.get("tool_use_id") == block.get("id"):
+                        text = "\n".join(strings(result.get("content", "")))
+                        if not result.get("is_error", False) and re.search(truth_pattern, text, re.M):
+                            matches.append(result)
+        assert matches, "Need successful, ID-linked execution output from uv"
+    else:
+        for event in data["events"]:
+            assert event.get("type") == "turn.completed" or (
+                str(event.get("type", "")).startswith("item.")
+                and event.get("item", {}).get("type") in {"command_execution", "file_change", "agent_message"})
+        completed = [e["item"] for e in data["events"] if e.get("type") == "item.completed"]
+        writes = [i for i, item in enumerate(completed)
+                  if (item.get("type") == "file_change" and item.get("status") == "completed"
+                      and any("count_r.py" in change.get("path", "") and change.get("kind") in {"add", "update"}
+                              for change in item.get("changes", [])))
+                  or (item.get("type") == "command_execution" and item.get("exit_code") == 0
+                      and word(base) in item.get("command", "")
+                      and re.search(r"(?:>|write_text|apply_patch)", item.get("command", "")))]
+        assert writes, "Need completed agent write"
+        assert any(item.get("type") == "command_execution" and item.get("exit_code") == 0
+                   and re.search(command_pattern, item.get("command", ""))
+                   and re.search(truth_pattern, item.get("aggregated_output", ""), re.M)
+                   and any(w < i for w in writes) for i, item in enumerate(completed))
+
+
+def test_d2_literal_word_and_prompts():
+    literal = constants(DEMO / "strawberry.py")
+    word()
+    for key in ("ASK", "PIVOT"):
+        assert isinstance(literal.get(key), str) and "{WORD}" in literal[key]
+    ask = literal["ASK"].lower()
+    assert "memory" in ask and re.search(r"without|do not|don't", ask)
+    assert "code" in ask and "tools" in ask and re.search(r"number only|only (?:the )?number", ask)
+    pivot = literal["PIVOT"]
+    assert "work/count_r.py" in pivot and "WORD" in pivot
+    assert "uv run --no-project python work/count_r.py" in pivot
+    assert re.search(r"write", pivot, re.I) and re.search(r"run", pivot, re.I)
+    assert re.search(r"print", pivot, re.I) and re.search(r"count", pivot, re.I)
+    assert re.search(r"only|just", pivot, re.I)
+    assert set(literal.get("MODELS", {})) == set(CLIS)
+    for model in literal["MODELS"].values():
+        valid_model(model)
+
+
+@pytest.mark.parametrize("cli", CLIS)
+@pytest.mark.parametrize("alternate", [False, True])
+def test_d2_five_headless_asks_classifier_and_tool_detection(tmp_path, cli, alternate):
+    root, base, env = sandbox(tmp_path)
+    if alternate:
+        old = word(base)
+        new = "r" * (old.count("r") + 7) + "quux" * 9
+        path = base / "strawberry.py"
+        path.write_text(read(path).replace(old, new), encoding="utf-8")
+    truth = word(base).count("r")
+    answers = [f"The count is {truth}.", str(truth + 3), "no numeric answer", "2 or 3", f"{truth}, yes {truth}"]
+    tools = [False, True, False, False, True]
+    env = cli_env(tmp_path, env, cli, base, answers, tools=(1, 4),
+                  tool_kind="future_tool_fixture" if alternate else "file_change")
+    output = success(script(base, "strawberry.py", ["--via", cli, "--record"], env, cwd=root, children=True))
+    calls = cli_calls(env)
+    assert len(calls) == 5
+    for call in calls:
+        assert call["cwd"] == str(base) and call["stdin_null"] is True
+        assert_ask_command(cli, call["argv"], constants(base / "strawberry.py")["ASK"].replace("{WORD}", word(base)),
+                           constants(base / "strawberry.py")["MODELS"][cli])
+    assert_ask_output(output, answers, tools, truth)
+    data = recording(f"strawberry-{cli}.json", base)
+    assert_ask_record(data, cli, base)
+    assert data["answers"] == answers and data["tools_used"] == tools
+    assert data["classes"] == ["correct", "incorrect", "unparseable", "unparseable", "correct"]
+
+
+@pytest.mark.parametrize("cli", CLIS)
+def test_d2_pivot_cli_permissions_cwd_and_compact_projection(tmp_path, cli):
+    root, base, env = sandbox(tmp_path)
+    env = cli_env(tmp_path, env, cli, base)
+    output = success(script(base, "strawberry.py", ["--pivot", "--via", cli, "--record"], env, cwd=root, children=True))
+    calls = cli_calls(env)
+    assert len(calls) == 1 and calls[0]["pivot"] and calls[0]["cwd"] == str(base)
+    argv = calls[0]["argv"]
+    assert constants(base / "strawberry.py")["PIVOT"].replace("{WORD}", word(base)) in argv
+    assert option(argv, "-m" if cli == "codex" else "--model") == constants(base / "strawberry.py")["MODELS"][cli]
+    if cli == "claude":
+        assert "-p" in argv and option(argv, "--permission-mode") == "acceptEdits"
+        assert option(argv, "--allowedTools") == "Bash(uv run:*)"
+        assert option(argv, "--output-format") == "stream-json" and "--verbose" in argv
+    else:
+        assert "exec" in argv and "--json" in argv and option(argv, "--sandbox") == "workspace-write"
+        assert Path(calls[0]["cache"]).resolve().is_relative_to(base / "work")
+    compact_pivot(output, word(base).count("r"))
+    assert_pivot_record(recording(f"pivot-{cli}.json", base), cli, base)
+    assert (base / "recorded" / f"{cli}_count_r.py").read_bytes() == (base / "work/count_r.py").read_bytes()
+
+
+@pytest.mark.parametrize("cli", CLIS)
+@pytest.mark.parametrize("pivot", [False, True])
+@pytest.mark.parametrize("failure", ["missing", "nonzero"])
+def test_d2_cli_failure_is_one_actionable_line(tmp_path, cli, pivot, failure):
+    _, base, env = sandbox(tmp_path)
+    if failure == "missing":
+        empty = tmp_path / "empty-bin"
+        empty.mkdir()
+        env["PATH"] = str(empty)
+    else:
+        env = cli_env(tmp_path, env, cli, base, fail=True)
+    args = ["--via", cli] + (["--pivot"] if pivot else [])
+    result = script(base, "strawberry.py", args, env, children=True)
+    assert result.returncode == 1
+    lines = result.stderr.strip().splitlines()
+    assert len(lines) == 1 and cli in lines[0].lower() and "--replay" in lines[0]
+    assert "Traceback" not in result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("cli", CLIS)
+def test_d2_real_recordings_bind_raw_answers_and_successful_pivot(tmp_path, cli):
+    data = recording(f"strawberry-{cli}.json")
+    assert_ask_record(data, cli, DEMO)
+    assert "incorrect" in data["classes"], "Unparseable alone is not unreliable counting"
+    assert data["tools_used"] == [False] * 5, "The recorded ask must be unaided"
+    assert_pivot_record(recording(f"pivot-{cli}.json"), cli, DEMO)
+    _, base, env = sandbox(tmp_path)
+    path = base / "recorded" / f"{cli}_count_r.py"
+    assert constants(path).get("WORD") == word(base)
+    truth = word(base).count("r")
+    assert success(script(path.parent, path.name, [], env)).strip() == str(truth)
+    source = read(path)
+    replacement = "quux" + "r" * (truth + 11)
+    path.write_text(source.replace(word(base), replacement), encoding="utf-8")
+    assert success(script(path.parent, path.name, [], env)).strip() == str(truth + 11)
+
+
 @contextmanager
-def api_server(provider, rejected=()):
+def api_server(provider, temperatures=(0.0, 1.0), reject=False, marker="fixture"):
     calls = []
 
-    class Handler(BaseHTTPRequestHandler):
-        def log_message(self, *args):
-            pass
+    def log_message(self, *args):
+        pass
 
-        def do_POST(self):
-            payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            index = len(calls) + 1
-            denied = "*" in rejected or payload.get("model") in rejected
-            # Unique markers prove that actual returned text is propagated.
-            label = index if payload.get("temperature", 1) >= 0.9 else "shared"
-            text = f"solver-{provider}-{label}-λ"
-            error = f"temperature unavailable for {payload.get('model')}: test rejection"
-            calls.append({"path": self.path, "headers": dict(self.headers), "body": payload,
-                          "text": text, "status": 400 if denied else 200, "error": error})
-            if denied:
-                body = {"error": {"type": "invalid_request_error", "message": error}}
-            elif provider == "openai":
-                body = {"id": f"response-{index}", "object": "chat.completion",
-                        "model": payload["model"], "choices": [{"index": 0,
-                        "message": {"role": "assistant", "content": text}, "finish_reason": "stop"}],
-                        "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}
-            else:
-                body = {"id": f"response-{index}", "type": "message", "role": "assistant",
-                        "model": payload["model"], "content": [{"type": "text", "text": text}],
-                        "stop_reason": "end_turn", "usage": {"input_tokens": 9, "output_tokens": 3}}
-            encoded = json.dumps(body).encode()
-            self.send_response(400 if denied else 200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(encoded)))
-            self.end_headers()
-            self.wfile.write(encoded)
+    def do_POST(self):
+        payload = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        index = len(calls) + 1
+        temperature = payload.get("temperature")
+        position = sum(c["body"].get("temperature") == temperature for c in calls)
+        # Deliberately greater spread at LOW temperature: the demo measures
+        # observations, it must not invent a deterministic inequality.
+        labels = ["A", "B", "C", "A", "B"] if temperature == temperatures[0] else ["X", "X", "Y", "X", "Y"]
+        text = f"solver-{provider}-{marker}-{labels[position % 5]}-λ"
+        error = "temperature unavailable: fixture rejection"
+        if reject:
+            body = {"error": {"type": "invalid_request_error", "message": error}}
+        elif provider == "anthropic":
+            body = {"id": f"response-{index}", "model": "claude-stub-20990101", "type": "message",
+                    "role": "assistant", "content": [{"type": "text", "text": text}],
+                    "stop_reason": "end_turn", "usage": {"input_tokens": 9, "output_tokens": 3}}
+        else:
+            body = {"id": f"response-{index}", "model": "gpt-stub-20990101", "object": "chat.completion",
+                    "choices": [{"index": 0, "message": {"role": "assistant", "content": text}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 9, "completion_tokens": 3, "total_tokens": 12}}
+        calls.append({"path": self.path, "headers": dict(self.headers), "body": payload,
+                      "text": text, "response": body, "error": error})
+        encoded = json.dumps(body).encode("utf-8")
+        self.send_response(400 if reject else 200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    handler = type("VendorStubHandler", (BaseHTTPRequestHandler,), {"do_POST": do_POST, "log_message": log_message})
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -314,861 +684,560 @@ def api_server(provider, rejected=()):
         thread.join(timeout=5)
 
 
-def api_env(env, provider, port):
-    result = dict(env)
-    result.update({KEYS[provider]: f"dummy-env-only-{provider}-73",
-                   BASES[provider]: f"http://127.0.0.1:{port}", "DEMO_TEST_PORT": str(port)})
-    return result
-
-
-def assert_request(call, provider, env):
-    assert call["path"] == ENDPOINTS[provider]
-    headers = {key.lower(): value for key, value in call["headers"].items()}
-    assert headers.get("content-type", "").startswith("application/json")
-    if provider == "openai":
-        assert headers.get("authorization") == "Bearer " + env[KEYS[provider]]
-        assert "max_completion_tokens" in call["body"] and "max_tokens" not in call["body"]
-        assert type(call["body"]["max_completion_tokens"]) is int and call["body"]["max_completion_tokens"] > 0
-    else:
-        assert headers.get("x-api-key") == env[KEYS[provider]]
-        assert headers.get("anthropic-version") == "2023-06-01"
-        assert type(call["body"].get("max_tokens")) is int and call["body"]["max_tokens"] > 0
+def api_env(env, provider, port, marker="73"):
+    base = f"http://127.0.0.1:{port}" + ("/v1" if provider == "openai" else "")
+    return dict(env, **{KEYS[provider]: f"test-env-only-{provider}-{marker}", BASES[provider]: base,
+                       "DEMO_TEST_PORT": str(port)})
 
 
 def user_prompt(body):
     messages = body.get("messages")
-    assert isinstance(messages, list)
-    users = [message["content"] for message in messages if message.get("role") == "user"]
-    assert len(users) == 1
-    if isinstance(users[0], str):
-        return users[0]
-    return "".join(part["text"] for part in users[0] if part.get("type") == "text")
+    assert isinstance(messages, list) and len(messages) == 1
+    assert messages[0].get("role") == "user"
+    content = messages[0].get("content")
+    if isinstance(content, str):
+        return content
+    assert isinstance(content, list) and all(c.get("type") == "text" for c in content)
+    return "".join(c["text"] for c in content)
 
 
-def test_d1_layout_links_stdlib_and_help(tmp_path):
-    names = ("README.md", "strawberry.md", "sampling.md", "llm_api.py", "strawberry.py",
-             "sampling.py", "ask.txt", "pivot.txt")
-    for name in names:
-        read(DEMO / name)
-    assert (DEMO / "recorded").is_dir()
-    for name in ("README.md", "strawberry.md", "sampling.md"):
-        found = links(document(name))
-        if name == "README.md":
-            assert {DEMO / "strawberry.md", DEMO / "sampling.md"} <= found
-            assert DEMO / "recorded" in found or any(path.parent == DEMO / "recorded" for path in found)
-    for name in ("strawberry", "sampling"):
-        assert len(document(name + ".md").splitlines()) <= 120
-        assert re.search(rf"\buv\s+run\b[^\n]*\b{name}\.py\b", section(name + ".md", "Run"))
-        success(script(DEMO, name + ".py", ["--help"], child_env(tmp_path)))
-    for path in DEMO.rglob("*.py"):
-        if any(part.startswith(".") or part == "work" for part in path.relative_to(DEMO).parts):
+def assert_requests(calls, provider, env, model, temperatures):
+    assert len(calls) == 10
+    assert Counter(c["body"].get("temperature") for c in calls) == Counter({t: 5 for t in temperatures})
+    for call in calls:
+        assert call["path"] == ("/v1/messages" if provider == "anthropic" else "/v1/chat/completions")
+        headers = {key.lower(): value for key, value in call["headers"].items()}
+        assert headers.get("content-type", "").startswith("application/json")
+        if provider == "anthropic":
+            assert headers.get("x-api-key") == env[KEYS[provider]]
+            assert headers.get("anthropic-version") == "2023-06-01"
+            assert call["body"].get("max_tokens") == 20 and "max_completion_tokens" not in call["body"]
+        else:
+            assert headers.get("authorization") == "Bearer " + env[KEYS[provider]]
+            assert call["body"].get("max_completion_tokens") == 20 and "max_tokens" not in call["body"]
+        body = call["body"]
+        assert body["model"] == model and user_prompt(body) == PROMPT
+        assert not {"top_p", "thinking", "reasoning", "reasoning_effort"} & body.keys()
+        secret = env[KEYS[provider]]
+        assert secret not in json.dumps(body) and secret not in call["path"]
+        for key, value in headers.items():
+            if key != ("x-api-key" if provider == "anthropic" else "authorization"):
+                assert secret not in value
+
+
+def assert_sampling_output(output, runs):
+    assert len(runs) == 2
+    low, high = runs
+    paired = []
+    for line in output.splitlines():
+        if "|" in line and any(text in line for text in low["outputs"]):
+            paired.append(line)
+    assert len(paired) == 5, "Five paired low | high rows"
+    for line, low_text, high_text in zip(paired, low["outputs"], high["outputs"]):
+        assert low_text in line and high_text in line and line.index(low_text) < line.index(high_text)
+    for item in runs:
+        t, k = item["temperature"], len(set(item["outputs"]))
+        candidates = [line for line in output.splitlines() if re.fullmatch(
+            rf"distinct answers at temperature [-+\d.eE]+: {k} of 5", line)]
+        assert any(float(re.search(r"temperature (.*):", line)[1]) == t for line in candidates)
+
+
+def runs_from_calls(calls, temperatures):
+    return [{"temperature": t, "outputs": [c["text"] for c in calls if c["body"]["temperature"] == t]} for t in temperatures]
+
+
+def temperature_ranges(base=DEMO):
+    source = section("sampling.md", "Temperature support", base)
+    match = re.search(r"as of\s+(\d{4}-\d\d-\d\d)", source, re.I)
+    assert match, "Temperature support needs an as-of date"
+    valid_date(match[1])
+    rows = tables(source)
+    assert rows and len(rows[0]) >= 4
+    header = [re.sub(r"[^a-z]", "", c.lower()) for c in rows[0]]
+    assert "model" in header and "range" in header and "source" in header
+    yes_col = next((i for i, h in enumerate(header) if "temperature" in h), None)
+    assert yes_col is not None
+    result = {}
+    for row in rows[1:]:
+        assert len(row) == len(header)
+        if not re.search(r"\byes\b", row[yes_col], re.I):
             continue
-        for node in ast.walk(ast.parse(read(path))):
-            modules = ([alias.name for alias in node.names] if isinstance(node, ast.Import)
-                       else [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
-            for module in modules:
-                root = module.split(".")[0]
-                assert root in sys.stdlib_module_names or (DEMO / (root + ".py")).is_file(), module
-    assert re.search(r"cursus/demos/model/?", read(SESSION / "README.md"))
-
-
-CLI_STUB = r'''
-import json
-import os
-from pathlib import Path
-import sys
-cli = Path(sys.argv[0]).name
-args = sys.argv[1:]
-if "--version" in args or "-V" in args:
-    print(cli + " 1.2.3")
-    raise SystemExit(0)
-if "--help" in args:
-    print("-p --tools --disallowedTools --output-format exec --sandbox")
-    raise SystemExit(0)
-stdin = ""
-if "-" in args or not any(os.environ["STUB_WORD"] in arg for arg in args):
-    stdin = sys.stdin.read()
-with open(os.environ["STUB_CALLS"], "a") as handle:
-    handle.write(json.dumps({"args": args, "stdin": stdin}) + "\n")
-index = len(Path(os.environ["STUB_CALLS"]).read_text().splitlines())
-if os.environ.get("STUB_FAIL") == "1":
-    print("login expired (test stub)", file=sys.stderr)
-    raise SystemExit(7)
-answer = ["2", "17", "not an integer", "31", "5"][index - 1]
-if cli == "claude" and "--output-format" in args:
-    fmt = args[args.index("--output-format") + 1]
-    init = {"type": "system", "subtype": "init", "model": "stub-claude-model"}
-    result = {"type": "result", "subtype": "success", "is_error": False,
-              "result": answer, "model": "stub-claude-model",
-              "modelUsage": {"stub-claude-model": {"inputTokens": 4, "outputTokens": 1}}}
-    if fmt == "stream-json":
-        print(json.dumps(init))
-        print(json.dumps(result))
-    elif fmt == "json":
-        print(json.dumps(result))
-    else:
-        print(answer)
-elif cli == "codex" and "--json" in args:
-    print(json.dumps({"type": "thread.started", "thread_id": "stub-thread"}))
-    print(json.dumps({"type": "item.completed", "item": {"id": "item_0",
-          "type": "agent_message", "text": answer}}))
-    print(json.dumps({"type": "turn.completed", "usage": {"input_tokens": 4, "output_tokens": 1}}))
-else:
-    print(answer)
-for flag in ("-o", "--output-last-message"):
-    if flag in args:
-        Path(args[args.index(flag) + 1]).write_text(answer)
-print("model: stub-" + cli + "-model", file=sys.stderr)
-'''
-
-
-def stub_cli(tmp_path, env, cli, word, fail=False):
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(exist_ok=True)
-    executable = bin_dir / cli
-    executable.write_text("#!" + sys.executable + "\n" + CLI_STUB, encoding="utf-8")
-    executable.chmod(0o755)
-    result = dict(env, PATH=str(bin_dir), STUB_WORD=word,
-                  STUB_CALLS=str(tmp_path / "cli-calls.jsonl"), STUB_FAIL="1" if fail else "0")
+        model_cell = row[header.index("model")]
+        models = re.findall(r"[A-Za-z][A-Za-z0-9_.-]*\d[A-Za-z0-9_.-]*", model_cell)
+        assert models, f"No concrete model ID in {model_cell}"
+        numbers = re.findall(r"(?<![\w.])\d+(?:\.\d+)?", row[header.index("range")])
+        assert len(numbers) == 2, f"{model_cell}: numeric lower and upper range required"
+        low, high = map(float, numbers)
+        assert low < high
+        urls = re.findall(r"https://[^\s)>\]]+", row[header.index("source")])
+        references = dict((key.lower(), url) for key, url in re.findall(
+            r"^\s*\[([^\]]+)\]:\s*<?(https://[^\s>]+)>?", read(base / "sampling.md"), re.M))
+        urls.extend(references[key.lower()] for key in re.findall(r"\[([^\]]+)\]", row[header.index("source")])
+                    if key.lower() in references)
+        assert urls
+        hosts = {urlsplit(url).hostname for url in urls}
+        assert hosts <= {"docs.anthropic.com", "platform.claude.com", "docs.claude.com", "platform.openai.com", "developers.openai.com"}
+        for model in models:
+            assert model not in result or result[model] == (low, high), "Conflicting temperature ranges"
+            result[model] = (low, high)
     return result
 
 
-def tool_withholding(cli, argv):
-    if cli == "codex":
-        assert "exec" in argv
-        assert "--sandbox=read-only" in argv or ("--sandbox" in argv and argv[argv.index("--sandbox") + 1] == "read-only")
-    else:
-        assert "-p" in argv or "--print" in argv
-        disabled = "--tools=" in argv or ("--tools" in argv and argv[argv.index("--tools") + 1] == "")
-        for index, arg in enumerate(argv):
-            if arg.startswith("--disallowedTools"):
-                value = arg.partition("=")[2] if "=" in arg else argv[index + 1]
-                # A partial list (e.g. just Bash) still leaves tools available.
-                disabled |= value.strip() == "*"
-        assert disabled, "Claude naive step must disable all tools"
-
-
-@pytest.mark.parametrize("cli", CLIS)
-@pytest.mark.parametrize("override", [False, True])
-def test_d2_headless_cli_five_answers_and_custom_word(sandbox, tmp_path, cli, override):
-    root, base, env = sandbox
-    word = "rurrquarrrenbrirrrmorrzerr" if override else word_constant(base)
-    env = stub_cli(tmp_path, env, cli, word)
-    args = ["--via", cli, "--record", "stub-run.json"]
-    if override:
-        args += ["--word", word]
-    output = success(script(base, "strawberry.py", args, env, cwd=root, children=True))
-    calls = [json.loads(line) for line in read(Path(env["STUB_CALLS"])).splitlines()]
-    assert len(calls) == 5
-    expected_prompt = read(base / "ask.txt").replace("{WORD}", word).strip()
-    for call in calls:
-        tool_withholding(cli, call["args"])
-        assert expected_prompt in "\n".join([*call["args"], call["stdin"]])
-    data = json.loads(read(base / "stub-run.json"))
-    assert data["word"] == word and data["truth"] == word.count("r")
-    expected = ["2", "17", "not an integer", "31", "5"]
-    assert answers(data) == expected
-    assert all(answer in output for answer in expected)
-    assert not (root / "stub-run.json").exists(), "Relative --record belongs beside the script"
-
-
-@pytest.mark.parametrize("cli", CLIS)
-@pytest.mark.parametrize("failure", ["missing", "nonzero"])
-def test_d2_cli_failure_explains_replay(sandbox, tmp_path, cli, failure):
-    _, base, env = sandbox
-    if failure == "missing":
-        bin_dir = tmp_path / "empty-bin"
-        bin_dir.mkdir()
-        env["PATH"] = str(bin_dir)
-    else:
-        env = stub_cli(tmp_path, env, cli, word_constant(base), fail=True)
-    result = script(base, "strawberry.py", ["--via", cli], env, children=True)
-    assert result.returncode == 1
-    message = result.stdout + result.stderr
-    assert cli in message.lower() and "--replay" in message and "Traceback" not in message
-
-
-def rendered(source):
-    def strings(value):
-        if isinstance(value, str):
-            yield value
-        elif isinstance(value, dict):
-            for item in value.values():
-                yield from strings(item)
-        elif isinstance(value, list):
-            for item in value:
-                yield from strings(item)
-    result = []
-    for line in source.splitlines():
-        try:
-            value = json.loads(line)
-        except ValueError:
-            result.append(line)
-        else:
-            result.extend(strings(value))
-    return "\n".join(result)
-
-
-def pivot_metadata(cli):
-    source = read(DEMO / "recorded" / f"{cli}-pivot.txt")
-    lines = source.splitlines()
-    meta = {}
-    for key, line in zip(("cli", "version", "model", "date"), lines[:4]):
-        assert line.startswith(key + ":"), "Pivot transcript starts with cli/version/model/date headers"
-        meta[key] = line.split(":", 1)[1].strip()
-    assert len(meta) == 4 and cli in meta["cli"].lower()
-    assert re.search(r"\d+\.\d+", meta["version"])
-    return meta, rendered("\n".join(lines[4:]))
-
-
-def test_d2_word_recordings_and_prompt_binding(tmp_path):
-    word = word_constant()
-    assert len(word) >= 20 and word.count("r") >= 6 and word.isalpha()
-    for name in ("ask.txt", "pivot.txt"):
-        assert "{WORD}" in document(name)
-    wrong = 0
-    for cli in CLIS:
-        data = recording(f"strawberry-{cli}.json")
-        assert data["word"] == word and data["truth"] == word.count("r")
-        meta = data["meta"]
-        valid_model(meta["model"])
-        if cli == "claude":
-            assert meta["model"].startswith("claude-"), "Record the resolved Claude model ID, not its alias"
-            assert meta["requested_model"] == "haiku"
-        assert meta["model"].lower() not in {"haiku", "sonnet", "opus", "default", "latest"}
-        assert meta["params"].get("effort") == "low"
-        outcome = section("strawberry.md", "Expected outcome")
-        assert any(meta["model"] in line and re.search(r"\beffort\b.*\blow\b", line, re.I)
-                   for line in outcome.splitlines()), "Name each naive model and its low effort setting"
-        assert data["meta"]["prompt"].strip() == document("ask.txt").replace("{WORD}", word).strip()
-        for answer in answers(data):
-            try:
-                wrong += int(answer.strip()) != data["truth"]
-            except ValueError:
-                wrong += 1
-        _, transcript = pivot_metadata(cli)
-        pivot = document("pivot.txt").replace("{WORD}", word).strip()
-        assert re.sub(r"\s+", " ", pivot) in re.sub(r"\s+", " ", transcript)
-        # Ignore occurrences inside the request itself. The remaining evidence
-        # must include the agent's invocation, not merely the requested command.
-        without_prompt = re.sub(re.escape(pivot), "", transcript)
-        command = re.search(r"\buv\s+run\s+python\s+(?:\./)?work/count_r\.py\b", without_prompt)
-        assert command
-        # Require a tool invocation and creation evidence, not an assistant's
-        # assertion that it ran the command. Authenticity still needs review.
-        assert re.search(r"\b(?:Bash|exec_command|command_execution|tool_use|shell)\b", without_prompt, re.I)
-        assert re.search(r"(?:Write|write|writing|wrote|create|created|add.file|apply_patch|cat\s*>|write_text)", without_prompt, re.I)
-        assert re.search(rf"^\s*{data['truth']}\s*$", without_prompt[command.end():], re.M), "Need executed count after command"
-        path = DEMO / "recorded" / f"{cli}_count_r.py"
-        assert word in read(path)
-        output = success(script(path.parent, path.name, [], child_env(tmp_path)))
-        assert output.strip() == str(word.count("r"))
-    assert wrong >= 1, "Keep real unreliable answers; if all are right, record a harder configuration"
-    runbook = section("strawberry.md", "Run")
-    assert re.search(r"\bclaude\s+-p\b", runbook)
-    assert re.search(r"\bcodex\s+exec\b", runbook)
-    assert "--permission-mode acceptEdits" in runbook and 'Bash(uv run:*)' in runbook
-    assert "--sandbox workspace-write" in runbook
-
-
-@pytest.mark.parametrize("cli", CLIS)
-def test_d2_pivot_transcripts_show_agent_wrote_and_ran_code(cli):
-    import shlex
-
-    word = word_constant()
-    expected = word.count("r")
-    data = recording(f"strawberry-{cli}.json")
-    assert data["word"] == word and data["truth"] == expected
-    source = read(DEMO / "recorded" / f"{cli}-pivot.txt")
-    pivot = document("pivot.txt").replace("{WORD}", word).strip()
-    assert " ".join(pivot.split()) in " ".join(rendered(source).split())
-    events = [json.loads(line) for line in source.splitlines() if line.lstrip().startswith("{")]
-    assert events and all(isinstance(event, dict) for event in events), "Need raw JSON tool events"
-
-    def count_path(value):
-        return isinstance(value, str) and Path(value).parts[-2:] == ("work", "count_r.py")
-
-    def shell_body(command):
-        parts = shlex.split(command)
-        if len(parts) == 3 and Path(parts[0]).name in {"bash", "sh", "zsh"} and parts[1] in {"-c", "-lc"}:
-            return parts[2]
-        return command
-
-    def runs_counter(command):
-        return re.fullmatch(r"\s*uv\s+run\s+python\s+(?:\./)?work/count_r\.py\s*", shell_body(command))
-
-    def has_count(output):
-        return re.search(rf"^\s*{expected}\s*$", output, re.M)
-
-    def writes_counter(command):
-        command = shell_body(command)
-        if word not in command:
-            return False
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&<>|")
-        lexer.whitespace_split = True
-        tokens = list(lexer)
-        start = 0
-        for index, token in enumerate(tokens[:-1]):
-            if token in {";", "&&", "||", "|"}:
-                start = index + 1
-            if (token in {">", ">>"} and count_path(tokens[index + 1]) and start < index
-                    and tokens[start] in {"cat", "printf", "echo"}):
-                return True
-        # Python -c is another common write shape. Inspect executable syntax,
-        # not strings that merely mention Path(...).write_text(...).
-        args = shlex.split(command)
-        if len(args) == 3 and Path(args[0]).name in {"python", "python3"} and args[1] == "-c":
-            for node in ast.parse(args[2]).body:
-                if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
-                    continue
-                call = node.value
-                if not isinstance(call.func, ast.Attribute) or call.func.attr != "write_text" or not call.args:
-                    continue
-                target = call.func.value
-                if (isinstance(target, ast.Call) and isinstance(target.func, ast.Name)
-                        and target.func.id == "Path" and len(target.args) == 1
-                        and isinstance(target.args[0], ast.Constant) and count_path(target.args[0].value)
-                        and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)
-                        and word in call.args[0].value):
-                    return True
-        return False
-
-    if cli == "claude":
-        content = read(DEMO / "recorded" / "claude_count_r.py")
-        assert word in content
-        # Retain event/block order and message roles: prose about a tool call
-        # cannot substitute for tool_use and its matching tool_result.
-        blocks_in_order = []
-        for event in events:
-            message = event.get("message", {})
-            parts = message.get("content", [])
-            if isinstance(parts, list):
-                blocks_in_order.extend((event.get("type"), part) for part in parts if isinstance(part, dict))
-        writes = [index for index, (role, block) in enumerate(blocks_in_order)
-                  if role == "assistant" and block.get("type") == "tool_use"
-                  and block.get("name") in {"Write", "Edit", "MultiEdit"}
-                  and count_path(block.get("input", {}).get("file_path"))
-                  and " ".join(block["input"].get("content", "").split()) == " ".join(content.split())]
-        assert writes, "Claude must write the recorded counting code to work/count_r.py"
-        for index, (role, block) in enumerate(blocks_in_order):
-            if (role != "assistant" or block.get("type") != "tool_use" or block.get("name") != "Bash"
-                    or not any(write < index for write in writes)
-                    or not runs_counter(block.get("input", {}).get("command", ""))):
-                continue
-            tool_id = block.get("id")
-            assert tool_id, "Bash invocation needs its tool-use ID"
-            for result_role, result in blocks_in_order[index + 1:]:
-                if (result_role != "user" or result.get("type") != "tool_result"
-                        or result.get("tool_use_id") != tool_id or result.get("is_error", False)):
-                    continue
-                output = result.get("content", "")
-                if isinstance(output, list):
-                    output = "\n".join(part.get("text", "") for part in output if part.get("type") == "text")
-                if isinstance(output, str) and has_count(output):
-                    return
-        pytest.fail("Claude needs a later uv execution and a successful, ID-linked result containing the computed count")
-    else:
-        completed = [event["item"] for event in events
-                     if event.get("type") == "item.completed" and isinstance(event.get("item"), dict)]
-        writes = []
-        for index, item in enumerate(completed):
-            if (item.get("type") == "file_change" and item.get("status") == "completed"
-                    and any(count_path(change.get("path")) and change.get("kind") in {"add", "update"}
-                            for change in item.get("changes", []))):
-                writes.append(index)
-            elif item.get("type") == "command_execution" and item.get("exit_code") == 0:
-                # A successful shell write is also valid creation evidence;
-                # merely mentioning the path or reading it is insufficient.
-                if writes_counter(item.get("command", "")):
-                    writes.append(index)
-        assert writes, "Codex must complete a file change or a successful command writing work/count_r.py"
-        assert any(item.get("type") == "command_execution" and item.get("exit_code") == 0
-                   and any(write < index for write in writes)
-                   and runs_counter(item.get("command", "")) and has_count(item.get("aggregated_output", ""))
-                   for index, item in enumerate(completed)), "Codex needs a later successful uv execution with the computed count"
-
-
-def test_d2_print_prompts_substitutes_custom_word(sandbox):
-    _, base, env = sandbox
-    word = "quarrrbirrrtorrrmerx"
-    output = success(script(base, "strawberry.py", ["--print-prompts", "--word", word], env))
-    for name in ("ask.txt", "pivot.txt"):
-        assert read(base / name).replace("{WORD}", word).strip() in output
-    assert "{WORD}" not in output
-
-
-@pytest.mark.parametrize("cli", CLIS)
-def test_d2_recorded_code_really_counts_letters(sandbox, cli):
-    _, base, env = sandbox
-    word = word_constant(base)
-    path = base / "recorded" / f"{cli}_count_r.py"
-    source = read(path)
-    assert word in source
-    # Mutate only the input in a disposable copy. A canned print of the old
-    # answer is not the pivot to executable counting the demo promises.
-    alternate = "r" * (word.count("r") + 3) + "quux"
-    path.write_text(source.replace(word, alternate), encoding="utf-8")
-    assert success(script(path.parent, path.name, [], env)).strip() == str(alternate.count("r"))
-
-
 @pytest.mark.parametrize("provider", PROVIDERS)
-@pytest.mark.parametrize("temperatures", [(0.0, 1.0), (0.2, 0.95)])
-def test_d3_http_sampling_request_shape_and_returned_text(sandbox, provider, temperatures):
-    root, base, env = sandbox
-    with api_server(provider) as (port, calls):
-        env = api_env(env, provider, port)
-        args = ["--provider", provider, "--model", "alternate-model-73", "--record", "http-run.json"]
+@pytest.mark.parametrize("temperatures", [(0.0, 1.0), (0.2, 0.8)])
+@pytest.mark.parametrize("override", [False, True])
+def test_d3_vendor_http_contract_paired_answers_and_observed_spread(tmp_path, provider, temperatures, override):
+    root, base, env = sandbox(tmp_path)
+    defaults = constants(base / "sampling.py").get("DEFAULT_MODELS", {})
+    assert set(defaults) == set(PROVIDERS)
+    model = "fixture-requested-73" if override else defaults[provider]
+    with api_server(provider, temperatures, marker=tmp_path.name) as (port, calls):
+        env = api_env(env, provider, port, tmp_path.name)
+        args = ["--provider", provider]
+        if override:
+            args += ["--model", model]
         if temperatures != (0.0, 1.0):
             args += ["--low", str(temperatures[0]), "--high", str(temperatures[1])]
         output = success(script(base, "sampling.py", args, env, cwd=root))
-    assert len(calls) == 10
-    assert Counter(call["body"].get("temperature") for call in calls) == Counter({t: 5 for t in temperatures})
-    for call in calls:
-        assert_request(call, provider, env)
-        body = call["body"]
-        assert body["model"] == "alternate-model-73" and user_prompt(body) == PROMPT
-        assert not {"top_p", "thinking", "reasoning", "reasoning_effort"} & body.keys()
-        assert call["text"] in output
-    low_texts = [call["text"] for call in calls if call["body"]["temperature"] == temperatures[0]]
-    high_texts = [call["text"] for call in calls if call["body"]["temperature"] == temperatures[1]]
-    for low_text, high_text in zip(low_texts, high_texts):
-        assert any(low_text in line and high_text in line for line in output.splitlines()), "Show paired low/high columns"
-    summaries = "\n".join(line for line in output.splitlines() if re.search(r"distinct|unique", line, re.I))
-    assert summaries, "Display the spread, not only raw answers"
-    # Permit a table with the counts in the next row, or prose on the same line.
-    summary_index = next(i for i, line in enumerate(output.splitlines()) if re.search(r"distinct|unique", line, re.I))
-    summaries += "\n" + "\n".join(output.splitlines()[summary_index:summary_index + 3])
-    assert re.search(r"\b1\b", summaries) and re.search(r"\b5\b", summaries)
-    saved = json.loads(read(base / "http-run.json"))
-    runs = sampling_runs(saved)
-    assert [item["temperature"] for item in runs] == list(temperatures)
-    for item in runs:
-        assert answers(item) == [call["text"] for call in calls if call["body"]["temperature"] == item["temperature"]]
-    assert not (root / "http-run.json").exists()
+    assert_requests(calls, provider, env, model, temperatures)
+    assert_sampling_output(output, runs_from_calls(calls, temperatures))
+
+
+def test_d3_default_provider_is_anthropic(tmp_path):
+    _, base, env = sandbox(tmp_path)
+    with api_server("anthropic", marker=tmp_path.name) as (port, calls):
+        env = api_env(env, "anthropic", port)
+        output = success(script(base, "sampling.py", [], env))
+    model = constants(base / "sampling.py")["DEFAULT_MODELS"]["anthropic"]
+    assert_requests(calls, "anthropic", env, model, (0.0, 1.0))
+    assert_sampling_output(output, runs_from_calls(calls, (0.0, 1.0)))
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
-def test_d3_vendor_400_is_clear_error(sandbox, provider):
-    _, base, env = sandbox
-    with api_server(provider, rejected={"*"}) as (port, calls):
+@pytest.mark.parametrize("temperatures", [(1, 1), (1, 0)])
+def test_d3_invalid_temperature_order_rejected_before_network(tmp_path, provider, temperatures):
+    _, base, env = sandbox(tmp_path)
+    env[KEYS[provider]] = "fixture-env-only"
+    result = script(base, "sampling.py", ["--provider", provider, "--low", str(temperatures[0]), "--high", str(temperatures[1])], env)
+    assert result.returncode != 0 and re.search(r"low|temperature", result.stderr, re.I)
+    assert "Traceback" not in result.stderr
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_d3_vendor_400_is_one_clean_error_line(tmp_path, provider):
+    _, base, env = sandbox(tmp_path)
+    with api_server(provider, reject=True) as (port, calls):
         env = api_env(env, provider, port)
-        result = script(base, "sampling.py", ["--provider", provider, "--model", "rejected-model"], env)
-    assert result.returncode == 1 and calls
-    assert calls[0]["error"] in result.stderr and "Traceback" not in result.stderr
+        result = script(base, "sampling.py", ["--provider", provider], env)
+    assert result.returncode == 1 and len(calls) == 1
+    assert result.stderr.strip().splitlines() == [f"sampling.py: {provider} API error 400: {calls[0]['error']}"]
+    assert "Traceback" not in result.stdout + result.stderr
+
+
+def test_d3_temperature_documentation_covers_defaults():
+    defaults = constants(DEMO / "sampling.py").get("DEFAULT_MODELS")
+    assert isinstance(defaults, dict) and set(defaults) == set(PROVIDERS)
+    assert constants(DEMO / "sampling.py").get("PROMPT") == PROMPT
+    ranges = temperature_ranges()
+    for model in defaults.values():
+        valid_model(model)
+        assert model in ranges
+        assert ranges[model][0] <= 0.0 < 1.0 <= ranges[model][1]
+    if (DEMO / "recorded/sampling.json").exists():
+        model = recording("sampling.json")["meta"]["model"]
+        assert model in ranges
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
-def test_d3_probe_records_success_and_rejection(sandbox, provider):
-    root, base, env = sandbox
-    models = ["candidate-a", "candidate-b", "candidate-c"]
-    target = base / "recorded/temperature_probe.json"
-    target.unlink(missing_ok=True)
-    with api_server(provider, rejected={models[1]}) as (port, calls):
-        env = api_env(env, provider, port)
-        args = ["--probe", "--provider", provider]
-        for model in models:
-            args += ["--model", model]
-        success(script(base, "sampling.py", args, env, cwd=root))
-    assert Counter(call["body"]["model"] for call in calls) == Counter(models)
-    data = recording("temperature_probe.json", base)
-    entries = probe_entries(data)
-    assert len(entries) == 3
-    assert {entry["model"] for entry in entries} == set(models)
-    valid_date(data["meta"]["date"])
-    for entry in entries:
-        call = next(call for call in calls if call["body"]["model"] == entry["model"])
-        assert_request(call, provider, env)
-        assert "temperature" in call["body"] and "top_p" not in call["body"]
-        assert entry["provider"] == provider
-        assert urlsplit(entry["endpoint"]).path == ENDPOINTS[provider]
-        assert entry["temperature"] == call["body"]["temperature"]
-        assert entry["accepted"] is (call["status"] == 200)
-        assert entry["http_status"] == call["status"]
-        if call["status"] == 400:
-            assert call["error"] in str(entry["error"])
-        else:
-            assert entry["error"] in (None, "")
-
-
-@pytest.mark.parametrize("provider", PROVIDERS)
-def test_d3_temperature_support_table_matches_script_defaults(sandbox, provider):
-    _, base, env = sandbox
-    with api_server(provider) as (port, calls):
-        env = api_env(env, provider, port)
-        success(script(base, "sampling.py", ["--provider", provider], env))
-    assert len(calls) == 10
-    models = {call["body"]["model"] for call in calls}
-    assert len(models) == 1
-    model = models.pop()
-    valid_model(model)
-    for call in calls:
-        assert_request(call, provider, env)
-        assert "temperature" in call["body"] and user_prompt(call["body"]) == PROMPT
-    support = section("sampling.md", "Temperature support")
-    as_of = re.search(r"as of\s+(\d{4}-\d\d-\d\d)", support, re.I)
-    assert as_of, "Date the temperature-support documentation check"
-    valid_date(as_of[1])
-    urls = [urlsplit(url) for url in re.findall(r"https://[^\s)>|]+", support)]
-    assert any(url.hostname == "platform.claude.com" and "/api/messages" in url.path for url in urls)
-    assert any(url.hostname == "platform.claude.com" and "model-deprecations" in url.path for url in urls)
-    openai_urls = [url for url in urls if url.hostname in {"platform.openai.com", "developers.openai.com"}]
-    assert any("reference" in url.path and "chat" in url.path and "completions" in url.path for url in openai_urls)
-    assert any("/models/gpt-4.1-mini" in url.path for url in openai_urls)
-    assert "Models released after Claude Opus 4.6 do not support setting temperature" in " ".join(support.split())
-    rows = [row for row in support.splitlines() if "|" in row
-            and re.search(r"(?<![\w.-])" + re.escape(model) + r"(?![\w.-])", row)]
-    assert any(re.search(r"\|\s*(?:\*\*)?(?:yes|accepts)\b", row, re.I) for row in rows), (
-        f"Temperature support needs an accepting table row for the actual {provider} default {model}")
-
-
-def test_d4_sampling_recording_is_vendor_api_run_with_spread():
-    data = recording("sampling.json")
-    meta = metadata(data, "sampling")
-    low, high = sampling_runs(data)
-    assert 0 <= low["temperature"] <= 0.3 and high["temperature"] >= 0.9
-    assert len(set(answers(high))) >= max(2, len(set(answers(low))))
-    support = section("sampling.md", "Temperature support")
-    rows = [row for row in support.splitlines() if "|" in row
-            and re.search(r"(?<![\w.-])" + re.escape(meta["model"]) + r"(?![\w.-])", row)]
-    assert any(re.search(r"\|\s*(?:\*\*)?(?:yes|accepts)\b", row, re.I) for row in rows), (
-        "The recorded vendor model needs an accepting Temperature support row")
-
-
-@pytest.mark.parametrize("name,via", [("strawberry.py", "claude"), ("strawberry.py", "codex"), ("sampling.py", None)])
-@pytest.mark.parametrize("start", ["demo", "root"])
-def test_d4_replay_offline_and_independent_of_cwd(sandbox, name, via, start):
-    root, base, env = sandbox
-    args = ["--replay"] + (["--via", via] if via else [])
-    data = recording(f"strawberry-{via}.json" if via else "sampling.json", base)
-    output = success(script(base, name, args, env, cwd=base if start == "demo" else root))
-    expected = answers(data) if via else [answer for item in sampling_runs(data) for answer in answers(item)]
-    assert all(answer in output for answer in expected)
-    assert data["meta"]["model"] in output and data["meta"]["date"] in output
-
-
-@pytest.mark.parametrize("via", CLIS)
-def test_d4_replay_reads_recorded_answers_instead_of_canned_output(sandbox, via):
-    _, base, env = sandbox
-    path = base / "recorded" / f"strawberry-{via}.json"
-    data = recording(path.name, base)
-    container = next(key for key in ("answers", "outputs", "responses") if key in data)
-    values = data[container]
-    for index, value in enumerate(values):
-        marker = f"unparseable-offline-answer-{index}"
-        if isinstance(value, dict):
-            key = next(key for key in ("raw", "text", "answer", "output", "response") if key in value)
-            value[key] = marker
-        else:
-            values[index] = marker
-    path.write_text(json.dumps(data), encoding="utf-8")
-    output = success(script(base, "strawberry.py", ["--replay", "--via", via], env))
-    assert all(f"unparseable-offline-answer-{index}" in output for index in range(5))
-
-
-def init_repository(root, env):
-    for args in (["git", "init", "-b", "test-model-demos"],
-                 ["git", "config", "user.email", "test@example.invalid"],
-                 ["git", "config", "user.name", "Acceptance test"],
-                 ["git", "add", "."], ["git", "commit", "-m", "Disposable test baseline"]):
-        success(run(args, root, env))
-
-
-@pytest.mark.parametrize("book", ["strawberry.md", "sampling.md"])
-@pytest.mark.parametrize("start", ["demo", "root"])
-def test_d4_documented_fallback_commands_run_literally(sandbox, tmp_path, book, start):
-    root, base, env = sandbox
-    init_repository(root, env)
-    fallback = section(book, "Fallback")
-    commands = [block for block in blocks(fallback) if re.search(r"\buv\s+run\b", block)]
-    assert commands, "Put the runnable fallback in a fenced shell block"
-    combined = "\n".join(commands).replace("\\\n", " ")
-    script_name = book.replace(".md", ".py")
-    assert re.search(r"uv run --no-project --offline python\b[^\n]*" + re.escape(script_name) + r"[^\n]*--replay", combined)
-    if book == "strawberry.md":
-        assert "--via codex" in combined, "Document both recorded CLI fallbacks"
-    hook = tmp_path / "audit-hook"
-    hook.mkdir()
-    (hook / "sitecustomize.py").write_text(AUDIT, encoding="utf-8")
-    env.update(PYTHONPATH=str(hook), DEMO_TEST_NO_CHILDREN="1")
-    # uv is offline, and its selected Python gets the same fail-and-log hook.
-    # No shell rewriting or cwd repair: execute exactly the documented block.
-    outputs = []
-    for command in commands:
-        outputs.append(success(run(["bash", "-e", "-c", command], base if start == "demo" else root, env)))
-        no_forbidden_io(env)
-    output = "\n".join(outputs)
-    expected_names = [f"strawberry-{cli}.json" for cli in CLIS] if book == "strawberry.md" else ["sampling.json"]
-    linked = links(fallback)
-    for name in expected_names:
-        assert DEMO / "recorded" / name in linked
-        data = recording(name)
-        assert data["meta"]["model"] in output and data["meta"]["date"] in output
-        values = answers(data) if name.startswith("strawberry") else [value for item in sampling_runs(data) for value in answers(item)]
-        assert all(value in output for value in values)
-
-
-def test_d4_strawberry_recordings_are_tracked_and_dated(tmp_path):
-    tracked = success(run(["git", "ls-files", "--", RELATIVE / "recorded"], ROOT, child_env(tmp_path)))
-    paths = set(tracked.splitlines())
-    for name in RECORDINGS:
-        if name == "sampling.json":
-            continue
-        read(DEMO / "recorded" / name)
-        assert (RELATIVE / "recorded" / name).as_posix() in paths, f"Recording must be tracked: {name}"
-    for cli in CLIS:
-        valid_date(recording(f"strawberry-{cli}.json")["meta"]["date"])
-        pivot, _ = pivot_metadata(cli)
-        valid_date(pivot["date"])
-
-
-def test_d4_sampling_recording_is_tracked_and_dated(tmp_path):
-    data = recording("sampling.json")
-    tracked = success(run(["git", "ls-files", "--", RELATIVE / "recorded"], ROOT, child_env(tmp_path)))
-    assert (RELATIVE / "recorded/sampling.json").as_posix() in set(tracked.splitlines()), "Recording must be tracked: sampling.json"
-    valid_date(data["meta"]["date"])
-
-
-@pytest.mark.parametrize("provider", PROVIDERS)
-@pytest.mark.parametrize("mode", ["sampling", "probe", "strawberry"])
-@pytest.mark.parametrize("key_value", [None, "", "   \t"])
-def test_a1_missing_or_blank_key_fails_before_network(sandbox, provider, mode, key_value):
-    _, base, env = sandbox
-    if key_value is not None:
-        env[KEYS[provider]] = key_value
-    if mode == "strawberry":
-        name, args = "strawberry.py", ["--via", provider]
-    else:
-        name, args = "sampling.py", ["--provider", provider, "--model", "unavailable-model"]
-        if mode == "probe":
-            args += ["--probe"]
-    result = script(base, name, args, env)
+@pytest.mark.parametrize("key", [None, "", " \t\n"])
+def test_a1_missing_key_is_one_line_and_never_connects(tmp_path, provider, key):
+    _, base, env = sandbox(tmp_path)
+    if key is not None:
+        env[KEYS[provider]] = key
+    result = script(base, "sampling.py", ["--provider", provider], env)
     assert result.returncode == 2
-    assert KEYS[provider] in result.stderr and "--replay" in result.stderr
-    assert re.search(r"not set|missing|blank|empty", result.stderr, re.I)
-    assert "Traceback" not in result.stderr and len(result.stderr.strip().splitlines()) == 1
+    lines = result.stderr.strip().splitlines()
+    assert len(lines) == 1 and KEYS[provider] in lines[0] and "--replay" in lines[0]
+    assert not result.stdout and "Traceback" not in result.stderr
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
-@pytest.mark.parametrize("name", ["strawberry.py", "sampling.py"])
-def test_a1_environment_key_is_sent_to_provider(sandbox, provider, name):
-    _, base, env = sandbox
-    args = (["--via", provider, "--word", "birrrquerrr"] if name == "strawberry.py"
-            else ["--provider", provider, "--model", "auth-test-model"])
-    with api_server(provider) as (port, calls):
-        env = api_env(env, provider, port)
-        result = script(base, name, args, env)
+def test_a1_key_only_reaches_authorization_header(tmp_path, provider):
+    _, base, env = sandbox(tmp_path)
+    with api_server(provider, marker=tmp_path.name) as (port, calls):
+        env = api_env(env, provider, port, tmp_path.name)
+        result = script(base, "sampling.py", ["--provider", provider, "--record"], env)
         output = success(result)
-    assert len(calls) == (5 if name == "strawberry.py" else 10)
-    for call in calls:
-        assert_request(call, provider, env)
-        assert call["text"] in output
-        if name == "strawberry.py":
-            assert "birrrquerrr" in user_prompt(call["body"])
-            assert not {"tools", "temperature"} & call["body"].keys(), "Use vendor default and no tools"
+    assert_requests(calls, provider, env, constants(base / "sampling.py")["DEFAULT_MODELS"][provider], (0.0, 1.0))
     assert env[KEYS[provider]] not in output + result.stderr
+    recorded = read(base / "recorded/sampling.json")
+    assert env[KEYS[provider]] not in recorded
+    data = json.loads(recorded)
+    assert not {"headers", "key", "api_key", "authorization"} & data.keys()
+    assert not re.search(r'"(?:headers|api_key|authorization|x-api-key)"\s*:', recorded, re.I)
 
 
-def test_a1_recordings_and_source_are_scrubbed():
+def test_a1_public_demo_contains_no_credentials_or_private_trace_fields(tmp_path):
     assert DEMO.is_dir()
-    for path in DEMO.rglob("*"):
-        if not path.is_file() or any(part.startswith(".") or part == "work" for part in path.relative_to(DEMO).parts):
-            continue
-        source = path.read_text(encoding="utf-8")
-        assert not re.search(r"\bsk-(?:ant-)?[A-Za-z0-9_-]{16,}", source), f"Key-like literal in {path}"
-        assert not re.search(r"/(?:home|Users)/[A-Za-z0-9_.-]+", source), f"Unscrubbed home path in {path}"
-        if path.suffix == ".txt" and path.parent.name == "recorded":
-            assert not re.search(r'(?i)session[_ -]?id["\s:=]+["\s]*[a-f0-9]{8}[a-f0-9-]{12,}', source), path
+    result = run(["git", "ls-files", "-z", "--", str(RELATIVE)], ROOT, child_env(tmp_path))
+    files = [ROOT / path for path in success(result).split("\0") if path]
+    assert files
+    for path in files:
+        if path.suffix in {".py", ".json", ".md", ".txt"}:
+            no_sensitive(read(path))
 
 
-def timing_total(source):
-    """Accept min/sec or m:ss, including Markdown table column units."""
-    lines = [line for line in source.splitlines() if "|" in line]
-    assert len(lines) >= 3, "Timing needs a table of beats"
-    total = [line for line in lines if re.search(r"\btotal\b", line, re.I)]
-    assert len(total) == 1, "State a total in the timing table"
-    value = total[0]
-    minute_second = re.search(r"\b(\d+):(\d{2})\b", value)
-    if minute_second:
-        assert int(minute_second[2]) < 60
-        return int(minute_second[1]) * 60 + int(minute_second[2])
-    quantity = re.search(r"(\d+(?:\.\d+)?)\s*(minutes?|mins?|m|seconds?|secs?|s)\b", value, re.I)
-    if quantity:
-        return float(quantity[1]) * (60 if quantity[2].lower().startswith("m") else 1)
-    header = lines[0].lower()
-    numbers = re.findall(r"\b\d+(?:\.\d+)?\b", value)
-    assert len(numbers) == 1 and re.search(r"min|sec|\(s\)|\(m\)", header), "Give timing units"
-    return float(numbers[0]) * (60 if "min" in header or "(m)" in header else 1)
-
-
-@pytest.mark.parametrize("book", ["strawberry.md", "sampling.md"])
-def test_a2_runbook_sections_timing_and_reset(sandbox, book):
-    root, base, env = sandbox
-    for heading in SECTIONS:
-        section(book, heading)
-    assert 0 < timing_total(section(book, "Timing")) <= 300
-    if book == "sampling.md":
-        assert re.search(r"not (fully )?deterministic|not guaranteed|may (still )?differ",
-                         section(book, "Expected outcome"), re.I), "Explain that low-temperature identity is not guaranteed"
-    reset = blocks(section(book, "Reset"))
-    assert len(reset) == 1 and reset[0].strip() == RESET
-    (root / ".gitignore").write_text(".uv-cache/\n*.pyc\n", encoding="utf-8")
-    init_repository(root, env)
-    sentinel = root / "outside-the-demo.txt"
-    sentinel.write_text("preserve me", encoding="utf-8")
-    for name in ("work/count_r.py", "work/.uv-cache/cache.bin", "work/__pycache__/dirty.pyc", "stray.txt"):
-        path = base / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("dirty", encoding="utf-8")
-    (base / book).write_text("staged edit", encoding="utf-8")
-    success(run(["git", "add", str(RELATIVE / book)], root, env))
-    (base / "README.md").write_text("unstaged edit", encoding="utf-8")
-    success(run(["bash", "-c", reset[0].strip()], base, env))
-    assert success(run(["git", "status", "--short", "--ignored", "--untracked-files=all", "--", RELATIVE], root, env)) == ""
-    assert sentinel.read_text() == "preserve me"
-
-
-def metadata(data, kind):
-    meta = data["meta"]
-    valid_date(meta["date"])
-    assert type(meta.get("attempt")) is int and meta["attempt"] >= 1
-    if kind == "probe":
-        # Probe model IDs belong to individual entries, not one aggregate model.
-        for entry in probe_entries(data):
-            valid_model(entry["model"])
-            if "date" in entry:
-                valid_date(entry["date"])
-        return meta
-    valid_model(meta["model"])
-    # A CLI-default request has no explicit requested model; record that fact
-    # while requiring the actual model reported by the CLI above.
-    assert "requested_model" in meta
-    assert meta["requested_model"] is None or (isinstance(meta["requested_model"], str) and meta["requested_model"].strip())
-    assert isinstance(meta["params"], dict) and meta["params"]
-    assert isinstance(meta["prompt"], str) and meta["prompt"].strip()
-    assert Path(meta["script"]).name == ("sampling.py" if kind == "sampling" else "strawberry.py")
-    if kind in CLIS:
-        assert meta["via"] == kind and kind in meta["cli"].lower()
-        assert re.search(r"\d+\.\d+", meta["cli_version"])
-        params = json.dumps(meta["params"])
-        if kind == "claude":
-            assert "--tools" in params or "--disallowedTools" in params
-        else:
-            assert "read-only" in params
-    else:
-        assert meta["provider"] in PROVIDERS
-        assert urlsplit(meta["endpoint"]).path == ENDPOINTS[meta["provider"]]
-    return meta
-
-
-def table_mentions(table, filename, model, run_date):
-    rows = [row for row in table.splitlines() if "|" in row and filename in row]
-    assert rows, f"Recorded runs needs a row for {filename}"
-    assert any(model in row and run_date in row for row in rows), f"Metadata mismatch for {filename}: {model}, {run_date}"
-
-
-def test_a3_every_committed_recording_has_model_and_date():
-    required = set(RECORDINGS) - {"sampling.json"}
-    for name in required:
-        read(DEMO / "recorded" / name)
+def test_a2_runbook_beats_prediction_and_expected_outcomes():
+    truth = word().count("r")
+    for name in ("strawberry.md", "sampling.md"):
+        rows = tables(section(name, "Timing"))
+        assert len(rows) >= 3, "Timing needs a header, per-beat rows, and Total"
+        totals = [row for row in rows if any(re.search(r"\btotal\b", cell, re.I) for cell in row)]
+        assert len(totals) == 1
+        duration = re.search(r"\b(\d{1,2}):([0-5]\d)\b", " ".join(totals[0]))
+        assert duration and 0 < int(duration[1]) * 60 + int(duration[2]) <= 600
+        assert "?" in section(name, "Predict")
+        section(name, "Run")
+        section(name, "Fallback")
+        section(name, "Recorded runs")
+        assert len(blocks(section(name, "Reset"))) == 1
+    expected = section("strawberry.md", "Expected outcome")
+    assert re.search(rf"\b{truth}\b", expected)
     for cli in CLIS:
-        name = f"strawberry-{cli}.json"
-        meta = metadata(recording(name), cli)
-        assert meta["model"].lower() not in {"haiku", "sonnet", "opus", "default", "latest"}
-        if cli == "claude":
-            assert meta["model"].startswith("claude-"), "Record the resolved Claude model ID"
-        table = section("strawberry.md", "Recorded runs")
-        linked = links(table)
-        assert DEMO / "recorded" / name in linked
-        table_mentions(table, name, meta["model"], meta["date"])
-        pivot, _ = pivot_metadata(cli)
-        valid_model(pivot["model"])
-        valid_date(pivot["date"])
-        for filename in (f"{cli}-pivot.txt", f"{cli}_count_r.py"):
-            assert DEMO / "recorded" / filename in linked
-            table_mentions(table, filename, pivot["model"], pivot["date"])
-    # Optional recordings are not prerequisites, but none may escape metadata
-    # and runbook checks when added. Unknown formats fail rather than vanish.
-    for path in sorted((DEMO / "recorded").rglob("*")):
-        if not path.is_file():
-            continue
-        name = path.relative_to(DEMO / "recorded").as_posix()
-        if name in required:
-            continue
-        assert name in {"sampling.json", "temperature_probe.json"}, f"No metadata contract for recording: {name}"
+        assert recording(f"strawberry-{cli}.json")["meta"]["model"] in expected
+    assert re.search(r"(?:all|every|five|5).*correct|correct.*(?:all|every|five|5)", expected, re.I | re.S)
+    assert re.search(r"record(?:ing|ed)", expected, re.I) and re.search(r"wrong|incorrect", expected, re.I)
+    assert re.search(r"pivot", expected, re.I)
+    expected = section("sampling.md", "Expected outcome")
+    assert re.search(r"not (?:fully )?(?:guaranteed|deterministic)|non[- ]deterministic", expected, re.I)
+    if (DEMO / "recorded/sampling.json").exists():
+        for item in recording("sampling.json")["runs"]:
+            k = len(set(item["outputs"]))
+            assert re.search(rf"\b{k}\s+(?:of|/)\s*5\b", expected)
+    else:
+        assert re.search(r"pending", expected, re.I)
+        assert re.search(r"pending\s*:\s*record with a key", section("sampling.md", "Recorded runs"), re.I)
+
+
+def git(argv, root, env):
+    return success(run(["git", *argv], root, env))
+
+
+@pytest.mark.parametrize("name", ["strawberry.md", "sampling.md"])
+def test_a2_documented_reset_restores_demo_only_in_disposable_repo(tmp_path, name):
+    root, base, env = sandbox(tmp_path)
+    command_blocks = blocks(section(name, "Reset", base))
+    assert len(command_blocks) == 1
+    command = command_blocks[0]
+    # This repository is a fixture; never mutate or commit the worker's repo.
+    git(["init", "--initial-branch=fixture"], root, env)
+    outside = root / "outside.txt"
+    outside.write_text("outside baseline\n", encoding="utf-8")
+    git(["add", "."], root, env)
+    git(["-c", "user.name=Acceptance fixture", "-c", "user.email=fixture@example.invalid",
+         "commit", "-qm", "fixture baseline"], root, env)
+    baseline = {p.relative_to(base): p.read_bytes() for p in base.rglob("*") if p.is_file()}
+    (base / "README.md").write_text("staged edit\n", encoding="utf-8")
+    git(["add", str(RELATIVE / "README.md")], root, env)
+    (base / "README.md").write_text("unstaged edit over staged edit\n", encoding="utf-8")
+    (base / "sampling.md").unlink()
+    staged_stray = base / "staged-stray.txt"
+    staged_stray.write_text("new staged file\n", encoding="utf-8")
+    git(["add", str(RELATIVE / "staged-stray.txt")], root, env)
+    (base / "work").mkdir()
+    (base / "work/ignored.txt").write_text("work debris\n", encoding="utf-8")
+    (base / "stray-dir").mkdir()
+    (base / "stray-dir/untracked.txt").write_text("untracked debris\n", encoding="utf-8")
+    outside.write_text("outside staged edit\n", encoding="utf-8")
+    git(["add", "outside.txt"], root, env)
+    outside.write_text("outside unstaged edit\n", encoding="utf-8")
+    outside_untracked = root / "outside-untracked.txt"
+    outside_untracked.write_text("keep outside debris\n", encoding="utf-8")
+    outside_index = git(["show", ":outside.txt"], root, env)
+    # Fenced shell text is used exactly, without replacing it with a preferred
+    # reset command. Global config and hooks cannot influence this fixture.
+    success(run(["bash", "--noprofile", "--norc", "-c", command], base, env))
+    assert not (base / "work").exists() and not (base / "stray-dir").exists()
+    after = {p.relative_to(base): p.read_bytes() for p in base.rglob("*") if p.is_file()}
+    assert after == baseline
+    assert not git(["status", "--porcelain", "--", str(RELATIVE)], root, env).strip()
+    assert outside.read_text() == "outside unstaged edit\n"
+    assert git(["show", ":outside.txt"], root, env) == outside_index
+    assert outside_untracked.read_text() == "keep outside debris\n"
+
+
+def recorded_row(name, data, base=DEMO):
+    rows = tables(section("sampling.md" if name == "sampling.json" else "strawberry.md", "Recorded runs", base))
+    matches = [row for row in rows if name in " ".join(row)]
+    assert len(matches) == 1, f"Recorded runs must list {name} once"
+    line = " ".join(matches[0])
+    assert data["meta"]["model"] in line and data["meta"]["date"] in line
+
+
+def assert_cli_meta(data, cli, step, base, today=False):
+    meta = data["meta"]
+    assert meta["demo"] == "strawberry" and meta["cli"] == cli and meta["step"] == step
+    valid_model(meta["model"])
+    valid_date(meta["date"])
+    if today:
+        assert meta["date"] == date.today().isoformat()
+        assert meta["model"] == constants(base / "strawberry.py")["MODELS"][cli]
+    assert isinstance(meta["cli_version"], str) and re.search(r"\d", meta["cli_version"])
+    assert isinstance(meta["command"], list) and meta["command"]
+    assert all(isinstance(arg, str) for arg in meta["command"])
+    assert Path(meta["command"][0]).name == cli and meta["command"].count("<prompt>") == 1
+    assert word(base) not in " ".join(meta["command"])
+    prompt = constants(base / "strawberry.py")["ASK" if step == "ask" else "PIVOT"].replace("{WORD}", word(base))
+    assert meta["prompt"] == prompt
+    # Reconstruct argv from the provenance placeholder and verify it too.
+    argv = [prompt if arg == "<prompt>" else arg for arg in meta["command"][1:]]
+    if step == "ask":
+        assert_ask_command(cli, argv, prompt, meta["model"])
+    elif cli == "claude":
+        assert option(argv, "--permission-mode") == "acceptEdits"
+        assert option(argv, "--allowedTools") == "Bash(uv run:*)"
+        assert option(argv, "--output-format") == "stream-json" and "--verbose" in argv
+    else:
+        assert "exec" in argv and "--json" in argv and option(argv, "--sandbox") == "workspace-write"
+    reported = meta.get("model_reported")
+    assert isinstance(reported, (str, list)) and reported
+    values = reported if isinstance(reported, list) else [reported]
+    assert all(isinstance(v, str) and v.strip() for v in values)
+    if cli == "claude":
+        raw = data["raw"] if step == "ask" else [data["events"]]
+        reported_raw = set()
+        for stream in raw:
+            for event in events(stream):
+                reported_raw.update(event.get("modelUsage", {}).keys())
+        assert reported_raw and set(values) == reported_raw
+    elif today:
+        # The fixture intentionally omits the reported Codex model; the requested
+        # concrete ID must be used with an explicit provenance note.
+        assert values == [meta["model"]]
+        notes = " ".join(str(v) for k, v in meta.items() if k not in {"command", "prompt", "model", "model_reported"})
+        assert re.search(r"requested|fallback|not report|unreported|does not report|did not report", notes, re.I)
+    no_sensitive(json.dumps(data))
+
+
+def assert_sampling_record(data, base, expected_calls=None, provider=None, env=None):
+    meta = data["meta"]
+    assert meta["demo"] == "sampling" and meta["provider"] in PROVIDERS
+    valid_model(meta["model"])
+    valid_date(meta["date"])
+    assert meta["prompt"] == PROMPT and meta["max_tokens"] == 20
+    parsed = urlsplit(meta["endpoint"])
+    if expected_calls is None:
+        assert parsed.scheme == "https"
+        assert (parsed.hostname, parsed.path) == (("api.anthropic.com", "/v1/messages") if meta["provider"] == "anthropic"
+                                                 else ("api.openai.com", "/v1/chat/completions"))
+    else:
+        assert meta["provider"] == provider and meta["date"] == date.today().isoformat()
+        assert meta["endpoint"] == env[BASES[provider]] + ("/v1/messages" if provider == "anthropic" else "/chat/completions")
+    runs = data.get("runs")
+    assert isinstance(runs, list) and len(runs) == 2
+    temperatures = [item.get("temperature") for item in runs]
+    assert all(type(t) in {int, float} and math.isfinite(t) for t in temperatures)
+    assert temperatures[0] < temperatures[1]
+    if expected_calls is None:
+        ranges = temperature_ranges(base)
+        assert meta["model"] in ranges
+        low, high = ranges[meta["model"]]
+        assert all(low <= t <= high for t in temperatures)
+    for item in runs:
+        assert isinstance(item.get("outputs"), list) and len(item["outputs"]) == 5
+        assert all(isinstance(s, str) and s.strip() for s in item["outputs"])
+        assert isinstance(item.get("responses"), list) and len(item["responses"]) == 5
+        if "prompt" in item:
+            assert item["prompt"] == PROMPT
+        if "model" in item:
+            assert item["model"] == meta["model"]
+        calls = ([c for c in expected_calls if c["body"]["temperature"] == item["temperature"]]
+                 if expected_calls is not None else None)
+        for i, response in enumerate(item["responses"]):
+            assert isinstance(response, dict)
+            assert isinstance(response.get("id"), str) and response["id"].strip()
+            assert isinstance(response.get("model_reported"), str) and response["model_reported"].strip()
+            reason = "stop_reason" if meta["provider"] == "anthropic" else "finish_reason"
+            assert isinstance(response.get(reason), str) and response[reason]
+            assert isinstance(response.get("usage"), dict) and response["usage"]
+            assert not {"headers", "api_key", "authorization"} & response.keys()
+            if calls is not None:
+                raw = calls[i]["response"]
+                assert item["outputs"][i] == calls[i]["text"]
+                assert response["id"] == raw["id"] and response["model_reported"] == raw["model"]
+                assert response["usage"] == raw["usage"]
+                assert response[reason] == (raw[reason] if provider == "anthropic" else raw["choices"][0][reason])
+    no_sensitive(json.dumps(data))
+
+
+def test_a3_every_recording_metadata_and_runbook_rows():
+    for name in STRAWBERRY_FILES:
         data = recording(name)
-        table = section("sampling.md", "Recorded runs")
-        linked = links(table)
-        assert path in linked
-        if name == "sampling.json":
-            meta = metadata(data, "sampling")
-            table_mentions(table, name, meta["model"], meta["date"])
+        cli = "claude" if "claude" in name else "codex"
+        step = "ask" if name.startswith("strawberry-") else "pivot"
+        assert_cli_meta(data, cli, step, DEMO)
+        recorded_row(name, data)
+        if step == "pivot":
+            recorded_row(f"{cli}_count_r.py", data)
+    names = list((DEMO / "recorded").glob("*.json"))
+    assert names
+    for path in names:
+        data = recording(path.name)
+        valid_model(data["meta"]["model"])
+        valid_date(data["meta"]["date"])
+        if path.name == "sampling.json":
+            assert_sampling_record(data, DEMO)
         else:
-            metadata(data, "probe")
-            for entry in probe_entries(data):
-                table_mentions(table, name, entry["model"], entry.get("date", data["meta"]["date"]))
+            assert data["meta"].get("model_reported")
+        recorded_row(path.name, data)
+
+
+@pytest.mark.parametrize("cli", CLIS)
+@pytest.mark.parametrize("pivot", [False, True])
+def test_a3_record_stamps_cli_model_version_date_and_safe_events(tmp_path, cli, pivot):
+    _, base, env = sandbox(tmp_path)
+    env = cli_env(tmp_path, env, cli, base)
+    args = ["--via", cli, "--record"] + (["--pivot"] if pivot else [])
+    success(script(base, "strawberry.py", args, env, children=True))
+    name = f"{'pivot' if pivot else 'strawberry'}-{cli}.json"
+    data = recording(name, base)
+    assert_cli_meta(data, cli, "pivot" if pivot else "ask", base, today=True)
+    assert re.search(r"\b1\.2\.3\b", data["meta"]["cli_version"])
+    if pivot:
+        assert_pivot_record(data, cli, base)
+        assert (base / "recorded" / f"{cli}_count_r.py").read_bytes() == (base / "work/count_r.py").read_bytes()
+    else:
+        assert_ask_record(data, cli, base)
+        if cli == "claude":
+            value = data["meta"]["model_reported"]
+            assert (value if isinstance(value, list) else [value]) == ["claude-stub-20990101"]
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)
-def test_a3_sampling_record_writes_model_and_run_date(sandbox, tmp_path, provider):
-    _, base, env = sandbox
-    model = "alternate-record-model-73"
-    target = tmp_path / "new recording.json"
-    today = date.today().isoformat()
-    with api_server(provider) as (port, calls):
+def test_a3_record_stamps_api_response_provenance_and_requested_model(tmp_path, provider):
+    root, base, env = sandbox(tmp_path)
+    with api_server(provider, (0.2, 0.8), marker=tmp_path.name) as (port, calls):
         env = api_env(env, provider, port)
-        success(script(base, "sampling.py", ["--provider", provider, "--model", model,
-                                            "--record", str(target)], env))
-    assert len(calls) == 10
-    for call in calls:
-        assert_request(call, provider, env)
-        assert call["body"]["model"] == model
-    data = json.loads(read(target))
-    meta = metadata(data, "sampling")
-    assert meta["model"] == model and meta["date"] == today
-    assert meta["provider"] == provider and urlsplit(meta["endpoint"]).path == ENDPOINTS[provider]
+        args = ["--provider", provider, "--model", "fixture-requested-73", "--low", "0.2", "--high", "0.8", "--record"]
+        success(script(base, "sampling.py", args, env, cwd=root))
+    data = recording("sampling.json", base)
+    assert data["meta"]["model"] == "fixture-requested-73"
+    assert_requests(calls, provider, env, "fixture-requested-73", (0.2, 0.8))
+    assert_sampling_record(data, base, calls, provider, env)
 
 
-def test_d3_harness_oracles_reject_bad_sampling_data():
-    """Test our schema adapter without fabricating any deliverable recordings."""
-    sample = {"meta": {"model": "test-model", "prompt": PROMPT}, "runs": [
-        {"temperature": 0, "outputs": ["a"] * 5},
-        {"temperature": 1, "outputs": ["b", "c", "d", "e", "f"]}]}
-    assert len(sampling_runs(sample)) == 2
-    for field, value in (("outputs", ["a"] * 4), ("outputs", [""] * 5),
-                         ("model", "different-model"), ("prompt", "different prompt")):
-        changed = json.loads(json.dumps(sample))
-        changed["runs"][1][field] = value
-        with pytest.raises(AssertionError):
-            sampling_runs(changed)
+def test_d4_strawberry_artifacts_are_git_tracked_and_dated(tmp_path):
+    tracked = set(success(run(["git", "ls-files", "-z", "--", str(RELATIVE / "recorded")], ROOT,
+                             child_env(tmp_path))).split("\0"))
+    for name in (*STRAWBERRY_FILES, *COUNT_FILES):
+        assert str(RELATIVE / "recorded" / name) in tracked, f"Uncommitted fallback: {name}"
+        assert (DEMO / "recorded" / name).is_file()
+    for name in STRAWBERRY_FILES:
+        valid_date(recording(name)["meta"]["date"])
+    if (DEMO / "recorded/sampling.json").exists():
+        assert str(RELATIVE / "recorded/sampling.json") in tracked
+        valid_date(recording("sampling.json")["meta"]["date"])
 
 
-def test_a1_harness_audit_logs_even_caught_network_attempts(tmp_path):
-    env = child_env(tmp_path)
-    code = AUDIT + '''
-import socket
-try:
-    socket.getaddrinfo("example.invalid", 443)
-except RuntimeError:
-    pass
-'''
-    success(run([sys.executable, "-c", code], tmp_path, env))
-    assert "socket.getaddrinfo" in Path(env["DEMO_TEST_AUDIT_LOG"]).read_text()
+@pytest.mark.parametrize("cli", CLIS)
+@pytest.mark.parametrize("pivot", [False, True])
+@pytest.mark.parametrize("start", ["demo", "repo"])
+def test_d4_replay_reads_recording_offline_without_any_child(tmp_path, cli, pivot, start):
+    root, base, env = sandbox(tmp_path)
+    name = f"{'pivot' if pivot else 'strawberry'}-{cli}.json"
+    data = recording(name, base)
+    marker = "offline-pivot-proof-λ"
+    if pivot:
+        changed = False
+        for event in data["events"]:
+            if cli == "codex" and event.get("item", {}).get("type") == "command_execution" and event["item"].get("aggregated_output"):
+                event["item"]["aggregated_output"] = marker + "\n" + str(data["truth"]) + "\n"
+                changed = True
+            elif cli == "claude":
+                for block in event.get("message", {}).get("content", []):
+                    if block.get("type") == "tool_result" and re.search(rf"^\s*{data['truth']}\s*$", "\n".join(strings(block.get("content", ""))), re.M):
+                        block["content"] = marker + "\n" + str(data["truth"]) + "\n"
+                        changed = True
+        assert changed, "Need a saved execution result to mutate"
+    else:
+        replacement = f"Replay-specific answer: {data['truth'] + 41}"
+        data["answers"][0] = replacement
+        data["classes"][0] = "incorrect"
+        stream = events(data["raw"][0])
+        if cli == "claude":
+            next(e for e in stream if e.get("type") == "result")["result"] = replacement
+        else:
+            matches = [e["item"] for e in stream if e.get("type") == "item.completed" and e.get("item", {}).get("type") == "agent_message"]
+            assert len(matches) == 1
+            matches[0]["text"] = replacement
+        data["raw"][0] = stream
+    (base / "recorded" / name).write_text(json.dumps(data), encoding="utf-8")
+    args = ["--replay", "--via", cli] + (["--pivot"] if pivot else [])
+    output = success(script(base, "strawberry.py", args, env, cwd=base if start == "demo" else root))
+    assert f"model {data['meta']['model']} · recorded {data['meta']['date']}" in output.splitlines()
+    if pivot:
+        compact_pivot(output, data["truth"])
+        assert marker in output
+    else:
+        assert_ask_output(output, data["answers"], data["tools_used"], data["truth"])
 
 
-def test_d3_harness_loopback_server_and_audit_work(tmp_path):
-    env = child_env(tmp_path)
-    code = AUDIT + '''
-import json
-from urllib.request import Request, urlopen
-request = Request(os.environ["OPENAI_BASE_URL"] + "/v1/chat/completions",
-    data=json.dumps({"model": "harness-model", "temperature": 1}).encode(),
-    headers={"Content-Type": "application/json"})
-with urlopen(request, timeout=5) as response:
-    print(response.read().decode())
-'''
-    with api_server("openai") as (port, calls):
-        env = api_env(env, "openai", port)
-        output = success(run([sys.executable, "-c", code], tmp_path, env))
-    no_forbidden_io(env)
-    assert len(calls) == 1
-    assert json.loads(output)["choices"][0]["message"]["content"] == calls[0]["text"]
+def literal_shell_blocks(base, name, env):
+    command_blocks = blocks(section(name, "Fallback", base))
+    assert command_blocks, f"{name}: fenced offline commands required"
+    output = []
+    for command in command_blocks:
+        output.append(success(run(["bash", "--noprofile", "--norc", "-c", command], base, env)))
+    return command_blocks, output
+
+
+def test_d4_all_strawberry_fallback_commands_run_literally_offline(tmp_path):
+    _, base, env = sandbox(tmp_path)
+    assert shutil.which("uv"), "Engine prerequisite: real uv"
+    command_blocks, output = literal_shell_blocks(base, "strawberry.md", env)
+    commands = []
+    for block in command_blocks:
+        for line in block.replace("\\\n", " ").splitlines():
+            if line.strip().startswith("uv "):
+                commands.append(shlex.split(line))
+    for cli in CLIS:
+        for pivot in (False, True):
+            prefix = ["uv", "run", "--offline", "strawberry.py", "--replay"]
+            flags = (["--via", "codex"] if cli == "codex" else []) + (["--pivot"] if pivot else [])
+            assert any(c[:len(prefix)] == prefix and Counter(c[len(prefix):]) == Counter(flags) for c in commands)
+        count_command = ["uv", "run", "--no-project", "--offline", "python", f"recorded/{cli}_count_r.py"]
+        assert count_command in commands
+        # Also run the mandated literal count command alone so a nearby replay
+        # printing truth cannot conceal a broken saved program.
+        assert success(run(count_command, base, env)).strip() == str(word(base).count("r"))
+    assert output and any("wrong:" in value for value in output)
+    assert any("true count:" in value for value in output)
+
+
+@pytest.mark.parametrize("provider", PROVIDERS)
+def test_d4_sampling_record_then_offline_replay_and_literal_fallback(tmp_path, provider):
+    root, base, env = sandbox(tmp_path)
+    with api_server(provider, marker=tmp_path.name) as (port, calls):
+        live_env = api_env(env, provider, port)
+        success(script(base, "sampling.py", ["--provider", provider, "--record"], live_env))
+    data = recording("sampling.json", base)
+    assert_sampling_record(data, base, calls, provider, live_env)
+    for cwd in (base, root):
+        output = success(script(base, "sampling.py", ["--replay"], env, cwd=cwd))
+        assert_sampling_output(output, data["runs"])
+        assert data["meta"]["model"] in output and data["meta"]["date"] in output
+    commands, outputs = literal_shell_blocks(base, "sampling.md", env)
+    assert any(re.search(r"\buv\s+run\s+--offline\s+sampling\.py\s+--replay\b", command) for command in commands)
+    assert_sampling_output("\n".join(outputs), data["runs"])
+
+
+def test_d4_missing_sampling_replay_explains_owner_recording(tmp_path):
+    _, base, env = sandbox(tmp_path)
+    (base / "recorded/sampling.json").unlink(missing_ok=True)
+    result = script(base, "sampling.py", ["--replay"], env)
+    assert result.returncode == 1
+    lines = (result.stdout + result.stderr).strip().splitlines()
+    assert len(lines) == 1
+    assert re.search(r"missing|no recording|not found", lines[0], re.I)
+    assert "--record" in lines[0] and re.search(r"key|API_KEY", lines[0], re.I)
+    assert "Traceback" not in result.stdout + result.stderr
