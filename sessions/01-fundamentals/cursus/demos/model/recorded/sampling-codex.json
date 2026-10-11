@@ -1,0 +1,65 @@
+{
+  "meta": {
+    "demo": "sampling",
+    "cli": "codex",
+    "cli_version": "codex-cli 0.162.1",
+    "model": "gpt-6-luna",
+    "effort": "low",
+    "date": "2026-10-11",
+    "prompt": "Invent a name for a new optimization solver. Reply with the name only.",
+    "command": [
+      "codex",
+      "exec",
+      "--sandbox",
+      "read-only",
+      "-m",
+      "gpt-6-luna",
+      "-c",
+      "model_reasoning_effort=\"low\"",
+      "--disable",
+      "shell_tool",
+      "--disable",
+      "unified_exec",
+      "--skip-git-repo-check",
+      "--ephemeral",
+      "-o",
+      "<last-message-file>",
+      "<prompt>"
+    ],
+    "model_reported": [
+      "gpt-6-luna"
+    ],
+    "model_evidence": [
+      "model: gpt-6-luna"
+    ]
+  },
+  "answers": [
+    "Fluxforge",
+    "Fluxora",
+    "OptiForge",
+    "Parallax Solver",
+    "OptiForge"
+  ],
+  "raw": [
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nInvent a name for a new optimization solver. Reply with the name only.\ncodex\nFluxforge\ntokens used\n3,264\n",
+      "last_message": "Fluxforge"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nInvent a name for a new optimization solver. Reply with the name only.\ncodex\nFluxora\ntokens used\n192\n",
+      "last_message": "Fluxora"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nInvent a name for a new optimization solver. Reply with the name only.\ncodex\nOptiForge\ntokens used\n12,481\n",
+      "last_message": "OptiForge"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nInvent a name for a new optimization solver. Reply with the name only.\ncodex\nParallax Solver\ntokens used\n12,481\n",
+      "last_message": "Parallax Solver"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nInvent a name for a new optimization solver. Reply with the name only.\ncodex\nOptiForge\ntokens used\n10,433\n",
+      "last_message": "OptiForge"
+    }
+  ]
+}

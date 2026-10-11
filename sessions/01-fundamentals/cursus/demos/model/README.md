@@ -1,31 +1,38 @@
 # Act I demos · the model itself
 
 **Instructor material.** Two short live demos for Act I of Session 1, each with a one-page
-runbook, a stdlib `uv run` script and a dated recording that replays without a network. Like
+runbook, a stdlib `uv run` script and dated recordings that replay without a network. Like
 every demo, they run on the instructor's Linux machine only (ADR 0010). Students do not run them.
 
 | Demo | Runbook | Script | What the room sees |
 | --- | --- | --- | --- |
 | Strawberry pivot | [`strawberry.md`](strawberry.md) | [`strawberry.py`](strawberry.py) | A fast model, tools off, miscounts the r's in a 300-letter invented word; the same agent writes and runs code and gets 146 |
-| Sampling divergence | [`sampling.md`](sampling.md) | [`sampling.py`](sampling.py) | One prompt sent five times at a low and five times at a high temperature, and how many distinct answers each gives |
+| Sampling divergence | [`sampling.md`](sampling.md) | [`sampling.py`](sampling.py) | One prompt sent five times at the CLI's default sampling, and how many distinct answers come back |
 
-[`recorded/`](recorded/) holds the dated recordings, each made by the script's `--record` and
-never edited by hand:
+Both scripts drive the coding-agent CLI you already have, Claude Code (`claude -p`) or Codex
+(`codex exec`), through its own login. No script reads an API key or calls a provider API.
+[`agent_cli.py`](agent_cli.py) holds the shared part: which CLI to use, the headless call and
+what a recording keeps.
 
-- Strawberry: the naive answers and the pivot transcript for Claude Code and for Codex, and the
-  `count_r.py` each agent wrote. Recorded on 2026-10-11.
-- Sampling: **pending**. `recorded/sampling.json` needs an `ANTHROPIC_API_KEY` or
-  `OPENAI_API_KEY`, which the run that built this demo did not have. Until someone with a key
-  records it (see [`sampling.md`](sampling.md), Recorded runs), the API demo cannot be replayed.
-  The only offline option is a labelled stand-in, `uv run --offline sampling.py --fixture`: GPT-2's
-  next token drawn at each temperature from the committed logits in `cursus/fixtures/`. It shows
-  the same mechanism, but it is not the API and not a recording.
+Which CLI: with no flag, the first one installed and logged in, in the order claude then codex;
+the script prints which it picked. `--via claude` or `--via codex` forces one, and then the other
+is never contacted. Logins are checked with `claude auth status` and `codex login status`. When
+none is usable, the script stops with a message naming each CLI, whether it is missing or logged
+out, how to log in (run `claude` and type /login, or run `codex login`), and its own `--replay`
+command. `--replay` starts no CLI and opens no socket; with no `--via` it replays the Claude Code
+recording.
 
-Keys: `sampling.py` reads `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the environment, puts it in
-the auth header only, and stops with a one-line message if it is unset. `strawberry.py` reads no
-key: it drives the `claude` and `codex` CLIs, which use your own login. `--replay` needs neither.
+[`recorded/`](recorded/) holds the recordings, each made by the script's `--record` on
+2026-10-11 and never edited by hand. Each runbook's Recorded runs table gives the CLI version
+and the model as the CLI reported it.
 
-Recordings keep only what the room needs: answers, tool calls, their output and the model
-usage. Session and thread IDs are dropped, and paths are made relative to this folder or `~`.
+- `strawberry-claude.json`, `strawberry-codex.json`: the five tool-free answers of the ask step.
+- `pivot-claude.json`, `pivot-codex.json`: the pivot's tool calls and their output.
+- `claude_count_r.py`, `codex_count_r.py`: the `work/count_r.py` each agent wrote in the pivot.
+- `sampling-claude.json`, `sampling-codex.json`: the five answers of the sampling demo.
+
+Recordings keep only what the room and the evidence need: answers, tool calls and their output,
+the model usage or Codex's config banner. Session and thread IDs are dropped, and paths are made
+relative to this folder or `~`.
 
 Agents write to `work/` in this folder. It is not tracked, and each runbook's reset removes it.

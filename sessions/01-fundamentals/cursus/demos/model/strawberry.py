@@ -6,26 +6,25 @@
 
 The ask step sends the same question five times, headless, through Claude Code or
 Codex with tools disabled, and checks each answer against the true count. The pivot
-step asks the agent to write and run work/count_r.py instead. --record saves either
-step under recorded/; --replay prints a recording with no network and no process.
-The CLIs use their own logins: this script reads no API key.
+step asks the agent to write and run work/count_r.py instead. With no --via, the first
+installed and logged-in CLI is used (claude, then codex). --record saves either step
+under recorded/; --replay prints a recording with no network and no process. The CLIs
+use their own logins: this script reads no API key.
 """
 
 import argparse
 from collections import Counter
 from datetime import date
-import json
-import os
-from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-RECORDED = HERE / "recorded"
-WORK = HERE / "work"
+import agent_cli
+from agent_cli import EFFORT, MODELS, RECORDED, WORK, Failure
+
+SCRIPT = "strawberry.py"
 
 # Invented: 300 letters, 146 of them r. Fixed so that recordings stay comparable.
 WORD = "strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor"
@@ -38,90 +37,32 @@ PIVOT = ("Write a Python file work/count_r.py that keeps this word in a variable
          "file is written, run it as a separate step with exactly this command: "
          "uv run --no-project python work/count_r.py and reply with what it printed.")
 
-# Small, fast models at low effort: the point is the failure mode, not the best score.
-MODELS = {"claude": "claude-haiku-5-5", "codex": "gpt-6-luna"}
-EFFORT = {"claude": "low", "codex": "low"}
 RUNS = 5
-TIMEOUT_S = 300
-PRIVATE_KEYS = {"session_id", "thread_id", "uuid"}
-CLAUDE_RESULT_KEYS = ("type", "subtype", "is_error", "num_turns", "result", "stop_reason",
-                      "duration_ms", "modelUsage")
 SYMBOL = {"correct": "✓", "incorrect": "✗", "unparseable": "?"}
-
-
-class Failure(Exception):
-    """A one-line, user-facing error."""
+# Codex plain-mode transcript: a section starts with one of these words on its own line.
+SECTIONS = {"user", "codex", "exec", "thinking", "tokens used", "file update", "apply_patch"}
 
 
 def prompt(template):
     return template.replace("{WORD}", WORD)
 
 
-def ask_argv(cli):
-    if cli == "claude":
-        return ["claude", "-p", prompt(ASK), "--model", MODELS[cli], "--effort", EFFORT[cli],
-                "--tools", "", "--strict-mcp-config", "--no-session-persistence",
-                "--output-format", "json"]
-    return ["codex", "exec", "--json", "--sandbox", "read-only", "-m", MODELS[cli],
-            "-c", f'model_reasoning_effort="{EFFORT[cli]}"', "--disable", "shell_tool",
-            "--disable", "unified_exec", "--skip-git-repo-check", "--ephemeral", prompt(ASK)]
-
-
-def pivot_argv(cli):
+def pivot_argv(cli, last_message=None):
     if cli == "claude":
         return ["claude", "-p", prompt(PIVOT), "--model", MODELS[cli], "--effort", EFFORT[cli],
                 "--permission-mode", "acceptEdits", "--allowedTools", "Bash(uv run:*)",
                 "--strict-mcp-config", "--no-session-persistence",
                 "--output-format", "stream-json", "--verbose"]
-    return ["codex", "exec", "--json", "--sandbox", "workspace-write", "-m", MODELS[cli],
-            "-c", f'model_reasoning_effort="{EFFORT[cli]}"', "--ephemeral", prompt(PIVOT)]
+    return ["codex", "exec", "--sandbox", "workspace-write", "-m", MODELS[cli],
+            "-c", f'model_reasoning_effort="{EFFORT[cli]}"', "--skip-git-repo-check", "--ephemeral",
+            "-o", last_message or "<last-message-file>", prompt(PIVOT)]
 
 
-def parse_events(text):
-    """CLI stdout as a list of JSON objects (one document or JSON lines)."""
-    try:
-        value = json.loads(text)
-        return value if isinstance(value, list) else [value]
-    except ValueError:
-        pass
-    found = []
-    for line in text.splitlines():
-        line = line.strip()
-        if line.startswith("{"):
-            try:
-                found.append(json.loads(line))
-            except ValueError:
-                continue
-    return [event for event in found if isinstance(event, dict)]
-
-
-def scrub(value):
-    """Drop private ids and make paths relative to this folder or the home folder."""
-    if isinstance(value, dict):
-        return {key: scrub(item) for key, item in value.items() if key not in PRIVATE_KEYS}
-    if isinstance(value, list):
-        return [scrub(item) for item in value]
-    if isinstance(value, str):
-        value = value.replace(str(HERE) + "/", "").replace(str(HERE), ".")
-        return value.replace(str(Path.home()), "~")
-    return value
-
-
-def answer_text(cli, events):
+def tool_assisted(cli, kept):
     if cli == "claude":
-        results = [e for e in events if e.get("type") == "result"]
-        return results[-1].get("result", "") if results else ""
-    return "\n".join(e["item"].get("text", "") for e in events
-                     if e.get("type") == "item.completed"
-                     and isinstance(e.get("item"), dict) and e["item"].get("type") == "agent_message")
-
-
-def tool_assisted(cli, events):
-    if cli == "claude":
-        results = [e for e in events if e.get("type") == "result"]
+        results = [e for e in kept if e.get("type") == "result"]
         return bool(results) and results[-1].get("num_turns") != 1
-    return any(e["item"].get("type") not in {"agent_message", "reasoning"}
-               for e in events if isinstance(e.get("item"), dict))
+    return bool(re.search(r"(?:^|\n)exec\s*\n", kept.get("transcript", "")))
 
 
 def classify(text, truth=None):
@@ -136,7 +77,7 @@ def classify(text, truth=None):
 
 def run_line(i, text, tool, truth):
     number, kind = classify(text, truth)
-    shown = number if number is not None else f"{' '.join(text.split())[:40]!r}"
+    shown = number if number is not None else " ".join(text.split())
     return f"run {i}: {shown}  {SYMBOL[kind]}" + (" [tool used]" if tool else "")
 
 
@@ -146,113 +87,62 @@ def summary(answers, tools, truth):
             f"tool-assisted: {sum(tools)}; true count: {truth})")
 
 
-def require(cli):
-    if shutil.which(cli) is None:
-        raise Failure(f"{cli} CLI not found on PATH; install and log in, or use "
-                      f"`uv run strawberry.py --replay --via {cli}`")
-
-
-def cli_failed(cli, code, stderr):
-    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
-    detail = f" ({lines[-1][:120]})" if lines else ""
-    return Failure(f"{cli} exited with status {code}{detail}; "
-                   f"use `uv run strawberry.py --replay --via {cli}` instead")
-
-
-def call(cli, argv, env=None):
-    try:
-        done = subprocess.run(argv, cwd=HERE, stdin=subprocess.DEVNULL, capture_output=True,
-                              text=True, encoding="utf-8", errors="replace", env=env,
-                              timeout=TIMEOUT_S, check=False)
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise Failure(f"{cli} could not run ({type(error).__name__}); "
-                      f"use `uv run strawberry.py --replay --via {cli}` instead") from None
-    if done.returncode != 0:
-        raise cli_failed(cli, done.returncode, done.stderr)
-    return done.stdout
-
-
-def cli_version(cli):
-    try:
-        done = subprocess.run([cli, "--version"], cwd=HERE, stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, timeout=60, check=False)
-    except (OSError, subprocess.TimeoutExpired):
-        return "unknown"
-    return done.stdout.strip() or "unknown"
-
-
-def meta(cli, step, argv, template, events):
-    data = {"demo": "strawberry", "step": step, "cli": cli, "cli_version": cli_version(cli),
+def meta(cli, step, argv, template, reported, evidence=None):
+    data = {"demo": "strawberry", "step": step, "cli": cli, "cli_version": agent_cli.cli_version(cli),
             "model": MODELS[cli], "effort": EFFORT[cli], "date": date.today().isoformat(),
-            "command": ["<prompt>" if arg == prompt(template) else arg for arg in argv],
-            "prompt": prompt(template)}
-    if cli == "claude":
-        reported = sorted({name for e in events for name in (e.get("modelUsage") or {})})
-        data["model_reported"] = reported
-    else:
-        reported = sorted({e["model"] for e in events if isinstance(e.get("model"), str)})
-        data["model_reported"] = reported or [MODELS[cli]]
-        if not reported:
-            data["model_reported_note"] = "codex exec --json did not report a model; this is the requested ID"
+            "command": agent_cli.shown_command(argv, prompt(template)), "prompt": prompt(template),
+            "model_reported": reported}
+    if evidence is not None:
+        data["model_evidence"] = evidence
     return data
 
 
-def write_json(path, data):
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+def model_report(cli, kept):
+    """(model_reported, model_evidence) from the kept CLI output only."""
+    if cli == "claude":
+        return agent_cli.reported_models(cli, kept), None
+    evidence = agent_cli.banner_lines([run["transcript"] for run in kept])
+    return agent_cli.reported_models(cli, evidence), evidence
 
 
-def ask(cli, record):
-    require(cli)
+def ask(via, record):
+    cli = agent_cli.pick(via, SCRIPT)
     truth = WORD.count("r")
     print(f"model {MODELS[cli]} · live via {cli} · {RUNS} headless runs, tools off", flush=True)
-    answers, tools, raws, everything = [], [], [], []
+    answers, tools, raws = [], [], []
     for i in range(1, RUNS + 1):
-        events = parse_events(call(cli, ask_argv(cli)))
-        if cli == "claude":
-            events = [{key: e[key] for key in CLAUDE_RESULT_KEYS if key in e}
-                      for e in events if e.get("type") == "result"]
-        else:
-            events = [e for e in events if e.get("type") != "thread.started"]
-        events = scrub(events)
-        text, tool = answer_text(cli, events), tool_assisted(cli, events)
+        text, kept = agent_cli.ask_once(cli, prompt(ASK), SCRIPT)
+        tool = tool_assisted(cli, kept)
         print(run_line(i, text, tool, truth), flush=True)
         answers.append(text)
         tools.append(tool)
-        raws.append(events)
-        everything.extend(events)
+        raws.append(kept)
     print(summary(answers, tools, truth))
     if record:
-        write_json(RECORDED / f"strawberry-{cli}.json", {
-            "meta": meta(cli, "ask", ask_argv(cli), ASK, everything), "word": WORD, "truth": truth,
-            "answers": answers, "classes": [classify(a, truth)[1] for a in answers],
-            "tools_used": tools, "raw": raws})
+        reported, evidence = model_report(cli, raws)
+        agent_cli.write_json(RECORDED / f"strawberry-{cli}.json", {
+            "meta": meta(cli, "ask", agent_cli.headless_argv(cli, prompt(ASK)), ASK, reported, evidence),
+            "word": WORD, "truth": truth, "answers": answers,
+            "classes": [classify(a, truth)[1] for a in answers], "tools_used": tools, "raw": raws})
+        print(f"recorded to recorded/strawberry-{cli}.json")
 
 
-def keep_pivot_event(cli, event):
-    """Whitelist what a public recording needs: tool calls, their results, the outcome."""
+def keep_pivot_event(event):
+    """Whitelist what a public Claude Code recording needs: tool calls, their results, the outcome."""
     kind = event.get("type")
-    if cli == "claude":
-        if kind == "result":
-            return {key: event[key] for key in CLAUDE_RESULT_KEYS if key in event}
-        if kind not in {"assistant", "user"}:
-            return None
-        message = event.get("message") or {}
-        wanted = "tool_use" if kind == "assistant" else "tool_result"
-        blocks = [b for b in message.get("content") or [] if isinstance(b, dict) and b.get("type") == wanted]
-        if not blocks:
-            return None
-        kept = {"role": message.get("role", kind), "content": blocks}
-        if isinstance(message.get("model"), str):
-            kept["model"] = message["model"]
-        return {"type": kind, "message": kept}
-    if kind == "turn.completed":
-        return {"type": kind, "usage": event.get("usage", {})}
-    item = event.get("item")
-    if (isinstance(kind, str) and kind.startswith("item.") and isinstance(item, dict)
-            and item.get("type") in {"command_execution", "file_change", "agent_message"}):
-        return {"type": kind, "item": item}
-    return None
+    if kind == "result":
+        return {key: event[key] for key in agent_cli.CLAUDE_RESULT_KEYS if key in event}
+    if kind not in {"assistant", "user"}:
+        return None
+    message = event.get("message") or {}
+    wanted = "tool_use" if kind == "assistant" else "tool_result"
+    blocks = [b for b in message.get("content") or [] if isinstance(b, dict) and b.get("type") == wanted]
+    if not blocks:
+        return None
+    kept = {"role": message.get("role", kind), "content": blocks}
+    if isinstance(message.get("model"), str):
+        kept["model"] = message["model"]
+    return {"type": kind, "message": kept}
 
 
 def result_text(content):
@@ -285,89 +175,133 @@ def short_path(path):
     return path[path.index(marker):] if marker in path else path
 
 
-def project(cli, event):
-    """Print one whitelisted event in the compact projector view."""
-    if cli == "claude":
-        for block in (event.get("message") or {}).get("content") or []:
-            if block.get("type") == "tool_use":
-                data = block.get("input") or {}
-                detail = data.get("command") or short_path(data.get("file_path", ""))
-                print(f"tool: {block.get('name')} {squeeze(detail)}")
-            elif block.get("type") == "tool_result":
-                show_result(result_text(block.get("content", "")))
-        if event.get("type") == "result":
-            print(f"agent: {squeeze(event.get('result', ''))}")
-        return
-    item = event.get("item") or {}
-    if event.get("type") != "item.completed":
-        return
-    if item.get("type") == "file_change":
-        for change in item.get("changes") or []:
-            print(f"tool: file_change {change.get('kind')} {short_path(change.get('path', ''))}")
-    elif item.get("type") == "command_execution":
-        print(f"tool: command {squeeze(item.get('command', ''))}")
-        show_result(str(item.get("aggregated_output", "")))
-    elif item.get("type") == "agent_message":
-        print(f"agent: {squeeze(item.get('text', ''))}")
+def project(event):
+    """Print one whitelisted Claude Code event in the compact projector view."""
+    for block in (event.get("message") or {}).get("content") or []:
+        if block.get("type") == "tool_use":
+            data = block.get("input") or {}
+            detail = data.get("command") or short_path(data.get("file_path", ""))
+            print(f"tool: {block.get('name')} {squeeze(detail)}")
+        elif block.get("type") == "tool_result":
+            show_result(result_text(block.get("content", "")))
+    if event.get("type") == "result":
+        print(f"agent: {squeeze(event.get('result', ''))}")
 
 
-def pivot(cli, record):
-    require(cli)
-    truth = WORD.count("r")
-    print(f"model {MODELS[cli]} · live via {cli} · the agent writes and runs work/count_r.py", flush=True)
-    WORK.mkdir(exist_ok=True)
-    (WORK / "count_r.py").unlink(missing_ok=True)
-    env = None
-    if cli == "codex":
-        env = dict(os.environ, UV_CACHE_DIR=str(WORK / ".uv-cache"))
-    argv = pivot_argv(cli)
+class Transcript:
+    """Print a Codex plain-mode transcript, minus its config banner and the echoed prompt."""
+
+    def __init__(self):
+        self.rules, self.section = 0, None
+
+    def feed(self, line):
+        line = line.rstrip("\n")
+        if self.rules < 2 and line.strip() not in SECTIONS:
+            self.rules += line.strip() == "--------"
+            return
+        self.rules = 2
+        if line.strip() in SECTIONS:
+            self.section = line.strip()
+            if self.section != "user":
+                print(self.section, flush=True)
+        elif self.section != "user":
+            print("    " + squeeze(line, 156), flush=True)
+
+
+def pivot_claude(record):
+    argv = pivot_argv("claude")
     with tempfile.TemporaryFile("w+", encoding="utf-8") as errors:
         try:
-            process = subprocess.Popen(argv, cwd=HERE, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                       stderr=errors, text=True, encoding="utf-8", errors="replace", env=env)
+            process = subprocess.Popen(argv, cwd=agent_cli.HERE, stdin=subprocess.DEVNULL,
+                                       stdout=subprocess.PIPE, stderr=errors, text=True,
+                                       encoding="utf-8", errors="replace")
         except OSError as error:
-            raise Failure(f"{cli} could not start ({type(error).__name__}); "
-                          f"use `uv run strawberry.py --replay --pivot --via {cli}` instead") from None
+            raise Failure(f"claude could not start ({type(error).__name__})\nOr replay the "
+                          f"recording: {agent_cli.replay_command(SCRIPT, 'claude', True)}") from None
         kept = []
         for line in process.stdout:
-            for event in parse_events(line):
-                event = keep_pivot_event(cli, event)
+            for event in agent_cli.parse_events(line):
+                event = keep_pivot_event(event)
                 if event is not None:
-                    event = scrub(event)
+                    event = agent_cli.scrub(event)
                     kept.append(event)
-                    project(cli, event)
+                    project(event)
         code = process.wait()
         errors.seek(0)
         stderr = errors.read()
     if code != 0:
-        raise cli_failed(cli, code, stderr)
+        raise agent_cli.cli_failed("claude", code, stderr, SCRIPT, pivot=True)
+    if record:
+        return {"meta": meta("claude", "pivot", argv, PIVOT, agent_cli.reported_models("claude", kept)),
+                "exit_code": code, "events": kept}
+    return None
+
+
+def pivot_codex(record):
+    with tempfile.TemporaryDirectory() as scratch, \
+            tempfile.TemporaryFile("w+", encoding="utf-8") as out:
+        last = Path(scratch) / "last-message.txt"
+        argv = pivot_argv("codex", str(last))
+        try:
+            process = subprocess.Popen(argv, cwd=agent_cli.HERE, stdin=subprocess.DEVNULL,
+                                       stdout=out, stderr=subprocess.PIPE, text=True,
+                                       encoding="utf-8", errors="replace", env=agent_cli.codex_env())
+        except OSError as error:
+            raise Failure(f"codex could not start ({type(error).__name__})\nOr replay the "
+                          f"recording: {agent_cli.replay_command(SCRIPT, 'codex', True)}") from None
+        lines, view = [], Transcript()
+        for line in process.stderr:
+            lines.append(line)
+            view.feed(agent_cli.scrub_transcript(line))
+        code = process.wait()
+        out.seek(0)
+        stdout = out.read()
+        message = last.read_text(encoding="utf-8") if last.is_file() else ""
+    transcript = agent_cli.scrub_transcript("".join(lines))
+    if code != 0:
+        raise agent_cli.cli_failed("codex", code, transcript + stdout, SCRIPT, pivot=True)
+    if record:
+        evidence = agent_cli.banner_lines([transcript])
+        shown = pivot_argv("codex")
+        return {"meta": meta("codex", "pivot", shown, PIVOT, agent_cli.reported_models("codex", evidence),
+                             evidence),
+                "exit_code": code, "transcript": transcript, "last_message": message}
+    return None
+
+
+def pivot(via, record):
+    cli = agent_cli.pick(via, SCRIPT, pivot=True)
+    truth = WORD.count("r")
+    print(f"model {MODELS[cli]} · live via {cli} · the agent writes and runs work/count_r.py", flush=True)
+    WORK.mkdir(exist_ok=True)
+    (WORK / "count_r.py").unlink(missing_ok=True)
+    data = pivot_claude(record) if cli == "claude" else pivot_codex(record)
     print(f"true count: {truth}")
     if record:
-        write_json(RECORDED / f"pivot-{cli}.json", {
-            "meta": meta(cli, "pivot", argv, PIVOT, kept), "word": WORD, "truth": truth,
-            "exit_code": code, "events": kept})
         written = WORK / "count_r.py"
         if not written.is_file():
-            raise Failure(f"{cli} did not write work/count_r.py; nothing to record")
+            raise Failure(f"{cli} did not write work/count_r.py; nothing recorded")
+        meta_block = data.pop("meta")
+        agent_cli.write_json(RECORDED / f"pivot-{cli}.json",
+                             {"meta": meta_block, "word": WORD, "truth": truth, **data})
         (RECORDED / f"{cli}_count_r.py").write_bytes(written.read_bytes())
-
-
-def load(name):
-    path = RECORDED / name
-    if not path.is_file():
-        raise Failure(f"no recording at recorded/{name}; make one with `uv run strawberry.py --record`")
-    return json.loads(path.read_text(encoding="utf-8"))
+        print(f"recorded to recorded/pivot-{cli}.json and recorded/{cli}_count_r.py")
 
 
 def replay(cli, step_pivot):
-    data = load(f"{'pivot' if step_pivot else 'strawberry'}-{cli}.json")
+    data = agent_cli.load(f"{'pivot' if step_pivot else 'strawberry'}-{cli}.json", SCRIPT)
     info = data["meta"]
-    print(f"model {info['model']} · recorded {info['date']}")
+    print(f"model {', '.join(info['model_reported'])} · recorded {info['date']}")
     print(f"replaying {cli} {info.get('cli_version', '')}".rstrip())
     truth = data["truth"]
     if step_pivot:
-        for event in data["events"]:
-            project(cli, event)
+        if "events" in data:
+            for event in data["events"]:
+                project(event)
+        else:
+            view = Transcript()
+            for line in data["transcript"].splitlines():
+                view.feed(line)
         print(f"true count: {truth}")
         return
     for i, (text, tool) in enumerate(zip(data["answers"], data["tools_used"]), 1):
@@ -377,7 +311,9 @@ def replay(cli, step_pivot):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--via", choices=sorted(MODELS), default="claude", help="agent CLI (default: claude)")
+    parser.add_argument("--via", choices=agent_cli.CLIS,
+                        help="agent CLI to use (default: the first installed and logged-in, "
+                             "claude then codex; for --replay, claude)")
     parser.add_argument("--pivot", action="store_true", help="ask the agent to write and run code instead")
     parser.add_argument("--record", action="store_true", help="save the run under recorded/")
     parser.add_argument("--replay", action="store_true", help="print the recording; no network, no CLI")
@@ -386,13 +322,13 @@ def main():
         parser.error("--record and --replay are exclusive")
     try:
         if args.replay:
-            replay(args.via, args.pivot)
+            replay(args.via or "claude", args.pivot)
         elif args.pivot:
             pivot(args.via, args.record)
         else:
             ask(args.via, args.record)
     except Failure as error:
-        print(f"strawberry.py: {error}", file=sys.stderr)
+        print(f"{SCRIPT}: {error}", file=sys.stderr)
         return 1
     return 0
 

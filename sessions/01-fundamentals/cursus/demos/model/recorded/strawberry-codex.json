@@ -10,7 +10,6 @@
     "command": [
       "codex",
       "exec",
-      "--json",
       "--sandbox",
       "read-only",
       "-m",
@@ -23,26 +22,30 @@
       "unified_exec",
       "--skip-git-repo-check",
       "--ephemeral",
+      "-o",
+      "<last-message-file>",
       "<prompt>"
     ],
     "prompt": "How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.",
     "model_reported": [
       "gpt-6-luna"
     ],
-    "model_reported_note": "codex exec --json did not report a model; this is the requested ID"
+    "model_evidence": [
+      "model: gpt-6-luna"
+    ]
   },
   "word": "strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor",
   "truth": 146,
   "answers": [
-    "116",
-    "86",
-    "131",
-    "129",
-    "151"
+    "138",
+    "146",
+    "128",
+    "114",
+    "133"
   ],
   "classes": [
     "incorrect",
-    "incorrect",
+    "correct",
     "incorrect",
     "incorrect",
     "incorrect"
@@ -55,120 +58,25 @@
     false
   ],
   "raw": [
-    [
-      {
-        "type": "turn.started"
-      },
-      {
-        "type": "item.completed",
-        "item": {
-          "id": "item_0",
-          "type": "agent_message",
-          "text": "116"
-        }
-      },
-      {
-        "type": "turn.completed",
-        "usage": {
-          "input_tokens": 14408,
-          "cached_input_tokens": 11008,
-          "cache_write_input_tokens": 0,
-          "output_tokens": 5,
-          "reasoning_output_tokens": 0
-        }
-      }
-    ],
-    [
-      {
-        "type": "turn.started"
-      },
-      {
-        "type": "item.completed",
-        "item": {
-          "id": "item_0",
-          "type": "agent_message",
-          "text": "86"
-        }
-      },
-      {
-        "type": "turn.completed",
-        "usage": {
-          "input_tokens": 14408,
-          "cached_input_tokens": 11008,
-          "cache_write_input_tokens": 0,
-          "output_tokens": 5,
-          "reasoning_output_tokens": 0
-        }
-      }
-    ],
-    [
-      {
-        "type": "turn.started"
-      },
-      {
-        "type": "item.completed",
-        "item": {
-          "id": "item_0",
-          "type": "agent_message",
-          "text": "131"
-        }
-      },
-      {
-        "type": "turn.completed",
-        "usage": {
-          "input_tokens": 14408,
-          "cached_input_tokens": 11008,
-          "cache_write_input_tokens": 0,
-          "output_tokens": 5,
-          "reasoning_output_tokens": 0
-        }
-      }
-    ],
-    [
-      {
-        "type": "turn.started"
-      },
-      {
-        "type": "item.completed",
-        "item": {
-          "id": "item_0",
-          "type": "agent_message",
-          "text": "129"
-        }
-      },
-      {
-        "type": "turn.completed",
-        "usage": {
-          "input_tokens": 14408,
-          "cached_input_tokens": 11008,
-          "cache_write_input_tokens": 0,
-          "output_tokens": 5,
-          "reasoning_output_tokens": 0
-        }
-      }
-    ],
-    [
-      {
-        "type": "turn.started"
-      },
-      {
-        "type": "item.completed",
-        "item": {
-          "id": "item_0",
-          "type": "agent_message",
-          "text": "151"
-        }
-      },
-      {
-        "type": "turn.completed",
-        "usage": {
-          "input_tokens": 14408,
-          "cached_input_tokens": 6912,
-          "cache_write_input_tokens": 0,
-          "output_tokens": 5,
-          "reasoning_output_tokens": 0
-        }
-      }
-    ]
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n138\ntokens used\n10,573\n",
+      "last_message": "138"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n146\ntokens used\n10,573\n",
+      "last_message": "146"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n128\ntokens used\n12,621\n",
+      "last_message": "128"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n114\ntokens used\n333\n",
+      "last_message": "114"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n133\ntokens used\n333\n",
+      "last_message": "133"
+    }
   ]
 }
