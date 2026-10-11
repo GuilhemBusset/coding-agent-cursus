@@ -4,6 +4,8 @@ Run each ledger filter through the session's locked uv project. Tests never call
 real model CLIs: live tests use disposable executable stubs; recorded evidence is
 independently decoded. Authenticity of recordings, pricing-page verification and
 teaching prose still require review. Consistent JSON is not proof of provenance.
+Claude cache writes use the raw result's duration split: 1h writes are a subset
+of total writes; absent duration evidence falls back to the 5m rate.
 
 Every collected test has a ledger prefix so the engine's five filtered commands
 cover the entire file. The extra greedy-puzzle and default-replay design checks
@@ -47,6 +49,7 @@ ALIASES = {
     "output": ("output", "output_tokens", "outputTokens"),
     "cache_read": ("cache_read", "cache_read_tokens", "cache_read_input_tokens", "cacheReadInputTokens"),
     "cache_write": ("cache_write", "cache_write_tokens", "cache_creation_input_tokens", "cacheCreationInputTokens"),
+    "cache_write_1h": ("cache_write_1h", "cache_write_1h_tokens"),
     "cached_input": ("cached_input", "cached_input_tokens"),
     "reasoning_output": ("reasoning_output", "reasoning_output_tokens"),
 }
@@ -55,6 +58,7 @@ RATE_ALIASES = {
     "output": ("output", "output_usd_per_million", "output_per_million", "output_per_million_usd"),
     "cache_read": ("cache_read", "cache_read_usd_per_million", "cache_read_per_million"),
     "cache_write_5m": ("cache_write_5m", "cache_write_5m_usd_per_million", "cache_write_5m_per_million"),
+    "cache_write_1h": ("cache_write_1h", "cache_write_1h_usd_per_million", "cache_write_1h_per_million"),
     "cached_input": ("cached_input", "cached_input_usd_per_million", "cached_input_per_million"),
 }
 
@@ -100,7 +104,7 @@ def counters(row, cli):
     for container in ("tokens", "usage", "token_counts", "token_counters"):
         if isinstance(row.get(container), dict):
             mapping.update(row[container])
-    required = {"input", "output"} | ({"cache_read", "cache_write"} if cli == "claude"
+    required = {"input", "output", "cache_write_1h"} | ({"cache_read", "cache_write"} if cli == "claude"
                                      else {"cached_input", "reasoning_output"})
     return {name: integer(field(mapping, aliases, 0, name in required))
             for name, aliases in ALIASES.items()}
@@ -274,7 +278,7 @@ def rates(block, model, cli):
     nodes = price_nodes(block)
     assert model in nodes, f"No rate for usage model {model}"
     node = nodes[model][1]
-    required = ("input", "output", "cache_read", "cache_write_5m") if cli == "claude" else (
+    required = ("input", "output", "cache_read", "cache_write_5m", "cache_write_1h") if cli == "claude" else (
         "input", "output", "cached_input")
     return {name: finite(field(node, RATE_ALIASES[name]), positive=True) for name in required}
 
@@ -367,6 +371,34 @@ def answer(text):
     return int(matches[-1])
 
 
+def cache_hours_by_model(model_usage, aggregate_usage):
+    """Attribute the reported duration split without importing demo helpers.
+
+    A split may cover every write (all at 1h), or one uniquely identifiable
+    model. Other models' writes, and streams without a split, use the 5m rate.
+    An aggregate mixed split cannot establish per-model cost when multiple
+    models with different prices could own those writes.
+    """
+    writes = {model: integer(field(usage, ALIASES["cache_write"]))
+              for model, usage in model_usage.items()}
+    hours = dict.fromkeys(writes, 0)
+    split = aggregate_usage.get("cache_creation")
+    if split is None:
+        return hours
+    assert isinstance(split, dict), "Cache duration split must be an object"
+    hour = integer(split.get("ephemeral_1h_input_tokens", 0))
+    five = integer(split.get("ephemeral_5m_input_tokens", 0))
+    assert hour + five <= sum(writes.values()), "Duration split exceeds cache-write tokens"
+    if not hour:
+        return hours
+    if hour == sum(writes.values()) and five == 0:
+        return writes
+    owners = [model for model, count in writes.items() if count == hour + five]
+    assert len(owners) == 1, "Cannot independently attribute cache-write durations to a model"
+    hours[owners[0]] = hour
+    return hours
+
+
 def decode(events, cli):
     counts = dict.fromkeys(ALIASES, 0)
     if cli == "claude":
@@ -378,6 +410,8 @@ def decode(events, cli):
         for model_usage in usage.values():
             for name in ("input", "output", "cache_read", "cache_write"):
                 counts[name] += integer(field(model_usage, ALIASES[name]))
+        aggregate_usage = result.get("usage") or {}
+        counts["cache_write_1h"] = sum(cache_hours_by_model(usage, aggregate_usage).values())
         init = [event for event in events if event.get("type") == "system" and event.get("subtype") == "init"]
         assert len(init) == 1 and isinstance(init[0].get("tools"), list), "Record Claude init tools"
         tool_calls = sum(block.get("type") == "tool_use" for event in events
@@ -387,7 +421,8 @@ def decode(events, cli):
         if not isinstance(text, str):
             text = "\n".join(block.get("text", "") for event in events if event.get("type") == "assistant"
                              for block in event.get("message", {}).get("content", []) if block.get("type") == "text")
-        return counts, text, tool_calls, not tool_calls and not init[0]["tools"], usage, result["total_cost_usd"]
+        return (counts, text, tool_calls, not tool_calls and not init[0]["tools"],
+                usage, result["total_cost_usd"], aggregate_usage)
     turns = [event["usage"] for event in events if event.get("type") == "turn.completed"]
     assert turns, "Need Codex turn.completed usage"
     for usage in turns:
@@ -403,7 +438,7 @@ def decode(events, cli):
         kind = item.get("type", "")
         if kind in {"command_execution", "web_search", "file_change"} or "tool" in kind:
             tools.add(item.get("id", f"event-{index}"))
-    return counts, text, len(tools), not tools, None, None
+    return counts, text, len(tools), not tools, None, None, None
 
 
 def events_at(path):
@@ -412,13 +447,15 @@ def events_at(path):
     return events
 
 
-def cost_from_raw(block, cli, model, counts, usage):
+def cost_from_raw(block, cli, model, counts, usage, aggregate_usage):
     if cli == "claude":
         total = 0
+        hours = cache_hours_by_model(usage, aggregate_usage)
         for name, counters_ in usage.items():
             rate = rates(block, name, cli)
             total += (counters_["inputTokens"] * rate["input"]
-                      + counters_["cacheCreationInputTokens"] * rate["cache_write_5m"]
+                      + (counters_["cacheCreationInputTokens"] - hours[name]) * rate["cache_write_5m"]
+                      + hours[name] * rate["cache_write_1h"]
                       + counters_["cacheReadInputTokens"] * rate["cache_read"]
                       + counters_["outputTokens"] * rate["output"])
     else:
@@ -458,7 +495,7 @@ def test_d2_recorded_rows_rederive_from_raw_and_meta(recorded, cli, effort):
     prompt, _, _, optimum = puzzle()
     raw = events_at(DEMO / f"recorded/raw/{cli}-{effort}.jsonl")
     meta = load(DEMO / f"recorded/raw/{cli}-{effort}.meta.json")
-    counts, text, tools, pure, usage, reported = decode(raw, cli)
+    counts, text, tools, pure, usage, reported, aggregate_usage = decode(raw, cli)
     assert counters(row, cli) == counts
     assert row["answer"] == answer(text)
     assert type(row["correct"]) is bool and row["correct"] == (answer(text) == optimum)
@@ -473,7 +510,7 @@ def test_d2_recorded_rows_rederive_from_raw_and_meta(recorded, cli, effort):
     assert type(meta["exit_code"]) is int and meta["exit_code"] == 0
     duration = (timestamp(meta["ended_at"]) - timestamp(meta["started_at"])).total_seconds()
     assert duration >= 0 and abs(duration - row["wall_seconds"]) <= 1
-    expected_cost = cost_from_raw(document["prices"], cli, row["model"], counts, usage)
+    expected_cost = cost_from_raw(document["prices"], cli, row["model"], counts, usage, aggregate_usage)
     assert finite(row["cost_usd"]) == pytest.approx(expected_cost, rel=1e-8, abs=1e-10)
     if cli == "claude":
         assert row["reported_cost_usd"] == reported
@@ -637,8 +674,10 @@ def fixture_prices(destination, models):
     assert claude_key, "Prices must cover the requested Claude model (possibly dated)"
     assert DEFAULTS["codex"] in nodes
     templates = {"claude": nodes[claude_key], "codex": nodes[DEFAULTS["codex"]]}
-    specs = [("claude", models["claude"], {"input": 4, "output": 18, "cache_write_5m": 5, "cache_read": .4}),
-             ("claude", "fixture-auxiliary", {"input": 2, "output": 8, "cache_write_5m": 2.5, "cache_read": .2}),
+    specs = [("claude", models["claude"], {"input": 4, "output": 18, "cache_write_5m": 5,
+                                        "cache_write_1h": 8, "cache_read": .4}),
+             ("claude", "fixture-auxiliary", {"input": 2, "output": 8, "cache_write_5m": 2.5,
+                                              "cache_write_1h": 4, "cache_read": .2}),
              ("codex", models["codex"], {"input": 3, "output": 15, "cached_input": .3})]
     for cli, model, values in specs:
         parent, template = templates[cli]
@@ -695,6 +734,7 @@ def live_payloads(profile, models, optimum):
             ]
             token_counts = {"input": 140 * factor, "output": 60 * factor,
                             "cache_read": 42 * factor, "cache_write": 28 * factor,
+                            "cache_write_1h": 0,
                             "cached_input": 0, "reasoning_output": 0}
             pure = not tool_calls and not init_tools
         else:
@@ -718,7 +758,8 @@ def live_payloads(profile, models, optimum):
                            "input_tokens": 80 * factor, "cached_input_tokens": 10 * factor,
                            "output_tokens": 30 * factor, "reasoning_output_tokens": 8 * factor}}]
             token_counts = {"input": 200 * factor, "output": 70 * factor, "cache_read": 0,
-                            "cache_write": 0, "cached_input": 30 * factor, "reasoning_output": 23 * factor}
+                            "cache_write": 0, "cache_write_1h": 0,
+                            "cached_input": 30 * factor, "reasoning_output": 23 * factor}
             pure = not tool_calls
         payloads[f"{cli}-{effort}"] = events
         expected[cli, effort] = dict(model=models[cli], tokens=token_counts, cost_usd=cost,
@@ -801,6 +842,66 @@ def test_d2_stub_live_accounting_scoring_isolation_and_overrides(tmp_path, profi
         assert_invocation(meta["argv"], *identity, wanted["model"])
     assert_table(output, observed)
     assert not (caller / "work").exists()
+
+
+@pytest.mark.parametrize("main_hour,aux_hour,five", [
+    pytest.param(13, 0, 7, id="mixed-main-with-auxiliary-fallback"),
+    pytest.param(0, 3, 5, id="mixed-auxiliary-with-main-fallback"),
+    pytest.param(20, 8, 0, id="all-models-one-hour"),
+    pytest.param(0, 0, 28, id="explicit-five-minute"),
+])
+def test_d2_claude_cache_duration_accounting(tmp_path, main_hour, aux_hour, five):
+    destination, caller, env, _, payload_path, payloads, expected, _, _ = sandbox_live(tmp_path)
+    for effort, factor in (("low", 1), ("high", 3)):
+        terminal = next(event for event in payloads[f"claude-{effort}"] if event["type"] == "result")
+        terminal["usage"]["cache_creation"] = {
+            "ephemeral_1h_input_tokens": (main_hour + aux_hour) * factor,
+            "ephemeral_5m_input_tokens": five * factor,
+        }
+        # Hand arithmetic with different rates per model and cache duration.
+        # Total writes stay 20 + 8; the 1h counter must not add tokens again.
+        cost = factor * (100 * 4 + (20 - main_hour) * 5 + main_hour * 8 + 30 * .4 + 50 * 18
+                         + 40 * 2 + (8 - aux_hour) * 2.5 + aux_hour * 4 + 12 * .2 + 10 * 8) / 1_000_000
+        wanted = expected["claude", effort]
+        wanted["cost_usd"] = cost
+        wanted["tokens"]["cache_write_1h"] = (main_hour + aux_hour) * factor
+        terminal["total_cost_usd"] = cost + .000007
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    out = tmp_path / "duration results"
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "claude", "--out", out], caller, env)
+    assert result.returncode == 0, result.stdout + result.stderr
+    run_list = field(load(out / "results.json"), ("runs", "results", "rows"))
+    observed = {(row["cli"], row["effort"]): row for row in run_list}
+    assert len(run_list) == 2 and set(observed) == {("claude", "low"), ("claude", "high")}
+    for identity, row in observed.items():
+        wanted = expected[identity]
+        counts = counters(row, "claude")
+        assert counts == wanted["tokens"]
+        assert counts["cache_write_1h"] <= counts["cache_write"]
+        assert finite(row["cost_usd"]) == pytest.approx(wanted["cost_usd"], rel=1e-9, abs=1e-12)
+        assert row["reported_cost_usd"] == pytest.approx(wanted["cost_usd"] + .000007, abs=1e-12)
+        delta = field(row, ("cost_delta_usd", "delta_cost_usd", "cost_difference_usd", "cost_delta", "delta_usd"))
+        assert abs(delta) == pytest.approx(.000007, abs=1e-12)
+    assert_table(result.stdout, observed)
+    if (main_hour, aux_hour) in ((13, 0), (0, 3)):
+        # These splits cover one model; the other model has no duration evidence.
+        assert re.search(r"warning.*cache|cache.*warning", result.stderr, re.I)
+
+
+def test_d2_rejects_unattributable_claude_cache_duration(tmp_path):
+    destination, caller, env, log, payload_path, payloads, *_ = sandbox_live(tmp_path)
+    terminal = next(event for event in payloads["claude-low"] if event["type"] == "result")
+    terminal["usage"]["cache_creation"] = {
+        "ephemeral_1h_input_tokens": 13, "ephemeral_5m_input_tokens": 15,
+    }
+    # Two models wrote 20 and 8 tokens at different prices. This mixed aggregate
+    # gives no way to assign the 13 one-hour tokens to their respective rates.
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "claude"], caller, env)
+    assert result.returncode != 0, "Do not guess a per-model price for ambiguous cache-write durations"
+    calls = events_at(log)
+    assert calls and all(not Path(call["cwd"]).exists() for call in calls)
+    assert re.search(r"cache|duration|attribute", result.stderr + result.stdout, re.I)
 
 
 @pytest.mark.parametrize("cli", ("claude", "codex"))
