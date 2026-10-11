@@ -1,7 +1,7 @@
 # Test-time compute lab: review evidence
 
 Agent review by the implementer, 2026-10-11. Reviewed file: `../test-time-compute.html`,
-93,895 bytes, sha256 `78ceb789fcfeef84c4ff11bfb3f109a00bd0f51f4866f954bcc8ea73cca32fd2`.
+90,311 bytes, sha256 `1901e80a848d6f4f80bf93e096357112a5d2672f6d53aaa600441bf273e2b9ac`.
 Any edit to the page invalidates this review; re-review and update the hash.
 
 ## Checks run
@@ -31,8 +31,12 @@ Any edit to the page invalidates this review; re-review and update the hash.
   E[p / (p + f(1 − p))]). They come from a midpoint rule after substituting p = x^(1/a) and
   1 − p = y^(1/b), which removes the endpoint singularities for a, b < 1. At the defaults they are
   10.2% and 54.7%.
-- No-JS readers get a static SVG snapshot of each chart at the default settings, captured from
-  the page's own renderer at 1440 px and labelled as such in a `noscript` callout.
+- No-JS readers get a static SVG snapshot of each chart at the default settings, labelled as such
+  in a `noscript` callout. The snapshot comes from the page's own renderer at phone width (a
+  300-unit viewBox with 12-unit text), so it stays readable on a phone. A first version used a
+  768-unit desktop snapshot, which shrank to about 6 px text at 390 px. On wider screens the
+  snapshot is capped at 24rem; the cap applies only until the renderer marks the figure
+  `data-ttc-drawn`.
 
 ## Screenshot review
 
@@ -51,7 +55,14 @@ task on at 32,768 tokens, k = 1024).
   screenshots visually for all three panels in both states.
 - **No-JS**: the static chart snapshots, formulas, assumptions, predict answers, citations and the
   "charts are computed in your browser" callout all show. The controls and predict buttons are
-  disabled.
+  disabled. With JavaScript off, a Playwright probe measured the chart text at:
+  - 390×844: 326 px wide, scale 1.09, about 13 px text;
+  - 360 px: scale 0.99, just under 12 px text;
+  - 1280 px: 384 px wide, about 15 px text.
+
+  At 390 and 1280 px, no text overlaps another text box or leaves its SVG. I looked at the
+  per-chart screenshots at 390 and 1280 px and at print with JS on and off, and every label is
+  readable.
 - **Print**: the charts recolour through the theme variables (light paper, dark ink), the controls
   are hidden, and the formulas, readouts, answers and captions print.
 - **Reduced motion**: no transitions or animations. The controls still work.
