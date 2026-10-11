@@ -7,20 +7,29 @@
 Calls the Anthropic Messages API or the OpenAI Chat Completions API with the standard
 library only. The key comes from ANTHROPIC_API_KEY or OPENAI_API_KEY in the environment
 and goes into the auth header only. --record saves the run to recorded/sampling.json;
---replay prints that recording with no key and no network.
+--replay prints that recording with no key and no network. --fixture is a labelled offline
+stand-in, not the API: it draws GPT-2's next token from the committed logits in
+cursus/fixtures/next_token.json.
 """
 
 import argparse
 from datetime import date
 import json
+import math
 import os
 from pathlib import Path
+import random
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 HERE = Path(__file__).resolve().parent
 RECORDING = HERE / "recorded" / "sampling.json"
+FIXTURE = HERE.parents[1] / "fixtures" / "next_token.json"
+FIXTURE_PROMPT = "open-ended"
+FIXTURE_MODEL = "openai-community/gpt2"
+SEED = 2026
+STAND_IN = "uv run --offline sampling.py --fixture"
 
 PROMPT = "Invent a name for a new optimization solver. Reply with the name only."
 RUNS = 5
@@ -120,12 +129,38 @@ def live(args):
 def replay():
     if not RECORDING.is_file():
         raise Failure("no recording: recorded/sampling.json is missing; make it with "
-                      "`uv run sampling.py --record` and ANTHROPIC_API_KEY or OPENAI_API_KEY set")
+                      "`uv run sampling.py --record` and ANTHROPIC_API_KEY or OPENAI_API_KEY set, "
+                      f"or run `{STAND_IN}` for the GPT-2 stand-in (not the API)")
     data = json.loads(RECORDING.read_text(encoding="utf-8"))
     info = data["meta"]
     print(f"model {info['model']} · recorded {info['date']}")
     print(f"prompt: {info['prompt']}")
     show(data["runs"])
+
+
+def draw(top, temperature, rng):
+    """One next token from softmax(z / T) over the top 20 only, renormalised; T = 0 is argmax."""
+    best = max(top, key=lambda item: item["logit"])
+    if temperature == 0:
+        return best["text"]
+    weights = [math.exp((item["logit"] - best["logit"]) / temperature) for item in top]
+    return rng.choices([item["text"] for item in top], weights=weights)[0]
+
+
+def fixture(args):
+    if not FIXTURE.is_file():
+        raise Failure("no fixture: cursus/fixtures/next_token.json is missing from this session")
+    data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    entry = next(item for item in data["prompts"] if item["id"] == FIXTURE_PROMPT)
+    model = next(item for item in data["meta"]["models"] if item["id"] == FIXTURE_MODEL)
+    print(f"GPT-2 stand-in, not the API · {model['id']} @ {model['revision'][:12]} · "
+          f"logits of {data['meta']['date']} · top-20 renormalised · seed {args.seed}")
+    print(f"prompt: {entry['prompt']!r} → next token")
+    rng = random.Random(args.seed)
+    runs = [{"temperature": temperature,
+             "outputs": [repr(draw(entry["top"], temperature, rng)) for _ in range(RUNS)]}
+            for temperature in (args.low, args.high)]
+    show(runs)
 
 
 def main():
@@ -138,13 +173,24 @@ def main():
     parser.add_argument("--high", type=float, default=1.0, help="high temperature (default: 1.0)")
     parser.add_argument("--record", action="store_true", help="save the run to recorded/sampling.json")
     parser.add_argument("--replay", action="store_true", help="print the recording; no key, no network")
+    parser.add_argument("--fixture", action="store_true",
+                        help="offline GPT-2 stand-in from cursus/fixtures/next_token.json; not the API")
+    parser.add_argument("--seed", type=int, default=SEED, help=f"--fixture sampling seed (default: {SEED})")
     args = parser.parse_args()
     if args.record and args.replay:
         parser.error("--record and --replay are exclusive")
+    for other in ("record", "replay"):
+        if args.fixture and getattr(args, other):
+            parser.error(f"--fixture and --{other} are exclusive: the stand-in never reads or writes recordings")
+    if args.fixture and args.low < 0:
+        parser.error(f"--low temperature ({args.low}) must be 0 or more")
     if args.low >= args.high:
         parser.error(f"--low temperature ({args.low}) must be below --high ({args.high})")
     try:
-        replay() if args.replay else live(args)
+        if args.fixture:
+            fixture(args)
+        else:
+            replay() if args.replay else live(args)
     except Failure as error:
         print(f"sampling.py: {error}", file=sys.stderr)
         return error.code

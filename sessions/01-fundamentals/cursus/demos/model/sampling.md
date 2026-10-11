@@ -7,7 +7,8 @@ answers. The prompt is fixed in `sampling.py`: "Invent a name for a new optimiza
 Reply with the name only." (20 tokens at most, no `top_p`, no extended thinking).
 
 **Status: recording pending.** The run that built this demo had no API key, so there is no
-`recorded/sampling.json` yet and no offline fallback. Record one before class (step 3 below).
+`recorded/sampling.json` yet. Record one before class (step 3 below). Until then the only offline
+option is the GPT-2 [stand-in](#offline-stand-in-gpt-2-next-token), which is not the API.
 
 ## Before class
 
@@ -15,12 +16,8 @@ Reply with the name only." (20 tokens at most, no `top_p`, no extended thinking)
    The script reads it from the environment only and stops with a one-line message if it is
    unset or blank. It is sent in the auth header and never printed or recorded.
 2. Rehearse once from this folder (see [Run](#run)).
-3. Record the fallback, then fill in [Expected outcome](#expected-outcome) and
-   [Recorded runs](#recorded-runs) from it and commit all three:
-
-   ```sh
-   uv run sampling.py --provider anthropic --record
-   ```
+3. Record the fallback with `uv run sampling.py --provider anthropic --record`, then fill in
+   [Expected outcome](#expected-outcome) and [Recorded runs](#recorded-runs) and commit all three.
 
 ## Temperature support
 
@@ -43,8 +40,7 @@ rejected with a 400 error." The defaults in `sampling.py` are models that still 
 [openai-model]: https://developers.openai.com/api/docs/models/gpt-4.1-mini
 [openai-deprecations]: https://developers.openai.com/api/docs/deprecations
 
-Change a default only together with this table. The defaults `--low 0.0 --high 1.0` sit inside
-both documented ranges.
+Change a default only with this table. `--low 0.0 --high 1.0` sit inside both documented ranges.
 
 ## Timing
 
@@ -90,7 +86,23 @@ recording instead. It needs no key and opens no socket.
 uv run --offline sampling.py --replay
 ```
 
-Until the recording exists, this prints one line saying it is missing and how to make it.
+Until the recording exists, this prints one line: it is missing, how to make it, and the stand-in.
+
+## Offline stand-in: GPT-2 next token
+
+Not the API demo and not a recording. It draws GPT-2's next token after "The best thing about
+learning is" five times at each temperature from softmax(z / T), argmax at T = 0, using the
+committed logits in `cursus/fixtures/next_token.json`: model `openai-community/gpt2`, revision
+`607a30d783dfa663caf39e06633721c8d4cfcd7e`, built 2026-10-10. No key, no network, writes nothing.
+
+```sh
+uv run --offline sampling.py --fixture
+```
+
+The fixture keeps the top 20 tokens only, so draws are renormalised over them; they hold 77.7% of
+the full-vocabulary probability at T = 1. With the default seed 2026 the room sees `' that'` five
+times on the left and three tokens on the right: `distinct answers at temperature 0.0: 1 of 5`,
+`distinct answers at temperature 1.0: 3 of 5`. `--seed N` gives other draws, reproducibly.
 
 ## Recorded runs
 

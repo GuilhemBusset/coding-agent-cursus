@@ -16,8 +16,10 @@ never edited by hand:
   `count_r.py` each agent wrote. Recorded on 2026-10-11.
 - Sampling: **pending**. `recorded/sampling.json` needs an `ANTHROPIC_API_KEY` or
   `OPENAI_API_KEY`, which the run that built this demo did not have. Until someone with a key
-  records it (see [`sampling.md`](sampling.md), Recorded runs), the sampling demo has no offline
-  fallback.
+  records it (see [`sampling.md`](sampling.md), Recorded runs), the API demo cannot be replayed.
+  The only offline option is a labelled stand-in, `uv run --offline sampling.py --fixture`: GPT-2's
+  next token drawn at each temperature from the committed logits in `cursus/fixtures/`. It shows
+  the same mechanism, but it is not the API and not a recording.
 
 Keys: `sampling.py` reads `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the environment, puts it in
 the auth header only, and stops with a one-line message if it is unset. `strawberry.py` reads no
