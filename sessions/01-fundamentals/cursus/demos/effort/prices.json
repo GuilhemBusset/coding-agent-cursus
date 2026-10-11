@@ -4,7 +4,7 @@
   "unit": "USD per million tokens, standard (non-batch) list prices",
   "anthropic": {
     "source": "https://platform.claude.com/docs/en/about-claude/pricing",
-    "note": "cache_write_5m and cache_write_1h are the 5-minute and 1-hour cache write rates; the demo prices cache writes at the 5-minute rate (see README); cache_read is the cache hit rate. Haiku 5.5 rates are for prompts up to 100,000 tokens.",
+    "note": "cache_write_5m and cache_write_1h are the 5-minute and 1-hour cache write rates; the demo prices each cache write at the rate of the duration Claude Code reports for it (see README); cache_read is the cache hit rate. Haiku 5.5 rates are for prompts up to 100,000 tokens.",
     "models": {
       "claude-opus-5-5": {"input": 4, "output": 20, "cache_write_5m": 5, "cache_write_1h": 8, "cache_read": 0.2},
       "claude-sonnet-5-5": {"input": 2, "output": 10, "cache_write_5m": 2.5, "cache_write_1h": 4, "cache_read": 0.1},

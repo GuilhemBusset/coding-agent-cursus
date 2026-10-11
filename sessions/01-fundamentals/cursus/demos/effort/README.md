@@ -119,8 +119,8 @@ Run date 2026-10-11 (UTC) - prices as of 2026-10-11, USD list-price equivalent
 
 CLI     effort  model            input tok  output tok  cache read  cache write  reasoning  seconds  cost USD  answer  correct
 ------  ------  ---------------  ---------  ----------  ----------  -----------  ---------  -------  --------  ------  -------
-claude  low     claude-opus-5-5          2         783           0        2,666        286      9.9    0.0290     229  yes
-claude  high    claude-opus-5-5          2         964           0        2,666        447     11.2    0.0326     229  yes
+claude  low     claude-opus-5-5          2         783           0        2,666        286      9.9    0.0370     229  yes
+claude  high    claude-opus-5-5          2         964           0        2,666        447     11.2    0.0406     229  yes
 codex   low     gpt-6-astra         14,348         467      12,288            -        286     18.6    0.0562     229  yes
 codex   high    gpt-6-astra         14,348         705      12,288            -        516     30.5    0.0681     229  yes
 
@@ -137,8 +137,8 @@ What to draw from it:
   about 1.6 to 1.8 times the reasoning tokens, 1.1 to 1.6 times the time and 1.1 to 1.2 times
   the cost. The lesson for this puzzle is cost and time, not accuracy.
 - **The fixed cost dominates.** The input side (Claude Code's 2,666-token system prompt written to
-  cache, Codex's 14,348 input tokens) is identical at both efforts and is 40 to 60 percent of
-  each bill. The effort dial only moves the output side.
+  the 1-hour cache, Codex's 14,348 input tokens) is identical at both efforts and is 48 to 59
+  percent of each bill. The effort dial only moves the output side.
 - **If a live run differs,** that is the demo working, not failing. A low run that answers 228
   (the full van) or 181 (greedy) while high gets 229 is the case where thinking bought
   correctness. A high run that is slower and still wrong is the overthinking case from the
@@ -149,18 +149,23 @@ What to draw from it:
 How the cost is computed (USD list-price equivalent: a subscription login is not billed per token):
 
 - Claude Code reports exclusive counters per model in `modelUsage`: input excludes cache reads and
-  writes, output includes thinking. Cost = input × input rate + cache write × 5-minute write rate
-  + cache read × read rate + output × output rate, summed over every model in `modelUsage`.
+  writes, output includes thinking. Cost = input × input rate + cache write × write rate for its
+  duration + cache read × read rate + output × output rate, summed over every model in
+  `modelUsage`. `modelUsage` does not say how long a write is cached, so the script reads the
+  result's `usage.cache_creation` split (`ephemeral_1h_input_tokens`, `ephemeral_5m_input_tokens`)
+  and prices 1-hour writes at the 1-hour rate ($8 per million for Opus 5.5) and 5-minute writes at
+  the 5-minute rate ($5). Both recorded Claude runs wrote their 2,666-token system prompt to the
+  1-hour cache, kept as `cache_write_1h` next to `cache_write` in `results.json`. Without a
+  reported split, every write is priced at the 5-minute rate.
 - Codex reports inclusive counters per turn: `input_tokens` includes `cached_input_tokens`, and
   `output_tokens` includes `reasoning_output_tokens`. Cost = (input − cached) × input rate +
   cached × cached-input rate + output × output rate. The script refuses usage where cached exceeds
   input or reasoning exceeds output. Both recorded runs report `cache_write_input_tokens` of 0;
   the script keeps that counter separate and warns if it is ever nonzero, since it is not priced.
-- Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. It is higher by
-  $0.007998 in both Claude runs (`cost_delta_usd` = `cost_usd` − `reported_cost_usd` = −0.007998).
-  The gap is exactly 2,666 cache-write tokens × ($8 − $5) per million: this Claude Code version
-  wrote its system prompt to the 1-hour cache (`ephemeral_1h_input_tokens` in the raw usage),
-  while the demo prices every cache write at the 5-minute rate.
+- Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. In both Claude
+  runs it equals the script's cost exactly: low (2 × $4 + 2,666 × $8 + 783 × $20)
+  per million = $0.036996, high (2 × $4 + 2,666 × $8 + 964 × $20) per million = $0.040616, so
+  `cost_delta_usd` = `cost_usd` − `reported_cost_usd` = 0.
 
 ## Known failure modes
 

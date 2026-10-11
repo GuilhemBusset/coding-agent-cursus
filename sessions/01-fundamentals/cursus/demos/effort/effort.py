@@ -48,10 +48,11 @@ DOCS = {
     "claude_effort": "https://platform.claude.com/docs/en/build-with-claude/effort",
     "codex_config": "https://developers.openai.com/codex/config-reference",
 }
-# thinking (Claude) and reasoning_output (Codex) are already inside output. cache_write_input is
-# a Codex counter that the cost contract does not price; a nonzero value triggers a warning.
-TOKEN_FIELDS = ("input", "output", "cache_read", "cache_write", "cached_input", "reasoning_output",
-                "thinking", "cache_write_input")
+# thinking (Claude) and reasoning_output (Codex) are already inside output; cache_write_1h is
+# the part of Claude's cache_write written to the 1-hour cache. cache_write_input is a Codex
+# counter that the cost contract does not price; a nonzero value triggers a warning.
+TOKEN_FIELDS = ("input", "output", "cache_read", "cache_write", "cache_write_1h", "cached_input",
+                "reasoning_output", "thinking", "cache_write_input")
 
 
 class DemoError(Exception):
@@ -133,6 +134,31 @@ def parse_events(raw):
     return events
 
 
+def one_hour_writes(result):
+    """Tokens each model wrote to the 1-hour cache; the rest of its cache writes are 5-minute.
+
+    modelUsage has no duration, so it comes from the result's usage.cache_creation split
+    (ephemeral_1h / ephemeral_5m). Without a split, every write is priced at the 5-minute rate.
+    """
+    writes = {model: int(usage.get("cacheCreationInputTokens", 0))
+              for model, usage in result["modelUsage"].items()}
+    split = (result.get("usage") or {}).get("cache_creation")
+    if not isinstance(split, dict):
+        return {}
+    hour, five = int(split.get("ephemeral_1h_input_tokens", 0)), int(split.get("ephemeral_5m_input_tokens", 0))
+    if not hour:
+        return {}
+    if not five and hour == sum(writes.values()):
+        return writes
+    owners = [model for model, count in writes.items() if count and count == hour + five]
+    if len(owners) == 1:
+        if sum(writes.values()) != hour + five:
+            print("warning: Claude reported no cache duration for some models; their cache writes "
+                  "are priced at the 5-minute rate", file=sys.stderr)
+        return {owners[0]: hour}
+    raise DemoError(f"cannot attribute the cache-write durations {split} to the models in modelUsage")
+
+
 def claude_row(events, prices):
     results = [event for event in events if event.get("type") == "result"]
     if len(results) != 1 or not isinstance(results[0].get("modelUsage"), dict):
@@ -140,17 +166,22 @@ def claude_row(events, prices):
     result = results[0]
     tokens = dict.fromkeys(TOKEN_FIELDS, 0)
     cost = 0.0
+    hours = one_hour_writes(result)
     # Claude Code's counters are exclusive: input excludes cache reads and writes, and
-    # output includes thinking. Every model that ran (auxiliary ones too) is priced.
+    # output includes thinking. Every model that ran (auxiliary ones too) is priced, and
+    # cache writes at the rate of the duration they were written for.
     for model, usage in result["modelUsage"].items():
         rate = rate_card(prices, "anthropic", model)
         counts = {name: int(usage.get(key, 0)) for name, key in (
             ("input", "inputTokens"), ("output", "outputTokens"),
             ("cache_read", "cacheReadInputTokens"), ("cache_write", "cacheCreationInputTokens"))}
+        counts["cache_write_1h"] = hours.get(model, 0)
         for name, count in counts.items():
             tokens[name] += count
         tokens["thinking"] += int(usage.get("thinkingTokens", 0))
-        cost += (counts["input"] * rate["input"] + counts["cache_write"] * rate["cache_write_5m"]
+        cost += (counts["input"] * rate["input"]
+                 + (counts["cache_write"] - counts["cache_write_1h"]) * rate["cache_write_5m"]
+                 + counts["cache_write_1h"] * rate["cache_write_1h"]
                  + counts["cache_read"] * rate["cache_read"] + counts["output"] * rate["output"])
     init = [event for event in events if event.get("type") == "system" and event.get("subtype") == "init"]
     init_tools = init[0].get("tools") if init else None
