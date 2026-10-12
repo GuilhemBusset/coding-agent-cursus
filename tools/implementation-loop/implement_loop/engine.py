@@ -25,6 +25,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import tempfile
 import threading
 import time
 import traceback
@@ -571,7 +572,7 @@ class Engine:
             self.store.put(st)
         if sync.status == "merged":
             self._updated_from_main(n, wt, sync, Phase.IMPLEMENT.value)
-            self._relock(n, wt, self._relock_candidates(n, wt), {})
+            self._relock(n, wt, self._relock_candidates(n, wt, sync.before), {})
         elif files:
             st.conflict_paths = sorted(set(st.conflict_paths) | set(files))
             spec = self.plan.specs[n]
@@ -589,7 +590,7 @@ class Engine:
                 return self._back_to_implement(n, wt, "check_conflict_unresolved", locked,
                                                f"The check author could not resolve the conflict with main in the "
                                                f"locked checks {locked}; the next round merges main again.")
-            expected = self._relock_candidates(n, wt)
+            expected = self._relock_candidates(n, wt, sync.before)
             restore = {f: (wt / f).read_bytes() for f in expected if (wt / f).is_file()}
             sources = {f: "check-author" if f in locked else "main" for f in expected}
             feedback.append(conflict_feedback([f for f in files if f not in locked], locked))
@@ -663,14 +664,38 @@ class Engine:
     def _updated_from_main(self, n: int, wt: Path, sync: UpdateResult, phase: str) -> None:
         self.store.event("updated_from_main", issue=n, phase=phase, frm=sync.before, to=self.ws.head(wt), main=sync.main)
 
-    def _relock_candidates(self, n: int, wt: Path) -> dict[str, str]:
-        """Locked files (and new test configuration) whose digest main's merge, or the check
-        author's resolution of it, changed: the new digests, taken before the implementer runs."""
+    def _relock_candidates(self, n: int, wt: Path, before: str) -> dict[str, str]:
+        """Locked files (and new test configuration) that main's merge, or the check author's
+        resolution of it, changed: the new digests, taken before the implementer runs. Only a
+        change from the branch's own pre-merge tree (`before`) counts, and only where that tree
+        still matched the lock, so earlier tampering on the branch stays a verification failure."""
         st = self.store.issue(n)
         design = self._design(st)
         cwds = sorted({c.cwd for c in design.checks if c.kind == "command"})
         current = verify.lock(wt, design.check_files, cwds)
-        return {f: d for f, d in current.items() if st.locked.get(f) != d}
+        candidates, refused = {}, []
+        for f, d in current.items():
+            pre = self._digest_at(wt, before, f)
+            if pre == d:
+                continue                       # the merge did not change it
+            if pre != st.locked.get(f):
+                refused.append(f)              # the branch had changed it from the lock already
+                continue
+            candidates[f] = d
+        if refused:
+            self.store.event("checks_not_relocked", issue=n, files=sorted(refused),
+                             reason="changed on the branch before main's merge")
+        return candidates
+
+    def _digest_at(self, wt: Path, ref: str, file: str) -> str | None:
+        """verify.digest of `file` as it is at `ref`, or None when it is not a file there."""
+        data = self.ws.show_bytes(wt, ref, file)
+        if data is None:
+            return None
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / Path(file).name     # the name matters: pyproject.toml is digested by table
+            p.write_bytes(data)
+            return verify.digest(p)
 
     def _relock(self, n: int, wt: Path, digests: dict[str, str], sources: dict[str, str]) -> None:
         """Once main's merge is committed, lock what it brought: only digests taken before the
@@ -932,7 +957,7 @@ class Engine:
                 return self._conflict(n, wt, sync.files, Phase.LAND.value)
             if sync.status == "merged":
                 self._updated_from_main(n, wt, sync, Phase.LAND.value)
-                self._relock(n, wt, self._relock_candidates(n, wt), {})
+                self._relock(n, wt, self._relock_candidates(n, wt, sync.before), {})
                 return self._set_phase(n, Phase.VERIFY, rereview=True)
             try:
                 self.ws.push(wt)

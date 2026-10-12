@@ -96,7 +96,9 @@ commits), at two points:
 A conflict is work for the implementer, never an engine fault: each conflict episode costs one
 review fix round, so conflicts that keep coming end in a redesign and then a park as exhausted.
 Locked files that `main`'s merge changed are locked again at their merged digests
-(`checks_relocked`). No worktree keeps an unfinished rebase or merge between steps, and when a
+(`checks_relocked`). Only a change from the branch's own pre-merge tree counts, and only where
+that tree still matched the lock: a check or test configuration the branch had already changed
+keeps its old lock, so verification still reports the tampering (`checks_not_relocked`). No worktree keeps an unfinished rebase or merge between steps, and when a
 run starts it aborts any that an earlier failure left behind (`worktree_recovered`). The branch
 keeps every commit.
 
