@@ -591,7 +591,10 @@ class Engine:
                                                f"The check author could not resolve the conflict with main in the "
                                                f"locked checks {locked}; the next round merges main again.")
             expected = self._relock_candidates(n, wt, sync.before)
-            restore = {f: self.ws.file_state(wt, f) for f in expected if (wt / f).is_file()}
+            # Every locked check, not only those whose digest moved: HEAD lacks main's side, so a
+            # mode-only change main brought would otherwise read as the implementer's tampering.
+            merged = {f: self.ws.file_state(wt, f) for f in {**st.locked, **expected}}
+            restore = {f: s for f, s in merged.items() if s is not None}
             sources = {f: "check-author" if f in locked else "main" for f in expected}
             feedback.append(conflict_feedback([f for f in files if f not in locked], locked))
         design = self._design(st)
