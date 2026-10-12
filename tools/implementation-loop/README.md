@@ -77,6 +77,31 @@ an outage, a new engine version for an engine fault (filed once as a `loop:engin
 an edit to the issue, or `retry`. Limits survive restarts; only an edit to the issue (new
 evidence) grants a fresh set.
 
+## Keeping up with `main`
+
+Other issues land while one is in flight, so the engine brings every issue branch up to date
+with `main` by merging it in (never a rebase: that would rewrite verified, reviewed or published
+commits), at two points:
+
+- **Before each implement round.** A clean merge is committed and recorded as
+  `updated_from_main`. On a conflict the merge stays in progress for that round: the implementer
+  gets the conflict markers and feedback naming the files, and may change them that round.
+  Conflicts in locked checks go to their author, the other vendor, first. The engine then
+  concludes the merge, or aborts it if markers remain (`conflict_unresolved`) and the next round
+  tries again.
+- **At land, before pushing.** A clean merge makes a new head, so the issue is verified and
+  reviewed again before it may land. A conflict, there or in `scripts/ship.sh`, is aborted and
+  sends the issue back to implement (`conflict`).
+
+A conflict is work for the implementer, never an engine fault: each conflict episode costs one
+review fix round, so conflicts that keep coming end in a redesign and then a park as exhausted.
+Locked files that `main`'s merge changed are locked again at their merged digests
+(`checks_relocked`). Only a change from the branch's own pre-merge tree counts, and only where
+that tree still matched the lock: a check or test configuration the branch had already changed
+keeps its old lock, so verification still reports the tampering (`checks_not_relocked`). No worktree keeps an unfinished rebase or merge between steps, and when a
+run starts it aborts any that an earlier failure left behind (`worktree_recovered`). The branch
+keeps every commit.
+
 ## Where things live
 
 - Worktrees: `<repo parent>/<repo name>.loop/issue-<root>/` (`coord/` plus one per active issue).

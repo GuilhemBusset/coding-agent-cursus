@@ -16,6 +16,10 @@ Write files **only** at these paths: {{check_files}}. Anything else you write is
   not satisfy by hard-coding the obvious example.
 - Do not write any implementation, fixtures beyond what the tests need, or configuration that
   changes how tests are collected.
+- If the feedback says merging `main` conflicts in these files, the checks already exist: resolve
+  the conflict markers in them, keeping the requirements of both sides (main's side checks work
+  already merged, this branch's side checks this issue). Do not run `git merge`, `git commit`
+  or `git merge --abort`.
 
 {{feedback}}
 

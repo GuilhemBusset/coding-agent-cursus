@@ -179,6 +179,8 @@ class IssueState:
     amend_file: str | None = None                         # the only check an amendment may rewrite
     merge_refusals: int = 0
     reverted: list[str] = field(default_factory=list)     # locked checks the implementer edited, reverted
+    conflict_paths: list[str] = field(default_factory=list)  # files conflicts with main let it change
+    conflict_pending: bool = False                        # a charged conflict no round has repaired yet
     park_kind: str | None = None
     resume_phase: str | None = None
     parked_env: str | None = None
