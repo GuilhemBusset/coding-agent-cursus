@@ -62,7 +62,8 @@ class Workspace:
         return proc.stdout.strip() if strip else proc.stdout
 
     def uncommitted(self, path: Path) -> list[str]:
-        """Paths changed in the working tree, staged or not, including untracked files.
+        """Paths changed in the working tree, staged or not, including untracked files, and both
+        ends of a rename (a merge that brings main's rename stages one): its source changed too.
 
         Read NUL-delimited and unstripped: porcelain lines start with a two-letter status that
         may begin with a space (" M setup/package.json"), and stripping the output once cut the
@@ -74,7 +75,9 @@ class Workspace:
             record = records[i]
             if len(record) > 3:
                 paths.append(record[3:])
-                if record[0] in "RC":   # a rename or copy is followed by its source path
+                if "R" in record[:2] and i + 1 < len(records):   # followed by its source path
+                    paths.append(records[i + 1])
+                if "R" in record[:2] or "C" in record[:2]:   # a copy's source is unchanged
                     i += 1
             i += 1
         return paths
