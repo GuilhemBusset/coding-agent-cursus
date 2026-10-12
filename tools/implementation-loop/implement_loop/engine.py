@@ -689,10 +689,11 @@ class Engine:
 
     def _resolve_locked_conflict(self, n: int, wt: Path, lane: list[str], merge_head: str) -> bool:
         """Conflicts in locked checks go to their author, the other vendor, never to the
-        implementer. Its edits outside `lane` are undone from the bytes taken before it ran
-        (restoring HEAD would drop main's side of the merge)."""
+        implementer. Its edits outside `lane`, staged or not, are undone from the index entries and
+        bytes taken before it ran (restoring HEAD would drop main's side of the merge)."""
         st = self.store.issue(n)
         snapshot = {f: ((wt / f).read_bytes() if (wt / f).is_file() else None) for f in self.ws.uncommitted(wt)}
+        index = self.ws.index_entries(wt)
         feedback = [f"Main moved on, and merging it into this branch conflicts in the locked acceptance checks "
                     f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
                     f"keeping the requirements of both sides (main's side checks work already merged). Change "
@@ -702,23 +703,24 @@ class Engine:
                                  feedback=feedback)
         self._absorb_agent_commits(n, wt, before, refs_before, merge_head=merge_head)
         restored = []
-        for f in sorted(set(self.ws.uncommitted(wt)) | set(snapshot)):
+        index_now = self.ws.index_entries(wt)
+        changed_in_index = {f for f in set(index) | set(index_now) if index.get(f) != index_now.get(f)}
+        for f in sorted(set(self.ws.uncommitted(wt)) | set(snapshot) | changed_in_index):
             if any(scheduler.overlaps(f, c) for c in lane):
                 continue
             target = wt / f
             now = target.read_bytes() if target.is_file() else None
-            if f in snapshot:
-                if now == snapshot[f]:
-                    continue
-                if snapshot[f] is None:
-                    target.unlink(missing_ok=True)
-                else:
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_bytes(snapshot[f])
-            elif self.ws.git("ls-files", "--", f, cwd=wt):
-                self.ws.git("checkout", "--", f, cwd=wt, check=False)
+            # A path not in the snapshot matched HEAD before the author ran, or did not exist.
+            was = snapshot[f] if f in snapshot else self.ws.show_bytes(wt, "HEAD", f)
+            if now == was and f not in changed_in_index:
+                continue
+            if was is None:
+                target.unlink(missing_ok=True)
             else:
-                self.ws.git("clean", "-fdq", "--", f, cwd=wt, check=False)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(was)
+            # the index too: a staged edit restored only in the tree would still be read back
+            self.ws.restore_index_entry(wt, f, index.get(f, []))
             restored.append(f)
         if restored:
             self.store.event("check_author_out_of_lane", issue=n, discarded=restored)

@@ -73,6 +73,25 @@ class Workspace:
             i += 1
         return paths
 
+    def index_entries(self, path: Path) -> dict[str, list[str]]:
+        """The index, path by path: `ls-files --stage` records, one per stage (a conflicted
+        path has up to three), in the form `git update-index --index-info` reads back."""
+        entries: dict[str, list[str]] = {}
+        for record in self.git("ls-files", "--stage", "-z", cwd=path, strip=False).split("\0"):
+            if "\t" in record:
+                entries.setdefault(record.split("\t", 1)[1], []).append(record)
+        return entries
+
+    def restore_index_entry(self, path: Path, name: str, entries: list[str]) -> None:
+        """Put `name` back in the index exactly as `entries` (from `index_entries`) recorded it,
+        conflict stages included; no entries removes it from the index."""
+        removal = f"0 {'0' * len(self.head(path))}\t{name}"
+        info = "".join(f"{record}\0" for record in [removal, *entries])
+        proc = subprocess.run(["git", "update-index", "-z", "--index-info"], cwd=path, input=info,
+                              capture_output=True, text=True)
+        if proc.returncode != 0:
+            raise GitError(f"git update-index --index-info failed for {name}: {proc.stderr.strip()[:400]}")
+
     def fetch(self) -> None:
         with self._mutex:
             self.git("fetch", "--quiet", self.remote, self.base)
@@ -175,6 +194,11 @@ class Workspace:
 
     def exists_at(self, path: Path, ref: str, file: str) -> bool:
         return bool(self.git("ls-tree", "--name-only", ref, "--", file, cwd=path, check=False))
+
+    def show_bytes(self, path: Path, ref: str, file: str) -> bytes | None:
+        """The bytes of `file` at `ref`, or None when it is not a file there."""
+        proc = subprocess.run(["git", "cat-file", "blob", f"{ref}:{file}"], cwd=path, capture_output=True)
+        return proc.stdout if proc.returncode == 0 else None
 
     def _git_path(self, path: Path, name: str) -> Path:
         """A path in this worktree's own git directory (each worktree has its own MERGE_HEAD)."""
