@@ -12,11 +12,29 @@ import subprocess
 import threading
 import uuid
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 
 class GitError(RuntimeError):
     pass
+
+
+class MergeConflict(GitError):
+    """Bringing a branch up to date with the base branch hit conflicts in `files`. The failed
+    operation was aborted: the worktree is clean, on its branch, at its previous head."""
+
+    def __init__(self, message: str, files: list[str]):
+        super().__init__(message)
+        self.files = files
+
+
+@dataclass
+class UpdateResult:
+    status: str               # "current" | "merged" | "conflict" (the merge is left in progress)
+    files: list[str]          # the conflicted files
+    before: str               # HEAD before the update
+    main: str                 # the base branch's head that was merged
 
 
 class Workspace:
@@ -158,14 +176,81 @@ class Workspace:
     def exists_at(self, path: Path, ref: str, file: str) -> bool:
         return bool(self.git("ls-tree", "--name-only", ref, "--", file, cwd=path, check=False))
 
+    def _git_path(self, path: Path, name: str) -> Path:
+        """A path in this worktree's own git directory (each worktree has its own MERGE_HEAD)."""
+        p = Path(self.git("rev-parse", "--git-path", name, cwd=path))
+        return p if p.is_absolute() else path / p
+
+    def in_progress(self, path: Path) -> str | None:
+        """"rebase" or "merge" when one stopped half-way in this worktree, else None."""
+        if self._git_path(path, "rebase-merge").exists() or self._git_path(path, "rebase-apply").exists():
+            return "rebase"
+        if self._git_path(path, "MERGE_HEAD").exists():
+            return "merge"
+        return None
+
+    def conflicted_files(self, path: Path) -> list[str]:
+        """Unmerged paths, read NUL-delimited so spaces and non-ASCII names survive."""
+        out = self.git("diff", "--name-only", "--diff-filter=U", "-z", cwd=path, strip=False)
+        return list(dict.fromkeys(f for f in out.split("\0") if f))
+
+    # in-progress operations ------------------------------------------------------
+    def _ok(self, path: Path, *args: str) -> bool:
+        return subprocess.run(["git", *args], cwd=path, capture_output=True, text=True).returncode == 0
+
+    def abort_in_progress(self, path: Path) -> str | None:
+        """Abort a rebase or merge left half-way, returning which it was. Committed work is never
+        lost: an unfinished rebase never moved the branch ref, and a merge only adds a commit
+        once it is concluded. Never `reset --hard` or `clean`."""
+        with self._mutex:
+            op = self.in_progress(path)
+            if op == "rebase":
+                head_name = next((self._git_path(path, d) / "head-name" for d in ("rebase-merge", "rebase-apply")
+                                  if (self._git_path(path, d) / "head-name").is_file()), None)
+                branch = head_name.read_text().strip().removeprefix("refs/heads/") if head_name else ""
+                if not self._ok(path, "rebase", "--abort"):
+                    self._ok(path, "rebase", "--quit")
+                    if branch and branch != "detached HEAD":
+                        self.git("checkout", "--force", "--quiet", branch, cwd=path)
+            elif op == "merge":
+                if not self._ok(path, "merge", "--abort"):
+                    self._ok(path, "merge", "--quit")
+                    self.git("checkout", "--force", "--quiet",
+                             self.git("symbolic-ref", "--short", "-q", "HEAD", cwd=path, check=False) or "HEAD", cwd=path)
+            if op and self.in_progress(path):
+                raise GitError(f"could not abort the {op} in progress in {path}")
+            return op
+
+    def update(self, path: Path) -> UpdateResult:
+        """Bring the branch up to date with the base branch by merging it in (never a rebase:
+        it would rewrite commits that were verified, reviewed or published). On conflicts the
+        merge is left in progress for the caller, who resolves or aborts it."""
+        self.abort_in_progress(path)
+        self.fetch()
+        with self._mutex:
+            before = self.head(path)
+            main = self.git("rev-parse", self.base_ref(), cwd=path)
+            if self.is_ancestor(path, main, before):
+                return UpdateResult("current", [], before, main)
+            proc = subprocess.run(["git", "merge", "--no-edit", "-m", f"Merge {self.base_ref()} into the issue branch",
+                                   main], cwd=path, capture_output=True, text=True)
+            if proc.returncode == 0:
+                return UpdateResult("merged", [], before, main)
+            files = self.conflicted_files(path)
+            if files and self.in_progress(path) == "merge":
+                return UpdateResult("conflict", files, before, main)
+            self.abort_in_progress(path)
+            raise GitError(f"git merge {self.base_ref()} failed: {(proc.stderr or proc.stdout).strip()[:400]}")
+
     # writes ---------------------------------------------------------------------
     def commit_all(self, path: Path, subject: str, phase: str, issue: int, unlocks: list[str] | None = None) -> str | None:
         """Commit everything in the worktree. Returns the new SHA, or None if nothing changed.
         `unlocks` names check files an earlier acceptance-checks commit locked that a new design
-        no longer uses; the CI guard stops protecting them from this commit on."""
+        no longer uses; the CI guard stops protecting them from this commit on. A merge in
+        progress is concluded even when its resolution leaves the tree as it was."""
         with self._mutex:
             self.git("add", "--all", cwd=path)
-            if not self.git("status", "--porcelain", cwd=path) and not unlocks:
+            if not self.git("status", "--porcelain", cwd=path) and not unlocks and self.in_progress(path) != "merge":
                 return None
             trailers = f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
             message = f"{subject}\n\nRefs #{issue}\n\n{trailers}"
@@ -188,9 +273,21 @@ class Workspace:
         return not self.git("diff", "--name-only", f"{self.base_ref()}...HEAD", cwd=path)
 
     def push(self, path: Path) -> str:
-        """Publish through the trusted ship script (rebase before first push, merge-forward after)."""
+        """Publish through the trusted ship script (rebase before first push, merge-forward after).
+        A conflict while it brings the branch up to date is aborted and raised as `MergeConflict`,
+        with the worktree back on its branch, at its previous head, clean."""
         with self._mutex:
+            before = self.head(path)
+            branch = self.git("symbolic-ref", "--short", "-q", "HEAD", cwd=path, check=False)
             proc = subprocess.run(["bash", str(self.ship_script)], cwd=path, capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise GitError(f"ship.sh failed: {(proc.stderr or proc.stdout).strip()[-600:]}")
-        return self.head(path)
+            if proc.returncode == 0:
+                return self.head(path)
+            message = f"ship.sh failed: {(proc.stderr or proc.stdout).strip()[-600:]}"
+            files = self.conflicted_files(path)
+            if not files and not self.in_progress(path):
+                raise GitError(message)
+            self.abort_in_progress(path)
+            now = self.git("symbolic-ref", "--short", "-q", "HEAD", cwd=path, check=False)
+            if now != branch or self.head(path) != before or self.git("status", "--porcelain", cwd=path):
+                raise GitError(f"{message}\n(the worktree did not return to {branch} at {before[:12]} after the abort)")
+            raise MergeConflict(message, files)

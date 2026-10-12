@@ -41,7 +41,7 @@ from .graph import Plan
 from .model import (PARK_BLOCKED, PARK_ENGINE_ERROR, PARK_ENVIRONMENT, PARK_EXHAUSTED, PARK_TRANSIENT, CheckSpec,
                     Finding, Issue, IssueState, Phase, SATISFIES_DEPENDENTS, WRITING_PHASES)
 from .state import FaultOutbox, RepoClaims, RunStore
-from .workspace import GitError, Workspace
+from .workspace import GitError, MergeConflict, UpdateResult, Workspace
 
 LABELS = {
     "loop:design": ("C5DEF5", "implement loop: designing"),
@@ -74,6 +74,7 @@ ENVIRONMENT_FAILURE = re.compile(
     r"|No module named pytest|\b(uv|node|npx|npm|python3?): (command )?not found", re.IGNORECASE)
 # A required check that never reached a verdict is an outage, not a failure of the change.
 CI_NO_VERDICT = (None, "missing", "pending", "stale", "cancelled", "startup_failure")
+CONFLICT_MARKER = re.compile(r"^(<{7}|>{7})( |$)", re.MULTILINE)
 
 
 class Engine:
@@ -125,6 +126,8 @@ class Engine:
         for n in self.plan.work:
             st = self.store.issue(n)
             spec = self.plan.specs[n]
+            if st.worktree and (Path(st.worktree) / ".git").exists():
+                self._recover_worktree(n, Path(st.worktree))
             if st.body_hash and st.body_hash != spec.body_hash:
                 if st.phase in (Phase.MERGED, Phase.DELIVERED, Phase.DONE):
                     self._new_round(st, ["the issue was edited after its work was merged; deliver the edited version",
@@ -143,7 +146,20 @@ class Engine:
             st.branch = st.branch or spec.branch or f"loop/issue-{n}"
             if st.design:
                 spec.declared_paths = design_paths(st.design.get("files", []), st.design.get("check_files", []), spec.declared_paths)
+            if st.conflict_paths:
+                spec.declared_paths = sorted(set(spec.declared_paths) | set(st.conflict_paths))
             self.store.put(st)
+
+    def _recover_worktree(self, n: int, wt: Path) -> None:
+        """A rebase or merge an earlier failure left half-way (#28's worktree was left mid-rebase)
+        is aborted: the branch keeps every commit, and the issue resumes from a clean worktree."""
+        try:
+            op = self.ws.abort_in_progress(wt)
+        except GitError as e:
+            self.store.event("worktree_recovery_failed", issue=n, error=str(e)[:300])
+            return
+        if op:
+            self.store.event("worktree_recovered", issue=n, operation=op, head=self.ws.head(wt))
 
     def _maybe_resume(self, st: IssueState) -> None:
         """A parked issue resumes when what parked it may have changed (ADR 0011): never an
@@ -394,13 +410,17 @@ class Engine:
         """Where this branch meets the current base branch; moves forward when main is merged in."""
         return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
 
-    def _absorb_agent_commits(self, n: int, wt: Path, before: str, refs_before: dict[str, str]) -> None:
+    def _absorb_agent_commits(self, n: int, wt: Path, before: str, refs_before: dict[str, str],
+                              merge_head: str | None = None) -> None:
         """Only the engine creates history. If an agent committed anyway, keep its changes but
         undo the commits, so they are committed, verified and reviewed like everything else.
-        Tags and branches an agent created are deleted (run branches are the engine's)."""
+        Tags and branches an agent created are deleted (run branches are the engine's).
+        `merge_head`: main's merge was in progress, and stays in progress after the undo."""
         head = self.ws.head(wt)
         if head != before:
             self.ws.git("reset", "--soft", "--quiet", before, cwd=wt)
+            if merge_head and self.ws.in_progress(wt) is None:
+                self.ws.git("update-ref", "MERGE_HEAD", merge_head, cwd=wt)
             self.store.event("agent_commits_absorbed", issue=n, from_head=head, to=before)
         run_branches = {f"refs/heads/{self.store.issue(m).branch}" for m in self.plan.work}
         created = [r for r in self.ws.refs() if r not in refs_before and r not in run_branches]
@@ -521,35 +541,212 @@ class Engine:
                         feedback=feedback)
 
     def _step_implement(self, n: int) -> None:
+        """Every round starts from current main: main is merged in first. On a conflict the
+        merge stays in progress for the implementer to resolve, and is concluded or aborted
+        within this step, so no worktree holds an unfinished merge between steps."""
         st = self.store.issue(n)
         wt = Path(st.worktree)
+        self._recover_worktree(n, wt)
+        self.ws.fetch()
+        if self.ws.uncommitted(wt) and not self.ws.is_ancestor(wt, self.ws.base_ref(), "HEAD"):
+            # an interrupted round's leftovers: kept, so main is merged into a clean tree
+            sha = self._commit_work(n, wt, f"Checkpoint #{n} before merging main")
+            self.store.event("checkpoint_before_update", issue=n, sha=sha)
+        sync = self.ws.update(wt)
+        try:
+            self._implement_round(n, wt, sync)
+        finally:
+            if self.ws.in_progress(wt):   # an exception, a stop included, mid-merge
+                self.ws.abort_in_progress(wt)
+
+    def _implement_round(self, n: int, wt: Path, sync: UpdateResult) -> None:
+        st = self.store.issue(n)
+        feedback = list(st.feedback)
+        files = sync.files if sync.status == "conflict" else []
+        expected: dict[str, str] = {}      # locked digests after main's merge, taken before the implementer
+        restore: dict[str, bytes] = {}     # and their bytes, to restore the implementer's edits from
+        sources: dict[str, str] = {}
+        if st.conflict_pending and not files:   # the conflict land found is gone: nothing to repair
+            st.conflict_pending = False
+            self.store.put(st)
+        if sync.status == "merged":
+            self._updated_from_main(n, wt, sync, Phase.IMPLEMENT.value)
+            self._relock(n, wt, self._relock_candidates(n, wt), {})
+        elif files:
+            st.conflict_paths = sorted(set(st.conflict_paths) | set(files))
+            spec = self.plan.specs[n]
+            spec.declared_paths = sorted(set(spec.declared_paths) | set(files))
+            if not st.conflict_pending:   # land already charged the episode it found
+                st.fix_rounds += 1
+                st.conflict_pending = True
+                self.store.event("conflict", issue=n, phase=Phase.IMPLEMENT.value, files=files, fix_round=st.fix_rounds)
+            self.store.put(st)
+            if st.fix_rounds > self.caps.fix_rounds:
+                self.ws.abort_in_progress(wt)
+                return self._redesign_or_park(n, [f"conflicts with main remain after the fix rounds: {files}"])
+            locked = [f for f in files if f in st.locked]
+            if locked and not self._resolve_locked_conflict(n, wt, locked, sync.main):
+                return self._back_to_implement(n, wt, "check_conflict_unresolved", locked,
+                                               f"The check author could not resolve the conflict with main in the "
+                                               f"locked checks {locked}; the next round merges main again.")
+            expected = self._relock_candidates(n, wt)
+            restore = {f: (wt / f).read_bytes() for f in expected if (wt / f).is_file()}
+            sources = {f: "check-author" if f in locked else "main" for f in expected}
+            feedback.append(conflict_feedback([f for f in files if f not in locked], locked))
+        design = self._design(st)
+        if files:   # the implementer may change the conflicted files this round
+            design = replace(design, files=sorted(set(design.files) | {f for f in files if f not in st.locked}))
         before, refs_before = self.ws.head(wt), self.ws.refs()
-        result = self.agents.implement(self.op, self._req(n), self._design(st), wt, st.feedback)
-        self._absorb_agent_commits(n, wt, before, refs_before)
+        result = self.agents.implement(self.op, self._req(n), design, wt, feedback)
+        self._absorb_agent_commits(n, wt, before, refs_before, merge_head=sync.main if files else None)
+        unresolved = []
+        if files:
+            st = self.store.issue(n)
+            st.conflict_pending = False   # this round was the repair
+            self.store.put(st)
+            unresolved = (files if self.ws.in_progress(wt) != "merge"
+                          else [f for f in files if has_conflict_markers(wt / f)])
+            if unresolved and result.status == "done":
+                return self._back_to_implement(n, wt, "conflict_unresolved", unresolved,
+                                               f"Conflict markers are still in {unresolved}, so main's merge was "
+                                               f"aborted. The next round merges main again: resolve every marker.")
+            if unresolved:   # the round stopped anyway: main's merge is dropped, the rest kept
+                self.ws.abort_in_progress(wt)
+                expected, restore = {}, {}
+        attempt = st.attempts + 1
         if result.status == "done":
-            sha = self._commit_work(n, wt, f"Implement #{n} (attempt {st.attempts + 1})")
-            self.store.event("implemented", issue=n, sha=sha, attempt=st.attempts + 1)
+            subject = f"Merge main and implement #{n} (attempt {attempt})" if files else f"Implement #{n} (attempt {attempt})"
+            sha = self._commit_work(n, wt, subject, expected, restore)
+            self._relock(n, wt, expected, sources)
+            self.store.event("implemented", issue=n, sha=sha, attempt=attempt)
             self._set_phase(n, Phase.VERIFY, head_sha=self.ws.head(wt))
             return
         # Whatever the implementer wrote is kept: the next attempt or design starts from it.
-        sha = self._commit_work(n, wt, f"Checkpoint #{n} (attempt {st.attempts + 1})")
+        sha = self._commit_work(n, wt, f"Checkpoint #{n} (attempt {attempt})", expected, restore)
+        if files and not unresolved:
+            self._relock(n, wt, expected, sources)
         self.store.event("implementer_stopped", issue=n, status=result.status, note=result.note[:800], checkpoint=sha)
         if result.status == "check_defect":
             return self._check_defect(n, wt, result)
         self._redesign_or_park(n, [f"the implementer reported the design impossible: {result.note}"])
 
-    def _commit_work(self, n: int, wt: Path, subject: str) -> str | None:
+    def _back_to_implement(self, n: int, wt: Path, kind: str, files: list[str], note: str) -> None:
+        """A conflict repair failed: abort main's merge and try again next round, which merges
+        main afresh and charges a fix round, so this is bounded."""
+        self.ws.abort_in_progress(wt)
+        st = self.store.issue(n)
+        st.conflict_pending = False
+        self.store.put(st)
+        self.store.event(kind, issue=n, files=files)
+        self._set_phase(n, Phase.IMPLEMENT, feedback=[note])
+
+    def _conflict(self, n: int, wt: Path, files: list[str], phase: str) -> None:
+        """Bringing the branch up to date with main hit conflicts. That is work for the
+        implementer, not an engine fault: the issue goes back to implement, charged one fix round,
+        and the conflicted files join its declared paths. The failed operation is already aborted."""
+        if self.ws.in_progress(wt) or self.ws.git("status", "--porcelain", cwd=wt):
+            raise GitError(f"the worktree of #{n} is not clean after aborting the conflicted update")
+        st = self.store.issue(n)
+        st.fix_rounds += 1
+        st.conflict_pending = True
+        st.conflict_paths = sorted(set(st.conflict_paths) | set(files))
+        self.store.put(st)
+        spec = self.plan.specs[n]
+        spec.declared_paths = sorted(set(spec.declared_paths) | set(files))
+        self.store.event("conflict", issue=n, phase=phase, files=files, fix_round=st.fix_rounds)
+        if st.fix_rounds > self.caps.fix_rounds:
+            return self._redesign_or_park(n, [f"conflicts with main remain after the fix rounds: {files}"])
+        self._set_phase(n, Phase.IMPLEMENT, feedback=[
+            f"Main moved on and conflicts with this branch in: {', '.join(files)}. The next round starts with "
+            f"main's merge in progress; resolve the conflicts in those files."])
+
+    def _updated_from_main(self, n: int, wt: Path, sync: UpdateResult, phase: str) -> None:
+        self.store.event("updated_from_main", issue=n, phase=phase, frm=sync.before, to=self.ws.head(wt), main=sync.main)
+
+    def _relock_candidates(self, n: int, wt: Path) -> dict[str, str]:
+        """Locked files (and new test configuration) whose digest main's merge, or the check
+        author's resolution of it, changed: the new digests, taken before the implementer runs."""
+        st = self.store.issue(n)
+        design = self._design(st)
+        cwds = sorted({c.cwd for c in design.checks if c.kind == "command"})
+        current = verify.lock(wt, design.check_files, cwds)
+        return {f: d for f, d in current.items() if st.locked.get(f) != d}
+
+    def _relock(self, n: int, wt: Path, digests: dict[str, str], sources: dict[str, str]) -> None:
+        """Once main's merge is committed, lock what it brought: only digests taken before the
+        implementer ran, and only where the committed file still has them."""
+        kept = {f: d for f, d in digests.items() if (wt / f).is_file() and verify.digest(wt / f) == d}
+        if not kept:
+            return
+        st = self.store.issue(n)
+        st.locked = {**st.locked, **kept}
+        self.store.put(st)
+        by_source: dict[str, list[str]] = {}
+        for f in sorted(kept):
+            by_source.setdefault(sources.get(f, "main"), []).append(f)
+        for source, files in sorted(by_source.items()):
+            self.store.event("checks_relocked", issue=n, files=files, source=source)
+
+    def _resolve_locked_conflict(self, n: int, wt: Path, lane: list[str], merge_head: str) -> bool:
+        """Conflicts in locked checks go to their author, the other vendor, never to the
+        implementer. Its edits outside `lane` are undone from the bytes taken before it ran
+        (restoring HEAD would drop main's side of the merge)."""
+        st = self.store.issue(n)
+        snapshot = {f: ((wt / f).read_bytes() if (wt / f).is_file() else None) for f in self.ws.uncommitted(wt)}
+        feedback = [f"Main moved on, and merging it into this branch conflicts in the locked acceptance checks "
+                    f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
+                    f"keeping the requirements of both sides (main's side checks work already merged). Change "
+                    f"nothing else; do not run git merge, commit or abort."]
+        before, refs_before = self.ws.head(wt), self.ws.refs()
+        self.agents.write_checks(self.other, self._req(n), replace(self._design(st), check_files=lane), wt,
+                                 feedback=feedback)
+        self._absorb_agent_commits(n, wt, before, refs_before, merge_head=merge_head)
+        restored = []
+        for f in sorted(set(self.ws.uncommitted(wt)) | set(snapshot)):
+            if any(scheduler.overlaps(f, c) for c in lane):
+                continue
+            target = wt / f
+            now = target.read_bytes() if target.is_file() else None
+            if f in snapshot:
+                if now == snapshot[f]:
+                    continue
+                if snapshot[f] is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(snapshot[f])
+            elif self.ws.git("ls-files", "--", f, cwd=wt):
+                self.ws.git("checkout", "--", f, cwd=wt, check=False)
+            else:
+                self.ws.git("clean", "-fdq", "--", f, cwd=wt, check=False)
+            restored.append(f)
+        if restored:
+            self.store.event("check_author_out_of_lane", issue=n, discarded=restored)
+        return self.ws.in_progress(wt) == "merge" and not any(has_conflict_markers(wt / f) for f in lane)
+
+    def _commit_work(self, n: int, wt: Path, subject: str, expected: dict[str, str] | None = None,
+                     restore: dict[str, bytes] | None = None) -> str | None:
         """Commit the implementer's work, minus any edit to a locked check: once committed, such
-        an edit would fail the CI guard for good, since run branches are never rewritten."""
+        an edit would fail the CI guard for good, since run branches are never rewritten.
+        Mid-merge, `expected` holds the locked digests main's merge brought and `restore` their
+        bytes: HEAD lacks main's side, so those files are restored from the bytes instead."""
         st = self.store.issue(n)
         check_files = (st.design or {}).get("check_files", [])
+        restore = restore or {}
         # Only the checks themselves: a changed test configuration (say pyproject.toml's pytest
         # table) is not part of the checks commit, so verification reports it instead, and the
         # implementer's other edits to that file are kept.
-        touched = [rel for rel, d in st.locked.items() if any(scheduler.overlaps(rel, c) for c in check_files)
+        touched = [rel for rel, d in {**st.locked, **(expected or {})}.items()
+                   if any(scheduler.overlaps(rel, c) for c in check_files)
                    and (not (wt / rel).is_file() or verify.digest(wt / rel) != d)]
         if touched:
-            self.ws.git("checkout", "HEAD", "--", *touched, cwd=wt, check=False)
+            for rel in touched:
+                if rel in restore:
+                    (wt / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (wt / rel).write_bytes(restore[rel])
+            from_head = [rel for rel in touched if rel not in restore]
+            if from_head:
+                self.ws.git("checkout", "HEAD", "--", *from_head, cwd=wt, check=False)
             self.store.event("locked_changes_reverted", issue=n, files=touched)
             st.reverted = touched
             self.store.put(st)
@@ -725,7 +922,20 @@ class Engine:
             if self.ws.nothing_to_land(wt):
                 self.store.event("nothing_to_land", issue=n, head=st.reviewed_sha)
                 return self._set_phase(n, Phase.MERGED)
-            self.ws.push(wt)
+            # Main may have moved since the review. Merging it in makes a new head, which is
+            # verified and reviewed again before it may land.
+            sync = self.ws.update(wt)
+            if sync.status == "conflict":
+                self.ws.abort_in_progress(wt)
+                return self._conflict(n, wt, sync.files, Phase.LAND.value)
+            if sync.status == "merged":
+                self._updated_from_main(n, wt, sync, Phase.LAND.value)
+                self._relock(n, wt, self._relock_candidates(n, wt), {})
+                return self._set_phase(n, Phase.VERIFY, rereview=True)
+            try:
+                self.ws.push(wt)
+            except MergeConflict as e:   # main moved again between the update and the push
+                return self._conflict(n, wt, e.files, Phase.LAND.value)
             head = self.ws.head(wt)
             if head != st.reviewed_sha:
                 self.store.event("head_changed_after_review", issue=n, reviewed=st.reviewed_sha, head=head)
@@ -945,6 +1155,7 @@ def restart(st: IssueState, feedback: list[str] | None = None, owner_edit: bool 
     st.attempts = st.fix_rounds = 0
     st.feedback, st.blockers, st.evidence, st.amend, st.amend_file = list(feedback or []), [], [], [], None
     st.verified_sha = st.reviewed_sha = None
+    st.conflict_paths, st.conflict_pending = [], False
     st.reason = st.park_kind = st.resume_phase = None
     if owner_edit:
         st.redesigns = st.check_amendments = st.ci_fixes = st.fix_forwards = st.merge_refusals = 0
@@ -958,6 +1169,22 @@ def edited_feedback(st: IssueState) -> list[str]:
     if log:
         notes.append("Decisions of the previous design, to keep where they still fit: " + json.dumps(log)[:1500])
     return notes
+
+
+def has_conflict_markers(path: Path) -> bool:
+    return path.is_file() and bool(CONFLICT_MARKER.search(path.read_text(errors="replace")))
+
+
+def conflict_feedback(files: list[str], locked: list[str]) -> str:
+    text = ("Main moved on, and merging it into this branch conflicts. The merge is in progress in your worktree."
+            if files or locked else "")
+    if files:
+        text += (f" Resolve the conflict markers in {', '.join(files)}, keeping the intent of both sides: main's side "
+                 f"is work already merged, this branch's side is this issue's work.")
+    if locked:
+        text += (f" The conflicts in the locked checks {', '.join(locked)} were resolved by their author; do not "
+                 f"edit them.")
+    return text + " Do not run git merge, commit or abort: the engine concludes the merge."
 
 
 def design_paths(files: list[str], check_files: list[str], parsed: list[str]) -> list[str]:
