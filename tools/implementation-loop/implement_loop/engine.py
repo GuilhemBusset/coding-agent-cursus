@@ -565,7 +565,7 @@ class Engine:
         feedback = list(st.feedback)
         files = sync.files if sync.status == "conflict" else []
         expected: dict[str, str] = {}      # locked digests after main's merge, taken before the implementer
-        restore: dict[str, bytes] = {}     # and their bytes, to restore the implementer's edits from
+        restore: dict[str, tuple] = {}     # and their file states, to restore the implementer's edits from
         sources: dict[str, str] = {}
         if st.conflict_pending and not files:   # the conflict land found is gone: nothing to repair
             st.conflict_pending = False
@@ -591,7 +591,7 @@ class Engine:
                                                f"The check author could not resolve the conflict with main in the "
                                                f"locked checks {locked}; the next round merges main again.")
             expected = self._relock_candidates(n, wt, sync.before)
-            restore = {f: (wt / f).read_bytes() for f in expected if (wt / f).is_file()}
+            restore = {f: self.ws.file_state(wt, f) for f in expected if (wt / f).is_file()}
             sources = {f: "check-author" if f in locked else "main" for f in expected}
             feedback.append(conflict_feedback([f for f in files if f not in locked], locked))
         design = self._design(st)
@@ -717,7 +717,7 @@ class Engine:
         implementer. Its edits outside `lane`, staged or not, are undone from the index entries and
         bytes taken before it ran (restoring HEAD would drop main's side of the merge)."""
         st = self.store.issue(n)
-        snapshot = {f: ((wt / f).read_bytes() if (wt / f).is_file() else None) for f in self.ws.uncommitted(wt)}
+        snapshot = {f: self.ws.file_state(wt, f) for f in self.ws.uncommitted(wt)}
         index = self.ws.index_entries(wt)
         feedback = [f"Main moved on, and merging it into this branch conflicts in the locked acceptance checks "
                     f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
@@ -733,17 +733,14 @@ class Engine:
         for f in sorted(set(self.ws.uncommitted(wt)) | set(snapshot) | changed_in_index):
             if any(scheduler.overlaps(f, c) for c in lane):
                 continue
-            target = wt / f
-            now = target.read_bytes() if target.is_file() else None
+            # kind and executable bit too: a chmod or a symlink to the same bytes is still an edit
+            now = self.ws.file_state(wt, f)
             # A path not in the snapshot matched HEAD before the author ran, or did not exist.
-            was = snapshot[f] if f in snapshot else self.ws.show_bytes(wt, "HEAD", f)
+            was = snapshot[f] if f in snapshot else self.ws.file_state_at(wt, "HEAD", f)
             if now == was and f not in changed_in_index:
                 continue
-            if was is None:
-                target.unlink(missing_ok=True)
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(was)
+            if now != was:
+                self.ws.write_file_state(wt, f, was)
             # the index too: a staged edit restored only in the tree would still be read back
             self.ws.restore_index_entry(wt, f, index.get(f, []))
             restored.append(f)
@@ -752,25 +749,31 @@ class Engine:
         return self.ws.in_progress(wt) == "merge" and not any(has_conflict_markers(wt / f) for f in lane)
 
     def _commit_work(self, n: int, wt: Path, subject: str, expected: dict[str, str] | None = None,
-                     restore: dict[str, bytes] | None = None) -> str | None:
+                     restore: dict[str, tuple] | None = None) -> str | None:
         """Commit the implementer's work, minus any edit to a locked check: once committed, such
         an edit would fail the CI guard for good, since run branches are never rewritten.
         Mid-merge, `expected` holds the locked digests main's merge brought and `restore` their
-        bytes: HEAD lacks main's side, so those files are restored from the bytes instead."""
+        file states: HEAD lacks main's side, so those files are restored from them instead."""
         st = self.store.issue(n)
         check_files = (st.design or {}).get("check_files", [])
         restore = restore or {}
+
+        def mode_changed(rel: str) -> bool:
+            # the digest covers bytes only: a chmod or a symlink to the same bytes is caught here
+            ref = restore[rel] if rel in restore else self.ws.file_state_at(wt, "HEAD", rel)
+            now = self.ws.file_state(wt, rel)
+            return ref is not None and (now is None or now[0] != ref[0] or now[2:] != ref[2:])
+
         # Only the checks themselves: a changed test configuration (say pyproject.toml's pytest
         # table) is not part of the checks commit, so verification reports it instead, and the
         # implementer's other edits to that file are kept.
         touched = [rel for rel, d in {**st.locked, **(expected or {})}.items()
                    if any(scheduler.overlaps(rel, c) for c in check_files)
-                   and (not (wt / rel).is_file() or verify.digest(wt / rel) != d)]
+                   and (not (wt / rel).is_file() or verify.digest(wt / rel) != d or mode_changed(rel))]
         if touched:
             for rel in touched:
                 if rel in restore:
-                    (wt / rel).parent.mkdir(parents=True, exist_ok=True)
-                    (wt / rel).write_bytes(restore[rel])
+                    self.ws.write_file_state(wt, rel, restore[rel])
             from_head = [rel for rel in touched if rel not in restore]
             if from_head:
                 self.ws.git("checkout", "HEAD", "--", *from_head, cwd=wt, check=False)

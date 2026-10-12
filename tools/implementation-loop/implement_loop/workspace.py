@@ -7,13 +7,19 @@ issue's branch). The engine creates and removes them itself.
 
 from __future__ import annotations
 
+import os
 import shutil
+import stat
 import subprocess
 import threading
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+
+
+# A path as git records it: None (absent), ("link", target), ("dir",) or ("file", bytes, executable).
+FileState = tuple | None
 
 
 class GitError(RuntimeError):
@@ -199,6 +205,52 @@ class Workspace:
         """The bytes of `file` at `ref`, or None when it is not a file there."""
         proc = subprocess.run(["git", "cat-file", "blob", f"{ref}:{file}"], cwd=path, capture_output=True)
         return proc.stdout if proc.returncode == 0 else None
+
+    def file_state(self, path: Path, rel: str) -> FileState:
+        """What git records of `rel` in the working tree: its kind, content and executable bit."""
+        target = path / rel
+        try:
+            info = os.lstat(target)
+        except FileNotFoundError:
+            return None
+        if stat.S_ISLNK(info.st_mode):
+            return ("link", os.readlink(target))
+        if stat.S_ISDIR(info.st_mode):
+            return ("dir",)
+        return ("file", target.read_bytes(), bool(info.st_mode & 0o100))
+
+    def file_state_at(self, path: Path, ref: str, rel: str) -> FileState:
+        """`file_state` of `rel` as it is at `ref`, from the tree's recorded mode."""
+        out = self.git("ls-tree", "-z", ref, "--", rel, cwd=path, check=False, strip=False)
+        record = next((r for r in out.split("\0") if "\t" in r and r.split("\t", 1)[1] == rel), None)
+        if record is None:
+            return None
+        mode, kind, sha = record.split("\t", 1)[0].split()
+        if kind != "blob":
+            return ("dir",)
+        data = subprocess.run(["git", "cat-file", "blob", sha], cwd=path, capture_output=True, check=True).stdout
+        if mode == "120000":
+            return ("link", os.fsdecode(data))
+        return ("file", data, mode == "100755")
+
+    def write_file_state(self, path: Path, rel: str, state: FileState) -> None:
+        """Put `rel` back in the working tree as `state` (from `file_state`) recorded it."""
+        target = path / rel
+        current = self.file_state(path, rel)
+        if current is not None and (state is None or current[0] != state[0] or current[0] == "link"):
+            if current[0] == "dir":
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+        if state is None or state[0] == "dir":
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if state[0] == "link":
+            os.symlink(state[1], target)
+            return
+        target.write_bytes(state[1])
+        mode = os.stat(target).st_mode
+        os.chmod(target, (mode | 0o111) if state[2] else (mode & ~0o111))
 
     def _git_path(self, path: Path, name: str) -> Path:
         """A path in this worktree's own git directory (each worktree has its own MERGE_HEAD)."""
