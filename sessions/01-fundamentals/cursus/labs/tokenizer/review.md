@@ -1,12 +1,13 @@
 # Tokenizer lab: review evidence
 
-Agent review by the implementer, 2026-10-10; re-reviewed 2026-10-13 after the chip-decoding fix and
-again on 2026-10-13 after split characters were grouped into one chip.
-Reviewed files (sha256):
+Agent review by the implementer, 2026-10-13 (attempt 3, after the locked checks were amended:
+GPT-2 default, four-choice predict questions, `␣` marks on every space, chip borders and labels,
+the "Across encodings" disclosure with token pieces, and a dated note that says these IDs are not
+Claude's). Reviewed files (sha256):
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 60,271 | `fe207eba1287fc4f62274c480d5cbe141d9939aaaea41d1a177135b2fe2b7c8c` |
+| `../tokenizer.html` | 62,557 | `b0b4764be3e0f8e0ddaa22a73661f7b0bf9626f6d3f7ab6a4ac42c6bb8e5b030` |
 | `vendor/r50k_base.js` | 502,907 | `e95692224049d99b15601019c4b1cad61e3ff7b17d0870fe20e668bd82c15717` |
 | `vendor/o200k_base.js` | 2,047,463 | `fbc7419f14fb3a1460b56b156b94adb3480ec375a1dd404b0d0bd807fbff97e1` |
 
@@ -16,70 +17,34 @@ page weight in `README.md`.
 ## Screenshots
 
 Sources: `node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/tokenizer.html --output artifacts/html-pages/tokenizer`
-(2026-10-13, on the reviewed hash above: PASS, 0 failed checks; all twelve screenshots in that
-directory looked at), plus disposable Playwright scripts (kept outside the repo) that captured the
-playground in interaction states at 1440×900 and 390×844 into the same directory
-(`grouped-hover-chip-*.png`, `grouped-hover-id-*.png`, `french-r50k-*.png`). The grouping change
-touched the page script, one help line, the badge CSS and the ID-border colours; the static views
-were looked at again and match the earlier review apart from that help line.
+(2026-10-13, on the reviewed hash above: PASS, 0 failed checks; every view screenshot in that
+directory looked at), the screenshots the test suite writes there (`tokenizer-predict-revealed.png`,
+`tokenizer-grouped-hover-chip.png`, `tokenizer-grouped-hover-id-0.png`, `tokenizer-grouped-hover-id-1.png`),
+and disposable Playwright scripts kept outside the repo that wrote `extra-*.png` at 1440×900 and
+390×900 into the same directory. Files in that directory without these names are left over from
+earlier attempts and were not used.
 
-- **Desktop (1440×900):** masthead, then the predict card (two questions, Lock in / Reveal / Reset),
-  then the playground: textarea and encoding fieldset side by side, the Characters and Tokens counts,
-  the coloured piece chips, the ID list, and two help lines. Then the preset buttons, the comparison
-  table, the amber "Why not Claude's tokenizer?" note, and the footer with the credit and page weight.
-  Adjacent chips use four alternating backgrounds, all distinct from the panel; each ID has a
-  bottom border in its chip's colour (taken from the chip, so a ×2 chip's two IDs share it). No collisions.
-- **Laptop (1280×720):** same layout; the table's three columns fit.
-- **Mobile (390×844):** one column. The encoding fieldset stacks under the textarea, chips wrap
-  inside their panel, and the preset buttons wrap. The comparison table scrolls horizontally inside
-  its labelled, focusable `table-wrap` region (the MPS and Python texts are pre-formatted and wide);
-  the document itself has no horizontal overflow (checker: "no horizontal document overflow" passes;
-  measured overflow 0 px).
-- **No-JS:** the predict answers are visible and the buttons disabled. A callout says the live
-  tokenizer needs JavaScript; the chip and ID panels are empty; the counts show the authored values
-  for the initial sentence (62 characters, 14 tokens in o200k_base). The comparison table, the note
-  and the footer are fully present.
-- **Print:** light palette, one column. Predict answers shown, buttons and status hidden, preset
-  buttons hidden (the table carries their texts). Chips keep their soft backgrounds; the note keeps
-  its amber rule.
-- **Reduced motion:** identical to desktop; the page has no animation.
-- **Both encodings (MPS preset):** o200k_base gives 18 tokens, with runs of spaces as single
-  chips. Switching to r50k_base gives 40 tokens, almost one chip per space (ID 220). Whitespace is
-  visible: whitespace-only chips show a `·` per space, `→` per tab and `↵` per new line (CSS marks;
-  the chip's text stays the exact decoded piece). Leading spaces inside word pieces show as a gap
-  within the chip's background.
-- **Hover pair:** French preset in r50k_base, hovering the chip "ù": "ù" is one chip with a dashed
-  ×2 badge, and the chip and both its IDs `127` and `117` get a light outline; the neighbouring
-  chips and IDs are unchanged (`french-r50k-1440.png`, `french-r50k-390.png`). The test suite checks
-  hovering an ID, and arrow-key focus moving the highlighted pair, on "the the the".
-  Pointer then keyboard, checked by hand with a disposable Playwright script on "the the the":
-  clicking chip 0 and leaving the pointer on it, then pressing ArrowRight twice, moves the
-  highlighted pair to index 1 then 2 (focus drops the stale hover); hovering ID 0 then moves it back
-  to index 0, and moving the pointer away returns it to the focused index 2.
-- **Revealed prediction:** after Lock in and Reveal, each question shows "Correct." or "Not quite.
-  The answer is …" and the answer blocks with IDs 101830 and 41236 and the three-r explanation.
-- **Split characters grouped (2026-10-13):** "🍓🍓 日本語 — où ? é" in r50k_base (19 tokens) shows 10
-  chips: "🍓" ×3, "🍓" ×3, " 日" ×3, "本" ×2, "語" ×2, " —", " o", "ù" ×2, " ?", " é". Hovering the first 🍓
-  outlines it and IDs `8582 235 241` (`grouped-hover-chip-1440.png`); hovering the fifth ID (`235`)
-  outlines the second 🍓 chip (`grouped-hover-id-390.png`, hover from the ID side). The badges stay
-  legible at both widths and the chips wrap inside their panel. In o200k_base, typing 🍓 gives one
-  chip with IDs `102415 241` and a ×2 badge, and hovering it highlights both IDs (the cross-review
-  case). A probe that runs a long mixed history first (partial emoji, a lone surrogate, presets,
-  typed prefixes, encoding toggles), then renders U+FEFF, "\uFEFFabc", "🍓🍓 日本語",
-  "Ça coûte 3 € — où ?", "é", "�", " strawberry" and "hello world" in both encodings, gave the same
-  chip and ID DOM as a fresh page for all 16 cases, and the chips' text joined back to the input.
-- **2,000-character input:** 2,000 characters → 585 o200k_base tokens. With the 2,000-character prose
-  corpus, r50k_base gives 710 tokens in 691 chips (split accents grouped); o200k_base gives 452 in 452. Chips wrap (about six per
-  line on mobile) inside a panel that scrolls vertically after 22rem; the ID panel scrolls after
-  14rem. No page overflow at either width.
+- **Desktop (1440×900):** masthead, then the predict card above the playground (two questions with four choices each, Lock in / Reveal / Reset), then the playground: textarea beside the Encoding fieldset with GPT-2 (r50k_base) checked, "Characters (Unicode code points) 62" and "Tokens 15", the piece chips, the ID strip and two help lines. Then the eight preset buttons, the closed "Across encodings" disclosure, the amber Claude note and the footer with credit and page weight.
+- **Laptop (1280×720):** same layout as desktop; the first question's legend fits on one line and the encoding fieldset stays beside the textarea.
+- **Mobile (390×844):** one column; the encoding fieldset stacks under the textarea, the counts stack, chips and IDs wrap inside their panels, preset buttons wrap in two per row, and the document has no horizontal overflow.
+- **No-JS:** both predict answers are visible with the buttons disabled; a callout says the live tokenizer needs JavaScript; the chip and ID panels are empty; the counts show the authored 62 and 15; presets, disclosure, Claude note and footer are present.
+- **Print:** light palette, one column; predict answers shown; preset buttons hidden; the "Across encodings" table is printed open with the pieces of the three words as bordered boxes; the note keeps its amber rule.
+- **Reduced motion:** identical to desktop, since the page has no animation or transition to suppress.
+- **Whitespace and both encodings:** the default sentence in r50k_base shows `␣read`, `␣numbers`, and so on, so every space is a visible `␣` mark (CSS; the chip text stays the exact piece). The Python preset in r50k_base (`extra-python-whitespace-1440.png`) shows `↵` for the new line and three separate `␣` chips for the indent (ID 220 each); o200k_base keeps runs of spaces in fewer chips. Every chip has a `--rule` border as well as one of four tints, so neighbours are distinguishable without colour.
+- **Multi-token emoji and French chips:** "🍓🍓 日本語 — Ça coûte 3 € — où ?" in o200k_base (`extra-emoji-hover-id-1440.png`, `extra-emoji-hover-id-390.png`) gives 15 tokens in 13 chips; each 🍓 is one grouped chip with a dashed ×2 badge over IDs `102415 241`. The French preset in r50k_base (`extra-french-r50k-*.png`) shows "ù" as one ×2 chip. The badges stay legible at both widths.
+- **Hover from the chip side:** hovering the first 🍓 chip fills it with the accent colour and outlines it, together with both of its IDs `102415` and `241`; the neighbouring chips and IDs are unchanged (`extra-emoji-hover-chip-viewport-1440.png`; the suite's `tokenizer-grouped-hover-chip.png` shows the same on its own string).
+- **Hover from the ID side:** hovering ID `241` (index 1) fills that ID and its 🍓 chip, but not the sibling ID `102415` (`extra-emoji-hover-id-1440.png`, and the suite's `tokenizer-grouped-hover-id-*.png`). An element screenshot first captured the chip-side hover cleared because the capture scrolled the page under the pointer; the DOM showed the link active, and a viewport capture confirms it.
+- **Revealed prediction:** after Lock in and Reveal by keyboard (`tokenizer-predict-revealed.png`), each question shows "Correct." and the answer blocks with IDs 41236 (r50k_base) and 101830 (o200k_base) and the three-r explanation.
+- **Long number:** the number preset in r50k_base (`extra-number-r50k-390.png`) shows 14 chips (123, 45, 67, 89, 01, …) that wrap onto two lines inside the panel at 390 px, with no overflow.
+- **2,000-character input:** a 2,000-character mixed text (French, English, 🍓, digits, unbroken letters) in r50k_base gives 854 tokens (`extra-2000-character-*.png`). Chips wrap (about six per line on mobile) inside a panel that scrolls vertically after 22rem, and the ID panel scrolls after 14rem. There is no document overflow at 1440 or 390 px (measured `scrollWidth` ≤ `innerWidth`).
 
 ## Presets
 
 Each preset's exact text (the button's `value`), and what it shows:
 
-- `strawberry`: " strawberry" (leading space). One token in both encodings; sets up the r-counting question.
-- `optimization`: "Optimization". 3 tokens in GPT-2, 1 in o200k_base: a larger vocabulary keeps whole words.
-- `bonjour`: "Bonjour". 3 tokens in GPT-2, 1 in o200k_base: French gains the most from o200k_base.
+- `strawberry`: " strawberry" (leading space). One token in both encodings (41236, 101830); it sets up the r-counting question.
+- `optimization`: "Optimization". GPT-2 gives 3 tokens ("Opt", "im", "ization"), o200k_base 1: a larger vocabulary keeps whole words.
+- `bonjour`: "Bonjour". GPT-2 gives 3 tokens ("Bon", "j", "our"), o200k_base 1.
 - `latex`: `\sum_{j=1}^{n} a_{ij} x_j \le b_i`, a genuine LP constraint row (Σ_j a_ij x_j ≤ b_i) in LaTeX.
 - `python`: a real two-line Python function computing a linear objective:
 
@@ -90,22 +55,40 @@ Each preset's exact text (the button's `value`), and what it shows:
 
 - `number`: "123456789012345678901234567890", 30 digits. o200k_base cuts it into groups of three; GPT-2's groups are irregular.
 - `mps`: `    x1        COST         1.0   LIM1         1.0`, a COLUMNS-section line of an MPS file in fixed-field layout: variable x1 has coefficient 1.0 in the objective row COST and in the constraint row LIM1.
-- `french`: "Bonjour, où sont les contraintes du modèle ?", a natural French sentence (French spacing before "?"), with an accent GPT-2 splits into two byte tokens ("ù" → IDs 127, 117).
+- `french`: "Bonjour, où sont les contraintes du modèle ?", a natural French sentence (French spacing before "?"), with an accent that GPT-2 splits into two byte tokens ("ù" → IDs 127, 117).
 
-All counts and IDs in the static table were produced by the vendored encoders, and the test suite
-re-checks them against independently loaded copies of the same files.
+The counts, IDs and pieces in the "Across encodings" table were produced by the vendored encoders
+through the stateless byte path, and the test suite re-checks every cell against independently
+loaded copies of the same files.
 
 ## Claude note
 
 Verbatim text of `[data-tok-note]` (the same with and without JavaScript and in print):
 
-> Why not Claude’s tokenizer? Claude’s tokenizer is not public, so this lab shows two public encodings instead: OpenAI’s o200k_base (GPT-4o family) and GPT-2’s r50k_base. Every tokenizer cuts the same text differently, so these counts are not Claude’s counts. To count Claude tokens, use Anthropic’s token counting API. Encoders: gpt-tokenizer 3.4.0. As of 2026-10-10.
+> Why not Claude’s tokenizer? Claude’s tokenizer is not public (as of 2026-10-13), so this page uses OpenAI’s encodings: GPT-2’s r50k_base and GPT-4o’s o200k_base. These IDs are not Claude’s, and Claude’s counts differ. Anthropic offers an online token counting endpoint: it counts tokens for a message, but it does not publish a tokenizer or its IDs. Sources: gpt-tokenizer 3.4.0, which reimplements OpenAI’s tiktoken encodings.
 
-Linked sources: <https://platform.claude.com/docs/en/build-with-claude/token-counting>
-(Anthropic's token counting endpoint; fetched 2026-10-10, it counts tokens through the API and says
-the count is an estimate) and <https://www.npmjs.com/package/gpt-tokenizer/v/3.4.0>.
-The claim that Claude's tokenizer is not public is dated because it could change.
-It does not claim how Claude's counts compare with these encodings.
+Judgement: accurate. It says plainly that the IDs on the page are not Claude's, and it names
+both encodings. It separates Anthropic's online counting endpoint
+(<https://platform.claude.com/docs/en/build-with-claude/token-counting>: an API call that returns a
+token count for a message) from a public tokenizer: the endpoint gives counts, not a vocabulary or
+IDs. "Not public" is dated, because it could change. "Claude's counts differ" is stated as a general
+property of a different vocabulary; the page gives no figure for how large the difference is. The
+other links are gpt-tokenizer 3.4.0 on npm and OpenAI's tiktoken repository, the source of the
+r50k_base and o200k_base definitions.
+
+## Strawberry prediction explanation
+
+Verbatim revealed answers (the same text shows without JavaScript):
+
+> One token in both encodings. In GPT-2’s r50k_base, “ strawberry” is the single ID 41236; in o200k_base it is the single ID 101830. Both decode back to the whole piece “ strawberry”. The leading space belongs to the token. Without it, “strawberry” splits into three pieces, “st”, “raw”, “berry”, in both encodings.
+
+> The text has three r's, but the model receives one integer, 41236 in r50k_base (or 101830 in o200k_base), not the letters s-t-r-a-w-b-e-r-r-y. It can learn letter facts only indirectly, from training text that happens to spell out what an ID contains. That is why counting letters is unreliable, and why the dependable move is to have the model write code that counts them.
+
+Judgement: accurate. The IDs and pieces match the vendored encoders, and the suite checks them
+against the oracle. The explanation keeps the three literal r's in the text separate from what the
+model receives, a single ID. It says letter knowledge is learned indirectly and that counting is
+unreliable, not impossible, and it points to the tool-use pivot (write code that counts) that the
+session demo uses. It does not claim that any particular model gets the count wrong.
 
 ## Vendoring provenance
 
@@ -134,12 +117,18 @@ $ wc -c package/dist/r50k_base.js package/dist/o200k_base.js package/LICENSE
    1076 package/LICENSE
 ```
 
-The committed `vendor/` files have the same hashes (byte-identical copies). Both scripts start with a
-UMD wrapper (`"object"==typeof exports` / `define.amd` / `globalThis.GPTTokenizer_<encoding>`) and end
-with `//# sourceMappingURL=<encoding>.js.map`; the `.map` files were not copied. The LICENSE is the
-package's own MIT text (Copyright (c) 2023-2024 Bazyli Brzoska).
+Re-verified 2026-10-13 with registry access: `npm view gpt-tokenizer@3.4.0 dist.integrity dist.tarball`
+returned the same integrity and tarball URL; a fresh `npm pack gpt-tokenizer@3.4.0 --ignore-scripts`
+in a new empty directory produced a tarball with the same sha256, whose sha512 recomputed with
+`openssl dgst -sha512 -binary | base64` equals the integrity. `cmp` reports the three extracted files
+byte-identical to the committed `vendor/` files.
 
-Version 4 check, same day: `npm pack gpt-tokenizer@4.0.0 --dry-run --json` lists only `LICENSE`,
+Both scripts start with a UMD wrapper (`"object"==typeof exports` / `define.amd` /
+`globalThis.GPTTokenizer_<encoding>`) and end with `//# sourceMappingURL=<encoding>.js.map`; the
+`.map` files were not copied. The LICENSE is the package's own MIT text (Copyright (c) 2023-2024
+Bazyli Brzoska).
+
+Version 4 check, 2026-10-10: `npm pack gpt-tokenizer@4.0.0 --dry-run --json` lists only `LICENSE`,
 `README.md`, `package.json`, `cjs/`, `esm/`, `data/` and `src/`, with no `dist/` UMD builds.
 
 Upstream quirk found while vendoring: `decode()` shares one streaming `TextDecoder` per encoder and
@@ -151,26 +140,34 @@ into chip text").
 
 ## Performance
 
-Measured 2026-10-13 on the reviewed page with a disposable Playwright script that mirrors the A1
-latency test in `tools/html-pages/tests/tokenizer.test.mjs` (same three 2,000-character corpora,
-same 20 real keystrokes each, same observer from the `input` event to the first animation frame
-with the right IDs and count, then forced layout). It checks the ID strip and the chips' combined
-`data-token-ids` against `encode`, because the locked test's chip assertion expects one chip per
-token and stops before timing on the grouped page. No CPU throttling, offline, `file://`.
+Measured 2026-10-13 on the reviewed page with a scratch copy of the locked A1 latency test in
+`tools/html-pages/tests/tokenizer.test.mjs`, kept outside the repo. It has the same four
+2,000-character corpora, the same fresh page per run, the same first input, encoding switch and 20
+real keystrokes (22 samples per run, none discarded), and the same observer: from the `input` or
+`change` event until the IDs, chip IDs, chip text, count and characters are all correct, then
+forced layout. One line differs: the first input is set as `textarea.value` followed by one
+`input` event, instead of `locator.fill()`. In Chromium, `fill()` on a textarea fires one `input`
+event per line segment (3 for "a\nb"; 80 for a 40-line string), so on the `code` and `numbers`
+corpora the locked test records many partial-text samples and can never reach its
+`samples.length === 1` and `=== 22` conditions. That is reported as a check defect. No CPU
+throttling, offline, `file://`.
 
 - CPU: Intel(R) Core(TM) Ultra 9 285K
 - OS: Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2)
 - Browser: Playwright Chromium 153.0.8010.12
 
-| Corpus | Encoding | n | Median (ms) | Max (ms) |
+| Corpus | First encoding → switched encoding | n (samples) | Median (ms) | Max (ms) |
 | --- | --- | --- | --- | --- |
-| prose | r50k_base | 20 | 8.0 | 15.6 |
-| prose | o200k_base | 20 | 8.9 | 10.3 |
-| code | r50k_base | 20 | 10.6 | 13.4 |
-| code | o200k_base | 20 | 8.8 | 12.5 |
-| numbers | r50k_base | 20 | 9.8 | 11.0 |
-| numbers | o200k_base | 20 | 10.5 | 11.9 |
+| prose | r50k_base → o200k_base | 22 | 8.8 | 18.0 |
+| prose | o200k_base → r50k_base | 22 | 11.5 | 16.1 |
+| code | r50k_base → o200k_base | 22 | 10.6 | 12.1 |
+| code | o200k_base → r50k_base | 22 | 11.9 | 12.8 |
+| numbers | r50k_base → o200k_base | 22 | 10.2 | 12.3 |
+| numbers | o200k_base → r50k_base | 22 | 10.5 | 14.0 |
+| unbroken | r50k_base → o200k_base | 22 | 2.1 | 9.2 |
+| unbroken | o200k_base → r50k_base | 22 | 9.3 | 13.7 |
 
-All 120 samples are under 50 ms. Every keystroke rebuilds both lists in full from the current text
-(up to about 1,040 chips and IDs at 2,000 characters); nothing from the previous render is reused.
-Most of each sample is the wait for the next frame. These are host timings, not a slower student laptop.
+All 176 samples are under 50 ms. The locked test itself also passed its prose runs on this host
+(medians 8.6 and 11.4 ms, max 16.8 ms) before stopping at the first multi-line corpus. Every
+update rebuilds both strips in full from the current text; nothing from the previous render is
+reused. These are host timings, not a slower student laptop.
