@@ -653,9 +653,11 @@ test('D4: Claude qualification is static, visible in all modes, sourced and quot
 
 test('D5: independent npm trust anchors are a required authoring prerequisite', () => {
   // 2026-10-13: npm view gpt-tokenizer@3.4.0 dist.integrity dist.tarball
-  // --json --fetch-retries=0 --fetch-timeout=15000 failed with EAI_AGAIN.
-  // The registry URL was also inaccessible through the available web tool;
-  // npm --offline reported ENOTCACHED. The implementer's provenance/review
+  // and npm pack gpt-tokenizer@3.4.0 --ignore-scripts were retried in a
+  // fresh empty /tmp directory with fresh caches, --registry=https://registry.npmjs.org,
+  // --fetch-retries=0 and --fetch-timeout=20000. Both failed with EAI_AGAIN
+  // resolving registry.npmjs.org, so no tarball could be authenticated with
+  // openssl dgst -sha512 -binary <tgz> | base64. The implementer's provenance/review
   // cannot serve as independent anchors. Do not replace this failure with
   // hashes computed from the implementation under test. A check-author pass
   // with registry access must retrieve the integrity and npm pack tarball,
@@ -868,7 +870,7 @@ test('A1: first input, encoding switch and twenty keystrokes all finish below 50
       await page.evaluate(expected => { window.__expected = expected; }, { ids: expected.ids, chars: [...text].length, text });
     };
     await prepare(firstEncoding, corpus);
-    await input(page).fill(corpus);
+    await input(page).evaluate((n, v) => { n.value = v; n.dispatchEvent(new Event('input', { bubbles: true })); }, corpus);
     await page.waitForFunction(() => window.__samples.length === 1, null, { timeout: 3000 });
     await rendered(page, corpus, await oracle[firstEncoding](corpus));
     const encoding = encodings.find(e => e !== firstEncoding);
