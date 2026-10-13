@@ -458,10 +458,10 @@ test('D5: two pinned classic UMD encoders, identity anchors, license and provena
   assert.match(readme, /3\.4\.0/);
   assert.match(readme, /(?:v(?:ersion\s*)?4|4\.0)[\s\S]{0,160}(?:UMD)|UMD[\s\S]{0,160}(?:v(?:ersion\s*)?4|4\.0)/i);
   assert.match(readme, /npm pack gpt-tokenizer@3\.4\.0/);
-  const setup = await readRequired(path.join(repoRoot, 'setup/README.md'));
-  assert.match(setup, /npm pack gpt-tokenizer@3\.4\.0/);
-  assert.match(setup, /--ignore-scripts/);
-  assert.match(setup, /tokenizer\/vendor/);
+  // The agreed design keeps the re-vendoring recipe beside the lab; it does
+  // not authorize changes to setup/README.md.
+  assert.match(readme, /--ignore-scripts/);
+  assert.match(readme, /tokenizer\/vendor/);
   const footer = page.locator('footer').filter({ has: page.locator('[data-tok-weight]') });
   assert.match(await footer.textContent(), /gpt-tokenizer[\s\S]*3\.4\.0/);
   assert.match(await footer.textContent(), /MIT/);
