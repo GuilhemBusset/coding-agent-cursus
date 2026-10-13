@@ -57,7 +57,7 @@ The vendored files are not edited. The reset-wrapped `decode()` fallback is not 
 Do not switch to another version or an ESM build. If the files change, update
 `provenance.json`, the page weight below, the page's `[data-tok-weight]` line, and the hashes and
 static numbers on the page (the comparison table and the predict answers come from these
-encoders). Then re-run the review in `review.md`. `setup/README.md` has the same recipe.
+encoders). Then re-run the review in `review.md`.
 
 ## Page weight
 

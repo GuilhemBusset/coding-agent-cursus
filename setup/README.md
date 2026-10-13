@@ -55,24 +55,6 @@ compiles llama2.c's `run.c`, vendored at a pinned commit in
 `sessions/01-fundamentals/cursus/labs/tiny-lm/reference/`, as the reference for the page's
 logits. `node setup/doctor.mjs` reports the compiler and fails without it.
 
-### Refreshing the tokenizer lab's vendored encoders
-
-The tokenizer lab (`sessions/01-fundamentals/cursus/labs/tokenizer.html`) loads two files from
-`gpt-tokenizer@3.4.0`, the last version with UMD builds, committed unchanged under
-`sessions/01-fundamentals/cursus/labs/tokenizer/vendor/`. Nothing is installed to view the page.
-To re-fetch or verify them, run in a new, empty temporary directory (npm only, lifecycle scripts off):
-
-```sh
-npm pack gpt-tokenizer@3.4.0 --ignore-scripts --json   # prints the tarball's integrity
-tar -xzf gpt-tokenizer-3.4.0.tgz
-cp package/dist/r50k_base.js package/dist/o200k_base.js package/LICENSE <repo>/sessions/01-fundamentals/cursus/labs/tokenizer/vendor/
-sha256sum package/dist/r50k_base.js package/dist/o200k_base.js
-```
-
-Copy only those three files (not the `.map` files), and compare the hashes and the integrity with
-`tokenizer/provenance.json`. The lab's [README](../sessions/01-fundamentals/cursus/labs/tokenizer/README.md)
-lists what to update afterwards.
-
 Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI runs this
 same setup and test sequence on Linux, the only platform teaching pages need (ADR 0010).
 
@@ -236,7 +218,6 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Linux browser libraries without root | `browser-libs.py`: the pinned Chromium packages, plus dependencies apt says are missing, fetched with `apt-get download` and unpacked with `dpkg -x` under `--dest` only (the loop: its state directory under `.git/implementation-loop/`); used only by browser processes, through `CURSUS_BROWSER_LIBS` |
 | Pinned pytest for the implement loop | `uv run --no-project --with pytest==8.3.5` fetches pytest, and a Python if needed, into uv's per-user cache |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
-| Tokenizer lab encoders | `gpt-tokenizer@3.4.0` `dist/r50k_base.js`, `dist/o200k_base.js` and `LICENSE`, committed unchanged in `sessions/01-fundamentals/cursus/labs/tokenizer/vendor/` with hashes in `provenance.json`; refreshed by hand with `npm pack` in a temporary directory, never installed |
 | Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
