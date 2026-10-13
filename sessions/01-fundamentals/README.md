@@ -66,6 +66,14 @@ uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
   build has filled the cache):
   `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
   The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
+- `cursus/labs/attention.html` embeds `attention.json` verbatim in its
+  `<script id="attention-data">` block, so it opens over `file://` without a fetch. After a
+  rebuild that changes `attention.json`, paste the new file contents into that block and set
+  its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
+  plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
+  the repository root, `node tools/html-pages/tests/run-suite.mjs
+  tools/html-pages/tests/attention.test.mjs`, and re-review the page
+  (`cursus/labs/attention/review.md` records the reviewed page hash).
 
 ## Opening pages
 
@@ -103,6 +111,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
+| `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
