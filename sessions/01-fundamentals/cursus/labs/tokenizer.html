@@ -211,94 +211,79 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
   <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
   <style>/* Page-specific layout for the tokenizer lab; uses the shared tokens. */
-.tok-predict, .tok-playground, .tok-presets { margin-bottom: 2.5rem; }
-.tok-setup { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem var(--space); align-items: start; }
-@media (max-width: 48rem) { .tok-setup { grid-template-columns: minmax(0, 1fr); } }
-.tok-field label { display: block; margin-bottom: .5rem; font-weight: 650; }
-.tok-field textarea { width: 100%; min-height: 6.5rem; font: 1rem/1.5 var(--mono); resize: vertical; }
-.tok-encoding { margin: 0; padding: .5rem 1rem .75rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
-.tok-encoding legend { font-weight: 650; padding-inline: .25rem; }
-.tok-radio { display: flex; align-items: center; gap: .5rem; }
-.tok-radio input { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
-.tok-radio label { margin: 0; cursor: pointer; }
-.tok-counts { display: flex; flex-wrap: wrap; gap: .5rem 3rem; margin: 1.25rem 0; }
-.tok-counts dt label { margin: 0; color: var(--secondary); font-weight: 400; }
-.tok-counts dd { margin: 0; }
-.tok-counts output { display: block; font-variant-numeric: tabular-nums; }
-.tok-playground h3.label { margin: 0 0 .5rem; }
-.tok-chips, .tok-ids { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 3px; padding: .75rem; margin-bottom: 1.25rem; min-height: 3.5rem; max-height: 22rem; overflow-y: auto; background: var(--sheet); border: 1px solid var(--rule); border-radius: .2rem; }
-.tok-ids { max-height: 14rem; }
-[data-tok-chip] { display: inline-block; min-width: .75rem; padding: .125rem .25rem; font: 1rem/1.5 var(--mono); color: var(--ink); white-space: pre; border: 1px solid var(--rule); border-radius: .15rem; outline: 0 solid transparent; cursor: default; }
-[data-tok-chip]:nth-child(4n+1) { background: var(--accent-soft); }
-[data-tok-chip]:nth-child(4n+2) { background: var(--amber-soft); }
-[data-tok-chip]:nth-child(4n+3) { background: var(--red-soft); }
-[data-tok-chip]:nth-child(4n+4) { background: color-mix(in srgb, var(--secondary) 30%, var(--sheet)); }
-[data-tok-chip][data-token-count]::after { content: "×" attr(data-token-count); margin-left: .25rem; padding: 0 .2rem; font-size: .75rem; vertical-align: super; color: var(--ink); border: 1px dashed var(--ink); border-radius: .15rem; }
-.tok-ws { font-size: 0; white-space: nowrap; }
-.tok-ws::before { content: attr(data-mark); font-size: 1rem; color: var(--secondary); }
-[data-tok-id] { display: inline-block; padding: .125rem .375rem; font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; color: var(--secondary); border: 1px solid var(--rule); border-bottom-width: 3px; border-radius: .15rem; outline: 0 solid transparent; cursor: default; }
-[data-tok-id][data-tint="0"] { border-bottom-color: var(--accent); }
-[data-tok-id][data-tint="1"] { border-bottom-color: var(--amber); }
-[data-tok-id][data-tint="2"] { border-bottom-color: var(--red); }
-[data-tok-id][data-tint="3"] { border-bottom-color: var(--muted); }
-[data-tok-chip][data-active], [data-tok-id][data-active] { outline: 2px solid var(--ink); outline-offset: 1px; background: var(--accent); color: var(--on); }
-[data-active] .tok-ws::before { color: var(--on); }
-[data-tok-chip]:focus-visible, [data-tok-id]:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
-.tok-help { font-size: .875rem; max-width: 72ch; }
-.tok-preset-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: 1rem 1.5rem; }
+.tok-explain, .tok-predict, .tok-examples { margin-bottom: 2.5rem; }
+.tok-explain p, .tok-examples > p { max-width: 72ch; }
 .tok-ws-text { white-space: pre; }
-[data-tok-compare] th[scope="row"] { min-width: 13rem; font-weight: 650; }
-.tok-compare-text { display: block; margin-top: .25rem; font-size: .8125rem; font-weight: 400; color: var(--secondary); white-space: pre; }
-.tok-compare-count { font: 700 1rem/1.5 var(--mono); }
-.tok-compare-ids { display: block; min-width: 12rem; font: .75rem/1.5 var(--mono); color: var(--secondary); }
-.tok-compare-pieces { display: flex; flex-wrap: wrap; gap: 3px; margin-top: .25rem; }
-.tok-compare-pieces code { padding: 0 .25rem; font-size: .8125rem; white-space: pre; border: 1px solid var(--rule); border-radius: .15rem; }
-.tok-across { margin-top: 1rem; }
-.tok-across summary { cursor: pointer; font-weight: 650; }
+.tok-qualifier { padding: .5rem .75rem; border: 1px solid var(--rule); border-left: 3px solid var(--amber); border-radius: .2rem; }
+.tok-figures { display: grid; gap: 1.25rem; margin-block: 1.25rem; }
+[data-tok-example] { margin: 0; padding: 1rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-tok-example] figcaption { margin-bottom: .75rem; }
+[data-tok-text] { font: 1rem/1.5 var(--mono); white-space: pre; padding: 0 .25rem; border: 1px dashed var(--rule); border-radius: .15rem; }
+.tok-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 .75rem; padding: 0; list-style: none; }
+[data-tok-chip] { display: inline-flex; flex-direction: column; align-items: center; gap: .125rem; min-width: 3rem; margin: 0; padding: .25rem .5rem; color: var(--ink); border: 1px solid var(--ink); border-radius: .2rem; }
+[data-tok-chip]:nth-child(3n+1) { background: var(--accent-soft); }
+[data-tok-chip]:nth-child(3n+2) { background: var(--amber-soft); }
+[data-tok-chip]:nth-child(3n+3) { background: var(--red-soft); }
+.tok-piece { font: 1.125rem/1.4 var(--mono); white-space: pre; }
+[data-tok-id] { font: .8125rem/1.4 var(--mono); font-variant-numeric: tabular-nums; color: var(--secondary); }
+.tok-model-input { margin: 0; font-size: .9375rem; color: var(--secondary); }
+.tok-model-input code { color: var(--ink); }
 .tok-note { border-left-color: var(--amber); max-width: 72ch; }
 .tok-note h2 { margin: 0 0 .5rem; color: var(--amber); }
-.tok-footer { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); color: var(--secondary); font-size: .9375rem; max-width: 72ch; }
 @media print {
-  .tok-chips, .tok-ids { max-height: none; overflow: visible; }
-  .tok-preset-buttons { display: none; }
+  [data-tok-example] { break-inside: avoid; }
+  [data-tok-chip] { color: #000; border-color: #000; }
+  [data-tok-chip]:nth-child(3n+1) { background: #e3f1ee; }
+  [data-tok-chip]:nth-child(3n+2) { background: #f6ead6; }
+  [data-tok-chip]:nth-child(3n+3) { background: #f7dfdc; }
+  [data-tok-id] { color: #333; }
 }
 </style>
 </head>
 <body>
-  <a class="skip-link" href="#content">Skip to experiment</a>
+  <a class="skip-link" href="#content">Skip to the lab</a>
   <div class="shell">
     <header class="masthead">
       <p class="eyebrow">Session 1 · Act I · Lab</p>
       <h1>Tokens, not letters</h1>
-      <p class="lede">A language model never sees the letters you type. A tokenizer first cuts the text into pieces and replaces each piece with an integer ID; the model reads only those integers.</p>
+      <p class="lede">The first crack in the illusion: a language model never reads the letters you type.</p>
     </header>
     <main id="content" tabindex="-1">
+      <section class="tok-explain" aria-labelledby="tok-explain-title">
+        <h2 id="tok-explain-title">What the model actually receives</h2>
+        <div data-tok-explain>
+          <p>Before a model reads anything, a tokenizer splits the text into pieces called tokens. A token can be a whole word, part of a word, a few digits or a single character, often with the space in front of it attached.</p>
+          <p>Each token is looked up in a fixed vocabulary and replaced by its integer ID, so a sentence becomes a list of numbers.</p>
+          <p>The model only ever sees that list of IDs, never the letters. Whatever it knows about how a token is spelled, it had to pick up indirectly from training text.</p>
+        </div>
+      </section>
+
       <section class="tok-predict" aria-labelledby="tok-predict-title">
         <h2 id="tok-predict-title">Predict first</h2>
-        <p>Answer both questions and lock in before you look at the playground below: it gives the answer away.</p>
+        <p>Answer both questions and lock in before you scroll to the worked examples: they give the first answer away.</p>
         <div data-predict>
           <fieldset data-predict-question>
-            <legend>In GPT-2 (r50k_base, the default encoding below), how many tokens is “ strawberry”, with its leading space?</legend>
-            <div class="choice"><input type="radio" id="tok-q1-a" name="tok-q1" data-correct><label for="tok-q1-a">1 token</label></div>
-            <div class="choice"><input type="radio" id="tok-q1-b" name="tok-q1"><label for="tok-q1-b">2 tokens, such as “straw”, “berry”</label></div>
-            <div class="choice"><input type="radio" id="tok-q1-c" name="tok-q1"><label for="tok-q1-c">3 tokens, such as “str”, “awb”, “erry”</label></div>
+            <legend>In this page’s illustrative tokenizer, how many tokens is “ strawberry”, with its leading space?</legend>
+            <div class="choice"><input type="radio" id="tok-q1-a" name="tok-q1"><label for="tok-q1-a">1 token</label></div>
+            <div class="choice"><input type="radio" id="tok-q1-b" name="tok-q1" data-correct><label for="tok-q1-b">2 tokens</label></div>
+            <div class="choice"><input type="radio" id="tok-q1-c" name="tok-q1"><label for="tok-q1-c">3 tokens</label></div>
             <div class="choice"><input type="radio" id="tok-q1-d" name="tok-q1"><label for="tok-q1-d">11 tokens, one per character</label></div>
             <p data-predict-result></p>
             <div data-predict-answer>
-              <p><strong>One token in both encodings.</strong> In GPT-2’s r50k_base, “ strawberry” is the single ID <code>41236</code>; in o200k_base it is the single ID <code>101830</code>. Both decode back to the whole piece “<span class="tok-ws-text"> strawberry</span>”.</p>
-              <p>The leading space belongs to the token. Without it, “strawberry” splits into three pieces, “st”, “raw”, “berry”, in both encodings.</p>
+              <p>Two tokens in this illustration: “<span class="tok-ws-text"> straw</span>” with ID 14812 and “berry” with ID 6052. The leading space travels with the first piece.</p>
+              <p>A real tokenizer may cut the word into one, two or more pieces, depending on its vocabulary and on that leading space.</p>
             </div>
           </fieldset>
           <fieldset data-predict-question>
-            <legend>How many r's in “ strawberry” can the model see?</legend>
+            <legend>How many r’s in “ strawberry” can the model see?</legend>
             <div class="choice"><input type="radio" id="tok-q2-a" name="tok-q2"><label for="tok-q2-a">Three</label></div>
             <div class="choice"><input type="radio" id="tok-q2-b" name="tok-q2"><label for="tok-q2-b">Two</label></div>
             <div class="choice"><input type="radio" id="tok-q2-c" name="tok-q2"><label for="tok-q2-c">One</label></div>
             <div class="choice"><input type="radio" id="tok-q2-d" name="tok-q2" data-correct><label for="tok-q2-d">None directly: it receives integer IDs, not letters</label></div>
             <p data-predict-result></p>
             <div data-predict-answer>
-              <p>The text has three r's, but the model receives one integer, <code>41236</code> in r50k_base (or <code>101830</code> in o200k_base), not the letters s-t-r-a-w-b-e-r-r-y.</p>
-              <p>It can learn letter facts only indirectly, from training text that happens to spell out what an ID contains. That is why counting letters is unreliable, and why the dependable move is to have the model write code that counts them.</p>
+              <p>A reader sees three r’s in s-t-r-a-w-b-e-r-r-y. The model receives two integer IDs, 14812 and 6052, and no characters at all.</p>
+              <p>It can only pick up spelling facts associated with those IDs from training text, so counting letters is unreliable rather than impossible. The dependable move is to have the model write code that counts them.</p>
             </div>
           </fieldset>
           <div class="predict-actions">
@@ -310,78 +295,49 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
       </section>
 
-      <section class="tok-playground" aria-labelledby="tok-play-title">
-        <h2 id="tok-play-title">Type and watch the pieces</h2>
-        <noscript><p class="callout">The live tokenizer needs JavaScript. The comparison table below lists real token IDs for every preset without it.</p></noscript>
-        <div class="tok-setup">
-          <div class="tok-field">
-            <label for="tok-input">Text to tokenize</label>
-            <textarea id="tok-input" data-tok-input rows="4" spellcheck="false" autocomplete="off">Models read numbers, not letters. Type here to see the pieces.</textarea>
-          </div>
-          <fieldset class="tok-encoding">
-            <legend>Encoding</legend>
-            <div class="tok-radio"><input type="radio" id="tok-enc-r50k" name="encoding" value="r50k_base" checked><label for="tok-enc-r50k">GPT-2 (r50k_base)</label></div>
-            <div class="tok-radio"><input type="radio" id="tok-enc-o200k" name="encoding" value="o200k_base"><label for="tok-enc-o200k">GPT-4o family (o200k_base)</label></div>
-          </fieldset>
+      <section class="tok-examples" aria-labelledby="tok-examples-title">
+        <h2 id="tok-examples-title">Worked examples</h2>
+        <p class="tok-qualifier"><strong>Illustrative splits and IDs, written by hand: not a real model’s tokenizer.</strong> Real tokenizers split differently and use different IDs.</p>
+        <p>Each chip is one token: the piece of text on top, its integer ID below. The mark ␣ stands for a space that belongs to the token.</p>
+        <div class="tok-figures">
+          <figure data-tok-example="strawberry">
+            <figcaption>Text: <code data-tok-text> strawberry</code> (an English word with its leading space)</figcaption>
+            <ol class="tok-chips" aria-label="Tokens of “ strawberry”">
+              <li data-tok-chip aria-label='piece " straw", ID 14812'><span class="tok-piece">␣straw</span><span data-tok-id>14812</span></li>
+              <li data-tok-chip aria-label='piece "berry", ID 6052'><span class="tok-piece">berry</span><span data-tok-id>6052</span></li>
+            </ol>
+            <p class="tok-model-input">The model receives: <code>[14812, 6052]</code></p>
+          </figure>
+          <figure data-tok-example="bonjour">
+            <figcaption>Text: <code data-tok-text>Bonjour</code> (French: a word that is rarer in the training text gets cut up)</figcaption>
+            <ol class="tok-chips" aria-label="Tokens of “Bonjour”">
+              <li data-tok-chip aria-label='piece "Bon", ID 8170'><span class="tok-piece">Bon</span><span data-tok-id>8170</span></li>
+              <li data-tok-chip aria-label='piece "jour", ID 23544'><span class="tok-piece">jour</span><span data-tok-id>23544</span></li>
+            </ol>
+            <p class="tok-model-input">The model receives: <code>[8170, 23544]</code></p>
+          </figure>
+          <figure data-tok-example="number">
+            <figcaption>Text: <code data-tok-text>123456789012345678</code> (a long number, cut into chunks of digits)</figcaption>
+            <ol class="tok-chips" aria-label="Tokens of 123456789012345678">
+              <li data-tok-chip aria-label='piece "123", ID 4518'><span class="tok-piece">123</span><span data-tok-id>4518</span></li>
+              <li data-tok-chip aria-label='piece "456", ID 9302'><span class="tok-piece">456</span><span data-tok-id>9302</span></li>
+              <li data-tok-chip aria-label='piece "789", ID 11647'><span class="tok-piece">789</span><span data-tok-id>11647</span></li>
+              <li data-tok-chip aria-label='piece "012", ID 2207'><span class="tok-piece">012</span><span data-tok-id>2207</span></li>
+              <li data-tok-chip aria-label='piece "345", ID 7731'><span class="tok-piece">345</span><span data-tok-id>7731</span></li>
+              <li data-tok-chip aria-label='piece "678", ID 15096'><span class="tok-piece">678</span><span data-tok-id>15096</span></li>
+            </ol>
+            <p class="tok-model-input">The model receives: <code>[4518, 9302, 11647, 2207, 7731, 15096]</code></p>
+          </figure>
         </div>
-        <dl class="tok-counts">
-          <div><dt><label for="tok-chars-out">Characters (Unicode code points)</label></dt><dd><output id="tok-chars-out" class="metric" data-tok-chars>62</output></dd></div>
-          <div><dt><label for="tok-count-out">Tokens</label></dt><dd><output id="tok-count-out" class="metric accent" data-tok-count>15</output></dd></div>
-        </dl>
-        <h3 class="label" id="tok-chips-title">Pieces</h3>
-        <div class="tok-chips" data-tok-chips role="group" aria-labelledby="tok-chips-title" aria-describedby="tok-keys-help"></div>
-        <h3 class="label" id="tok-ids-title">What the model receives</h3>
-        <div class="tok-ids" data-tok-ids role="group" aria-labelledby="tok-ids-title" aria-describedby="tok-keys-help"></div>
-        <p class="muted tok-help" id="tok-keys-help">Hover a piece or an ID to highlight its partner. With the keyboard, Tab into either list and use the left and right arrow keys. Marks: ␣ space, → tab, ↵ new line.</p>
-        <p class="muted tok-help">A character can take more than one token: “é” or “🍓” may be split into bytes. Such a character gets one chip with a ×2 or ×3 badge, and hovering it highlights every ID it took.</p>
-      </section>
-
-      <section class="tok-presets" aria-labelledby="tok-presets-title">
-        <h2 id="tok-presets-title">Presets across encodings</h2>
-        <p>Load a preset into the playground, then switch encodings. Open “Across encodings” for the counts and IDs of every preset under both encodings side by side, and the pieces of the three words, computed with the same vendored encoders.</p>
-        <div class="tok-preset-buttons" role="group" aria-label="Load a preset">
-          <button type="button" data-tok-preset="strawberry" value=" strawberry">“ strawberry”</button>
-          <button type="button" data-tok-preset="optimization" value="Optimization">Optimization</button>
-          <button type="button" data-tok-preset="bonjour" value="Bonjour">Bonjour</button>
-          <button type="button" data-tok-preset="latex" value="\sum_{j=1}^{n} a_{ij} x_j \le b_i">LaTeX constraint</button>
-          <button type="button" data-tok-preset="python" value="def objective(x):&#10;    return sum(c * v for c, v in zip(costs, x))">Python snippet</button>
-          <button type="button" data-tok-preset="number" value="123456789012345678901234567890">Long number</button>
-          <button type="button" data-tok-preset="mps" value="    x1        COST         1.0   LIM1         1.0">MPS file line</button>
-          <button type="button" data-tok-preset="french" value="Bonjour, où sont les contraintes du modèle ?">French sentence</button>
-        </div>
-        <details class="tok-across">
-          <summary>Across encodings: counts, IDs and pieces for every preset</summary>
-        <div class="table-wrap" role="region" aria-labelledby="tok-compare-caption" tabindex="0">
-          <table data-tok-compare>
-            <caption id="tok-compare-caption">Token count and IDs per preset (↵ marks the new line in the Python snippet)</caption>
-            <thead>
-              <tr><th scope="col">Preset and exact text</th><th scope="col">GPT-2 (r50k_base)</th><th scope="col">GPT-4o family (o200k_base)</th></tr>
-            </thead>
-            <tbody>
-              <tr data-tok-preset-row="strawberry"><th scope="row">“ strawberry”<code class="tok-compare-text"> strawberry</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>1</span> <span class="tok-compare-ids" data-tok-compare-ids>41236</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text=" strawberry">␣strawberry</code></span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>1</span> <span class="tok-compare-ids" data-tok-compare-ids>101830</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text=" strawberry">␣strawberry</code></span></td></tr>
-              <tr data-tok-preset-row="optimization"><th scope="row">Optimization<code class="tok-compare-text">Optimization</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>3</span> <span class="tok-compare-ids" data-tok-compare-ids>27871 320 1634</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text="Opt">Opt</code><code data-tok-compare-piece data-text="im">im</code><code data-tok-compare-piece data-text="ization">ization</code></span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>1</span> <span class="tok-compare-ids" data-tok-compare-ids>145572</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text="Optimization">Optimization</code></span></td></tr>
-              <tr data-tok-preset-row="bonjour"><th scope="row">Bonjour<code class="tok-compare-text">Bonjour</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>3</span> <span class="tok-compare-ids" data-tok-compare-ids>20682 73 454</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text="Bon">Bon</code><code data-tok-compare-piece data-text="j">j</code><code data-tok-compare-piece data-text="our">our</code></span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>1</span> <span class="tok-compare-ids" data-tok-compare-ids>45751</span> <span class="tok-compare-pieces"><code data-tok-compare-piece data-text="Bonjour">Bonjour</code></span></td></tr>
-              <tr data-tok-preset-row="latex"><th scope="row">LaTeX constraint<code class="tok-compare-text">\sum_{j=1}^{n} a_{ij} x_j \le b_i</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>22</span> <span class="tok-compare-ids" data-tok-compare-ids>59 16345 23330 73 28 16 92 36796 77 92 257 23330 2926 92 2124 62 73 3467 293 275 62 72</span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>19</span> <span class="tok-compare-ids" data-tok-compare-ids>59 12298 22305 73 28 16 107298 77 92 261 22305 681 92 1215 12021 2381 282 287 10853</span></td></tr>
-              <tr data-tok-preset-row="python"><th scope="row">Python snippet<code class="tok-compare-text">def objective(x):↵    return sum(c * v for c, v in zip(costs, x))</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>27</span> <span class="tok-compare-ids" data-tok-compare-ids>4299 9432 7 87 2599 198 220 220 220 1441 2160 7 66 1635 410 329 269 11 410 287 19974 7 15805 82 11 2124 4008</span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>21</span> <span class="tok-compare-ids" data-tok-compare-ids>1314 23062 4061 1883 271 622 4215 2410 425 323 395 274 11 323 306 16216 133554 82 11 1215 915</span></td></tr>
-              <tr data-tok-preset-row="number"><th scope="row">Long number<code class="tok-compare-text">123456789012345678901234567890</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>14</span> <span class="tok-compare-ids" data-tok-compare-ids>10163 2231 3134 4531 486 1954 2231 3134 4531 486 1954 2231 30924 3829</span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>10</span> <span class="tok-compare-ids" data-tok-compare-ids>7633 19354 29338 19267 22901 30833 35616 20771 34904 38518</span></td></tr>
-              <tr data-tok-preset-row="mps"><th scope="row">MPS file line<code class="tok-compare-text">    x1        COST         1.0   LIM1         1.0</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>40</span> <span class="tok-compare-ids" data-tok-compare-ids>220 220 220 2124 16 220 220 220 220 220 220 220 7375 2257 220 220 220 220 220 220 220 220 352 13 15 220 220 27564 16 220 220 220 220 220 220 220 220 352 13 15</span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>18</span> <span class="tok-compare-ids" data-tok-compare-ids>271 1215 16 309 106544 269 220 16 13 15 256 180818 16 269 220 16 13 15</span></td></tr>
-              <tr data-tok-preset-row="french"><th scope="row">French sentence<code class="tok-compare-text">Bonjour, où sont les contraintes du modèle ?</code></th><td data-encoding="r50k_base"><span class="tok-compare-count" data-tok-compare-count>18</span> <span class="tok-compare-ids" data-tok-compare-ids>20682 73 454 11 267 127 117 264 756 10287 3445 2913 274 7043 953 14064 293 5633</span></td><td data-encoding="o200k_base"><span class="tok-compare-count" data-tok-compare-count>9</span> <span class="tok-compare-ids" data-tok-compare-ids>45751 11 15113 5242 1341 167366 1462 45121 1423</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        </details>
-        <p class="muted tok-help">Things to notice: GPT-2 spends a token on almost every single space in the MPS line (ID 220) and splits “Bonjour” and “Optimization”; o200k_base, with a vocabulary four times larger, keeps them whole and cuts long numbers into groups of three digits.</p>
+        <p>Notice that an ID says nothing about the letters or digits inside its piece: 4518 is not “123”, and nothing in 6052 spells b-e-r-r-y. To watch a real tokenizer split your own text, try <a href="https://tiktokenizer.vercel.app/">tiktokenizer</a> (online).</p>
       </section>
 
       <aside class="callout tok-note" data-tok-note aria-labelledby="tok-note-title">
-        <h2 id="tok-note-title" class="label">Why not Claude’s tokenizer?</h2>
-        <p>Claude’s tokenizer is not public (as of 2026-10-13), so this page uses OpenAI’s encodings: GPT-2’s r50k_base and GPT-4o’s o200k_base. These IDs are not Claude’s, and Claude’s counts differ. Anthropic offers an online <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">token counting endpoint</a>: it counts tokens for a message, but it does not publish a tokenizer or its IDs. Sources: <a href="https://www.npmjs.com/package/gpt-tokenizer/v/3.4.0">gpt-tokenizer 3.4.0</a>, which reimplements <a href="https://github.com/openai/tiktoken">OpenAI’s tiktoken</a> encodings.</p>
+        <h2 id="tok-note-title" class="label">Every model family has its own tokenizer</h2>
+        <p>Each model family uses its own tokenizer, sometimes inherited from an earlier model and sometimes replaced between versions, so the same text splits into different tokens and IDs in GPT-2, GPT-4o, Llama or Claude.</p>
+        <p>The tokenizer used by current Claude models is not public (as of 2026-10-13). Anthropic’s <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">token counting endpoint</a> returns a count of tokens, not the pieces or their IDs, and its documentation notes that Claude Opus 4.7 and later models use a newer tokenizer. Anthropic’s older published tokenizer, <a href="https://github.com/anthropics/anthropic-tokenizer-typescript">anthropic-tokenizer-typescript</a>, says it is no longer accurate from the Claude 3 models onward.</p>
       </aside>
     </main>
-    <footer class="tok-footer">
-      <p>Encoders: <code>r50k_base.js</code> and <code>o200k_base.js</code> from gpt-tokenizer 3.4.0 by Bazyli Brzoska, MIT licence (<a href="tokenizer/vendor/LICENSE">vendored LICENSE</a>), loaded unchanged from <code>tokenizer/vendor/</code>. Provenance and hashes: <a href="tokenizer/README.md">tokenizer/README.md</a>.</p>
-      <p data-tok-weight>Page weight: 2.6 MB on disk (this page plus both encoders; byte counts in the README). It works offline from <code>file://</code>.</p>
-    </footer>
   </div>
   <!-- shared-script:begin -->
   <script>/* Classic script; each enhancement is optional and scoped to its own root. */
@@ -754,248 +710,5 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 })();
 </script>
   <!-- shared-script:end -->
-  <script src="tokenizer/vendor/r50k_base.js"></script>
-  <script src="tokenizer/vendor/o200k_base.js"></script>
-  <script>/* Tokenizer lab: re-encode on every edit, render whole-character pieces and IDs, link each piece to its IDs. */
-(function () {
-  'use strict';
-  var encoders = { r50k_base: window.GPTTokenizer_r50k_base, o200k_base: window.GPTTokenizer_o200k_base };
-  var input = document.querySelector('textarea[data-tok-input]');
-  var chipList = document.querySelector('[data-tok-chips]');
-  var idList = document.querySelector('[data-tok-ids]');
-  var charsOut = document.querySelector('output[data-tok-chars]');
-  var countOut = document.querySelector('output[data-tok-count]');
-  var radios = Array.prototype.slice.call(document.querySelectorAll('input[name="encoding"]'));
-  var presets = document.querySelector('.tok-preset-buttons');
-  if (!input || !chipList || !idList || !charsOut || !countOut || !radios.length) return;
-  for (var name in encoders) {
-    var core = encoders[name] && encoders[name].bytePairEncodingCoreProcessor;
-    if (!core || typeof core.tryDecodeToken !== 'function') return;
-  }
-
-  // Text that looks like <|endoftext|> is ordinary text here, never a special token.
-  var options = { disallowedSpecial: new Set() };
-  var marks = { ' ': '␣', '\t': '→', '\n': '↵', '\r': '␍' };
-  var lists = [chipList, idList];
-  var chipProto = document.createElement('span');
-  chipProto.setAttribute('data-tok-chip', '');
-  chipProto.tabIndex = -1;
-  var idProto = document.createElement('span');
-  idProto.setAttribute('data-tok-id', '');
-  idProto.tabIndex = -1;
-  // Link state names one item: list 0 is the chips, list 1 the IDs.
-  var hover = null, focus = null, active = [], roving = [0, 0];
-  var tokensOfChip = [], chipOfToken = [];
-  var utf8Encoder = new TextEncoder();
-
-  function selected() {
-    for (var i = 0; i < radios.length; i++) if (radios[i].checked) return radios[i].value;
-    return 'r50k_base';
-  }
-
-  // Every whitespace character gets a visible mark drawn by CSS; the chip's text content
-  // stays exactly the decoded piece.
-  function fillChip(chip, piece) {
-    if (!/\s/.test(piece)) { chip.textContent = piece; return; }
-    var run = '';
-    for (var i = 0; i < piece.length; i++) {
-      var c = piece[i];
-      if (/\s/.test(c)) {
-        if (run) { chip.appendChild(document.createTextNode(run)); run = ''; }
-        var mark = document.createElement('span');
-        mark.className = 'tok-ws';
-        mark.setAttribute('data-mark', marks[c] || '␣');
-        mark.textContent = c;
-        chip.appendChild(mark);
-      } else run += c;
-    }
-    if (run) chip.appendChild(document.createTextNode(run));
-  }
-
-  // A whitespace-only piece is named, since a screen reader would read it as nothing.
-  var names = { ' ': 'space', '\t': 'tab', '\n': 'new line', '\r': 'carriage return' };
-  function spoken(piece) {
-    if (!/^\s+$/.test(piece)) return piece;
-    return piece.split('').map(function (c) { return names[c] || 'blank'; }).join(' ');
-  }
-
-  // The nodes an item lights up: a chip with every ID it took, or an ID with its chip.
-  function linked(item) {
-    if (!item) return [];
-    if (item.list === 1) return [idList.children[item.index], chipList.children[chipOfToken[item.index]]];
-    return [chipList.children[item.index]].concat((tokensOfChip[item.index] || []).map(function (t) { return idList.children[t]; }));
-  }
-
-  function apply() {
-    active.forEach(function (node) { node.removeAttribute('data-active'); });
-    active = linked(hover || focus).filter(Boolean);
-    active.forEach(function (node) { node.setAttribute('data-active', ''); });
-  }
-
-  function setRoving(listIndex, index) {
-    var list = lists[listIndex];
-    var old = list.children[roving[listIndex]];
-    if (old) old.tabIndex = -1;
-    roving[listIndex] = index;
-    if (list.children[index]) list.children[index].tabIndex = 0;
-  }
-
-  // Continuation bytes a UTF-8 sequence still needs after this byte.
-  function stillNeeded(need, byte) {
-    if ((byte & 0xC0) === 0x80) return need > 0 ? need - 1 : 0;
-    return byte >= 0xF0 ? 3 : byte >= 0xE0 ? 2 : byte >= 0xC0 ? 1 : 0;
-  }
-
-  function decodeBytes(parts, size) {
-    var bytes = new Uint8Array(size), at = 0;
-    parts.forEach(function (part) { bytes.set(part, at); at += part.length; });
-    // A fresh, non-streaming decoder per chip: nothing carries over between calls.
-    // ignoreBOM keeps a U+FEFF the text really contains instead of eating it as a byte-order mark.
-    return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
-  }
-
-  // The library's decode() shares one streaming TextDecoder across every call, so bytes left
-  // over from a split character in one call leak into the next. Never use it for chips: read
-  // each token's raw entry from the rank table (a string, or bytes when the token is not whole
-  // UTF-8) and group the shortest run of consecutive tokens whose bytes end on a whole
-  // character. Each group becomes one chip, so a chip's text depends only on its own IDs.
-  function chipsFor(encoder, ids) {
-    var core = encoder.bytePairEncodingCoreProcessor;
-    var groups = [], parts = [], size = 0, need = 0, start = 0;
-    for (var i = 0; i < ids.length; i++) {
-      var entry = core.tryDecodeToken(ids[i]);
-      if (entry === undefined || entry === null) throw new Error('Token ' + ids[i] + ' is not in the encoder.');
-      if (typeof entry === 'string' && !parts.length) { groups.push({ tokens: [i], text: entry }); continue; }
-      var bytes = typeof entry === 'string' ? utf8Encoder.encode(entry) : entry;
-      if (!parts.length) start = i;
-      parts.push(bytes);
-      size += bytes.length;
-      for (var b = 0; b < bytes.length; b++) need = stillNeeded(need, bytes[b]);
-      if (need === 0) {
-        groups.push({ tokens: range(start, i + 1), text: decodeBytes(parts, size) });
-        parts = []; size = 0;
-      }
-    }
-    // Text that came from a string always ends on a whole character; keep any rest anyway.
-    if (parts.length) groups.push({ tokens: range(start, ids.length), text: decodeBytes(parts, size) });
-    return groups;
-  }
-
-  function range(from, to) {
-    var out = [];
-    for (var i = from; i < to; i++) out.push(i);
-    return out;
-  }
-
-  function render() {
-    var text = input.value;
-    var encoding = selected();
-    var encoder = encoders[encoding];
-    var ids = encoder.encode(text, options);
-    var groups = chipsFor(encoder, ids);
-
-    // Rebuild both strips from this text and encoding alone; nothing is kept from before.
-    hover = focus = null;
-    active = [];
-    roving = [0, 0];
-    tokensOfChip = [];
-    chipOfToken = [];
-    var chips = document.createDocumentFragment();
-    var idNodes = document.createDocumentFragment();
-    for (var c = 0; c < groups.length; c++) {
-      var group = groups[c];
-      var groupIds = group.tokens.map(function (t) { return String(ids[t]); });
-      var chip = chipProto.cloneNode(false);
-      chip.setAttribute('data-index', c);
-      chip.setAttribute('data-token-ids', groupIds.join(' '));
-      chip.setAttribute('data-text', group.text);
-      if (groupIds.length === 1) chip.setAttribute('data-token-id', groupIds[0]);
-      else chip.setAttribute('data-token-count', groupIds.length);
-      chip.setAttribute('aria-label', spoken(group.text) + ': IDs ' + groupIds.join(' '));
-      fillChip(chip, group.text);
-      chips.appendChild(chip);
-      tokensOfChip.push(group.tokens);
-      for (var k = 0; k < group.tokens.length; k++) {
-        var t = group.tokens[k];
-        chipOfToken[t] = c;
-        var node = idProto.cloneNode(false);
-        node.setAttribute('data-index', t);
-        node.setAttribute('data-token-id', groupIds[k]);
-        node.setAttribute('data-chip-index', c);
-        node.setAttribute('data-tint', c % 4);
-        node.textContent = groupIds[k];
-        idNodes.appendChild(node);
-      }
-    }
-    chipList.replaceChildren(chips);
-    idList.replaceChildren(idNodes);
-    setRoving(0, 0);
-    setRoving(1, 0);
-
-    var chars = 0;
-    for (var ch of text) chars++;
-    charsOut.textContent = String(chars);
-    countOut.textContent = String(ids.length);
-  }
-
-  function itemOf(target) {
-    var item = target && target.closest ? target.closest('[data-tok-chip],[data-tok-id]') : null;
-    return item && (chipList.contains(item) || idList.contains(item)) ? item : null;
-  }
-
-  lists.forEach(function (list, listIndex) {
-    // An item's position in its own strip; ID spans keep their token index in data-index.
-    function at(item) { return Array.prototype.indexOf.call(list.children, item); }
-    list.addEventListener('mouseover', function (event) {
-      var item = itemOf(event.target);
-      if (!item) return;
-      hover = { list: listIndex, index: at(item) };
-      apply();
-    });
-    list.addEventListener('mouseout', function (event) {
-      if (itemOf(event.relatedTarget)) return;
-      hover = null;
-      apply();
-    });
-    list.addEventListener('focusin', function (event) {
-      var item = itemOf(event.target);
-      if (!item) return;
-      // The latest interaction wins: moving focus drops a pointer hover left behind.
-      hover = null;
-      focus = { list: listIndex, index: at(item) };
-      setRoving(listIndex, focus.index);
-      apply();
-    });
-    list.addEventListener('focusout', function (event) {
-      if (itemOf(event.relatedTarget)) return;
-      focus = null;
-      apply();
-    });
-    list.addEventListener('keydown', function (event) {
-      var item = itemOf(event.target);
-      if (!item || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      var index = at(item);
-      var last = list.children.length - 1;
-      if (event.key === 'ArrowLeft') index = Math.max(0, index - 1);
-      else if (event.key === 'ArrowRight') index = Math.min(last, index + 1);
-      else if (event.key === 'Home') index = 0;
-      else if (event.key === 'End') index = last;
-      else return;
-      event.preventDefault();
-      list.children[index].focus();
-    });
-  });
-
-  input.addEventListener('input', render);
-  radios.forEach(function (radio) { radio.addEventListener('change', render); });
-  if (presets) presets.addEventListener('click', function (event) {
-    var button = event.target.closest('button[data-tok-preset]');
-    if (!button) return;
-    input.value = button.value;
-    render();
-  });
-  render();
-})();
-</script>
 </body>
 </html>
