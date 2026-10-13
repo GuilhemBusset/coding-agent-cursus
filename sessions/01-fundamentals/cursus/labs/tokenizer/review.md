@@ -1,6 +1,6 @@
 # Tokenizer lab: review evidence
 
-Agent review by the implementer, 2026-10-13 (attempt 3, after the locked checks were amended:
+Agent review by the implementer, 2026-10-13 (attempt 3, re-reviewed after redesign 1 re-locked the checks; the page was amended earlier for:
 GPT-2 default, four-choice predict questions, `␣` marks on every space, chip borders and labels,
 the "Across encodings" disclosure with token pieces, and a dated note that says these IDs are not
 Claude's). Reviewed files (sha256):
@@ -140,17 +140,14 @@ into chip text").
 
 ## Performance
 
-Measured 2026-10-13 on the reviewed page with a scratch copy of the locked A1 latency test in
-`tools/html-pages/tests/tokenizer.test.mjs`, kept outside the repo. It has the same four
-2,000-character corpora, the same fresh page per run, the same first input, encoding switch and 20
-real keystrokes (22 samples per run, none discarded), and the same observer: from the `input` or
-`change` event until the IDs, chip IDs, chip text, count and characters are all correct, then
-forced layout. One line differs: the first input is set as `textarea.value` followed by one
-`input` event, instead of `locator.fill()`. In Chromium, `fill()` on a textarea fires one `input`
-event per line segment (3 for "a\nb"; 80 for a 40-line string), so on the `code` and `numbers`
-corpora the locked test records many partial-text samples and can never reach its
-`samples.length === 1` and `=== 22` conditions. That is reported as a check defect. No CPU
-throttling, offline, `file://`.
+Measured 2026-10-13 by the locked A1 latency test itself
+(`node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tokenizer.test.mjs`, test 13,
+after the amendment that sets the first input as `textarea.value` plus one bubbling `input` event)
+on the reviewed page. Four 2,000-code-point corpora, each under both starting encodings, a fresh
+page per run, offline over `file://`, no CPU throttling. Each run records one first input, one
+encoding switch and 20 real keystrokes (`page.keyboard.type`): 22 samples per run, 176 in total,
+none discarded. A sample runs from the `input` or `change` event until the IDs, chip IDs, chip
+text, token count and character count are all correct, then forced layout.
 
 - CPU: Intel(R) Core(TM) Ultra 9 285K
 - OS: Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2)
@@ -158,16 +155,15 @@ throttling, offline, `file://`.
 
 | Corpus | First encoding → switched encoding | n (samples) | Median (ms) | Max (ms) |
 | --- | --- | --- | --- | --- |
-| prose | r50k_base → o200k_base | 22 | 8.8 | 18.0 |
-| prose | o200k_base → r50k_base | 22 | 11.5 | 16.1 |
-| code | r50k_base → o200k_base | 22 | 10.6 | 12.1 |
-| code | o200k_base → r50k_base | 22 | 11.9 | 12.8 |
-| numbers | r50k_base → o200k_base | 22 | 10.2 | 12.3 |
-| numbers | o200k_base → r50k_base | 22 | 10.5 | 14.0 |
-| unbroken | r50k_base → o200k_base | 22 | 2.1 | 9.2 |
-| unbroken | o200k_base → r50k_base | 22 | 9.3 | 13.7 |
+| prose | r50k_base → o200k_base | 22 | 9.2 | 18.0 |
+| prose | o200k_base → r50k_base | 22 | 11.5 | 12.9 |
+| code | r50k_base → o200k_base | 22 | 10.7 | 12.6 |
+| code | o200k_base → r50k_base | 22 | 12.4 | 15.3 |
+| numbers | r50k_base → o200k_base | 22 | 10.3 | 12.1 |
+| numbers | o200k_base → r50k_base | 22 | 10.5 | 11.5 |
+| unbroken | r50k_base → o200k_base | 22 | 2.0 | 9.4 |
+| unbroken | o200k_base → r50k_base | 22 | 9.2 | 10.1 |
 
-All 176 samples are under 50 ms. The locked test itself also passed its prose runs on this host
-(medians 8.6 and 11.4 ms, max 16.8 ms) before stopping at the first multi-line corpus. Every
-update rebuilds both strips in full from the current text; nothing from the previous render is
-reused. These are host timings, not a slower student laptop.
+All 176 samples are under 50 ms; the largest is 18.0 ms (the first input of the prose run that
+starts in r50k_base). Every update rebuilds both strips in full from the current text; nothing from
+the previous render is reused. These are host timings, not a slower student laptop.
