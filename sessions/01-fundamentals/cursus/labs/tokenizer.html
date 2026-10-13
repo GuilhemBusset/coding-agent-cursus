@@ -829,9 +829,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   // each token's raw entry from the rank table (a string, or bytes when the token is not whole
   // UTF-8) and stream the bytes through a decoder created for this render only. A chip shows
   // the characters its token completes, so the first part of a split character is empty.
+  // ignoreBOM keeps a U+FEFF the text really contains instead of eating it as a byte-order mark.
   function piecesFor(encoder, ids) {
     var core = encoder.bytePairEncodingCoreProcessor;
-    var utf8 = new TextDecoder('utf-8');
+    var utf8 = new TextDecoder('utf-8', { ignoreBOM: true });
     var pieces = new Array(ids.length);
     for (var i = 0; i < ids.length; i++) {
       var entry = core.tryDecodeToken(ids[i]);

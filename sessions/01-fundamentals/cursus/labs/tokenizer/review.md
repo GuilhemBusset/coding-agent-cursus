@@ -5,7 +5,7 @@ Reviewed files (sha256):
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 57,814 | `6f31e5548bea7677a3de7b8df3af14fc94de9acea6bcf8dbec2fe777ac7c99a3` |
+| `../tokenizer.html` | 57,933 | `39f609960a8abc318000bccf560b7497e941c24974af631ed0d4a4330370cae4` |
 | `vendor/r50k_base.js` | 502,907 | `e95692224049d99b15601019c4b1cad61e3ff7b17d0870fe20e668bd82c15717` |
 | `vendor/o200k_base.js` | 2,047,463 | `fbc7419f14fb3a1460b56b156b94adb3480ec375a1dd404b0d0bd807fbff97e1` |
 
@@ -62,6 +62,14 @@ the static views match the 2026-10-10 review; the interaction states were captur
   library's shared decoder holding half a 🍓, then renders "🍓🍓 日本語", "Ça coûte 3 € — où ?" and
   "é ä 👩🏽‍💻" in both encodings, gave the same chip and ID DOM as a fresh page for every target. The
   previous page differed on 5 of the 10 targets.
+- **U+FEFF kept (2026-10-13, second fix):** the per-render decoder now uses `ignoreBOM: true`.
+  A disposable Playwright probe typed `"a\uFEFFb\uFEFF"` into the page in both encodings and read
+  the chips' `textContent`: on the fixed page they join back to the input exactly (r50k_base
+  `a · · U+FEFF b · · U+FEFF`, o200k_base `a · U+FEFF b · U+FEFF`, `·` = empty chip), while the
+  previous page lost the first U+FEFF in both encodings (it read it as a byte-order mark). A
+  U+FEFF-only chip shows the `·` space mark, because `\s` matches U+FEFF; its text is kept.
+  The script-only change leaves the static views as reviewed; the twelve check-page screenshots
+  were looked at again after it.
 - **2,000-character input:** 2,000 characters → 585 o200k_base tokens. Chips wrap (about six per
   line on mobile) inside a panel that scrolls vertically after 22rem; the ID panel scrolls after
   14rem. No page overflow at either width.

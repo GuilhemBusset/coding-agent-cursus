@@ -48,8 +48,10 @@ object exposes at runtime. For each ID it calls
 `GPTTokenizer_<encoding>.bytePairEncodingCoreProcessor.tryDecodeToken(id)`, a read-only lookup
 that returns the token's text (a string) or its raw bytes (a `Uint8Array`) when the token is not
 whole UTF-8. String tokens become the chip text as they are. Byte tokens go through a
-`new TextDecoder('utf-8')` created for that render only, so the chips depend on nothing but the
-current text and encoding. Each render also rebuilds both strips from scratch. A chip shows the
+`new TextDecoder('utf-8', { ignoreBOM: true })` created for that render only, so the chips depend
+on nothing but the current text and encoding. `ignoreBOM` matters: without it the decoder drops the
+first U+FEFF it decodes as a byte-order mark, and the chips for `"a\uFEFFb"` would join to `"ab"`
+while still counting U+FEFF's IDs. Each render also rebuilds both strips from scratch. A chip shows the
 characters its token completes, so the first token of a split character shows no text (marked ⋯).
 This is the same text the library's per-token `decode()` gives when its decoder starts empty.
 The vendored files are not edited. The reset-wrapped `decode()` fallback is not needed.
@@ -66,10 +68,10 @@ when the page opens.
 
 | File | Bytes | MB |
 | --- | --- | --- |
-| `tokenizer.html` | 57,814 | 0.058 |
+| `tokenizer.html` | 57,933 | 0.058 |
 | `vendor/r50k_base.js` | 502,907 | 0.503 |
 | `vendor/o200k_base.js` | 2,047,463 | 2.047 |
-| o200k-only subtotal (`tokenizer.html` + `o200k_base.js`) | 2,105,277 | 2.105 |
-| Full total (all three files) | 2,608,184 | 2.608 (2.487 MiB) |
+| o200k-only subtotal (`tokenizer.html` + `o200k_base.js`) | 2,105,396 | 2.105 |
+| Full total (all three files) | 2,608,303 | 2.608 (2.487 MiB) |
 
 The issue estimated "about 2.5 MB with o200k". Measured, the o200k-only subtotal is 2.105 MB and the whole page, with GPT-2's encoder as well, is 2.608 MB (2.487 MiB). The page footer shows the total rounded to one decimal. Neither encoder is trimmed to reach a target.
