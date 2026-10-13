@@ -1,10 +1,11 @@
 # Tokenizer lab: review evidence
 
-Agent review by the implementer, 2026-10-10. Reviewed files (sha256):
+Agent review by the implementer, 2026-10-10; re-reviewed 2026-10-13 after the chip-decoding fix.
+Reviewed files (sha256):
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 57,285 | `8c8eb9617517527a6ddab95c228d3f3f0d00f412529ca999347293230887ea89` |
+| `../tokenizer.html` | 57,814 | `6f31e5548bea7677a3de7b8df3af14fc94de9acea6bcf8dbec2fe777ac7c99a3` |
 | `vendor/r50k_base.js` | 502,907 | `e95692224049d99b15601019c4b1cad61e3ff7b17d0870fe20e668bd82c15717` |
 | `vendor/o200k_base.js` | 2,047,463 | `fbc7419f14fb3a1460b56b156b94adb3480ec375a1dd404b0d0bd807fbff97e1` |
 
@@ -13,9 +14,11 @@ page weight in `README.md`.
 
 ## Screenshots
 
-Sources: `node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/tokenizer.html`
-(PASS, 0 failed checks), plus a disposable Playwright script (since removed) that captured the
-playground and the predict card in interaction states at 1440×900 and 390×844.
+Sources: `node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/tokenizer.html --output artifacts/html-pages/tokenizer`
+(2026-10-13: PASS, 0 failed checks; all twelve screenshots in that directory looked at), plus
+disposable Playwright scripts (since removed) that captured the playground and the predict card in
+interaction states at 1440×900 and 390×844. The 2026-10-13 change only touched the page script, so
+the static views match the 2026-10-10 review; the interaction states were captured again.
 
 - **Desktop (1440×900):** masthead, then the predict card (two questions, Lock in / Reveal / Reset),
   then the playground: textarea and encoding fieldset side by side, the Characters and Tokens counts,
@@ -52,6 +55,13 @@ playground and the predict card in interaction states at 1440×900 and 390×844.
   to index 0, and moving the pointer away returns it to the focused index 2.
 - **Revealed prediction:** after Lock in and Reveal, each question shows "Correct." or "Not quite.
   The answer is …" and the answer blocks with IDs 101830 and 41236 and the three-r explanation.
+- **Split characters after the fix (2026-10-13):** French preset in r50k_base reads
+  "Bon" "j" "our" "," " o" "" "ù" " s" … with the empty chip shown as ⋯ and hovering "ù" outlining
+  only that chip. "🍓🍓 日本語 é" in r50k_base shows ⋯ chips before each 🍓, 日, 本 and 語, and hovering
+  ID index 1 outlines the matching ⋯ chip (hover from the ID side). A probe that first leaves the
+  library's shared decoder holding half a 🍓, then renders "🍓🍓 日本語", "Ça coûte 3 € — où ?" and
+  "é ä 👩🏽‍💻" in both encodings, gave the same chip and ID DOM as a fresh page for every target. The
+  previous page differed on 5 of the 10 targets.
 - **2,000-character input:** 2,000 characters → 585 o200k_base tokens. Chips wrap (about six per
   line on mobile) inside a panel that scrolls vertically after 22rem; the ID panel scrolls after
   14rem. No page overflow at either width.
@@ -125,10 +135,12 @@ package's own MIT text (Copyright (c) 2023-2024 Bazyli Brzoska).
 Version 4 check, same day: `npm pack gpt-tokenizer@4.0.0 --dry-run --json` lists only `LICENSE`,
 `README.md`, `package.json`, `cjs/`, `esm/`, `data/` and `src/`, with no `dist/` UMD builds.
 
-Upstream quirk found while vendoring: `decode()` shares one streaming `TextDecoder` per encoder, so a
-token holding only the first bytes of a character decodes to an empty string and the bytes appear with
-the next piece. The page decodes every token in order on each render, so its chips match a fresh
-encoder's output, and it marks empty pieces with ⋯ and explains them.
+Upstream quirk found while vendoring: `decode()` shares one streaming `TextDecoder` per encoder and
+never flushes it, so bytes left by one call leak into the next. The page therefore never calls
+`decode()`. It reads each token's string or bytes from the rank table
+(`bytePairEncodingCoreProcessor.tryDecodeToken`) and decodes bytes with a `TextDecoder` created for
+each render (see README "How the page turns IDs into chip text"). The first token of a split
+character completes no character, so its chip is empty; the page marks it ⋯ and explains it.
 
 ## Performance
 
@@ -143,13 +155,13 @@ No CPU throttling, offline, `file://`.
 
 | Corpus | Encoding | n | Median (ms) | Max (ms) |
 | --- | --- | --- | --- | --- |
-| prose | r50k_base | 20 | 12.8 | 13.2 |
-| prose | o200k_base | 20 | 13.6 | 14.0 |
-| code | r50k_base | 20 | 11.8 | 12.4 |
-| code | o200k_base | 20 | 12.8 | 13.3 |
-| numbers | r50k_base | 20 | 12.1 | 12.6 |
-| numbers | o200k_base | 20 | 12.2 | 12.5 |
+| prose | r50k_base | 20 | 8.0 | 14.5 |
+| prose | o200k_base | 20 | 11.7 | 12.3 |
+| code | r50k_base | 20 | 9.5 | 12.7 |
+| code | o200k_base | 20 | 8.7 | 14.3 |
+| numbers | r50k_base | 20 | 9.1 | 13.2 |
+| numbers | o200k_base | 20 | 9.6 | 13.1 |
 
-Most of each sample is the wait for the next frame. Typing at the end rebuilds only the changed tail
-of the chip and ID lists. A full rebuild (switching encodings on 2,000 characters, 585 chips) measured
-9–12 ms of script plus layout on this host. These are host timings, not a slower student laptop.
+Measured 2026-10-13 on the fixed page. Every keystroke now rebuilds both lists in full from the
+current text (about 585 chips and 585 IDs at 2,000 characters); nothing from the previous render is
+reused. Most of each sample is still the wait for the next frame. These are host timings, not a slower student laptop.

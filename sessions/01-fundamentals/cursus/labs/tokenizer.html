@@ -758,7 +758,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   var radios = Array.prototype.slice.call(document.querySelectorAll('input[name="encoding"]'));
   var presets = document.querySelector('.tok-preset-buttons');
   if (!input || !chipList || !idList || !charsOut || !countOut || !radios.length) return;
-  if (!encoders.r50k_base || !encoders.o200k_base) return;
+  for (var name in encoders) {
+    var core = encoders[name] && encoders[name].bytePairEncodingCoreProcessor;
+    if (!core || typeof core.tryDecodeToken !== 'function') return;
+  }
 
   // Text that looks like <|endoftext|> is ordinary text here, never a special token.
   var options = { disallowedSpecial: new Set() };
@@ -770,7 +773,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   var idProto = document.createElement('span');
   idProto.setAttribute('data-tok-id', '');
   idProto.tabIndex = -1;
-  var shown = { encoding: null, ids: [], pieces: [] };
   var hover = null, focus = null, active = null, roving = [0, 0];
 
   function selected() {
@@ -822,32 +824,40 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     if (list.children[index]) list.children[index].tabIndex = 0;
   }
 
+  // The library's decode() shares one streaming TextDecoder across every call, so bytes left
+  // over from a split character in one call leak into the next. Never use it for chips: read
+  // each token's raw entry from the rank table (a string, or bytes when the token is not whole
+  // UTF-8) and stream the bytes through a decoder created for this render only. A chip shows
+  // the characters its token completes, so the first part of a split character is empty.
+  function piecesFor(encoder, ids) {
+    var core = encoder.bytePairEncodingCoreProcessor;
+    var utf8 = new TextDecoder('utf-8');
+    var pieces = new Array(ids.length);
+    for (var i = 0; i < ids.length; i++) {
+      var entry = core.tryDecodeToken(ids[i]);
+      if (typeof entry === 'string') pieces[i] = entry;
+      else if (entry) pieces[i] = utf8.decode(entry, { stream: true });
+      else throw new Error('Token ' + ids[i] + ' is not in the encoder.');
+    }
+    // Text that came from a string always ends on a whole character; flush to be sure.
+    var rest = utf8.decode();
+    if (rest && ids.length) pieces[ids.length - 1] += rest;
+    return pieces;
+  }
+
   function render() {
     var text = input.value;
     var encoding = selected();
     var encoder = encoders[encoding];
     var ids = encoder.encode(text, options);
-    // decode() keeps incomplete UTF-8 bytes for the next call, so decode every piece, in order.
-    var pieces = new Array(ids.length);
-    for (var i = 0; i < ids.length; i++) pieces[i] = encoder.decode([ids[i]]);
+    var pieces = piecesFor(encoder, ids);
 
-    if (active !== null) mark(active, false);
+    // Rebuild both strips from this text and encoding alone; nothing is kept from before.
     hover = focus = active = null;
-
-    // Keep the unchanged leading pieces; typing at the end rebuilds only the tail.
-    var keep = 0;
-    if (shown.encoding === encoding) {
-      var max = Math.min(ids.length, shown.ids.length);
-      while (keep < max && shown.ids[keep] === ids[keep] && shown.pieces[keep] === pieces[keep]) keep++;
-    }
-    for (var l = 0; l < lists.length; l++) {
-      var old = lists[l].children[roving[l]];
-      if (old) old.tabIndex = -1;
-      while (lists[l].children.length > keep) lists[l].lastChild.remove();
-    }
+    roving = [0, 0];
     var chips = document.createDocumentFragment();
     var idNodes = document.createDocumentFragment();
-    for (var k = keep; k < ids.length; k++) {
+    for (var k = 0; k < ids.length; k++) {
       var id = String(ids[k]);
       var chip = chipProto.cloneNode(false);
       chip.setAttribute('data-index', k);
@@ -860,8 +870,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
       node.textContent = id;
       idNodes.appendChild(node);
     }
-    chipList.appendChild(chips);
-    idList.appendChild(idNodes);
+    chipList.replaceChildren(chips);
+    idList.replaceChildren(idNodes);
     setRoving(0, 0);
     setRoving(1, 0);
 
@@ -869,7 +879,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     for (var ch of text) chars++;
     charsOut.textContent = String(chars);
     countOut.textContent = String(ids.length);
-    shown = { encoding: encoding, ids: ids, pieces: pieces };
   }
 
   function itemOf(target) {
