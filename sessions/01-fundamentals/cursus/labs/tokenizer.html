@@ -233,14 +233,14 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 [data-tok-chip]:nth-child(4n+2) { background: var(--amber-soft); }
 [data-tok-chip]:nth-child(4n+3) { background: var(--red-soft); }
 [data-tok-chip]:nth-child(4n+4) { background: color-mix(in srgb, var(--secondary) 30%, var(--sheet)); }
-[data-tok-chip]:empty::before { content: "⋯"; color: var(--muted); }
+[data-tok-chip][data-token-count]::after { content: "×" attr(data-token-count); margin-left: .25rem; padding: 0 .2rem; font-size: .75rem; vertical-align: super; color: var(--ink); border: 1px dashed var(--ink); border-radius: .15rem; }
 .tok-ws { font-size: 0; white-space: nowrap; }
 .tok-ws::before { content: attr(data-mark); font-size: 1rem; color: var(--secondary); }
 [data-tok-id] { display: inline-block; padding: .125rem .375rem; font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; color: var(--secondary); border: 1px solid var(--rule); border-bottom-width: 3px; border-radius: .15rem; outline: 0 solid transparent; cursor: default; }
-[data-tok-id]:nth-child(4n+1) { border-bottom-color: var(--accent); }
-[data-tok-id]:nth-child(4n+2) { border-bottom-color: var(--amber); }
-[data-tok-id]:nth-child(4n+3) { border-bottom-color: var(--red); }
-[data-tok-id]:nth-child(4n+4) { border-bottom-color: var(--muted); }
+[data-tok-id][data-tint="0"] { border-bottom-color: var(--accent); }
+[data-tok-id][data-tint="1"] { border-bottom-color: var(--amber); }
+[data-tok-id][data-tint="2"] { border-bottom-color: var(--red); }
+[data-tok-id][data-tint="3"] { border-bottom-color: var(--muted); }
 [data-tok-chip][data-active], [data-tok-id][data-active] { outline: 2px solid var(--ink); outline-offset: 1px; color: var(--ink); }
 [data-tok-chip]:focus-visible, [data-tok-id]:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .tok-help { font-size: .875rem; max-width: 72ch; }
@@ -326,7 +326,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <h3 class="label" id="tok-ids-title">What the model receives</h3>
         <div class="tok-ids" data-tok-ids role="group" aria-labelledby="tok-ids-title" aria-describedby="tok-keys-help"></div>
         <p class="muted tok-help" id="tok-keys-help">Hover a piece or an ID to highlight its partner. With the keyboard, Tab into either list and use the left and right arrow keys. Marks: · space, → tab, ↵ new line.</p>
-        <p class="muted tok-help">A character can take more than one token: “é” or “🍓” may be split into bytes. The first chip of such a split is marked ⋯ and shows no text; the chip that completes the character shows it.</p>
+        <p class="muted tok-help">A character can take more than one token: “é” or “🍓” may be split into bytes. Such a character gets one chip with a ×2 or ×3 badge, and hovering it highlights every ID it took.</p>
       </section>
 
       <section class="tok-presets" aria-labelledby="tok-presets-title">
@@ -746,7 +746,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   <!-- shared-script:end -->
   <script src="tokenizer/vendor/r50k_base.js"></script>
   <script src="tokenizer/vendor/o200k_base.js"></script>
-  <script>/* Tokenizer lab: re-encode on every edit, render pieces and IDs, link them by position. */
+  <script>/* Tokenizer lab: re-encode on every edit, render whole-character pieces and IDs, link each piece to its IDs. */
 (function () {
   'use strict';
   var encoders = { r50k_base: window.GPTTokenizer_r50k_base, o200k_base: window.GPTTokenizer_o200k_base };
@@ -773,7 +773,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   var idProto = document.createElement('span');
   idProto.setAttribute('data-tok-id', '');
   idProto.tabIndex = -1;
-  var hover = null, focus = null, active = null, roving = [0, 0];
+  // Link state names one item: list 0 is the chips, list 1 the IDs.
+  var hover = null, focus = null, active = [], roving = [0, 0];
+  var tokensOfChip = [], chipOfToken = [];
+  var utf8Encoder = new TextEncoder();
 
   function selected() {
     for (var i = 0; i < radios.length; i++) if (radios[i].checked) return radios[i].value;
@@ -799,21 +802,17 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     if (run) chip.appendChild(document.createTextNode(run));
   }
 
-  function mark(index, on) {
-    for (var i = 0; i < lists.length; i++) {
-      var node = lists[i].children[index];
-      if (!node) continue;
-      if (on) node.setAttribute('data-active', '');
-      else node.removeAttribute('data-active');
-    }
+  // The nodes an item lights up: a chip with every ID it took, or an ID with its chip.
+  function linked(item) {
+    if (!item) return [];
+    if (item.list === 1) return [idList.children[item.index], chipList.children[chipOfToken[item.index]]];
+    return [chipList.children[item.index]].concat((tokensOfChip[item.index] || []).map(function (t) { return idList.children[t]; }));
   }
 
   function apply() {
-    var next = hover !== null ? hover : focus;
-    if (next === active) return;
-    if (active !== null) mark(active, false);
-    active = next;
-    if (active !== null) mark(active, true);
+    active.forEach(function (node) { node.removeAttribute('data-active'); });
+    active = linked(hover || focus).filter(Boolean);
+    active.forEach(function (node) { node.setAttribute('data-active', ''); });
   }
 
   function setRoving(listIndex, index) {
@@ -824,26 +823,51 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     if (list.children[index]) list.children[index].tabIndex = 0;
   }
 
+  // Continuation bytes a UTF-8 sequence still needs after this byte.
+  function stillNeeded(need, byte) {
+    if ((byte & 0xC0) === 0x80) return need > 0 ? need - 1 : 0;
+    return byte >= 0xF0 ? 3 : byte >= 0xE0 ? 2 : byte >= 0xC0 ? 1 : 0;
+  }
+
+  function decodeBytes(parts, size) {
+    var bytes = new Uint8Array(size), at = 0;
+    parts.forEach(function (part) { bytes.set(part, at); at += part.length; });
+    // A fresh, non-streaming decoder per chip: nothing carries over between calls.
+    // ignoreBOM keeps a U+FEFF the text really contains instead of eating it as a byte-order mark.
+    return new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
+  }
+
   // The library's decode() shares one streaming TextDecoder across every call, so bytes left
   // over from a split character in one call leak into the next. Never use it for chips: read
   // each token's raw entry from the rank table (a string, or bytes when the token is not whole
-  // UTF-8) and stream the bytes through a decoder created for this render only. A chip shows
-  // the characters its token completes, so the first part of a split character is empty.
-  // ignoreBOM keeps a U+FEFF the text really contains instead of eating it as a byte-order mark.
-  function piecesFor(encoder, ids) {
+  // UTF-8) and group the shortest run of consecutive tokens whose bytes end on a whole
+  // character. Each group becomes one chip, so a chip's text depends only on its own IDs.
+  function chipsFor(encoder, ids) {
     var core = encoder.bytePairEncodingCoreProcessor;
-    var utf8 = new TextDecoder('utf-8', { ignoreBOM: true });
-    var pieces = new Array(ids.length);
+    var groups = [], parts = [], size = 0, need = 0, start = 0;
     for (var i = 0; i < ids.length; i++) {
       var entry = core.tryDecodeToken(ids[i]);
-      if (typeof entry === 'string') pieces[i] = entry;
-      else if (entry) pieces[i] = utf8.decode(entry, { stream: true });
-      else throw new Error('Token ' + ids[i] + ' is not in the encoder.');
+      if (entry === undefined || entry === null) throw new Error('Token ' + ids[i] + ' is not in the encoder.');
+      if (typeof entry === 'string' && !parts.length) { groups.push({ tokens: [i], text: entry }); continue; }
+      var bytes = typeof entry === 'string' ? utf8Encoder.encode(entry) : entry;
+      if (!parts.length) start = i;
+      parts.push(bytes);
+      size += bytes.length;
+      for (var b = 0; b < bytes.length; b++) need = stillNeeded(need, bytes[b]);
+      if (need === 0) {
+        groups.push({ tokens: range(start, i + 1), text: decodeBytes(parts, size) });
+        parts = []; size = 0;
+      }
     }
-    // Text that came from a string always ends on a whole character; flush to be sure.
-    var rest = utf8.decode();
-    if (rest && ids.length) pieces[ids.length - 1] += rest;
-    return pieces;
+    // Text that came from a string always ends on a whole character; keep any rest anyway.
+    if (parts.length) groups.push({ tokens: range(start, ids.length), text: decodeBytes(parts, size) });
+    return groups;
+  }
+
+  function range(from, to) {
+    var out = [];
+    for (var i = from; i < to; i++) out.push(i);
+    return out;
   }
 
   function render() {
@@ -851,25 +875,39 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     var encoding = selected();
     var encoder = encoders[encoding];
     var ids = encoder.encode(text, options);
-    var pieces = piecesFor(encoder, ids);
+    var groups = chipsFor(encoder, ids);
 
     // Rebuild both strips from this text and encoding alone; nothing is kept from before.
-    hover = focus = active = null;
+    hover = focus = null;
+    active = [];
     roving = [0, 0];
+    tokensOfChip = [];
+    chipOfToken = [];
     var chips = document.createDocumentFragment();
     var idNodes = document.createDocumentFragment();
-    for (var k = 0; k < ids.length; k++) {
-      var id = String(ids[k]);
+    for (var c = 0; c < groups.length; c++) {
+      var group = groups[c];
+      var groupIds = group.tokens.map(function (t) { return String(ids[t]); });
       var chip = chipProto.cloneNode(false);
-      chip.setAttribute('data-index', k);
-      chip.setAttribute('data-token-id', id);
-      fillChip(chip, pieces[k]);
+      chip.setAttribute('data-index', c);
+      chip.setAttribute('data-token-ids', groupIds.join(' '));
+      chip.setAttribute('data-text', group.text);
+      if (groupIds.length === 1) chip.setAttribute('data-token-id', groupIds[0]);
+      else chip.setAttribute('data-token-count', groupIds.length);
+      fillChip(chip, group.text);
       chips.appendChild(chip);
-      var node = idProto.cloneNode(false);
-      node.setAttribute('data-index', k);
-      node.setAttribute('data-token-id', id);
-      node.textContent = id;
-      idNodes.appendChild(node);
+      tokensOfChip.push(group.tokens);
+      for (var k = 0; k < group.tokens.length; k++) {
+        var t = group.tokens[k];
+        chipOfToken[t] = c;
+        var node = idProto.cloneNode(false);
+        node.setAttribute('data-index', t);
+        node.setAttribute('data-token-id', groupIds[k]);
+        node.setAttribute('data-chip-index', c);
+        node.setAttribute('data-tint', c % 4);
+        node.textContent = groupIds[k];
+        idNodes.appendChild(node);
+      }
     }
     chipList.replaceChildren(chips);
     idList.replaceChildren(idNodes);
@@ -888,10 +926,12 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   }
 
   lists.forEach(function (list, listIndex) {
+    // An item's position in its own strip; ID spans keep their token index in data-index.
+    function at(item) { return Array.prototype.indexOf.call(list.children, item); }
     list.addEventListener('mouseover', function (event) {
       var item = itemOf(event.target);
       if (!item) return;
-      hover = Number(item.getAttribute('data-index'));
+      hover = { list: listIndex, index: at(item) };
       apply();
     });
     list.addEventListener('mouseout', function (event) {
@@ -904,8 +944,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
       if (!item) return;
       // The latest interaction wins: moving focus drops a pointer hover left behind.
       hover = null;
-      focus = Number(item.getAttribute('data-index'));
-      setRoving(listIndex, focus);
+      focus = { list: listIndex, index: at(item) };
+      setRoving(listIndex, focus.index);
       apply();
     });
     list.addEventListener('focusout', function (event) {
@@ -916,7 +956,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     list.addEventListener('keydown', function (event) {
       var item = itemOf(event.target);
       if (!item || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      var index = Number(item.getAttribute('data-index'));
+      var index = at(item);
       var last = list.children.length - 1;
       if (event.key === 'ArrowLeft') index = Math.max(0, index - 1);
       else if (event.key === 'ArrowRight') index = Math.min(last, index + 1);

@@ -1,11 +1,12 @@
 # Tokenizer lab: review evidence
 
-Agent review by the implementer, 2026-10-10; re-reviewed 2026-10-13 after the chip-decoding fix.
+Agent review by the implementer, 2026-10-10; re-reviewed 2026-10-13 after the chip-decoding fix and
+again on 2026-10-13 after split characters were grouped into one chip.
 Reviewed files (sha256):
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 57,933 | `39f609960a8abc318000bccf560b7497e941c24974af631ed0d4a4330370cae4` |
+| `../tokenizer.html` | 60,271 | `fe207eba1287fc4f62274c480d5cbe141d9939aaaea41d1a177135b2fe2b7c8c` |
 | `vendor/r50k_base.js` | 502,907 | `e95692224049d99b15601019c4b1cad61e3ff7b17d0870fe20e668bd82c15717` |
 | `vendor/o200k_base.js` | 2,047,463 | `fbc7419f14fb3a1460b56b156b94adb3480ec375a1dd404b0d0bd807fbff97e1` |
 
@@ -15,17 +16,19 @@ page weight in `README.md`.
 ## Screenshots
 
 Sources: `node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/tokenizer.html --output artifacts/html-pages/tokenizer`
-(2026-10-13: PASS, 0 failed checks; all twelve screenshots in that directory looked at), plus
-disposable Playwright scripts (since removed) that captured the playground and the predict card in
-interaction states at 1440×900 and 390×844. The 2026-10-13 change only touched the page script, so
-the static views match the 2026-10-10 review; the interaction states were captured again.
+(2026-10-13, on the reviewed hash above: PASS, 0 failed checks; all twelve screenshots in that
+directory looked at), plus disposable Playwright scripts (kept outside the repo) that captured the
+playground in interaction states at 1440×900 and 390×844 into the same directory
+(`grouped-hover-chip-*.png`, `grouped-hover-id-*.png`, `french-r50k-*.png`). The grouping change
+touched the page script, one help line, the badge CSS and the ID-border colours; the static views
+were looked at again and match the earlier review apart from that help line.
 
 - **Desktop (1440×900):** masthead, then the predict card (two questions, Lock in / Reveal / Reset),
   then the playground: textarea and encoding fieldset side by side, the Characters and Tokens counts,
   the coloured piece chips, the ID list, and two help lines. Then the preset buttons, the comparison
   table, the amber "Why not Claude's tokenizer?" note, and the footer with the credit and page weight.
   Adjacent chips use four alternating backgrounds, all distinct from the panel; each ID has a
-  bottom border in its chip's colour. No collisions.
+  bottom border in its chip's colour (taken from the chip, so a ×2 chip's two IDs share it). No collisions.
 - **Laptop (1280×720):** same layout; the table's three columns fit.
 - **Mobile (390×844):** one column. The encoding fieldset stacks under the textarea, chips wrap
   inside their panel, and the preset buttons wrap. The comparison table scrolls horizontally inside
@@ -45,32 +48,28 @@ the static views match the 2026-10-10 review; the interaction states were captur
   visible: whitespace-only chips show a `·` per space, `→` per tab and `↵` per new line (CSS marks;
   the chip's text stays the exact decoded piece). Leading spaces inside word pieces show as a gap
   within the chip's background.
-- **Hover pair:** French preset in r50k_base, hovering the chip "ù": that chip and ID `117` both get
-  a light outline; the neighbouring chips and IDs are unchanged. The chip before it (ID `127`) shows
-  the ⋯ mark, because the first byte of "ù" decodes to no text on its own (explained under the chips).
-  The test suite also checks hovering an ID, and arrow-key focus moving the highlighted pair.
+- **Hover pair:** French preset in r50k_base, hovering the chip "ù": "ù" is one chip with a dashed
+  ×2 badge, and the chip and both its IDs `127` and `117` get a light outline; the neighbouring
+  chips and IDs are unchanged (`french-r50k-1440.png`, `french-r50k-390.png`). The test suite checks
+  hovering an ID, and arrow-key focus moving the highlighted pair, on "the the the".
   Pointer then keyboard, checked by hand with a disposable Playwright script on "the the the":
   clicking chip 0 and leaving the pointer on it, then pressing ArrowRight twice, moves the
   highlighted pair to index 1 then 2 (focus drops the stale hover); hovering ID 0 then moves it back
   to index 0, and moving the pointer away returns it to the focused index 2.
 - **Revealed prediction:** after Lock in and Reveal, each question shows "Correct." or "Not quite.
   The answer is …" and the answer blocks with IDs 101830 and 41236 and the three-r explanation.
-- **Split characters after the fix (2026-10-13):** French preset in r50k_base reads
-  "Bon" "j" "our" "," " o" "" "ù" " s" … with the empty chip shown as ⋯ and hovering "ù" outlining
-  only that chip. "🍓🍓 日本語 é" in r50k_base shows ⋯ chips before each 🍓, 日, 本 and 語, and hovering
-  ID index 1 outlines the matching ⋯ chip (hover from the ID side). A probe that first leaves the
-  library's shared decoder holding half a 🍓, then renders "🍓🍓 日本語", "Ça coûte 3 € — où ?" and
-  "é ä 👩🏽‍💻" in both encodings, gave the same chip and ID DOM as a fresh page for every target. The
-  previous page differed on 5 of the 10 targets.
-- **U+FEFF kept (2026-10-13, second fix):** the per-render decoder now uses `ignoreBOM: true`.
-  A disposable Playwright probe typed `"a\uFEFFb\uFEFF"` into the page in both encodings and read
-  the chips' `textContent`: on the fixed page they join back to the input exactly (r50k_base
-  `a · · U+FEFF b · · U+FEFF`, o200k_base `a · U+FEFF b · U+FEFF`, `·` = empty chip), while the
-  previous page lost the first U+FEFF in both encodings (it read it as a byte-order mark). A
-  U+FEFF-only chip shows the `·` space mark, because `\s` matches U+FEFF; its text is kept.
-  The script-only change leaves the static views as reviewed; the twelve check-page screenshots
-  were looked at again after it.
-- **2,000-character input:** 2,000 characters → 585 o200k_base tokens. Chips wrap (about six per
+- **Split characters grouped (2026-10-13):** "🍓🍓 日本語 — où ? é" in r50k_base (19 tokens) shows 10
+  chips: "🍓" ×3, "🍓" ×3, " 日" ×3, "本" ×2, "語" ×2, " —", " o", "ù" ×2, " ?", " é". Hovering the first 🍓
+  outlines it and IDs `8582 235 241` (`grouped-hover-chip-1440.png`); hovering the fifth ID (`235`)
+  outlines the second 🍓 chip (`grouped-hover-id-390.png`, hover from the ID side). The badges stay
+  legible at both widths and the chips wrap inside their panel. In o200k_base, typing 🍓 gives one
+  chip with IDs `102415 241` and a ×2 badge, and hovering it highlights both IDs (the cross-review
+  case). A probe that runs a long mixed history first (partial emoji, a lone surrogate, presets,
+  typed prefixes, encoding toggles), then renders U+FEFF, "\uFEFFabc", "🍓🍓 日本語",
+  "Ça coûte 3 € — où ?", "é", "�", " strawberry" and "hello world" in both encodings, gave the same
+  chip and ID DOM as a fresh page for all 16 cases, and the chips' text joined back to the input.
+- **2,000-character input:** 2,000 characters → 585 o200k_base tokens. With the 2,000-character prose
+  corpus, r50k_base gives 710 tokens in 691 chips (split accents grouped); o200k_base gives 452 in 452. Chips wrap (about six per
   line on mobile) inside a panel that scrolls vertically after 22rem; the ID panel scrolls after
   14rem. No page overflow at either width.
 
@@ -146,16 +145,18 @@ Version 4 check, same day: `npm pack gpt-tokenizer@4.0.0 --dry-run --json` lists
 Upstream quirk found while vendoring: `decode()` shares one streaming `TextDecoder` per encoder and
 never flushes it, so bytes left by one call leak into the next. The page therefore never calls
 `decode()`. It reads each token's string or bytes from the rank table
-(`bytePairEncodingCoreProcessor.tryDecodeToken`) and decodes bytes with a `TextDecoder` created for
-each render (see README "How the page turns IDs into chip text"). The first token of a split
-character completes no character, so its chip is empty; the page marks it ⋯ and explains it.
+(`bytePairEncodingCoreProcessor.tryDecodeToken`), groups the tokens of a split character, and
+decodes each group with a fresh, non-streaming `TextDecoder` (see README "How the page turns IDs
+into chip text").
 
 ## Performance
 
-From the A1 latency test in `tools/html-pages/tests/tokenizer.test.mjs` on the reviewed page: real
-keystrokes typed at the end of three 2,000-character corpora, timed from the `input` event to the
-first animation frame where the chips, IDs and count are correct, after forced layout.
-No CPU throttling, offline, `file://`.
+Measured 2026-10-13 on the reviewed page with a disposable Playwright script that mirrors the A1
+latency test in `tools/html-pages/tests/tokenizer.test.mjs` (same three 2,000-character corpora,
+same 20 real keystrokes each, same observer from the `input` event to the first animation frame
+with the right IDs and count, then forced layout). It checks the ID strip and the chips' combined
+`data-token-ids` against `encode`, because the locked test's chip assertion expects one chip per
+token and stops before timing on the grouped page. No CPU throttling, offline, `file://`.
 
 - CPU: Intel(R) Core(TM) Ultra 9 285K
 - OS: Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2)
@@ -163,13 +164,13 @@ No CPU throttling, offline, `file://`.
 
 | Corpus | Encoding | n | Median (ms) | Max (ms) |
 | --- | --- | --- | --- | --- |
-| prose | r50k_base | 20 | 8.0 | 14.5 |
-| prose | o200k_base | 20 | 11.7 | 12.3 |
-| code | r50k_base | 20 | 9.5 | 12.7 |
-| code | o200k_base | 20 | 8.7 | 14.3 |
-| numbers | r50k_base | 20 | 9.1 | 13.2 |
-| numbers | o200k_base | 20 | 9.6 | 13.1 |
+| prose | r50k_base | 20 | 8.0 | 15.6 |
+| prose | o200k_base | 20 | 8.9 | 10.3 |
+| code | r50k_base | 20 | 10.6 | 13.4 |
+| code | o200k_base | 20 | 8.8 | 12.5 |
+| numbers | r50k_base | 20 | 9.8 | 11.0 |
+| numbers | o200k_base | 20 | 10.5 | 11.9 |
 
-Measured 2026-10-13 on the fixed page. Every keystroke now rebuilds both lists in full from the
-current text (about 585 chips and 585 IDs at 2,000 characters); nothing from the previous render is
-reused. Most of each sample is still the wait for the next frame. These are host timings, not a slower student laptop.
+All 120 samples are under 50 ms. Every keystroke rebuilds both lists in full from the current text
+(up to about 1,040 chips and IDs at 2,000 characters); nothing from the previous render is reused.
+Most of each sample is the wait for the next frame. These are host timings, not a slower student laptop.
