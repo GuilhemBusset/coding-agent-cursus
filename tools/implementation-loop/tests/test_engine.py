@@ -1,12 +1,16 @@
 """End-to-end runs of the engine: real git, the real ship.sh, the real verifier and real squash
 merges into a local bare remote. Only the agents and GitHub are fakes."""
 
+import signal
+import stat
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from unittest import mock
 
 from helpers import SHIP, TempRepo, git, issue_body
+from test_agent_git_isolation import IsolationCase, git_dir
 
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
@@ -15,7 +19,7 @@ from implement_loop.github import FakeGitHub
 from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
-from implement_loop.workspace import Workspace
+from implement_loop.workspace import GitError, Workspace
 
 EPIC = 1
 
@@ -1030,6 +1034,79 @@ class ResumeTests(EngineCase):
 
     def store_dir(self) -> Path:
         return RunStore.for_root(self.repo.work, EPIC).dir
+
+
+
+class KilledCallOnALostBranchTests(IsolationCase):
+    """A killed agent call left an executable bit only in its private index, and the issue's
+    branch was then deleted (#34's): reattaching must carry the bit without HEAD, and a failed
+    carry must keep the private metadata for the next try."""
+
+    def killed_with_staged_executable_bit(self):
+        wt = self.worktree()
+        git("config", "core.fileMode", "false", cwd=wt)
+        original = (wt / ".git").read_bytes()
+        base = git("rev-parse", "HEAD", cwd=wt)
+        code = "\n".join([
+            "import os, signal, subprocess, sys", "from pathlib import Path", "sys.path.insert(0, sys.argv[1])",
+            "from implement_loop.workspace import Workspace",
+            "ws = Workspace(Path(sys.argv[2]), int(sys.argv[3]), Path(sys.argv[4]), base_dir=Path(sys.argv[5]))",
+            "with ws.agent_call(Path(sys.argv[6])):",
+            "    subprocess.run(['git', 'update-index', '--chmod=+x', 'README.md'], cwd=sys.argv[6], check=True)",
+            "    os.kill(os.getpid(), signal.SIGKILL)",
+        ])
+        proc = subprocess.run([sys.executable, "-c", code, str(Path(__file__).resolve().parents[1]),
+                               str(self.repo.work), str(self.n), str(SHIP), str(self.ws.dir), str(wt)],
+                              capture_output=True, text=True, timeout=60)
+        self.assertEqual(proc.returncode, -signal.SIGKILL, proc.stderr)
+        private = git_dir(wt)
+        self.assertTrue(private.is_relative_to(self.ws.dir.resolve()))
+        self.assertEqual(stat.S_IMODE((wt / "README.md").stat().st_mode), 0o644)
+        git("update-ref", "-d", "refs/heads/feat/isolated-worker", cwd=self.repo.work)
+        return wt, original, base, private
+
+    def assert_mode(self, wt, mode):
+        self.assertEqual(git("ls-files", "--stage", "README.md", cwd=wt).split(" ", 1)[0], mode)
+
+    def test_restoring_the_branch_carries_the_executable_bit_without_head(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        self.assertEqual(self.ws.restore_branch(wt, [base]), ("refs/heads/feat/isolated-worker", base))
+        self.assert_registered(wt, original)
+        self.assert_ref(self.repo.work, "refs/heads/feat/isolated-worker", base)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_the_engine_restores_the_branch_and_keeps_the_executable_bit(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        self.engine._reconcile()
+        self.assertEqual(self.events("branch_restore_failed"), [])
+        self.assertEqual([(e["branch"], e["sha"]) for e in self.events("branch_restored")],
+                         [("feat/isolated-worker", base)])
+        self.assertNotEqual(self.store.issue(self.n).phase, Phase.PARKED)
+        self.assert_registered(wt, original)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_a_failed_carry_keeps_the_private_metadata_for_the_next_reattach(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        git("update-ref", "refs/heads/feat/isolated-worker", base, cwd=self.repo.work)
+        with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
+            with self.assertRaises(GitError):
+                self.ws.reattach(wt)
+        self.assertEqual(git_dir(wt), private)
+        self.assert_mode(wt, "100755")
+        self.ws.reattach(wt)
+        self.assert_registered(wt, original)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_removing_the_worktree_does_not_depend_on_carrying(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
+            self.ws.remove(wt)
+        self.assertFalse(wt.exists())
+        self.assertFalse(private.exists())
+        self.assertNotIn(str(wt), git("worktree", "list", "--porcelain", cwd=self.repo.work))
 
 
 if __name__ == "__main__":

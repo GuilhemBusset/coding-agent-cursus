@@ -189,8 +189,10 @@ class Workspace:
 
     def restore_index_entry(self, path: Path, name: str, entries: list[str]) -> None:
         """Put `name` back in the index exactly as `entries` (from `index_entries`) recorded it,
-        conflict stages included; no entries removes it from the index."""
-        removal = f"0 {'0' * len(self.head(path))}\t{name}"
+        conflict stages included; no entries removes it from the index. Needs no HEAD: a
+        worktree whose branch was deleted (#34's) still gets its entries back."""
+        fmt = self.git("rev-parse", "--show-object-format", cwd=path)
+        removal = f"0 {'0' * (64 if fmt == 'sha256' else 40)}\t{name}"
         info = "".join(f"{record}\0" for record in [removal, *entries])
         proc = subprocess.run(["git", "update-index", "-z", "--index-info"], cwd=path, input=info,
                               capture_output=True, text=True)
@@ -280,7 +282,7 @@ class Workspace:
         with self._mutex:
             if path.exists():
                 try:
-                    self.reattach(path)
+                    self.reattach(path, carry=False)   # nothing to carry: the worktree goes
                 except GitError:
                     pass   # removed anyway: `worktree remove --force` does not need it
                 self.git("worktree", "remove", "--force", str(path), check=False)
@@ -316,11 +318,12 @@ class Workspace:
                 return gitdir.parent
         return None
 
-    def reattach(self, path: Path) -> None:
+    def reattach(self, path: Path, carry: bool = True) -> None:
         """Put back the worktree's own git directory when a killed agent call left `path` on its
         private one (only this run's: another run's attachment is never touched), keep the staged
         work its agent left that the files cannot rebuild (`_keep_carried_entries`: ignored paths,
-        index-only executable bits), then delete the private directory."""
+        index-only executable bits; skipped when `carry` is false), then delete the private
+        directory (`_detach`)."""
         with self._mutex:
             target = self._gitfile_target(path)
             root = (self.dir / "agent-git").resolve()
@@ -336,17 +339,29 @@ class Workspace:
                     raise GitError(f"{path} is attached to the agent git directory {private}, and git has no "
                                    "worktree registered for it")
                 original = f"gitdir: {admin}\n".encode()
+            staged = names = None
+            if carry:
+                try:
+                    staged = self.index_entries(path)
+                    names = self._carried_names(path, staged)
+                except GitError:
+                    names = None   # a private index the kill left unreadable: the files are kept anyway
+            self._detach(path, original, private, staged, names)
+
+    def _detach(self, path: Path, original: bytes, private: Path, staged: dict[str, list[str]] | None,
+                names: set[str] | None) -> None:
+        """Put `original` back as the worktree's gitfile, carry the entries `names` picks from the
+        agent's index (`staged`) into the worktree's own, then delete the private directory. When
+        carrying fails, the worktree is left on its private directory, kept whole, so the next
+        `reattach` tries again instead of losing the agent's staged work."""
+        self._write_gitfile(path, original)
+        if names is not None:
             try:
-                staged = self.index_entries(path)
-                names = self._carried_names(path, staged)
-            except GitError:
-                names = None   # a private index the kill left unreadable: the files are kept anyway
-            self._write_gitfile(path, original)
-            try:
-                if names is not None:
-                    self._keep_carried_entries(path, private, staged, names)
-            finally:
-                shutil.rmtree(private, ignore_errors=True)
+                self._keep_carried_entries(path, private, staged, names)
+            except BaseException:
+                self._write_gitfile(path, f"gitdir: {private}\n".encode())
+                raise
+        shutil.rmtree(private, ignore_errors=True)
 
     def _ref_values(self, git_dir: Path | None = None, cwd: Path | None = None) -> dict[str, str]:
         """Every ref and its object, of a git directory or of the worktree at `cwd`."""
@@ -506,8 +521,9 @@ class Workspace:
         does to git can reach another run's or a person's refs, and nothing has to be undone. The
         working tree is the real one, and the agent's index entries `commit_all` could not rebuild
         from it are carried into the worktree's index: ignored paths it staged (`git add -f`) and
-        executable bits recorded only in the index (`update-index --chmod`). Yields an `AgentCall` that is filled in once the block exits; the gitfile is put back
-        and the private directory deleted whatever happens."""
+        executable bits recorded only in the index (`update-index --chmod`). Yields an
+        `AgentCall` that is filled in once the block exits; the gitfile is put back and the private
+        directory deleted whatever happens, unless carrying those entries fails (`_detach`)."""
         with self._mutex:
             self.reattach(path)
             admin = self._gitfile_target(path)
@@ -535,12 +551,7 @@ class Workspace:
                     names = self._carried_names(path, staged)
                     self._read_private(private, call, refs)
                 finally:
-                    self._write_gitfile(path, original)
-                    try:
-                        if names is not None:
-                            self._keep_carried_entries(path, private, staged, names)
-                    finally:
-                        shutil.rmtree(private, ignore_errors=True)
+                    self._detach(path, original, private, staged, names)
 
     def restore_branch(self, path: Path, anchors: list[str]) -> tuple[str, str] | None:
         """Recreate the branch worktree `path` is on when its ref is gone (another run deleted

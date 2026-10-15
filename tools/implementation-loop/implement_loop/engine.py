@@ -169,9 +169,11 @@ class Engine:
             branch = e.branch if isinstance(e, BranchNotRestored) else st.branch
             self.store.event("branch_restore_failed", issue=n, branch=branch, error=str(e)[:300])
             resume = Phase(st.resume_phase or Phase.PENDING.value) if st.phase == Phase.PARKED else st.phase
-            self._park(n, PARK_EXHAUSTED, f"the branch {branch} was deleted from under its worktree and no commit "
-                                          f"in the worktree's history can safely restore it; recreate the branch, "
-                                          f"then retry", resume=resume)
+            reason = (f"the branch {branch} was deleted from under its worktree and no commit in the worktree's "
+                      f"history can safely restore it; recreate the branch, then retry"
+                      if isinstance(e, BranchNotRestored) else
+                      f"recovering the worktree of #{n} failed ({str(e)[:200]}); fix the cause, then retry")
+            self._park(n, PARK_EXHAUSTED, reason, resume=resume)
             return False
         if restored:
             self.store.event("branch_restored", issue=n, branch=restored[0].removeprefix("refs/heads/"),

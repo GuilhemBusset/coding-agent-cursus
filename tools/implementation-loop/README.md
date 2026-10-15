@@ -82,8 +82,10 @@ original `.git` file is put back, the private directory is deleted, and its stat
 
 The engine never changes the repository's config for this. If a run is killed mid-call, the
 worktree still names the private directory. The next time the engine uses or removes the
-worktree, it points the `.git` file back at the directory git registered for it and deletes the
-private one. **Limit:** a git command the agent points at another checkout (`git -C /elsewhere`)
+worktree, it points the `.git` file back at the directory git registered for it, carries the
+index entries above (this needs no HEAD, so it also works when the branch was deleted), and
+deletes the private one. If carrying fails, the worktree is left on the private directory, kept
+whole, and the next use tries again, so staged work is never dropped. **Limit:** a git command the agent points at another checkout (`git -C /elsewhere`)
 runs outside this boundary. Its ref changes are neither isolated nor removed.
 
 **Known limit:** agents run as your user. Removing credentials from their environment stops
