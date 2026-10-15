@@ -57,30 +57,49 @@ which has the same author. The upstream LICENSE's copyright line reads "Copyrigh
 (unchanged since the repository's first commit). It is vendored and shown verbatim, not
 edited; the footer prose names Andrej Karpathy in full.
 
+## Step forward-pass trace
+
+Source trace of the reviewed page, backing "Step runs one forward pass" beyond the counters.
+
+- `forward(model, s, token, pos)` (`../tiny-lm.html:12638`) runs the model for one token at one
+  position against the KV cache in `s` and returns that position's logits.
+- `stepOnce` (`../tiny-lm.html:12913-12916`) calls it exactly once, on the last token at
+  `pos = tokens.length - 1`, then builds the distribution, makes one RNG draw and appends one token.
+  Run (`generate`) and rewind call `stepOnce` once per token; rewind truncates the tail and
+  regenerates from the kept prefix, whose cache entries are still valid because attention is causal.
+- The prefill loop (`../tiny-lm.html:12900-12903`) forwards every prompt token except the last. It
+  runs only in `startSession`: on page load, Reset, and a prompt or seed change, never inside Step.
+- `TinyLM.logits` (`../tiny-lm.html:12834-12842`) calls the same `forward` on a fresh state, so the
+  A1 parity test against llama2.c covers the function Step calls.
+
 ## Host timing (proxy, not the 2020 laptop)
 
-From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page. "Cold" is
-navigation start to first painted token, with Step clicked at DOMContentLoaded. "Step" is the Step
-click to the painted token. Fresh browser context per trial, offline, `file://`.
+From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page, run on
+2026-10-15. "Cold" is navigation start to first painted token, with Step clicked at
+DOMContentLoaded. "Step" is the Step click to the painted token. Fresh browser context per trial,
+offline, `file://`. All rows come from this one host.
 
-- CPU: Intel(R) Core(TM) Ultra 9 285K
-- OS: Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2)
+- CPU: 12th Gen Intel(R) Core(TM) i7-1265U (a 2022 laptop CPU), 15 GB RAM visible to WSL2
+- OS: Linux 6.6.87.2-microsoft-standard-WSL2 (WSL2)
 - Browser: Playwright Chromium 153.0.8010.12
 
 | CPU throttle | Trial | Cold (ms) | Step (ms) |
 | --- | --- | --- | --- |
-| 1× | 1 | 63.0 | 11.7 |
-| 1× | 2 | 62.1 | 14.2 |
-| 1× | 3 | 58.4 | 11.6 |
-| 1× | 4 | 62.6 | 15.9 |
-| 1× | 5 | 64.2 | 13.0 |
-| 4× (CDP) | 1 | 231.9 | 42.3 |
-| 4× (CDP) | 2 | 227.6 | 48.0 |
-| 4× (CDP) | 3 | 231.6 | 42.4 |
-| 4× (CDP) | 4 | 224.6 | 42.5 |
-| 4× (CDP) | 5 | 226.0 | 43.7 |
+| 1× | 1 | 145.6 | 27.4 |
+| 1× | 2 | 121.1 | 27.9 |
+| 1× | 3 | 116.2 | 30.0 |
+| 1× | 4 | 112.6 | 25.9 |
+| 1× | 5 | 118.5 | 25.3 |
+| 4× (CDP) | 1 | 447.6 | 82.8 |
+| 4× (CDP) | 2 | 487.1 | 75.3 |
+| 4× (CDP) | 3 | 471.8 | 88.8 |
+| 4× (CDP) | 4 | 563.6 | 92.4 |
+| 4× (CDP) | 5 | 885.5 | 142.0 |
 
-All trials are under 1000 ms, by more than 4× even under 4× throttling. These are proxy numbers only.
+All trials are under 1000 ms. At native speed the margin is wide (under 150 ms cold). Under 4×
+throttling it is narrower: most cold trials are around 450 to 560 ms, one outlier is 885.5 ms, and
+each Step stays under 150 ms, so most of the cold time is loading the 1.5 MB page before Step
+runs, not the forward pass. These are proxy numbers only.
 
 ## 2020 laptop (owner obligation, open)
 

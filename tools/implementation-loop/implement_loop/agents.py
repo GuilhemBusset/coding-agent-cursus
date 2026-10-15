@@ -7,6 +7,7 @@ decides who proposes, who writes the checks, who implements and who reviews.
 
 from __future__ import annotations
 
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -103,6 +104,28 @@ class Script:
     tags: bool = False                            # the implementer creates a git tag (it should not)
     unverifiable: bool = False                    # the finding verifier cannot reach a verdict
     artifact_items: tuple[str, ...] = ()          # ledger ids proven by reviewer judgement
+    lines: dict[str, str] = field(default_factory=dict)   # shared list file -> the line this issue adds
+    conflict_tamper: bool = False                 # resolving a conflict, also edits the locked check
+
+
+MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+
+
+def resolve_union(text: str) -> str:
+    """Resolve conflict markers by keeping both sides, each line once."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith(MARKERS):
+            inside = not line.startswith(">>>>>>>")
+            continue
+        if not (inside and line in out):
+            out.append(line)
+    return "\n".join(out) + "\n" if out else ""
+
+
+def merging(worktree: Path) -> bool:
+    return subprocess.run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd=worktree,
+                          capture_output=True).returncode == 0
 
 
 class FakeAgents:
@@ -142,7 +165,7 @@ class FakeAgents:
                 checks.append(CheckSpec(criterion=item.id, kind="command", command=f"bash {self._check_file(n)}"))
         choice = "variant-b" if (s.disagree and author == "B") else "variant-a"
         return Proposal(author=author, decisions={"approach": choice}, checks=checks,
-                        files=sorted(s.files), check_files=[self._check_file(n)])
+                        files=sorted(set(s.files) | set(s.lines)), check_files=[self._check_file(n)])
 
     def audit(self, vendor, req, proposals):
         self.calls.append(("audit", vendor, req.issue.number))
@@ -170,10 +193,18 @@ class FakeAgents:
         k = self._checks_written.get(n, 0)
         self._checks_written[n] = k + 1
         self.calls.append(("write_checks", vendor, n, tuple(feedback or ())))
+        lane = [worktree / f for f in design.check_files]
+        conflicted = [p for p in lane if p.is_file() and any(l.startswith(MARKERS) for l in p.read_text().splitlines())]
+        if conflicted:   # a conflict with main in a locked check: keep both sides' requirements
+            for p in conflicted:
+                p.write_text(resolve_union(p.read_text()))
+            return
         lines = ["#!/usr/bin/env bash", "set -euo pipefail", f"# acceptance check for issue {n}"]
         for path, content in sorted(s.files.items()):
             expected = "a-wrong-expectation" if (s.defective_check and k == 0) else content
             lines.append(f'test "$(cat {path})" = "{expected}"')
+        for path, line in sorted(s.lines.items()):
+            lines.append(f"grep -qxF '{line}' {path}")
         target = worktree / self._check_file(n)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("\n".join(lines) + "\n")
@@ -186,6 +217,16 @@ class FakeAgents:
         self.calls.append(("implement", vendor, n, tuple(feedback)))
         if s.impossible or (s.impossible_once and k == 0):
             return ImplementResult("impossible", "the criteria contradict each other")
+        resolving = merging(worktree)
+        for path, line in s.lines.items():
+            target = worktree / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            text = resolve_union(target.read_text()) if target.exists() else ""
+            if line not in text.splitlines():
+                text += line + "\n"
+            target.write_text(text)
+        if s.conflict_tamper and resolving:
+            (worktree / self._check_file(n)).write_text("#!/usr/bin/env bash\nexit 0\n")
         if s.defective_check and k == 0:
             for path, content in s.files.items():
                 target = worktree / path
@@ -203,11 +244,9 @@ class FakeAgents:
             # second attempt restores the check, as an honest implementer would after feedback
             self.write_checks(vendor, req, design, worktree)
         if s.commits:
-            import subprocess
             subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
             subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
         if s.tags and k == 0:
-            import subprocess
             subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
         return ImplementResult("done")
 

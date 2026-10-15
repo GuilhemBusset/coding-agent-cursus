@@ -38,7 +38,42 @@ uv run pytest
 `uv sync` installs only the runtime dependencies (`pytest`, `highspy`, `numpy`) into this
 session's `.venv/`, at the versions pinned in `uv.lock`. The `fixtures` dependency group
 (`torch`, `transformers`) is for building the files in `cursus/fixtures/` only. Students never
-need it; instructors who rebuild fixtures opt in with `uv sync --group fixtures`.
+need it, and `uv sync` never installs torch. Instructors who rebuild fixtures opt in per command
+with `uv run --group fixtures` (see [Regenerating fixtures](#regenerating-fixtures)).
+
+## Regenerating fixtures
+
+The Act I labs read real model traces from `cursus/fixtures/`: `next_token.json` (GPT-2 small,
+top-20 next-token logits for 20 prompts), `attention.json` (every GPT-2 attention layer and
+head on one coreference sentence) and `base_vs_instruct.json` (greedy completions from
+SmolLM2-135M base and instruct). They are committed, so nobody needs to rebuild them to teach.
+To rebuild them (instructors only, Linux), run from this directory:
+
+```sh
+uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
+```
+
+- The first run needs network. On Linux x86_64 the locked torch wheel pulls large CUDA
+  packages, and the models download to `~/.cache/huggingface`. The build itself runs on CPU
+  and takes under a minute.
+- Model revisions and the export date are pinned in `REVISIONS` and `EXPORT_DATE` at the top of
+  the script. Bump them together to move to newer models, then commit the new JSON.
+- The output is byte-identical across runs (CPU float32, one thread, greedy decoding, logits
+  rounded to 3 decimals, attention quantized to 0–255). After a rebuild with unchanged pins,
+  `git status` must be clean. This holds on Linux x86_64 with the locked libraries; a different
+  CPU or BLAS could in theory flip a value that sits on a rounding boundary.
+- To check that the committed JSON is real output from the pinned models (offline, after one
+  build has filled the cache):
+  `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
+  The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
+- `cursus/labs/attention.html` embeds `attention.json` verbatim in its
+  `<script id="attention-data">` block, so it opens over `file://` without a fetch. After a
+  rebuild that changes `attention.json`, paste the new file contents into that block and set
+  its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
+  plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
+  the repository root, `node tools/html-pages/tests/run-suite.mjs
+  tools/html-pages/tests/attention.test.mjs`, and re-review the page
+  (`cursus/labs/attention/review.md` records the reviewed page hash).
 
 ## Opening pages
 
@@ -76,6 +111,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
+| `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
