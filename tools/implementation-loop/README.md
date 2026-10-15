@@ -51,7 +51,9 @@ reviewed heads are merged. Codex calls start with no MCP servers, and each workt
 copy of `setup/node_modules`.
 
 Branches and tags an agent creates are deleted, and those it moves or deletes are put back
-(`agent_refs_deleted`, `agent_refs_restored`). Refs anyone else changes, another run or a person,
+(`agent_refs_deleted`, `agent_refs_restored`). An agent that switched its worktree to another
+branch is put back on the issue's branch first, keeping its changes (`agent_checkout_undone`), so a
+branch it created and checked out is deleted too. Refs anyone else changes, another run or a person,
 are never touched. During each `write_checks` and `implement` call the worktree's own config
 (`config.worktree`) points `core.hooksPath` at a temporary recorder whose `reference-transaction`
 hook logs every ref update made from that worktree, then runs the worktree's original hooks; it is

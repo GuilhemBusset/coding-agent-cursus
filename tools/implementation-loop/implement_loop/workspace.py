@@ -440,6 +440,27 @@ class Workspace:
     def head(self, path: Path) -> str:
         return self.git("rev-parse", "HEAD", cwd=path)
 
+    def branch(self, path: Path) -> str | None:
+        """The full ref of the branch checked out in `path`, None when HEAD is detached."""
+        return self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False) or None
+
+    def return_to(self, path: Path, ref: str | None, sha: str) -> str | None:
+        """Put worktree `path` back on `ref` (or, for None, detached at `sha`) after something
+        switched it elsewhere, without touching the index or the working tree. A missing `ref` is
+        recreated create-only at `sha`. Returns where HEAD was, None if it had not moved."""
+        with self._mutex:
+            now = self.branch(path)
+            if now == ref and (ref or self.head(path) == sha):
+                return None
+            was = now or self.git("rev-parse", "-q", "--verify", "HEAD", cwd=path, check=False)
+            if ref is None:
+                self.git("update-ref", "--no-deref", "HEAD", sha, cwd=path)
+                return was
+            if not self._ok(path, "rev-parse", "-q", "--verify", ref):
+                self.git("update-ref", ref, sha, "", cwd=path)
+            self.git("symbolic-ref", "HEAD", ref, cwd=path)
+            return was
+
     def changed_files(self, path: Path, since: str) -> list[str]:
         committed = self.git("diff", "--name-only", f"{since}..HEAD", cwd=path).splitlines()
         return sorted(set(f for f in committed + self.uncommitted(path) if f))

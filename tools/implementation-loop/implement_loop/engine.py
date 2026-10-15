@@ -440,21 +440,27 @@ class Engine:
         """Where this branch meets the current base branch; moves forward when main is merged in."""
         return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
 
-    def _absorb_agent_commits(self, n: int, wt: Path, before: str, updates: dict[str, tuple[str, str]],
-                              merge_head: str | None = None) -> None:
+    def _absorb_agent_commits(self, n: int, wt: Path, before: tuple[str, str | None],
+                              updates: dict[str, tuple[str, str]], merge_head: str | None = None) -> None:
         """Only the engine creates history. If an agent committed anyway, keep its changes but
         undo the commits, so they are committed, verified and reviewed like everything else.
+        `before` is (head, branch ref) before the call: an agent that switched branches is put
+        back on the issue's branch, keeping its working tree and index.
         `updates` (from `Workspace.agent_call`) are the ref changes made from this worktree during
         the call: tags and branches the agent created are deleted, those it moved or deleted are
         put back. Refs anyone else changed, another run or a person, are never touched.
         `merge_head`: main's merge was in progress, and stays in progress after the undo."""
+        before, own = before
+        was = self.ws.return_to(wt, own, before)
+        if was is not None:
+            self.store.event("agent_checkout_undone", issue=n, was=was, branch=own)
         head = self.ws.head(wt)
         if head != before:
             self.ws.git("reset", "--soft", "--quiet", before, cwd=wt)
             if merge_head and self.ws.in_progress(wt) is None:
                 self.ws.git("update-ref", "MERGE_HEAD", merge_head, cwd=wt)
             self.store.event("agent_commits_absorbed", issue=n, from_head=head, to=before)
-        own = self.ws.git("symbolic-ref", "-q", "HEAD", cwd=wt, check=False)   # the soft reset handled it
+        # the issue's branch, as before the call: the soft reset handled it
         deleted, restored, left = self.ws.undo_ref_updates({r: u for r, u in updates.items() if r != own})
         if deleted:
             self.store.event("agent_refs_deleted", issue=n, refs=sorted(deleted))
@@ -547,7 +553,7 @@ class Engine:
         for f in retired:
             (wt / f).unlink()
         if design.check_files:
-            before = self.ws.head(wt)
+            before = self.ws.head(wt), self.ws.branch(wt)
             with self.ws.agent_call(wt) as updates:
                 self.agents.write_checks(self.other, self._req(n), replace(design, check_files=lane), wt,
                                          feedback=st.amend or None)
@@ -635,7 +641,7 @@ class Engine:
         design = self._design(st)
         if files:   # the implementer may change the conflicted files this round
             design = replace(design, files=sorted(set(design.files) | {f for f in files if f not in st.locked}))
-        before = self.ws.head(wt)
+        before = self.ws.head(wt), self.ws.branch(wt)
         with self.ws.agent_call(wt) as updates:
             result = self.agents.implement(self.op, self._req(n), design, wt, feedback)
         self._absorb_agent_commits(n, wt, before, updates, merge_head=sync.main if files else None)
@@ -762,7 +768,7 @@ class Engine:
                     f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
                     f"keeping the requirements of both sides (main's side checks work already merged). Change "
                     f"nothing else; do not run git merge, commit or abort."]
-        before = self.ws.head(wt)
+        before = self.ws.head(wt), self.ws.branch(wt)
         with self.ws.agent_call(wt) as updates:
             self.agents.write_checks(self.other, self._req(n), replace(self._design(st), check_files=lane), wt,
                                      feedback=feedback)
