@@ -139,7 +139,9 @@ keeps every commit.
 A worktree whose branch ref was deleted from under it is repaired first, when the run starts:
 the branch is recreated, create-only, at the newest commit of the worktree's own HEAD reflog that
 shares history with `main` and contains every commit the engine recorded for the issue
-(`branch_restored`). The working tree and index are left as they are. Without such a commit the
+(`branch_restored`). A recorded commit that a later recorded one rewrote no longer counts: when
+shipping rebases an unpublished branch, the checks commit and the old reviewed head are left out
+of the verified tip's history. The working tree and index are left as they are. Without such a commit the
 issue is parked (`branch_restore_failed`); the branch is never pointed at `main` or at a guess.
 
 ## Several runs on one repository

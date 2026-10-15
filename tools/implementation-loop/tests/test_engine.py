@@ -1,10 +1,12 @@
 """End-to-end runs of the engine: real git, the real ship.sh, the real verifier and real squash
 merges into a local bare remote. Only the agents and GitHub are fakes."""
 
+import subprocess
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from helpers import SHIP, TempRepo, issue_body
+from helpers import SHIP, TempRepo, git, issue_body
 
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
@@ -979,6 +981,52 @@ class ResumeTests(EngineCase):
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertEqual(len(self.events("merge_found_on_resume")), 1)
         self.assertEqual(len([c for c in self.gh.calls if c[0] == "merge_pr"]), 1, "never merged twice")
+
+    def test_a_branch_lost_after_shipping_rebased_it_is_restored_at_the_verified_tip(self):
+        """Shipping rebases an unpublished branch when main moved, so the recorded checks commit
+        and reviewed head are no longer in the verified tip's history; they must not block
+        restoring a branch deleted afterwards."""
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        real_push, real_verify = Workspace.push, Engine._step_verify
+        verifies = []
+
+        def push(ws, wt):
+            if not (self.repo.merger / "docs/moved.txt").exists():
+                git("fetch", "-q", "origin", cwd=self.repo.merger)
+                git("checkout", "-q", "-B", "main", "origin/main", cwd=self.repo.merger)
+                (self.repo.merger / "docs").mkdir(exist_ok=True)
+                (self.repo.merger / "docs/moved.txt").write_text("main moved\n")
+                git("add", "-A", cwd=self.repo.merger)
+                git("commit", "-qm", "fixture: move main", cwd=self.repo.merger)
+                git("push", "-q", "origin", "HEAD:main", cwd=self.repo.merger)
+            return real_push(ws, wt)
+
+        def verify_then_stop(engine, n):
+            real_verify(engine, n)
+            verifies.append(n)
+            if len(verifies) == 2:   # the rebased tip is verified
+                (self.store_dir() / "STOP").write_text("stop\n")
+
+        with mock.patch.object(Workspace, "push", push), mock.patch.object(Engine, "_step_verify", verify_then_stop):
+            self.run_engine()
+        (self.store_dir() / "STOP").unlink()
+        st = self.store.issue(2)
+        self.assertEqual(st.phase, Phase.REVIEW)
+        wt = Path(st.worktree)
+        rebased = git("rev-parse", "HEAD", cwd=wt)
+        self.assertEqual(st.verified_sha, rebased)
+        for stale in (st.checks_sha, st.reviewed_sha):
+            self.assertNotEqual(subprocess.run(["git", "merge-base", "--is-ancestor", stale, rebased],
+                                               cwd=wt, capture_output=True).returncode, 0)
+        git("update-ref", "-d", git("symbolic-ref", "HEAD", cwd=wt), cwd=self.repo.work)
+        st.phase, st.park_kind, st.parked_version, st.resume_phase = Phase.PARKED, "engine_error", "0.3.0", "review"
+        st.retry = False
+        self.store.put(st)
+        self.run_engine(agents=FakeAgents(self.scripts))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertEqual(self.events("branch_restore_failed"), [])
+        self.assertEqual([e["sha"] for e in self.events("branch_restored")], [rebased])
 
     def store_dir(self) -> Path:
         return RunStore.for_root(self.repo.work, EPIC).dir

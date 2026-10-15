@@ -528,22 +528,24 @@ class Workspace:
     def restore_branch(self, path: Path, anchors: list[str]) -> tuple[str, str] | None:
         """Recreate the branch worktree `path` is on when its ref is gone (another run deleted
         #34's), at the newest commit of the worktree's own HEAD reflog that shares history with
-        the base branch and contains every commit in `anchors` that still exists. Only the ref is
-        written, create-only: the working tree and index are never touched. Returns (ref, sha),
-        None when nothing is missing, and raises BranchNotRestored when no entry qualifies."""
+        the base branch and contains every commit in `anchors` that still exists. An anchor a
+        later-recorded anchor rewrote (shipping rebases an unpublished branch, so the checks commit
+        and the reviewed head are no longer in the verified head's history) no longer binds. Only
+        the ref is written, create-only: the working tree and index are never touched. Returns
+        (ref, sha), None when nothing is missing, and raises BranchNotRestored when no entry
+        qualifies."""
         with self._mutex:
             self.reattach(path)
             ref = self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False)
             if not ref or self._ok(path, "rev-parse", "-q", "--verify", ref):
                 return None
             branch = ref.removeprefix("refs/heads/")
-            anchors = [a for a in dict.fromkeys(anchors) if a and self.has_commit(path, a)]
             log = self._git_path(path, "logs/HEAD")
             entries = log.read_text(errors="replace").splitlines() if log.is_file() else []
+            shas = [parts[1] if len(parts) > 2 else "" for parts in (line.split(" ", 2) for line in entries)]
+            anchors = self._current_anchors(path, anchors, shas)
             seen = set()
-            for line in reversed(entries):
-                parts = line.split(" ", 2)
-                sha = parts[1] if len(parts) > 2 else ""
+            for sha in reversed(shas):
                 if sha in seen or not OID.match(sha) or set(sha) == {"0"}:
                     continue
                 seen.add(sha)
@@ -554,6 +556,19 @@ class Workspace:
             raise BranchNotRestored(f"the branch {branch} of {path} is gone, and no commit in its worktree's HEAD "
                                     f"reflog shares history with {self.base_ref()} and contains the recorded commits",
                                     branch)
+
+    def _current_anchors(self, path: Path, anchors: list[str], reflog: list[str]) -> list[str]:
+        """The anchors that still exist and that no later one superseded. Two anchors where
+        neither contains the other mean history was rewritten between them; the one HEAD reached
+        later in the worktree's reflog is the current line, and the other is dropped. Anchors
+        that are not in the reflog cannot be ordered, so they are kept (and failing to restore
+        parks the issue rather than guessing)."""
+        anchors = [a for a in dict.fromkeys(anchors) if a and self.has_commit(path, a)]
+        last = {sha: i for i, sha in enumerate(reflog)}
+        return [a for a in anchors
+                if not any(a in last and b in last and last[b] > last[a]
+                           and not self.is_ancestor(path, a, b) and not self.is_ancestor(path, b, a)
+                           for b in anchors)]
 
     # inspection ---------------------------------------------------------------
     def head(self, path: Path) -> str:
