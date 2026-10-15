@@ -338,6 +338,45 @@ class Workspace:
                 shutil.rmtree(recorder, ignore_errors=True)
                 recorder.with_suffix(".log").unlink(missing_ok=True)
 
+    def _enable_worktree_config(self) -> None:
+        """Set extensions.worktreeConfig in the repository's config, once. Linked worktrees ignore
+        a common core.worktree and core.bare=true only while it is off, so those move to the main
+        worktree's config.worktree first (as git-worktree(1) prescribes), and the common config is
+        rewritten in one step under git's own config.lock: no worktree, the main one or another
+        run's, ever sees a mix of the old and new settings."""
+        common = self.common_dir()
+        config = common / "config"
+        if self.git("config", "--file", str(config), "--type=bool", "--get", "extensions.worktreeConfig",
+                    check=False) == "true":
+            return
+        moved = {}
+        worktree = self.git("config", "--file", str(config), "--get", "core.worktree", check=False)
+        if worktree:
+            moved["core.worktree"] = worktree
+        if self.git("config", "--file", str(config), "--type=bool", "--get", "core.bare", check=False) == "true":
+            moved["core.bare"] = "true"
+        for key, value in moved.items():   # ignored until the extension is on
+            self.git("config", "--file", str(common / "config.worktree"), key, value)
+        lock = common / "config.lock"
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
+        except FileExistsError:
+            raise GitError(f"cannot enable extensions.worktreeConfig: {lock} exists (another git process "
+                           "is writing the repository's config, or one crashed)") from None
+        try:
+            try:
+                os.write(fd, config.read_bytes())
+            finally:
+                os.close(fd)
+            shutil.copymode(config, lock)
+            for key in moved:
+                self.git("config", "--file", str(lock), "--unset-all", key)
+            self.git("config", "--file", str(lock), "extensions.worktreeConfig", "true")
+            os.replace(lock, config)
+        except BaseException:
+            lock.unlink(missing_ok=True)
+            raise
+
     @contextmanager
     def agent_call(self, path: Path):
         """Record the branch and tag updates every git process makes from worktree `path` while an
@@ -348,8 +387,7 @@ class Workspace:
         the repository, and git >= 2.28), removed on exit whatever happens."""
         updates: dict[str, tuple[str, str]] = {}
         with self._mutex:
-            if self.git("config", "--get", "extensions.worktreeConfig", check=False).lower() != "true":
-                self.git("config", "extensions.worktreeConfig", "true")
+            self._enable_worktree_config()
             self.clear_stale_recorder(path)
             previous = self._worktree_hooks_path(path)
             original = self._git_path(path, "hooks")

@@ -60,7 +60,9 @@ hook logs every ref update made from that worktree, then runs the worktree's ori
 removed when the call ends. Only refs in that record are undone, each with a compare-and-swap, and
 one changed again by someone else since is left alone (`agent_ref_left`). This needs
 `extensions.worktreeConfig=true`, which the engine sets once, permanently, in the repository's
-config.
+config. Linked worktrees ignore a shared `core.worktree` or `core.bare=true` only while that
+extension is off, so the engine first moves those two settings to the main worktree's
+`config.worktree`, as git-worktree(1) prescribes.
 
 **Known limit:** agents run as your user. Removing credentials from their environment stops
 casual use, not an agent determined to read them from disk. For real isolation, run the loop
