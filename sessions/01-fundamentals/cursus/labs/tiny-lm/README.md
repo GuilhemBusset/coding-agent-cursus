@@ -42,14 +42,18 @@ records the page's sha256).
 
 ```sh
 node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm.test.mjs
+node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm-timing.test.mjs
 ```
+
+The second command is the first-token timing check (native and 4× CPU throttle, every trial under
+1 s). It is a host proxy only, not proof for a 2020 laptop; see `review.md`.
 
 The suite decodes the weights and tokenizer from the page itself and compiles
 `reference/logits_driver.c` with the system C compiler (`cc -O2 -std=gnu11 -ffp-contract=off -lm`;
 a C compiler such as gcc or clang must be installed, see `setup/README.md`). Then it checks that the page's token ids
 equal llama2.c's and that every logit at every position is within 1e-4 on three prompts. It
-also covers stepping, rewind, sampling, reproducibility, the caption, attribution, offline loading
-and first-token timing. A missing compiler fails the suite; nothing is skipped.
+also covers stepping, rewind, sampling, reproducibility, the caption, attribution, and offline
+loading. A missing compiler fails the suite; nothing is skipped.
 
 ## Licences
 

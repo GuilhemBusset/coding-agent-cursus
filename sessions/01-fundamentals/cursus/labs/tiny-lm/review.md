@@ -57,30 +57,64 @@ which has the same author. The upstream LICENSE's copyright line reads "Copyrigh
 (unchanged since the repository's first commit). It is vendored and shown verbatim, not
 edited; the footer prose names Andrej Karpathy in full.
 
+## Step forward-pass trace
+
+Source trace of the reviewed page, backing "Step runs one forward pass" beyond the counters.
+
+- `forward(model, s, token, pos)` (`../tiny-lm.html:12638`) runs the model for one token at one
+  position against the KV cache in `s` and returns that position's logits.
+- `stepOnce` (`../tiny-lm.html:12913-12916`) calls it exactly once, on the last token at
+  `pos = tokens.length - 1`, then builds the distribution, makes one RNG draw and appends one token.
+  Run (`generate`) and rewind call `stepOnce` once per token; rewind truncates the tail and
+  regenerates from the kept prefix, whose cache entries are still valid because attention is causal.
+- The prefill loop (`../tiny-lm.html:12900-12903`) forwards every prompt token except the last. It
+  runs only in `startSession`: on page load, Reset, and a prompt or seed change, never inside Step.
+- `TinyLM.logits` (`../tiny-lm.html:12834-12842`) calls the same `forward` on a fresh state, so the
+  A1 parity test against llama2.c covers the function Step calls.
+
 ## Host timing (proxy, not the 2020 laptop)
 
-From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page. "Cold" is
-navigation start to first painted token, with Step clicked at DOMContentLoaded. "Step" is the Step
-click to the painted token. Fresh browser context per trial, offline, `file://`.
+From the strict A3 proxy test in `tools/html-pages/tests/tiny-lm-timing.test.mjs` on the reviewed
+page, taken from one passing run of
+`node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm-timing.test.mjs`
+on 2026-10-15. "Cold" is navigation start to first painted token, with Step clicked at
+DOMContentLoaded. "Step" is the Step click to the painted token. Fresh browser context per trial,
+offline, `file://`. Every trial at both rates must be under 1000 ms, with no retries or discarded
+outliers. All rows come from this one host.
 
-- CPU: Intel(R) Core(TM) Ultra 9 285K
-- OS: Linux 6.18.33.2-microsoft-standard-WSL2 (WSL2)
+- CPU: 12th Gen Intel(R) Core(TM) i7-1265U (a 2022 laptop CPU), 15 GB RAM visible to WSL2
+- OS: Linux 6.6.87.2-microsoft-standard-WSL2 (WSL2)
 - Browser: Playwright Chromium 153.0.8010.12
 
 | CPU throttle | Trial | Cold (ms) | Step (ms) |
 | --- | --- | --- | --- |
-| 1× | 1 | 63.0 | 11.7 |
-| 1× | 2 | 62.1 | 14.2 |
-| 1× | 3 | 58.4 | 11.6 |
-| 1× | 4 | 62.6 | 15.9 |
-| 1× | 5 | 64.2 | 13.0 |
-| 4× (CDP) | 1 | 231.9 | 42.3 |
-| 4× (CDP) | 2 | 227.6 | 48.0 |
-| 4× (CDP) | 3 | 231.6 | 42.4 |
-| 4× (CDP) | 4 | 224.6 | 42.5 |
-| 4× (CDP) | 5 | 226.0 | 43.7 |
+| 1× | 1 | 127.6 | 35.0 |
+| 1× | 2 | 116.4 | 29.4 |
+| 1× | 3 | 113.1 | 26.4 |
+| 1× | 4 | 109.6 | 26.6 |
+| 1× | 5 | 129.4 | 41.8 |
+| 4× (CDP) | 1 | 504.7 | 72.1 |
+| 4× (CDP) | 2 | 433.8 | 72.5 |
+| 4× (CDP) | 3 | 475.9 | 72.0 |
+| 4× (CDP) | 4 | 470.7 | 78.3 |
+| 4× (CDP) | 5 | 420.6 | 71.7 |
 
-All trials are under 1000 ms, by more than 4× even under 4× throttling. These are proxy numbers only.
+All trials in this run are under 1000 ms. At native speed the margin is wide. Under 4× throttling
+it is narrower, and each Step stays under 80 ms, so most of the cold time is loading the 1.5 MB
+page before Step runs, not the forward pass. These are proxy numbers only.
+
+Repeat runs after the timing test moved to its own suite: 8 further runs of the timing suite on
+the same day and host, page unchanged, all passed (80 trials). Ranges over those 8 runs: 1× cold
+84.7 to 184.5 ms, Step 17.9 to 38.9 ms; 4× cold 367.6 to 535.7 ms, Step 61.8 to 96.2 ms. No
+failing run was observed while implementing the move.
+
+Earlier, when the same test ran inside the full functional suite (`tiny-lm.test.mjs`), the 4× margin
+was not reliable on this host: over about 25 isolated runs of the timing test and 11 full-suite runs,
+the typical 4× cold trial was 390 to 850 ms, but 7 of the isolated runs and 2 of the full-suite runs
+each had a single 4× cold trial over the limit (values recorded: 1032.9, 1199.1, 1213.2 and
+1421.1 ms, the last at rate 4, trial 4). The test and its bounds are unchanged; it now runs as a
+separate suite (also in `npm --prefix setup test`). This proxy therefore says the page is close to
+the 1 s budget at 4× throttling on a shared host, not comfortably inside it.
 
 ## 2020 laptop (owner obligation, open)
 
