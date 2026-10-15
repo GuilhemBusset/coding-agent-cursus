@@ -102,6 +102,7 @@ class Script:
     manual_items: tuple[str, ...] = ()            # ledger ids that only a person can prove
     commits: bool = False                         # the implementer commits its work (it should not)
     tags: bool = False                            # the implementer creates a git tag (it should not)
+    branches: bool = False                        # the implementer creates a git branch (it should not)
     unverifiable: bool = False                    # the finding verifier cannot reach a verdict
     artifact_items: tuple[str, ...] = ()          # ledger ids proven by reviewer judgement
     lines: dict[str, str] = field(default_factory=dict)   # shared list file -> the line this issue adds
@@ -248,6 +249,8 @@ class FakeAgents:
             subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
         if s.tags and k == 0:
             subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
+        if s.branches and k == 0:
+            subprocess.run(["git", "branch", f"agent-branch-{n}"], cwd=worktree, check=True)
         return ImplementResult("done")
 
     def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):

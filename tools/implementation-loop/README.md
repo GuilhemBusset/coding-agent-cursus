@@ -6,7 +6,8 @@ without waiting for a person, until each issue is done, delivered with owner obl
 parked with a diagnosis. Design and rationale: [ADR 0008](../../docs/adr/0008-implement-loop.md)
 and [ADR 0011](../../docs/adr/0011-autonomous-implement-loop.md).
 
-It is plain Python (3.11+, standard library only) plus `git` and the authenticated GitHub CLI.
+It is plain Python (3.11+, standard library only) plus `git` (2.28 or later, for the
+`reference-transaction` hook) and the authenticated GitHub CLI.
 Agents (Claude Code and Codex, run headless) only produce proposals, patches and findings through
 the `Agents` interface; the engine owns the issue graph, git, GitHub, the checks and the merges.
 
@@ -46,8 +47,18 @@ per-role effort, models and timeouts in `loop.toml`.
 Those per-tool rules are a convenience, not the boundary. Agents run with no GitHub
 credentials (tokens, SSH agent and git credential helpers are removed from their environment),
 the engine undoes any commit an agent makes and commits the changes itself, and only verified,
-reviewed heads are merged. Codex calls start with no MCP servers, agents' tags and branches are
-deleted, and each worktree has a private copy of `setup/node_modules`.
+reviewed heads are merged. Codex calls start with no MCP servers, and each worktree has a private
+copy of `setup/node_modules`.
+
+Branches and tags an agent creates are deleted, and those it moves or deletes are put back
+(`agent_refs_deleted`, `agent_refs_restored`). Refs anyone else changes, another run or a person,
+are never touched. During each `write_checks` and `implement` call the worktree's own config
+(`config.worktree`) points `core.hooksPath` at a temporary recorder whose `reference-transaction`
+hook logs every ref update made from that worktree, then runs the worktree's original hooks; it is
+removed when the call ends. Only refs in that record are undone, each with a compare-and-swap, and
+one changed again by someone else since is left alone (`agent_ref_left`). This needs
+`extensions.worktreeConfig=true`, which the engine sets once, permanently, in the repository's
+config.
 
 **Known limit:** agents run as your user. Removing credentials from their environment stops
 casual use, not an agent determined to read them from disk. For real isolation, run the loop
@@ -102,12 +113,28 @@ keeps its old lock, so verification still reports the tampering (`checks_not_rel
 run starts it aborts any that an earlier failure left behind (`worktree_recovered`). The branch
 keeps every commit.
 
+A worktree whose branch ref was deleted from under it is repaired first, when the run starts:
+the branch is recreated, create-only, at the newest commit of the worktree's own HEAD reflog that
+shares history with `main` and contains every commit the engine recorded for the issue
+(`branch_restored`). The working tree and index are left as they are. Without such a commit the
+issue is parked (`branch_restore_failed`); the branch is never pointed at `main` or at a guess.
+
+## Several runs on one repository
+
+Runs for different epics or issues may share a repository. Each has its own run state and
+worktrees, and the shared git writes (fetches, ref updates, worktree changes, the agent-call
+recorder) are serialized across threads, runs and processes by an flock on
+`<git common dir>/implementation-loop/git.lock`, never held while an agent works. Two runs that
+plan the same issue are not supported: the second one's worktree for it cannot be created.
+
 ## Where things live
 
 - Worktrees: `<repo parent>/<repo name>.loop/issue-<root>/` (`coord/` plus one per active issue).
 - Run state: `<git common dir>/implementation-loop/issue-<root>/` (`state.json`, `events.jsonl`,
   per-issue evidence). Re-running resumes; a `STOP` file there stops the run.
 - Repo-wide claims (merge queue): `<git common dir>/implementation-loop/claims/`.
+- The cross-run git lock: `<git common dir>/implementation-loop/git.lock`; the recorders of agent
+  calls in flight: `<git common dir>/implementation-loop/agent-calls/`.
 - Engine faults waiting to be filed, deduplicated by fingerprint: `<git common dir>/implementation-loop/faults.json`.
 - The browser's user-space system libraries, if the doctor had to fetch them: `<git common dir>/implementation-loop/browser-libs/`.
 

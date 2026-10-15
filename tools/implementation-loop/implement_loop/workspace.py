@@ -3,11 +3,18 @@
 Layout: `<repo parent>/<repo name>.loop/issue-<root>/` holds a detached coordination worktree
 (`coord/`, at the remote base branch) and one worktree per active issue (`issue-<n>/`, on the
 issue's branch). The engine creates and removes them itself.
+
+Several runs may share one repository. Shared git writes are serialized across them by an flock
+on `<git common dir>/implementation-loop/git.lock`, and an agent call only ever undoes the ref
+changes recorded from its own worktree (`agent_call`), never another run's or a person's.
 """
 
 from __future__ import annotations
 
+import fcntl
 import os
+import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -21,9 +28,117 @@ from pathlib import Path
 # A path as git records it: None (absent), ("link", target), ("dir",) or ("file", bytes, executable).
 FileState = tuple | None
 
+OID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+RECORDED_REFS = ("refs/heads/", "refs/tags/")
+
+# The recorder installed for one agent call. Every git process run in the worktree reads its
+# per-worktree core.hooksPath, so each ref transaction is logged whatever the agent's CLI does to
+# the environment. Git passes an all-zero old value for forced updates and deletions, so the value
+# a ref really had is read in the `prepared` state, while git holds the ref's lock, and paired
+# with the `committed` line of the same git process. The worktree's original hook still runs.
+RECORDER_HOOK = """#!/bin/sh
+# implement loop: records the ref updates of one agent call, then runs the original hook.
+data=$(mktemp "${{TMPDIR:-/tmp}}/implement-loop-refs.XXXXXX") || exit 1
+cat > "$data"
+status=0
+if [ -x {original} ]; then
+    {original} "$@" < "$data"
+    status=$?
+fi
+case "$1" in
+prepared|committed)
+    while read -r old new ref; do
+        case "$ref" in refs/heads/*|refs/tags/*) ;; *) continue ;; esac
+        if [ "$1" = prepared ]; then
+            old=$(git rev-parse -q --verify "$ref" 2>/dev/null) || old=-
+        fi
+        printf '%s %s %s %s %s\\n' "$1" "$PPID" "$old" "$new" "$ref"
+    done < "$data" >> {log}
+    ;;
+esac
+rm -f "$data"
+exit $status
+"""
+
 
 class GitError(RuntimeError):
     pass
+
+
+def parse_ref_log(text: str) -> dict[str, tuple[str, str]]:
+    """The recorder's log as {ref: (value before its first committed update, last value)}.
+    Lines that are not branch or tag updates with object names are ignored."""
+    pending: dict[tuple[str, str], str] = {}
+    updates: dict[str, tuple[str, str]] = {}
+    for line in text.splitlines():
+        parts = line.split(" ")
+        if len(parts) != 5 or not parts[4].startswith(RECORDED_REFS):
+            continue
+        state, pid, old, new, ref = parts
+        if state == "prepared":
+            pending[(pid, ref)] = old
+            continue
+        if state != "committed" or not OID.match(new):
+            continue
+        before = pending.pop((pid, ref), old)
+        before = "0" * len(new) if before == "-" else before
+        if not OID.match(before) or len(before) != len(new):
+            continue
+        updates[ref] = (updates[ref][0] if ref in updates else before, new)
+    return updates
+
+
+class BranchNotRestored(GitError):
+    """A worktree's branch ref is gone and nothing in the worktree's own history can safely
+    restore it."""
+
+    def __init__(self, message: str, branch: str):
+        super().__init__(message)
+        self.branch = branch
+
+
+class RepoLock:
+    """Reentrant for one thread, exclusive across threads, Workspaces and processes: an
+    `threading.RLock` plus an flock on a file in the repository's common git directory, taken
+    on the outermost acquisition and released with it. Each instance opens its own file
+    description, so two Workspaces in one process exclude each other too."""
+
+    def __init__(self, path):
+        self._path = path          # a callable: the lock file, resolved on first use
+        self._rlock = threading.RLock()
+        self._depth = 0
+        self._fd: int | None = None
+
+    def __enter__(self) -> "RepoLock":
+        self._rlock.acquire()
+        try:
+            if self._depth == 0:
+                path = self._path()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                fd = os.open(path, os.O_CREAT | os.O_RDWR)
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_EX)
+                except BaseException:
+                    os.close(fd)
+                    raise
+                self._fd = fd
+            self._depth += 1
+        except BaseException:
+            self._rlock.release()
+            raise
+        return self
+
+    def __exit__(self, *exc) -> None:
+        try:
+            self._depth -= 1
+            if self._depth == 0 and self._fd is not None:
+                fd, self._fd = self._fd, None
+                try:
+                    fcntl.flock(fd, fcntl.LOCK_UN)
+                finally:
+                    os.close(fd)
+        finally:
+            self._rlock.release()
 
 
 class MergeConflict(GitError):
@@ -51,9 +166,22 @@ class Workspace:
         self.base = base_branch
         self.ship_script = ship_script
         self.dir = base_dir or repo_root.parent / f"{repo_root.name}.loop" / f"issue-{root}"
-        # Worktrees share one repository: concurrent fetches, ref updates and worktree changes
-        # contend for the same lock files, so every operation that writes shared state is serialized.
-        self._mutex = threading.RLock()
+        # Worktrees share one repository, with other runs too: concurrent fetches, ref updates and
+        # worktree changes contend for the same lock files, so every operation that writes shared
+        # state is serialized, across threads and processes. Never held across an agent call.
+        self._common: Path | None = None
+        self._mutex = RepoLock(lambda: self.common_dir() / "implementation-loop" / "git.lock")
+
+    def common_dir(self) -> Path:
+        """The repository's git directory shared by all its worktrees."""
+        if self._common is None:
+            proc = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=self.repo,
+                                  capture_output=True, text=True)
+            if proc.returncode != 0:
+                raise GitError(f"git rev-parse --git-common-dir failed: {proc.stderr.strip()[:400]}")
+            path = Path(proc.stdout.strip())
+            self._common = path if path.is_absolute() else (self.repo / path).resolve()
+        return self._common
 
     def git(self, *args: str, cwd: Path | None = None, check: bool = True, strip: bool = True) -> str:
         proc = subprocess.run(["git", *args], cwd=cwd or self.repo, capture_output=True, text=True)
@@ -163,6 +291,7 @@ class Workspace:
     def _issue_worktree(self, n: int, branch: str) -> Path:
         path = self.dir / f"issue-{n}"
         if (path / ".git").exists():
+            self.clear_stale_recorder(path)
             return path
         self.dir.mkdir(parents=True, exist_ok=True)
         local = bool(self.git("branch", "--list", branch))
@@ -185,6 +314,127 @@ class Workspace:
         with self._mutex:
             if path.exists():
                 self.git("worktree", "remove", "--force", str(path), check=False)
+
+    # agent calls ----------------------------------------------------------------
+    def _calls_dir(self) -> Path:
+        return self.common_dir() / "implementation-loop" / "agent-calls"
+
+    def _is_recorder(self, value: str, path: Path) -> bool:
+        p = Path(value) if Path(value).is_absolute() else path / value
+        return self._calls_dir().resolve() in p.resolve().parents
+
+    def _worktree_hooks_path(self, path: Path) -> str | None:
+        """core.hooksPath set in this worktree's own config.worktree, if any."""
+        value = self.git("config", "--worktree", "--get", "core.hooksPath", cwd=path, check=False)
+        return value or None
+
+    def clear_stale_recorder(self, path: Path) -> None:
+        """Remove a recorder a process killed mid-call left in a worktree's config."""
+        with self._mutex:
+            value = self._worktree_hooks_path(path)
+            if value and self._is_recorder(value, path):
+                self.git("config", "--worktree", "--unset", "core.hooksPath", cwd=path, check=False)
+                recorder = Path(value)
+                shutil.rmtree(recorder, ignore_errors=True)
+                recorder.with_suffix(".log").unlink(missing_ok=True)
+
+    @contextmanager
+    def agent_call(self, path: Path):
+        """Record the branch and tag updates every git process makes from worktree `path` while an
+        agent runs. Yields a dict that, once the block exits, maps each ref the agent changed to
+        (its value before the agent's first change, the agent's last value); a zero OID means
+        absent. Refs changed from anywhere else (another run, a person) are never in it. The
+        recorder is a per-worktree core.hooksPath (needs extensions.worktreeConfig, set once in
+        the repository, and git >= 2.28), removed on exit whatever happens."""
+        updates: dict[str, tuple[str, str]] = {}
+        with self._mutex:
+            if self.git("config", "--get", "extensions.worktreeConfig", check=False).lower() != "true":
+                self.git("config", "extensions.worktreeConfig", "true")
+            self.clear_stale_recorder(path)
+            previous = self._worktree_hooks_path(path)
+            original = self._git_path(path, "hooks")
+            call = uuid.uuid4().hex
+            recorder = self._calls_dir() / call
+            log = recorder.with_suffix(".log")
+            recorder.mkdir(parents=True)
+            log.touch()
+            if original.is_dir():
+                for hook in original.iterdir():
+                    if hook.name != "reference-transaction":
+                        os.symlink(hook, recorder / hook.name)
+            script = recorder / "reference-transaction"
+            script.write_text(RECORDER_HOOK.format(original=shlex.quote(str(original / "reference-transaction")),
+                                                   log=shlex.quote(str(log))))
+            script.chmod(0o755)
+            try:
+                self.git("config", "--worktree", "core.hooksPath", str(recorder), cwd=path)
+            except BaseException:
+                shutil.rmtree(recorder, ignore_errors=True)
+                log.unlink(missing_ok=True)
+                raise
+        try:
+            yield updates
+        finally:
+            with self._mutex:
+                try:
+                    if previous:
+                        self.git("config", "--worktree", "core.hooksPath", previous, cwd=path, check=False)
+                    else:
+                        self.git("config", "--worktree", "--unset", "core.hooksPath", cwd=path, check=False)
+                    updates.update(parse_ref_log(log.read_text() if log.exists() else ""))
+                finally:
+                    shutil.rmtree(recorder, ignore_errors=True)
+                    log.unlink(missing_ok=True)
+
+    def undo_ref_updates(self, updates: dict[str, tuple[str, str]]) -> tuple[list[str], list[str], list[str]]:
+        """Put back the refs an agent changed, from `agent_call`'s record: those it created are
+        deleted, those it moved or deleted return to their earlier value. A ref someone else has
+        changed since is left alone, and every update is a compare-and-swap, so a concurrent
+        change is never overwritten. Returns (deleted, restored, left)."""
+        deleted, restored, left = [], [], []
+        with self._mutex:
+            current = self.refs()
+            created = {r: u for r, u in updates.items() if u[0] != u[1] and set(u[0]) == {"0"}}
+            changed = {r: u for r, u in updates.items() if u[0] != u[1] and r not in created}
+            for ref, (old, new) in sorted(created.items()) + sorted(changed.items()):
+                zero = "0" * len(new)
+                if current.get(ref, zero) != new:
+                    left.append(ref)
+                elif ref in created:
+                    (deleted if self._ok(self.repo, "update-ref", "-d", ref, new) else left).append(ref)
+                else:
+                    expect = "" if new == zero else new   # deleted by the agent: create-only
+                    (restored if self._ok(self.repo, "update-ref", ref, old, expect) else left).append(ref)
+        return deleted, restored, left
+
+    def restore_branch(self, path: Path, anchors: list[str]) -> tuple[str, str] | None:
+        """Recreate the branch worktree `path` is on when its ref is gone (another run deleted
+        #34's), at the newest commit of the worktree's own HEAD reflog that shares history with
+        the base branch and contains every commit in `anchors` that still exists. Only the ref is
+        written, create-only: the working tree and index are never touched. Returns (ref, sha),
+        None when nothing is missing, and raises BranchNotRestored when no entry qualifies."""
+        with self._mutex:
+            ref = self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False)
+            if not ref or self._ok(path, "rev-parse", "-q", "--verify", ref):
+                return None
+            branch = ref.removeprefix("refs/heads/")
+            anchors = [a for a in dict.fromkeys(anchors) if a and self.has_commit(path, a)]
+            log = self._git_path(path, "logs/HEAD")
+            entries = log.read_text(errors="replace").splitlines() if log.is_file() else []
+            seen = set()
+            for line in reversed(entries):
+                parts = line.split(" ", 2)
+                sha = parts[1] if len(parts) > 2 else ""
+                if sha in seen or not OID.match(sha) or set(sha) == {"0"}:
+                    continue
+                seen.add(sha)
+                if (self.has_commit(path, sha) and self._ok(path, "merge-base", sha, self.base_ref())
+                        and all(self.is_ancestor(path, a, sha) for a in anchors)):
+                    self.git("update-ref", ref, sha, "", cwd=self.repo)
+                    return ref, sha
+            raise BranchNotRestored(f"the branch {branch} of {path} is gone, and no commit in its worktree's HEAD "
+                                    f"reflog shares history with {self.base_ref()} and contains the recorded commits",
+                                    branch)
 
     # inspection ---------------------------------------------------------------
     def head(self, path: Path) -> str:
