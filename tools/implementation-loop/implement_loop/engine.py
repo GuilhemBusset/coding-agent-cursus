@@ -530,6 +530,8 @@ class Engine:
         st = self.store.issue(n)
         design = self._design(st)
         wt = self.ws.issue_worktree(n, st.branch)
+        if not self._restore_branch(n):
+            return
         checkish = list(design.check_files) + list(st.locked) + list(st.superseded)
         leftover = [f for f in self.ws.uncommitted(wt) if not any(scheduler.overlaps(f, c) for c in checkish)]
         if leftover:
@@ -583,6 +585,8 @@ class Engine:
         within this step, so no worktree holds an unfinished merge between steps."""
         st = self.store.issue(n)
         wt = Path(st.worktree)
+        if not self._restore_branch(n):
+            return
         self._recover_worktree(n, wt)
         self.ws.fetch()
         if self.ws.uncommitted(wt) and not self.ws.is_ancestor(wt, self.ws.base_ref(), "HEAD"):
