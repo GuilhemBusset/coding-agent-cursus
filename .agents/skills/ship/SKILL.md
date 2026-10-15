@@ -21,7 +21,7 @@ The deterministic git mechanics (assert-not-on-main, dirty-tree check, bring the
 
 ## Update and push
 
-5. Run `scripts/ship.sh`. A branch that has never been pushed is rebased onto `main`; a branch that is already published gets `main` merged into it instead, so every push is a fast-forward and never needs `--force`. It pushes with retry/backoff (never `--force`, never `--no-verify`). If it reports a conflict, STOP and surface it — do NOT auto-resolve unless instructed. If it reports that the branch is missing commits from its remote, STOP and ask.
+5. Run `scripts/ship.sh`. A branch that has never been pushed is rebased onto `main`, unless it already contains `main` (pushed as is) or carries a merge commit (`main` is merged in, so that merge is kept); a branch that is already published gets `main` merged into it instead, so every push is a fast-forward and never needs `--force`. It pushes with retry/backoff (never `--force`, never `--no-verify`). If it reports a conflict, STOP and surface it — do NOT auto-resolve unless instructed. If it reports that the branch is missing commits from its remote, STOP and ask.
 
 ## Open or update the PR (via `gh`)
 

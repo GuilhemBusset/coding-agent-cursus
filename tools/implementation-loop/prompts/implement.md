@@ -18,6 +18,10 @@ Implement this issue in your working directory, following the agreed design.
   `defect_file` and a `defect_reproduction` someone else can run. An independent agent will try
   to reproduce it; if it does, the check is amended. Never weaken, skip or special-case a check
   to get green.
+- If the feedback says main's merge is in progress, `main` moved on and conflicts with this
+  branch. Resolve every conflict marker in the files it names, keeping the intent of both sides
+  (main's side is work already merged). Do not edit the locked checks, and do not run
+  `git merge`, `git commit` or `git merge --abort`: the engine concludes the merge.
 - If the design makes the issue impossible for another reason, return status "impossible" and
   say why; the design is redone with your note.
 
