@@ -318,8 +318,8 @@ class Workspace:
 
     def reattach(self, path: Path) -> None:
         """Put back the worktree's own git directory when a killed agent call left `path` on its
-        private one (only this run's: another run's attachment is never touched), then delete the
-        private directory."""
+        private one (only this run's: another run's attachment is never touched), keep the ignored
+        paths its agent staged (`_keep_ignored_entries`), then delete the private directory."""
         with self._mutex:
             target = self._gitfile_target(path)
             root = (self.dir / "agent-git").resolve()
@@ -335,8 +335,16 @@ class Workspace:
                     raise GitError(f"{path} is attached to the agent git directory {private}, and git has no "
                                    "worktree registered for it")
                 original = f"gitdir: {admin}\n".encode()
+            try:
+                staged = self._ignored_entries(path)
+            except GitError:
+                staged = None   # a private index the kill left unreadable: the files are kept anyway
             self._write_gitfile(path, original)
-            shutil.rmtree(private, ignore_errors=True)
+            try:
+                if staged is not None:
+                    self._keep_ignored_entries(path, private, staged)
+            finally:
+                shutil.rmtree(private, ignore_errors=True)
 
     def _ref_values(self, git_dir: Path | None = None, cwd: Path | None = None) -> dict[str, str]:
         """Every ref and its object, of a git directory or of the worktree at `cwd`."""
@@ -437,6 +445,42 @@ class Workspace:
         call.created = sorted(r for r in after if r not in refs)
         call.discarded = sorted(r for r, oid in refs.items() if after.get(r) != oid and r != call.branch)
 
+    def _ignored_entries(self, path: Path) -> dict[str, list[str]]:
+        """The index entries of ignored paths (`index_entries`), of whichever git directory
+        `path` is attached to: the staged work `git add --all` cannot rebuild from the files."""
+        entries: dict[str, list[str]] = {}
+        out = self.git("ls-files", "--cached", "--ignored", "--exclude-standard", "--stage", "-z",
+                       cwd=path, strip=False)
+        for record in out.split("\0"):
+            if "\t" in record:
+                entries.setdefault(record.split("\t", 1)[1], []).append(record)
+        return entries
+
+    def _keep_ignored_entries(self, path: Path, private: Path, staged: dict[str, list[str]]) -> None:
+        """Carry the agent's index entries for ignored paths (`staged`, read from its private index)
+        into the worktree's own index, with the blobs they name copied into the shared object store,
+        where nothing refers to them until the engine commits. Every other path is rebuilt from the
+        working tree by `commit_all`, so the shared index is otherwise left as it was."""
+        kept = self._ignored_entries(path)
+        for name in sorted(set(staged) | set(kept)):
+            entries = staged.get(name, [])
+            if entries == kept.get(name, []):
+                continue
+            for record in entries:
+                mode, oid = record.split(" ", 2)[:2]
+                if mode != "160000" and not self._ok(path, "cat-file", "-e", oid):   # a gitlink names no blob here
+                    blob = subprocess.run(["git", f"--git-dir={private}", "cat-file", "blob", oid], cwd=private,
+                                          capture_output=True)
+                    if blob.returncode != 0:
+                        raise GitError(f"the agent staged {name}, and its blob {oid} cannot be read: "
+                                       f"{blob.stderr.decode(errors='replace').strip()[:400]}")
+                    proc = subprocess.run(["git", "hash-object", "-w", "--no-filters", "--stdin"], cwd=path,
+                                          input=blob.stdout, capture_output=True)
+                    if proc.returncode != 0:
+                        raise GitError(f"copying the blob of {name} failed: "
+                                       f"{proc.stderr.decode(errors='replace').strip()[:400]}")
+            self.restore_index_entry(path, name, entries)
+
     @contextmanager
     def agent_call(self, path: Path):
         """Run an agent in worktree `path` against a private git directory under this run's own
@@ -444,8 +488,10 @@ class Workspace:
         process run in the worktree, whatever its environment, then reads and writes refs, HEAD,
         the index and operation state there, never in the shared repository, so nothing the agent
         does to git can reach another run's or a person's refs, and nothing has to be undone. The
-        working tree is the real one. Yields an `AgentCall` that is filled in once the block exits;
-        the gitfile is put back and the private directory deleted whatever happens."""
+        working tree is the real one, and the ignored paths the agent staged (`git add -f`) are
+        carried into the worktree's index, the only staged work `commit_all` could not rebuild from
+        it. Yields an `AgentCall` that is filled in once the block exits; the gitfile is put back
+        and the private directory deleted whatever happens."""
         with self._mutex:
             self.reattach(path)
             admin = self._gitfile_target(path)
@@ -467,11 +513,17 @@ class Workspace:
             yield call
         finally:
             with self._mutex:
+                staged = None
                 try:
+                    staged = self._ignored_entries(path)   # still attached: the agent's index
                     self._read_private(private, call, refs)
                 finally:
                     self._write_gitfile(path, original)
-                    shutil.rmtree(private, ignore_errors=True)
+                    try:
+                        if staged is not None:
+                            self._keep_ignored_entries(path, private, staged)
+                    finally:
+                        shutil.rmtree(private, ignore_errors=True)
 
     def restore_branch(self, path: Path, anchors: list[str]) -> tuple[str, str] | None:
         """Recreate the branch worktree `path` is on when its ref is gone (another run deleted

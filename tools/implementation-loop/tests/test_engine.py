@@ -412,6 +412,27 @@ class ReviewFindingRegressions(EngineCase):
         self.assertNotIn("agent commit", log)
         self.assertIn("Implement #2", log)
 
+    def force_added_file_survives_the_agent_call(self, commit_inside):
+        from helpers import git
+        ws = Workspace(self.repo.work, EPIC, SHIP, base_dir=self.repo.loop_dir)
+        wt = ws.issue_worktree(2, "feat/issue-2")
+        (wt / ".gitignore").write_text("required.bin\n")
+        with ws.agent_call(wt):
+            (wt / "required.bin").write_bytes(b"\x00staged by the agent\n")
+            git("add", "-f", "required.bin", cwd=wt)
+            if commit_inside:
+                git("commit", "-q", "-m", "agent commit", cwd=wt)
+        self.assertIn("required.bin", git("ls-files", "--cached", "required.bin", cwd=wt))
+        sha = ws.commit_all(wt, "Implement #2", "implementation", 2)
+        self.assertEqual(git("show", f"{sha}:required.bin", cwd=wt), "\x00staged by the agent")
+        self.assertEqual(git("fsck", "--connectivity-only", "--no-dangling", cwd=self.repo.work), "")
+
+    def test_a_file_an_agent_force_adds_is_kept_in_the_index(self):
+        self.force_added_file_survives_the_agent_call(commit_inside=False)
+
+    def test_a_file_an_agent_force_adds_and_commits_is_kept_in_the_index(self):
+        self.force_added_file_survives_the_agent_call(commit_inside=True)
+
     def test_a_commit_made_after_verification_is_verified_before_review(self):
         from unittest import mock
         from implement_loop.engine import Engine

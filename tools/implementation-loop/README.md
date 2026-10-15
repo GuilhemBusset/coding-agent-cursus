@@ -68,7 +68,9 @@ original `.git` file is put back, the private directory is deleted, and its stat
   the repository.
 - `agent_commits_absorbed`, `agent_checkout_undone`: the agent committed, or switched branches
   or detached HEAD. The worktree stays on the issue's branch at its earlier head, the agent's
-  working tree is kept, and the engine commits it.
+  working tree is kept, and the engine commits it. Ignored paths the agent staged (`git add -f`,
+  committed or not) are carried into the worktree's index with their blobs, so the engine's
+  commit includes them; every other path is committed from the working tree.
 - `agent_merge_dropped`: main's merge was in progress, and the agent aborted, quit or reset it
   without committing it. The engine ends the merge too, keeping the files, so the conflict goes
   back to its author (`conflict_unresolved`, `check_conflict_unresolved`).
