@@ -74,11 +74,13 @@ Source trace of the reviewed page, backing "Step runs one forward pass" beyond t
 
 ## Host timing (proxy, not the 2020 laptop)
 
-From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page, taken from one
-full passing run of `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm.test.mjs`
+From the strict A3 proxy test in `tools/html-pages/tests/tiny-lm-timing.test.mjs` on the reviewed
+page, taken from one passing run of
+`node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm-timing.test.mjs`
 on 2026-10-15. "Cold" is navigation start to first painted token, with Step clicked at
 DOMContentLoaded. "Step" is the Step click to the painted token. Fresh browser context per trial,
-offline, `file://`. All rows come from this one host.
+offline, `file://`. Every trial at both rates must be under 1000 ms, with no retries or discarded
+outliers. All rows come from this one host.
 
 - CPU: 12th Gen Intel(R) Core(TM) i7-1265U (a 2022 laptop CPU), 15 GB RAM visible to WSL2
 - OS: Linux 6.6.87.2-microsoft-standard-WSL2 (WSL2)
@@ -86,29 +88,33 @@ offline, `file://`. All rows come from this one host.
 
 | CPU throttle | Trial | Cold (ms) | Step (ms) |
 | --- | --- | --- | --- |
-| 1× | 1 | 157.4 | 35.1 |
-| 1× | 2 | 133.3 | 30.4 |
-| 1× | 3 | 152.6 | 36.5 |
-| 1× | 4 | 214.1 | 71.7 |
-| 1× | 5 | 180.6 | 40.3 |
-| 4× (CDP) | 1 | 731.5 | 104.4 |
-| 4× (CDP) | 2 | 563.9 | 85.3 |
-| 4× (CDP) | 3 | 529.5 | 103.3 |
-| 4× (CDP) | 4 | 581.0 | 87.1 |
-| 4× (CDP) | 5 | 629.3 | 162.4 |
+| 1× | 1 | 127.6 | 35.0 |
+| 1× | 2 | 116.4 | 29.4 |
+| 1× | 3 | 113.1 | 26.4 |
+| 1× | 4 | 109.6 | 26.6 |
+| 1× | 5 | 129.4 | 41.8 |
+| 4× (CDP) | 1 | 504.7 | 72.1 |
+| 4× (CDP) | 2 | 433.8 | 72.5 |
+| 4× (CDP) | 3 | 475.9 | 72.0 |
+| 4× (CDP) | 4 | 470.7 | 78.3 |
+| 4× (CDP) | 5 | 420.6 | 71.7 |
 
-All trials in this run are under 1000 ms. At native speed the margin is wide (about 130 to 215 ms
-cold). Under 4× throttling it is narrower: cold trials are 530 to 730 ms here, and each Step stays
-under 165 ms, so most of the cold time is loading the 1.5 MB page before Step runs, not the forward
-pass. These are proxy numbers only.
+All trials in this run are under 1000 ms. At native speed the margin is wide. Under 4× throttling
+it is narrower, and each Step stays under 80 ms, so most of the cold time is loading the 1.5 MB
+page before Step runs, not the forward pass. These are proxy numbers only.
 
-The 4× margin is not reliable on this host. Over about 25 repeated runs of the A3 timing test
-alone and 8 full-suite runs, on the same day and host with the page unchanged, the typical 4× cold
-trial was 500 to 850 ms. But 7 of the isolated runs and 1 of the full-suite runs each had a single
-4× cold trial over the limit (values recorded: 1032.9, 1199.1 and 1213.2 ms), which fails the test
-and so the whole suite. Native-speed trials never came near the
-limit. This proxy therefore says the page is close to the 1 s budget at 4× throttling, not
-comfortably inside it.
+Repeat runs after the timing test moved to its own suite: 8 further runs of the timing suite on
+the same day and host, page unchanged, all passed (80 trials). Ranges over those 8 runs: 1× cold
+84.7 to 184.5 ms, Step 17.9 to 38.9 ms; 4× cold 367.6 to 535.7 ms, Step 61.8 to 96.2 ms. No
+failing run was observed while implementing the move.
+
+Earlier, when the same test ran inside the full functional suite (`tiny-lm.test.mjs`), the 4× margin
+was not reliable on this host: over about 25 isolated runs of the timing test and 11 full-suite runs,
+the typical 4× cold trial was 390 to 850 ms, but 7 of the isolated runs and 2 of the full-suite runs
+each had a single 4× cold trial over the limit (values recorded: 1032.9, 1199.1, 1213.2 and
+1421.1 ms, the last at rate 4, trial 4). The test and its bounds are unchanged; it now runs as a
+separate suite (also in `npm --prefix setup test`). This proxy therefore says the page is close to
+the 1 s budget at 4× throttling on a shared host, not comfortably inside it.
 
 ## 2020 laptop (owner obligation, open)
 

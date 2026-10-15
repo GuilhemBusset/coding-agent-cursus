@@ -3,9 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { cpus, platform, release } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
 import { repoRoot, suites, scratch, openPage, eventually } from './component-helpers.mjs';
 
@@ -778,52 +776,4 @@ test('A3: offline file navigation and no runtime network, worker or WASM APIs', 
   await step(page);
   assert.ok(requests.length > 0);
   assert.ok(requests.every(url => url.startsWith('file://')), JSON.stringify(requests));
-});
-
-test('A3: five cold first-painted-token trials at native speed and 4x CPU proxy are under one second', async t => {
-  const browser = await chromium.launch();
-  t.after(() => browser.close());
-  const trials = [];
-  for (const rate of [1, 4]) {
-    for (let trial = 0; trial < 5; trial++) {
-      const context = await browser.newContext({ offline: true, viewport: { width: 1280, height: 720 } });
-      try {
-        const page = await context.newPage();
-        const requests = [], errors = [];
-        page.on('request', request => requests.push(request.url()));
-        page.on('pageerror', error => errors.push(error.message));
-        const cdp = await context.newCDPSession(page);
-        await cdp.send('Emulation.setCPUThrottlingRate', { rate });
-        await page.addInitScript(() => {
-          window.__firstTokenTiming = null;
-          // Schedule the click from DOMContentLoaded, after all page listeners
-          // have run. A microtask here can precede later DCL listeners.
-          document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
-            const step = [...document.querySelectorAll('button')].find(el => /^step\b/i.test((el.getAttribute('aria-label') || el.textContent).trim()));
-            if (!step || step.disabled) { window.__firstTokenTiming = { error: 'Step not ready at DOMContentLoaded' }; return; }
-            const start = performance.now();
-            const observe = () => {
-              const chip = document.querySelector('button[data-tlm-token]');
-              if (!chip || !chip.getClientRects().length || getComputedStyle(chip).visibility === 'hidden') { requestAnimationFrame(observe); return; }
-              // A second animation frame crosses a paint opportunity.
-              requestAnimationFrame(() => { window.__firstTokenTiming = { coldMs: performance.now(), stepMs: performance.now() - start }; });
-            };
-            step.click();
-            requestAnimationFrame(observe);
-          }, 0), { once: true });
-        });
-        await page.goto(pathToFileURL(file).href, { waitUntil: 'domcontentloaded' });
-        await page.waitForFunction(() => window.__firstTokenTiming !== null, null, { timeout: 5000 });
-        const timing = await page.evaluate(() => window.__firstTokenTiming);
-        assert.ok(!timing.error, timing.error);
-        assert.deepEqual(errors, []);
-        assert.ok(requests.length && requests.every(url => url.startsWith('file://')));
-        assert.ok(timing.coldMs > 0 && timing.coldMs < 1000, `rate ${rate}, trial ${trial}: cold ${timing.coldMs} ms`);
-        assert.ok(timing.stepMs > 0 && timing.stepMs < 1000, `rate ${rate}, trial ${trial}: Step ${timing.stepMs} ms`);
-        trials.push({ rate, trial: trial + 1, ...timing });
-      } finally { await context.close(); }
-    }
-  }
-  t.diagnostic(JSON.stringify({ cpu: cpus()[0]?.model, os: `${platform()} ${release()}`, browser: browser.version(), trials }));
-  t.diagnostic('Host/4x measurements are a proxy only. A3 requires separate owner evidence from an identified 2020 laptop.');
 });
