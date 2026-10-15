@@ -42,7 +42,7 @@ from .graph import Plan
 from .model import (PARK_BLOCKED, PARK_ENGINE_ERROR, PARK_ENVIRONMENT, PARK_EXHAUSTED, PARK_TRANSIENT, CheckSpec,
                     Finding, Issue, IssueState, Phase, SATISFIES_DEPENDENTS, WRITING_PHASES)
 from .state import FaultOutbox, RepoClaims, RunStore
-from .workspace import GitError, MergeConflict, UpdateResult, Workspace
+from .workspace import AgentCall, BranchNotRestored, GitError, MergeConflict, UpdateResult, Workspace
 
 LABELS = {
     "loop:design": ("C5DEF5", "implement loop: designing"),
@@ -125,6 +125,8 @@ class Engine:
 
     def _reconcile(self) -> None:
         for n in self.plan.work:
+            if not self._restore_branch(n):
+                continue   # parked: its branch cannot be restored, so nothing else is reconciled
             st = self.store.issue(n)
             spec = self.plan.specs[n]
             if st.worktree and (Path(st.worktree) / ".git").exists():
@@ -151,10 +153,39 @@ class Engine:
                 spec.declared_paths = sorted(set(spec.declared_paths) | set(st.conflict_paths))
             self.store.put(st)
 
+    def _restore_branch(self, n: int) -> bool:
+        """A worktree whose branch was deleted from under it (another run deleted #34's) gets
+        its branch back, at the newest commit its own HEAD history proves, before anything else
+        touches it. Without such evidence the issue is parked: the branch is never pointed at
+        main or at a guess. False when the issue was parked."""
+        st = self.store.issue(n)
+        wt = Path(st.worktree) if st.worktree else self.ws.dir / f"issue-{n}"
+        if not (wt / ".git").exists():
+            return True
+        anchors = [st.base_sha, st.checks_sha, st.head_sha, st.verified_sha, st.reviewed_sha]
+        try:
+            restored = self.ws.restore_branch(wt, [a for a in anchors if a])
+        except GitError as e:
+            branch = e.branch if isinstance(e, BranchNotRestored) else st.branch
+            self.store.event("branch_restore_failed", issue=n, branch=branch, error=str(e)[:300])
+            resume = Phase(st.resume_phase or Phase.PENDING.value) if st.phase == Phase.PARKED else st.phase
+            reason = (f"the branch {branch} was deleted from under its worktree and no commit in the worktree's "
+                      f"history can safely restore it; recreate the branch, then retry"
+                      if isinstance(e, BranchNotRestored) else
+                      f"recovering the worktree of #{n} failed ({str(e)[:200]}); fix the cause, then retry")
+            self._park(n, PARK_EXHAUSTED, reason, resume=resume)
+            return False
+        if restored:
+            self.store.event("branch_restored", issue=n, branch=restored[0].removeprefix("refs/heads/"),
+                             sha=restored[1])
+        return True
+
     def _recover_worktree(self, n: int, wt: Path) -> None:
         """A rebase or merge an earlier failure left half-way (#28's worktree was left mid-rebase)
-        is aborted: the branch keeps every commit, and the issue resumes from a clean worktree."""
+        is aborted: the branch keeps every commit, and the issue resumes from a clean worktree.
+        A worktree a killed agent call left on its private git directory gets its own back."""
         try:
+            self.ws.reattach(wt)
             op = self.ws.abort_in_progress(wt)
         except GitError as e:
             self.store.event("worktree_recovery_failed", issue=n, error=str(e)[:300])
@@ -411,24 +442,31 @@ class Engine:
         """Where this branch meets the current base branch; moves forward when main is merged in."""
         return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
 
-    def _absorb_agent_commits(self, n: int, wt: Path, before: str, refs_before: dict[str, str],
-                              merge_head: str | None = None) -> None:
-        """Only the engine creates history. If an agent committed anyway, keep its changes but
-        undo the commits, so they are committed, verified and reviewed like everything else.
-        Tags and branches an agent created are deleted (run branches are the engine's).
-        `merge_head`: main's merge was in progress, and stays in progress after the undo."""
-        head = self.ws.head(wt)
-        if head != before:
-            self.ws.git("reset", "--soft", "--quiet", before, cwd=wt)
-            if merge_head and self.ws.in_progress(wt) is None:
-                self.ws.git("update-ref", "MERGE_HEAD", merge_head, cwd=wt)
-            self.store.event("agent_commits_absorbed", issue=n, from_head=head, to=before)
-        run_branches = {f"refs/heads/{self.store.issue(m).branch}" for m in self.plan.work}
-        created = [r for r in self.ws.refs() if r not in refs_before and r not in run_branches]
-        for ref in created:
-            self.ws.git("update-ref", "-d", ref, check=False)
-        if created:
-            self.store.event("agent_refs_deleted", issue=n, refs=created)
+    def _absorb_agent_commits(self, n: int, wt: Path, call: AgentCall, merge_head: str | None = None) -> None:
+        """Only the engine creates history. The agent ran against a private git directory
+        (`Workspace.agent_call`), so its commits, checkouts and refs never reached the shared
+        repository: its working tree is kept as it is, and is committed, verified and reviewed
+        like everything else. Nothing shared is written here; the events say what was dropped.
+        `merge_head`: main's merge was in progress before the call. It stays in progress unless
+        the agent dropped it (aborted, quit or reset without committing it), which ends it here
+        too, so the conflict goes back to its author."""
+        if call.after_branch != call.branch:
+            self.store.event("agent_checkout_undone", issue=n, was=call.after_branch or call.after_head,
+                             branch=call.branch)
+        if call.after_head and call.after_head != call.head:
+            self.store.event("agent_commits_absorbed", issue=n, from_head=call.after_head, to=call.head)
+        if call.branch:
+            now = self.ws.git("rev-parse", "-q", "--verify", call.branch, check=False) or None
+            if now != call.head:   # not the agent: someone else moved it; left alone
+                self.store.event("issue_branch_moved_externally", issue=n, branch=call.branch,
+                                 **{"from": call.head, "to": now})
+        if merge_head and call.after_merge_head is None and not call.merge_committed:
+            self.ws.git("merge", "--quit", cwd=wt)   # the index and the files are kept
+            self.store.event("agent_merge_dropped", issue=n, merge_head=merge_head)
+        if call.created:
+            self.store.event("agent_refs_deleted", issue=n, refs=call.created)
+        if call.discarded:
+            self.store.event("agent_ref_changes_discarded", issue=n, refs=call.discarded)
 
     def _delivery(self, st: IssueState, merged_head: str) -> tuple[str, list[str] | None]:
         """How a merged PR found on the issue's branch relates to this delivery: "same" (the
@@ -494,6 +532,8 @@ class Engine:
         st = self.store.issue(n)
         design = self._design(st)
         wt = self.ws.issue_worktree(n, st.branch)
+        if not self._restore_branch(n):
+            return
         checkish = list(design.check_files) + list(st.locked) + list(st.superseded)
         leftover = [f for f in self.ws.uncommitted(wt) if not any(scheduler.overlaps(f, c) for c in checkish)]
         if leftover:
@@ -513,10 +553,10 @@ class Engine:
         for f in retired:
             (wt / f).unlink()
         if design.check_files:
-            before, refs_before = self.ws.head(wt), self.ws.refs()
-            self.agents.write_checks(self.other, self._req(n), replace(design, check_files=lane), wt,
-                                     feedback=st.amend or None)
-            self._absorb_agent_commits(n, wt, before, refs_before)
+            with self.ws.agent_call(wt) as call:
+                self.agents.write_checks(self.other, self._req(n), replace(design, check_files=lane), wt,
+                                         feedback=st.amend or None)
+            self._absorb_agent_commits(n, wt, call)
             outside = [f for f in self.ws.uncommitted(wt)
                        if f not in retired and not any(scheduler.overlaps(f, c) for c in lane)]
             if outside:
@@ -547,6 +587,8 @@ class Engine:
         within this step, so no worktree holds an unfinished merge between steps."""
         st = self.store.issue(n)
         wt = Path(st.worktree)
+        if not self._restore_branch(n):
+            return
         self._recover_worktree(n, wt)
         self.ws.fetch()
         if self.ws.uncommitted(wt) and not self.ws.is_ancestor(wt, self.ws.base_ref(), "HEAD"):
@@ -600,9 +642,9 @@ class Engine:
         design = self._design(st)
         if files:   # the implementer may change the conflicted files this round
             design = replace(design, files=sorted(set(design.files) | {f for f in files if f not in st.locked}))
-        before, refs_before = self.ws.head(wt), self.ws.refs()
-        result = self.agents.implement(self.op, self._req(n), design, wt, feedback)
-        self._absorb_agent_commits(n, wt, before, refs_before, merge_head=sync.main if files else None)
+        with self.ws.agent_call(wt) as call:
+            result = self.agents.implement(self.op, self._req(n), design, wt, feedback)
+        self._absorb_agent_commits(n, wt, call, merge_head=sync.main if files else None)
         unresolved = []
         if files:
             st = self.store.issue(n)
@@ -726,10 +768,10 @@ class Engine:
                     f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
                     f"keeping the requirements of both sides (main's side checks work already merged). Change "
                     f"nothing else; do not run git merge, commit or abort."]
-        before, refs_before = self.ws.head(wt), self.ws.refs()
-        self.agents.write_checks(self.other, self._req(n), replace(self._design(st), check_files=lane), wt,
-                                 feedback=feedback)
-        self._absorb_agent_commits(n, wt, before, refs_before, merge_head=merge_head)
+        with self.ws.agent_call(wt) as call:
+            self.agents.write_checks(self.other, self._req(n), replace(self._design(st), check_files=lane), wt,
+                                     feedback=feedback)
+        self._absorb_agent_commits(n, wt, call, merge_head=merge_head)
         restored = []
         index_now = self.ws.index_entries(wt)
         changed_in_index = {f for f in set(index) | set(index_now) if index.get(f) != index_now.get(f)}
