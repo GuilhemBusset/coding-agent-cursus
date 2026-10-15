@@ -1,10 +1,16 @@
 """End-to-end runs of the engine: real git, the real ship.sh, the real verifier and real squash
 merges into a local bare remote. Only the agents and GitHub are fakes."""
 
+import signal
+import stat
+import subprocess
+import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from helpers import SHIP, TempRepo, issue_body
+from helpers import SHIP, TempRepo, git, issue_body
+from test_agent_git_isolation import IsolationCase, git_dir
 
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
@@ -13,7 +19,7 @@ from implement_loop.github import FakeGitHub
 from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
-from implement_loop.workspace import Workspace
+from implement_loop.workspace import GitError, Workspace
 
 EPIC = 1
 
@@ -411,6 +417,27 @@ class ReviewFindingRegressions(EngineCase):
         log = git("log", "--format=%s", "origin/feat/issue-2", cwd=self.repo.work)
         self.assertNotIn("agent commit", log)
         self.assertIn("Implement #2", log)
+
+    def force_added_file_survives_the_agent_call(self, commit_inside):
+        from helpers import git
+        ws = Workspace(self.repo.work, EPIC, SHIP, base_dir=self.repo.loop_dir)
+        wt = ws.issue_worktree(2, "feat/issue-2")
+        (wt / ".gitignore").write_text("required.bin\n")
+        with ws.agent_call(wt):
+            (wt / "required.bin").write_bytes(b"\x00staged by the agent\n")
+            git("add", "-f", "required.bin", cwd=wt)
+            if commit_inside:
+                git("commit", "-q", "-m", "agent commit", cwd=wt)
+        self.assertIn("required.bin", git("ls-files", "--cached", "required.bin", cwd=wt))
+        sha = ws.commit_all(wt, "Implement #2", "implementation", 2)
+        self.assertEqual(git("show", f"{sha}:required.bin", cwd=wt), "\x00staged by the agent")
+        self.assertEqual(git("fsck", "--connectivity-only", "--no-dangling", cwd=self.repo.work), "")
+
+    def test_a_file_an_agent_force_adds_is_kept_in_the_index(self):
+        self.force_added_file_survives_the_agent_call(commit_inside=False)
+
+    def test_a_file_an_agent_force_adds_and_commits_is_kept_in_the_index(self):
+        self.force_added_file_survives_the_agent_call(commit_inside=True)
 
     def test_a_commit_made_after_verification_is_verified_before_review(self):
         from unittest import mock
@@ -959,8 +986,127 @@ class ResumeTests(EngineCase):
         self.assertEqual(len(self.events("merge_found_on_resume")), 1)
         self.assertEqual(len([c for c in self.gh.calls if c[0] == "merge_pr"]), 1, "never merged twice")
 
+    def test_a_branch_lost_after_shipping_rebased_it_is_restored_at_the_verified_tip(self):
+        """Shipping rebases an unpublished branch when main moved, so the recorded checks commit
+        and reviewed head are no longer in the verified tip's history; they must not block
+        restoring a branch deleted afterwards."""
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        real_push, real_verify = Workspace.push, Engine._step_verify
+        verifies = []
+
+        def push(ws, wt):
+            if not (self.repo.merger / "docs/moved.txt").exists():
+                git("fetch", "-q", "origin", cwd=self.repo.merger)
+                git("checkout", "-q", "-B", "main", "origin/main", cwd=self.repo.merger)
+                (self.repo.merger / "docs").mkdir(exist_ok=True)
+                (self.repo.merger / "docs/moved.txt").write_text("main moved\n")
+                git("add", "-A", cwd=self.repo.merger)
+                git("commit", "-qm", "fixture: move main", cwd=self.repo.merger)
+                git("push", "-q", "origin", "HEAD:main", cwd=self.repo.merger)
+            return real_push(ws, wt)
+
+        def verify_then_stop(engine, n):
+            real_verify(engine, n)
+            verifies.append(n)
+            if len(verifies) == 2:   # the rebased tip is verified
+                (self.store_dir() / "STOP").write_text("stop\n")
+
+        with mock.patch.object(Workspace, "push", push), mock.patch.object(Engine, "_step_verify", verify_then_stop):
+            self.run_engine()
+        (self.store_dir() / "STOP").unlink()
+        st = self.store.issue(2)
+        self.assertEqual(st.phase, Phase.REVIEW)
+        wt = Path(st.worktree)
+        rebased = git("rev-parse", "HEAD", cwd=wt)
+        self.assertEqual(st.verified_sha, rebased)
+        for stale in (st.checks_sha, st.reviewed_sha):
+            self.assertNotEqual(subprocess.run(["git", "merge-base", "--is-ancestor", stale, rebased],
+                                               cwd=wt, capture_output=True).returncode, 0)
+        git("update-ref", "-d", git("symbolic-ref", "HEAD", cwd=wt), cwd=self.repo.work)
+        st.phase, st.park_kind, st.parked_version, st.resume_phase = Phase.PARKED, "engine_error", "0.3.0", "review"
+        st.retry = False
+        self.store.put(st)
+        self.run_engine(agents=FakeAgents(self.scripts))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertEqual(self.events("branch_restore_failed"), [])
+        self.assertEqual([e["sha"] for e in self.events("branch_restored")], [rebased])
+
     def store_dir(self) -> Path:
         return RunStore.for_root(self.repo.work, EPIC).dir
+
+
+
+class KilledCallOnALostBranchTests(IsolationCase):
+    """A killed agent call left an executable bit only in its private index, and the issue's
+    branch was then deleted (#34's): reattaching must carry the bit without HEAD, and a failed
+    carry must keep the private metadata for the next try."""
+
+    def killed_with_staged_executable_bit(self):
+        wt = self.worktree()
+        git("config", "core.fileMode", "false", cwd=wt)
+        original = (wt / ".git").read_bytes()
+        base = git("rev-parse", "HEAD", cwd=wt)
+        code = "\n".join([
+            "import os, signal, subprocess, sys", "from pathlib import Path", "sys.path.insert(0, sys.argv[1])",
+            "from implement_loop.workspace import Workspace",
+            "ws = Workspace(Path(sys.argv[2]), int(sys.argv[3]), Path(sys.argv[4]), base_dir=Path(sys.argv[5]))",
+            "with ws.agent_call(Path(sys.argv[6])):",
+            "    subprocess.run(['git', 'update-index', '--chmod=+x', 'README.md'], cwd=sys.argv[6], check=True)",
+            "    os.kill(os.getpid(), signal.SIGKILL)",
+        ])
+        proc = subprocess.run([sys.executable, "-c", code, str(Path(__file__).resolve().parents[1]),
+                               str(self.repo.work), str(self.n), str(SHIP), str(self.ws.dir), str(wt)],
+                              capture_output=True, text=True, timeout=60)
+        self.assertEqual(proc.returncode, -signal.SIGKILL, proc.stderr)
+        private = git_dir(wt)
+        self.assertTrue(private.is_relative_to(self.ws.dir.resolve()))
+        self.assertEqual(stat.S_IMODE((wt / "README.md").stat().st_mode), 0o644)
+        git("update-ref", "-d", "refs/heads/feat/isolated-worker", cwd=self.repo.work)
+        return wt, original, base, private
+
+    def assert_mode(self, wt, mode):
+        self.assertEqual(git("ls-files", "--stage", "README.md", cwd=wt).split(" ", 1)[0], mode)
+
+    def test_restoring_the_branch_carries_the_executable_bit_without_head(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        self.assertEqual(self.ws.restore_branch(wt, [base]), ("refs/heads/feat/isolated-worker", base))
+        self.assert_registered(wt, original)
+        self.assert_ref(self.repo.work, "refs/heads/feat/isolated-worker", base)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_the_engine_restores_the_branch_and_keeps_the_executable_bit(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        self.engine._reconcile()
+        self.assertEqual(self.events("branch_restore_failed"), [])
+        self.assertEqual([(e["branch"], e["sha"]) for e in self.events("branch_restored")],
+                         [("feat/isolated-worker", base)])
+        self.assertNotEqual(self.store.issue(self.n).phase, Phase.PARKED)
+        self.assert_registered(wt, original)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_a_failed_carry_keeps_the_private_metadata_for_the_next_reattach(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        git("update-ref", "refs/heads/feat/isolated-worker", base, cwd=self.repo.work)
+        with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
+            with self.assertRaises(GitError):
+                self.ws.reattach(wt)
+        self.assertEqual(git_dir(wt), private)
+        self.assert_mode(wt, "100755")
+        self.ws.reattach(wt)
+        self.assert_registered(wt, original)
+        self.assert_mode(wt, "100755")
+        self.assertFalse(private.exists())
+
+    def test_removing_the_worktree_does_not_depend_on_carrying(self):
+        wt, original, base, private = self.killed_with_staged_executable_bit()
+        with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
+            self.ws.remove(wt)
+        self.assertFalse(wt.exists())
+        self.assertFalse(private.exists())
+        self.assertNotIn(str(wt), git("worktree", "list", "--porcelain", cwd=self.repo.work))
 
 
 if __name__ == "__main__":

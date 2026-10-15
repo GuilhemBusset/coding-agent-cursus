@@ -6,7 +6,8 @@ without waiting for a person, until each issue is done, delivered with owner obl
 parked with a diagnosis. Design and rationale: [ADR 0008](../../docs/adr/0008-implement-loop.md)
 and [ADR 0011](../../docs/adr/0011-autonomous-implement-loop.md).
 
-It is plain Python (3.11+, standard library only) plus `git` and the authenticated GitHub CLI.
+It is plain Python (3.11+, standard library only) plus `git` (2.29 or later, for
+`git init --object-format`) and the authenticated GitHub CLI.
 Agents (Claude Code and Codex, run headless) only produce proposals, patches and findings through
 the `Agents` interface; the engine owns the issue graph, git, GitHub, the checks and the merges.
 
@@ -45,9 +46,47 @@ per-role effort, models and timeouts in `loop.toml`.
 
 Those per-tool rules are a convenience, not the boundary. Agents run with no GitHub
 credentials (tokens, SSH agent and git credential helpers are removed from their environment),
-the engine undoes any commit an agent makes and commits the changes itself, and only verified,
-reviewed heads are merged. Codex calls start with no MCP servers, agents' tags and branches are
-deleted, and each worktree has a private copy of `setup/node_modules`.
+an agent's commits never reach the repository (the engine commits its changes itself), and only verified,
+reviewed heads are merged. Codex calls start with no MCP servers, and each worktree has a private
+copy of `setup/node_modules`.
+
+Every agent that can write (`write_checks`, `implement`, and `verify_finding` in its disposable
+worktree) works against a private git directory of its run's own, at
+`<repo parent>/<repo name>.loop/issue-<root>/agent-git/<id>/`. For the call, the worktree's `.git`
+file names that directory instead of the worktree's own one in the shared repository. The
+private directory starts as a copy of the worktree's git state: every ref, HEAD, the index, a
+merge in progress, `info/` and the shared and per-worktree config. It reaches the shared objects
+through an alternate, its `hooks` link to the shared hooks directory, and `core.hooksPath` still
+applies, so the usual hooks fire. Every git process run in the worktree uses it, whatever the
+agent's CLI does to the environment. Nothing the agent does to git, whether commits, checkouts,
+branches, tags or ref deletions, changes the shared repository, so nothing has to be undone, and
+refs another run or a person changes during the call are never touched. When the call ends, the
+original `.git` file is put back, the private directory is deleted, and its state is reported:
+
+- `agent_refs_deleted`: refs the agent created. They are gone with the private directory.
+- `agent_ref_changes_discarded`: existing refs the agent moved or deleted. They never changed in
+  the repository.
+- `agent_commits_absorbed`, `agent_checkout_undone`: the agent committed, or switched branches
+  or detached HEAD. The worktree stays on the issue's branch at its earlier head, the agent's
+  working tree is kept, and the engine commits it. Index entries the working tree cannot rebuild,
+  committed or not, are carried into the worktree's index with their blobs, so the engine's
+  commit includes them: ignored paths the agent staged (`git add -f`), and executable bits it
+  recorded only in the index (`git update-index --chmod`, the only record of the bit under
+  `core.fileMode=false`). An entry the agent's index records as the worktree's index already
+  does is left alone; every other path is committed from the working tree.
+- `agent_merge_dropped`: main's merge was in progress, and the agent aborted, quit or reset it
+  without committing it. The engine ends the merge too, keeping the files, so the conflict goes
+  back to its author (`conflict_unresolved`, `check_conflict_unresolved`).
+- `issue_branch_moved_externally`: someone outside the agent moved the issue's branch during
+  the call. The agent could not have, so the engine leaves it as it is.
+
+The engine never changes the repository's config for this. If a run is killed mid-call, the
+worktree still names the private directory. The next time the engine uses or removes the
+worktree, it points the `.git` file back at the directory git registered for it, carries the
+index entries above (this needs no HEAD, so it also works when the branch was deleted), and
+deletes the private one. If carrying fails, the worktree is left on the private directory, kept
+whole, and the next use tries again, so staged work is never dropped. **Limit:** a git command the agent points at another checkout (`git -C /elsewhere`)
+runs outside this boundary. Its ref changes are neither isolated nor removed.
 
 **Known limit:** agents run as your user. Removing credentials from their environment stops
 casual use, not an agent determined to read them from disk. For real isolation, run the loop
@@ -102,12 +141,30 @@ keeps its old lock, so verification still reports the tampering (`checks_not_rel
 run starts it aborts any that an earlier failure left behind (`worktree_recovered`). The branch
 keeps every commit.
 
+A worktree whose branch ref was deleted from under it is repaired first, when the run starts:
+the branch is recreated, create-only, at the newest commit of the worktree's own HEAD reflog that
+shares history with `main` and contains every commit the engine recorded for the issue
+(`branch_restored`). A recorded commit that a later recorded one rewrote no longer counts: when
+shipping rebases an unpublished branch, the checks commit and the old reviewed head are left out
+of the verified tip's history. The working tree and index are left as they are. Without such a commit the
+issue is parked (`branch_restore_failed`); the branch is never pointed at `main` or at a guess.
+
+## Several runs on one repository
+
+Runs for different epics or issues may share a repository. Each has its own run state and
+worktrees, and the shared git writes (fetches, ref updates, worktree changes, attaching an agent
+call's private git directory) are serialized across threads, runs and processes by an flock on
+`<git common dir>/implementation-loop/git.lock`, never held while an agent works. Two runs that
+plan the same issue are not supported: the second one's worktree for it cannot be created.
+
 ## Where things live
 
 - Worktrees: `<repo parent>/<repo name>.loop/issue-<root>/` (`coord/` plus one per active issue).
 - Run state: `<git common dir>/implementation-loop/issue-<root>/` (`state.json`, `events.jsonl`,
   per-issue evidence). Re-running resumes; a `STOP` file there stops the run.
 - Repo-wide claims (merge queue): `<git common dir>/implementation-loop/claims/`.
+- The cross-run git lock: `<git common dir>/implementation-loop/git.lock`.
+- The private git directories of agent calls in flight: `<repo parent>/<repo name>.loop/issue-<root>/agent-git/`.
 - Engine faults waiting to be filed, deduplicated by fingerprint: `<git common dir>/implementation-loop/faults.json`.
 - The browser's user-space system libraries, if the doctor had to fetch them: `<git common dir>/implementation-loop/browser-libs/`.
 
