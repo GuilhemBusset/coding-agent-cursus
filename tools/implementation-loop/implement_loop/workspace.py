@@ -5,8 +5,9 @@ Layout: `<repo parent>/<repo name>.loop/issue-<root>/` holds a detached coordina
 issue's branch). The engine creates and removes them itself.
 
 Several runs may share one repository. Shared git writes are serialized across them by an flock
-on `<git common dir>/implementation-loop/git.lock`, and an agent call only ever undoes the ref
-changes recorded from its own worktree (`agent_call`), never another run's or a person's.
+on `<git common dir>/implementation-loop/git.lock`, and an agent works against a private git
+directory of its run's own (`agent_call`), so it never changes a shared ref: not another run's,
+not a person's.
 """
 
 from __future__ import annotations
@@ -14,14 +15,13 @@ from __future__ import annotations
 import fcntl
 import os
 import re
-import shlex
 import shutil
 import stat
 import subprocess
 import threading
 import uuid
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -29,63 +29,15 @@ from pathlib import Path
 FileState = tuple | None
 
 OID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
-RECORDED_REFS = ("refs/heads/", "refs/tags/")
 
-# The recorder installed for one agent call. Every git process run in the worktree reads its
-# per-worktree core.hooksPath, so each ref transaction is logged whatever the agent's CLI does to
-# the environment. Git passes an all-zero old value for forced updates and deletions, so the value
-# a ref really had is read in the `prepared` state, while git holds the ref's lock, and paired
-# with the `committed` line of the same git process. The worktree's original hook still runs.
-RECORDER_HOOK = """#!/bin/sh
-# implement loop: records the ref updates of one agent call, then runs the original hook.
-data=$(mktemp "${{TMPDIR:-/tmp}}/implement-loop-refs.XXXXXX") || exit 1
-cat > "$data"
-status=0
-if [ -x {original} ]; then
-    {original} "$@" < "$data"
-    status=$?
-fi
-case "$1" in
-prepared|committed)
-    while read -r old new ref; do
-        case "$ref" in refs/heads/*|refs/tags/*) ;; *) continue ;; esac
-        if [ "$1" = prepared ]; then
-            old=$(git rev-parse -q --verify "$ref" 2>/dev/null) || old=-
-        fi
-        printf '%s %s %s %s %s\\n' "$1" "$PPID" "$old" "$new" "$ref"
-    done < "$data" >> {log}
-    ;;
-esac
-rm -f "$data"
-exit $status
-"""
+# What an agent call copies from the worktree's own git directory into its private one.
+OPERATION_FILES = ("MERGE_HEAD", "MERGE_MSG", "MERGE_MODE", "AUTO_MERGE", "ORIG_HEAD")
+# The worktree's original gitfile, kept in the private directory so a killed call can be undone.
+SAVED_GITFILE = "implement-loop-gitfile"
 
 
 class GitError(RuntimeError):
     pass
-
-
-def parse_ref_log(text: str) -> dict[str, tuple[str, str]]:
-    """The recorder's log as {ref: (value before its first committed update, last value)}.
-    Lines that are not branch or tag updates with object names are ignored."""
-    pending: dict[tuple[str, str], str] = {}
-    updates: dict[str, tuple[str, str]] = {}
-    for line in text.splitlines():
-        parts = line.split(" ")
-        if len(parts) != 5 or not parts[4].startswith(RECORDED_REFS):
-            continue
-        state, pid, old, new, ref = parts
-        if state == "prepared":
-            pending[(pid, ref)] = old
-            continue
-        if state != "committed" or not OID.match(new):
-            continue
-        before = pending.pop((pid, ref), old)
-        before = "0" * len(new) if before == "-" else before
-        if not OID.match(before) or len(before) != len(new):
-            continue
-        updates[ref] = (updates[ref][0] if ref in updates else before, new)
-    return updates
 
 
 class BranchNotRestored(GitError):
@@ -156,6 +108,22 @@ class UpdateResult:
     files: list[str]          # the conflicted files
     before: str               # HEAD before the update
     main: str                 # the base branch's head that was merged
+
+
+@dataclass
+class AgentCall:
+    """One agent call (`Workspace.agent_call`): the worktree before it, and what the agent left in
+    its private git directory, read before that directory was deleted. Nothing in it was ever
+    written to the shared repository."""
+    head: str                                  # HEAD before the call
+    branch: str | None                         # the branch HEAD was on, None when detached
+    merge_head: str | None                     # MERGE_HEAD before the call
+    after_head: str | None = None              # the private HEAD after the call
+    after_branch: str | None = None            # the branch it was on, None when detached
+    after_merge_head: str | None = None        # the private MERGE_HEAD after the call
+    merge_committed: bool = False              # `merge_head` is in the private HEAD's history
+    created: list[str] = field(default_factory=list)     # refs the agent created
+    discarded: list[str] = field(default_factory=list)   # refs it moved or deleted, the branch aside
 
 
 class Workspace:
@@ -271,13 +239,15 @@ class Workspace:
 
     @contextmanager
     def disposable(self, from_worktree: Path):
-        """A throwaway detached worktree at another worktree's HEAD; removed on exit."""
+        """A throwaway detached worktree at another worktree's HEAD, on a private git directory
+        for its whole life (`agent_call`); removed on exit."""
         with self._mutex:
             scratch = self.dir / f"scratch-{uuid.uuid4().hex[:8]}"
             self.git("worktree", "add", "--detach", "--quiet", str(scratch), self.head(from_worktree))
-        self.provision(scratch)
         try:
-            yield scratch
+            self.provision(scratch)
+            with self.agent_call(scratch):
+                yield scratch
         finally:
             self.remove(scratch)
 
@@ -291,7 +261,7 @@ class Workspace:
     def _issue_worktree(self, n: int, branch: str) -> Path:
         path = self.dir / f"issue-{n}"
         if (path / ".git").exists():
-            self.clear_stale_recorder(path)
+            self.reattach(path)
             return path
         self.dir.mkdir(parents=True, exist_ok=True)
         local = bool(self.git("branch", "--list", branch))
@@ -306,144 +276,202 @@ class Workspace:
         self.provision(path)
         return path
 
-    def refs(self) -> dict[str, str]:
-        out = self.git("for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/tags")
-        return dict(line.split(" ", 1) for line in out.splitlines() if line)
-
     def remove(self, path: Path) -> None:
         with self._mutex:
             if path.exists():
+                try:
+                    self.reattach(path)
+                except GitError:
+                    pass   # removed anyway: `worktree remove --force` does not need it
                 self.git("worktree", "remove", "--force", str(path), check=False)
 
     # agent calls ----------------------------------------------------------------
-    def _calls_dir(self) -> Path:
-        return self.common_dir() / "implementation-loop" / "agent-calls"
+    def _gitfile_target(self, path: Path) -> Path | None:
+        """The git directory `<path>/.git` names, None when it is not a gitfile."""
+        entry = path / ".git"
+        if not entry.is_file():
+            return None
+        text = entry.read_text(errors="replace").strip()
+        if not text.startswith("gitdir: "):
+            return None
+        target = Path(text.removeprefix("gitdir: "))
+        return target if target.is_absolute() else path / target
 
-    def _is_recorder(self, value: str, path: Path) -> bool:
-        p = Path(value) if Path(value).is_absolute() else path / value
-        return self._calls_dir().resolve() in p.resolve().parents
+    def _write_gitfile(self, path: Path, data: bytes) -> None:
+        """Replace `<path>/.git` in one step: a git process sees the old gitfile or the new one."""
+        tmp = path / f".git.implement-loop-{uuid.uuid4().hex[:8]}"
+        try:
+            tmp.write_bytes(data)
+            os.replace(tmp, path / ".git")
+        finally:
+            tmp.unlink(missing_ok=True)
 
-    def _worktree_hooks_path(self, path: Path) -> str | None:
-        """core.hooksPath set in this worktree's own config.worktree, if any."""
-        value = self.git("config", "--worktree", "--get", "core.hooksPath", cwd=path, check=False)
-        return value or None
+    def _admin_dir(self, path: Path) -> Path | None:
+        """The directory git registered for linked worktree `path`: the one under
+        `<common>/worktrees/` whose `gitdir` file names `<path>/.git`."""
+        entry = (path / ".git").resolve()
+        for gitdir in sorted((self.common_dir() / "worktrees").glob("*/gitdir")):
+            named = Path(gitdir.read_text(errors="replace").strip())
+            if (named if named.is_absolute() else gitdir.parent / named).resolve() == entry:
+                return gitdir.parent
+        return None
 
-    def clear_stale_recorder(self, path: Path) -> None:
-        """Remove a recorder a process killed mid-call left in a worktree's config."""
+    def reattach(self, path: Path) -> None:
+        """Put back the worktree's own git directory when a killed agent call left `path` on its
+        private one (only this run's: another run's attachment is never touched), then delete the
+        private directory."""
         with self._mutex:
-            value = self._worktree_hooks_path(path)
-            if value and self._is_recorder(value, path):
-                self.git("config", "--worktree", "--unset", "core.hooksPath", cwd=path, check=False)
-                recorder = Path(value)
-                shutil.rmtree(recorder, ignore_errors=True)
-                recorder.with_suffix(".log").unlink(missing_ok=True)
+            target = self._gitfile_target(path)
+            root = (self.dir / "agent-git").resolve()
+            if target is None or root not in target.resolve().parents:
+                return
+            private = target.resolve()
+            admin = self._admin_dir(path)
+            saved = private / SAVED_GITFILE
+            original = saved.read_bytes() if saved.is_file() else b""
+            if not original.startswith(b"gitdir: ") or (
+                    admin is not None and Path(os.fsdecode(original[8:].strip())).resolve() != admin.resolve()):
+                if admin is None:
+                    raise GitError(f"{path} is attached to the agent git directory {private}, and git has no "
+                                   "worktree registered for it")
+                original = f"gitdir: {admin}\n".encode()
+            self._write_gitfile(path, original)
+            shutil.rmtree(private, ignore_errors=True)
 
-    def _enable_worktree_config(self) -> None:
-        """Set extensions.worktreeConfig in the repository's config, once. Linked worktrees ignore
-        a common core.worktree and core.bare=true only while it is off, so those move to the main
-        worktree's config.worktree first (as git-worktree(1) prescribes), and the common config is
-        rewritten in one step under git's own config.lock: no worktree, the main one or another
-        run's, ever sees a mix of the old and new settings."""
+    def _ref_values(self, git_dir: Path | None = None, cwd: Path | None = None) -> dict[str, str]:
+        """Every ref and its object, of a git directory or of the worktree at `cwd`."""
+        args = [f"--git-dir={git_dir}"] if git_dir else []
+        out = self.git(*args, "for-each-ref", "--format=%(refname) %(objectname)", cwd=cwd or git_dir)
+        return dict(line.split(" ", 1) for line in out.splitlines() if " " in line)
+
+    def _config_entries(self, file: Path) -> list[tuple[str, str | None]]:
+        """A config file's settings in order, includes expanded; None for a bare boolean key."""
+        if not file.is_file():
+            return []
+        out = self.git("config", "--file", str(file), "--list", "--includes", "-z", strip=False)
+        entries = []
+        for record in out.split("\0"):
+            if record:
+                key, _, value = record.partition("\n")
+                entries.append((key, value if "\n" in record else None))
+        return entries
+
+    @staticmethod
+    def _config_text(entries: list[tuple[str, str | None]]) -> str:
+        def quote(text: str) -> str:
+            return '"' + text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t") + '"'
+
+        lines, header = [], None
+        for key, value in entries:
+            section, _, rest = key.partition(".")
+            sub, _, name = rest.rpartition(".")
+            line = f"[{section}{' ' + quote(sub) if sub else ''}]"
+            if line != header:
+                lines.append(line)
+                header = line
+            lines.append(f"\t{name}" if value is None else f"\t{name} = {quote(value)}")
+        return "\n".join(lines) + "\n"
+
+    def _private_git_dir(self, path: Path, admin: Path, refs: dict[str, str]) -> Path:
+        """A git directory of this run's own for worktree `path`: the shared objects through an
+        alternate (new objects stay private), a copy of every ref, of the worktree's HEAD, index and
+        operation state, and the shared and per-worktree config. Writes nothing shared."""
         common = self.common_dir()
-        config = common / "config"
-        if self.git("config", "--file", str(config), "--type=bool", "--get", "extensions.worktreeConfig",
-                    check=False) == "true":
-            return
-        moved = {}
-        worktree = self.git("config", "--file", str(config), "--get", "core.worktree", check=False)
-        if worktree:
-            moved["core.worktree"] = worktree
-        if self.git("config", "--file", str(config), "--type=bool", "--get", "core.bare", check=False) == "true":
-            moved["core.bare"] = "true"
-        for key, value in moved.items():   # ignored until the extension is on
-            self.git("config", "--file", str(common / "config.worktree"), key, value)
-        lock = common / "config.lock"
+        root = self.dir / "agent-git"
+        root.mkdir(parents=True, exist_ok=True)
+        private = (root / uuid.uuid4().hex).resolve()
+        fmt = self.git("rev-parse", "--show-object-format", cwd=path)
+        self.git("init", "--bare", "--quiet", "--template=", f"--object-format={fmt}", str(private), cwd=root)
         try:
-            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o666)
-        except FileExistsError:
-            raise GitError(f"cannot enable extensions.worktreeConfig: {lock} exists (another git process "
-                           "is writing the repository's config, or one crashed)") from None
-        try:
-            try:
-                os.write(fd, config.read_bytes())
-            finally:
-                os.close(fd)
-            shutil.copymode(config, lock)
-            for key in moved:
-                self.git("config", "--file", str(lock), "--unset-all", key)
-            self.git("config", "--file", str(lock), "extensions.worktreeConfig", "true")
-            os.replace(lock, config)
+            (private / "objects" / "info").mkdir(parents=True, exist_ok=True)
+            (private / "objects" / "info" / "alternates").write_text(f"{common / 'objects'}\n")
+            if refs:   # no hooks run for the copy: it is not an update anyone made
+                updates = "".join(f"create {ref} {oid}\n" for ref, oid in sorted(refs.items()))
+                proc = subprocess.run(["git", f"--git-dir={private}", "-c", f"core.hooksPath={private / 'no-hooks'}",
+                                       "update-ref", "--stdin"], cwd=private, input=updates,
+                                      capture_output=True, text=True)
+                if proc.returncode != 0:
+                    raise GitError(f"copying the refs into {private} failed: {proc.stderr.strip()[:400]}")
+            shutil.copyfile(admin / "HEAD", private / "HEAD")
+            shared_index = self.git("rev-parse", "--shared-index-path", cwd=path)
+            for source in [admin / "index", *([Path(shared_index)] if shared_index else []),
+                           *(admin / name for name in OPERATION_FILES), common / "shallow"]:
+                source = source if source.is_absolute() else path / source
+                if source.is_file():
+                    shutil.copy2(source, private / source.name)
+            for info in (common / "info", admin / "info"):
+                if info.is_dir():
+                    shutil.copytree(info, private / "info", dirs_exist_ok=True)
+            fixed = ("core.bare", "core.worktree", "core.repositoryformatversion")
+            entries = [e for e in self._config_entries(private / "config")
+                       if e[0] == "core.repositoryformatversion" or e[0].startswith("extensions.")]
+            shared = self._config_entries(common / "config")
+            if self.git("config", "--file", str(common / "config"), "--type=bool", "--get",
+                        "extensions.worktreeConfig", check=False) == "true":
+                shared += self._config_entries(admin / "config.worktree")
+            entries += [(k, v) for k, v in shared
+                        if k not in fixed and not k.startswith(("extensions.", "include.", "includeif."))]
+            entries += [("core.bare", "false"), ("core.worktree", str(path.resolve()))]
+            (private / "config").write_text(self._config_text(entries))
+            hooks = private / "hooks"
+            if hooks.is_dir() and not hooks.is_symlink():
+                shutil.rmtree(hooks)
+            os.symlink(common / "hooks", hooks)   # default hooks; a relative core.hooksPath is per worktree
         except BaseException:
-            lock.unlink(missing_ok=True)
+            shutil.rmtree(private, ignore_errors=True)
             raise
+        return private
+
+    def _read_private(self, private: Path, call: AgentCall, refs: dict[str, str]) -> None:
+        """Fill `call` from what the agent left in its private git directory."""
+        head = (private / "HEAD").read_text(errors="replace").strip() if (private / "HEAD").is_file() else ""
+        call.after_branch = head.removeprefix("ref: ") if head.startswith("ref: ") else None
+        call.after_head = self.git(f"--git-dir={private}", "rev-parse", "-q", "--verify", "HEAD",
+                                   cwd=private, check=False) or None
+        merge = private / "MERGE_HEAD"
+        call.after_merge_head = (merge.read_text(errors="replace").split() or [None])[0] if merge.is_file() else None
+        if call.merge_head and call.after_merge_head is None and call.after_head:
+            call.merge_committed = self._ok(private, f"--git-dir={private}", "merge-base", "--is-ancestor",
+                                            call.merge_head, call.after_head)
+        after = self._ref_values(git_dir=private)
+        call.created = sorted(r for r in after if r not in refs)
+        call.discarded = sorted(r for r, oid in refs.items() if after.get(r) != oid and r != call.branch)
 
     @contextmanager
     def agent_call(self, path: Path):
-        """Record the branch and tag updates every git process makes from worktree `path` while an
-        agent runs. Yields a dict that, once the block exits, maps each ref the agent changed to
-        (its value before the agent's first change, the agent's last value); a zero OID means
-        absent. Refs changed from anywhere else (another run, a person) are never in it. The
-        recorder is a per-worktree core.hooksPath (needs extensions.worktreeConfig, set once in
-        the repository, and git >= 2.28), removed on exit whatever happens."""
-        updates: dict[str, tuple[str, str]] = {}
+        """Run an agent in worktree `path` against a private git directory under this run's own
+        directory (`<run dir>/agent-git/<id>/`): `<path>/.git` names it for the call. Every git
+        process run in the worktree, whatever its environment, then reads and writes refs, HEAD,
+        the index and operation state there, never in the shared repository, so nothing the agent
+        does to git can reach another run's or a person's refs, and nothing has to be undone. The
+        working tree is the real one. Yields an `AgentCall` that is filled in once the block exits;
+        the gitfile is put back and the private directory deleted whatever happens."""
         with self._mutex:
-            self._enable_worktree_config()
-            self.clear_stale_recorder(path)
-            previous = self._worktree_hooks_path(path)
-            original = self._git_path(path, "hooks")
-            call = uuid.uuid4().hex
-            recorder = self._calls_dir() / call
-            log = recorder.with_suffix(".log")
-            recorder.mkdir(parents=True)
-            log.touch()
-            if original.is_dir():
-                for hook in original.iterdir():
-                    if hook.name != "reference-transaction":
-                        os.symlink(hook, recorder / hook.name)
-            script = recorder / "reference-transaction"
-            script.write_text(RECORDER_HOOK.format(original=shlex.quote(str(original / "reference-transaction")),
-                                                   log=shlex.quote(str(log))))
-            script.chmod(0o755)
+            self.reattach(path)
+            admin = self._gitfile_target(path)
+            if admin is None:
+                raise GitError(f"{path} is not a linked worktree: its .git is not a gitfile")
+            original = (path / ".git").read_bytes()
+            merge = admin / "MERGE_HEAD"
+            call = AgentCall(head=self.head(path), branch=self.branch(path),
+                             merge_head=(merge.read_text().split() or [None])[0] if merge.is_file() else None)
+            refs = self._ref_values(cwd=path)
+            private = self._private_git_dir(path, admin, refs)
             try:
-                self.git("config", "--worktree", "core.hooksPath", str(recorder), cwd=path)
+                (private / SAVED_GITFILE).write_bytes(original)
+                self._write_gitfile(path, f"gitdir: {private}\n".encode())
             except BaseException:
-                shutil.rmtree(recorder, ignore_errors=True)
-                log.unlink(missing_ok=True)
+                shutil.rmtree(private, ignore_errors=True)
                 raise
         try:
-            yield updates
+            yield call
         finally:
             with self._mutex:
                 try:
-                    if previous:
-                        self.git("config", "--worktree", "core.hooksPath", previous, cwd=path, check=False)
-                    else:
-                        self.git("config", "--worktree", "--unset", "core.hooksPath", cwd=path, check=False)
-                    updates.update(parse_ref_log(log.read_text() if log.exists() else ""))
+                    self._read_private(private, call, refs)
                 finally:
-                    shutil.rmtree(recorder, ignore_errors=True)
-                    log.unlink(missing_ok=True)
-
-    def undo_ref_updates(self, updates: dict[str, tuple[str, str]]) -> tuple[list[str], list[str], list[str]]:
-        """Put back the refs an agent changed, from `agent_call`'s record: those it created are
-        deleted, those it moved or deleted return to their earlier value. A ref someone else has
-        changed since is left alone, and every update is a compare-and-swap, so a concurrent
-        change is never overwritten. Returns (deleted, restored, left)."""
-        deleted, restored, left = [], [], []
-        with self._mutex:
-            current = self.refs()
-            created = {r: u for r, u in updates.items() if u[0] != u[1] and set(u[0]) == {"0"}}
-            changed = {r: u for r, u in updates.items() if u[0] != u[1] and r not in created}
-            for ref, (old, new) in sorted(created.items()) + sorted(changed.items()):
-                zero = "0" * len(new)
-                if current.get(ref, zero) != new:
-                    left.append(ref)
-                elif ref in created:
-                    (deleted if self._ok(self.repo, "update-ref", "-d", ref, new) else left).append(ref)
-                else:
-                    expect = "" if new == zero else new   # deleted by the agent: create-only
-                    (restored if self._ok(self.repo, "update-ref", ref, old, expect) else left).append(ref)
-        return deleted, restored, left
+                    self._write_gitfile(path, original)
+                    shutil.rmtree(private, ignore_errors=True)
 
     def restore_branch(self, path: Path, anchors: list[str]) -> tuple[str, str] | None:
         """Recreate the branch worktree `path` is on when its ref is gone (another run deleted
@@ -452,6 +480,7 @@ class Workspace:
         written, create-only: the working tree and index are never touched. Returns (ref, sha),
         None when nothing is missing, and raises BranchNotRestored when no entry qualifies."""
         with self._mutex:
+            self.reattach(path)
             ref = self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False)
             if not ref or self._ok(path, "rev-parse", "-q", "--verify", ref):
                 return None
@@ -481,23 +510,6 @@ class Workspace:
     def branch(self, path: Path) -> str | None:
         """The full ref of the branch checked out in `path`, None when HEAD is detached."""
         return self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False) or None
-
-    def return_to(self, path: Path, ref: str | None, sha: str) -> str | None:
-        """Put worktree `path` back on `ref` (or, for None, detached at `sha`) after something
-        switched it elsewhere, without touching the index or the working tree. A missing `ref` is
-        recreated create-only at `sha`. Returns where HEAD was, None if it had not moved."""
-        with self._mutex:
-            now = self.branch(path)
-            if now == ref and (ref or self.head(path) == sha):
-                return None
-            was = now or self.git("rev-parse", "-q", "--verify", "HEAD", cwd=path, check=False)
-            if ref is None:
-                self.git("update-ref", "--no-deref", "HEAD", sha, cwd=path)
-                return was
-            if not self._ok(path, "rev-parse", "-q", "--verify", ref):
-                self.git("update-ref", ref, sha, "", cwd=path)
-            self.git("symbolic-ref", "HEAD", ref, cwd=path)
-            return was
 
     def changed_files(self, path: Path, since: str) -> list[str]:
         committed = self.git("diff", "--name-only", f"{since}..HEAD", cwd=path).splitlines()

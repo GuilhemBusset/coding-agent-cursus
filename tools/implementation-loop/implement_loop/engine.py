@@ -42,7 +42,7 @@ from .graph import Plan
 from .model import (PARK_BLOCKED, PARK_ENGINE_ERROR, PARK_ENVIRONMENT, PARK_EXHAUSTED, PARK_TRANSIENT, CheckSpec,
                     Finding, Issue, IssueState, Phase, SATISFIES_DEPENDENTS, WRITING_PHASES)
 from .state import FaultOutbox, RepoClaims, RunStore
-from .workspace import BranchNotRestored, GitError, MergeConflict, UpdateResult, Workspace
+from .workspace import AgentCall, BranchNotRestored, GitError, MergeConflict, UpdateResult, Workspace
 
 LABELS = {
     "loop:design": ("C5DEF5", "implement loop: designing"),
@@ -181,9 +181,9 @@ class Engine:
     def _recover_worktree(self, n: int, wt: Path) -> None:
         """A rebase or merge an earlier failure left half-way (#28's worktree was left mid-rebase)
         is aborted: the branch keeps every commit, and the issue resumes from a clean worktree.
-        A recorder a crashed agent call left in the worktree's config is removed."""
+        A worktree a killed agent call left on its private git directory gets its own back."""
         try:
-            self.ws.clear_stale_recorder(wt)
+            self.ws.reattach(wt)
             op = self.ws.abort_in_progress(wt)
         except GitError as e:
             self.store.event("worktree_recovery_failed", issue=n, error=str(e)[:300])
@@ -440,35 +440,31 @@ class Engine:
         """Where this branch meets the current base branch; moves forward when main is merged in."""
         return self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
 
-    def _absorb_agent_commits(self, n: int, wt: Path, before: tuple[str, str | None],
-                              updates: dict[str, tuple[str, str]], merge_head: str | None = None) -> None:
-        """Only the engine creates history. If an agent committed anyway, keep its changes but
-        undo the commits, so they are committed, verified and reviewed like everything else.
-        `before` is (head, branch ref) before the call: an agent that switched branches is put
-        back on the issue's branch, keeping its working tree and index.
-        `updates` (from `Workspace.agent_call`) are the ref changes made from this worktree during
-        the call: tags and branches the agent created are deleted, those it moved or deleted are
-        put back. Refs anyone else changed, another run or a person, are never touched.
-        `merge_head`: main's merge was in progress, and stays in progress after the undo."""
-        before, own = before
-        was = self.ws.return_to(wt, own, before)
-        if was is not None:
-            self.store.event("agent_checkout_undone", issue=n, was=was, branch=own)
-        head = self.ws.head(wt)
-        if head != before:
-            self.ws.git("reset", "--soft", "--quiet", before, cwd=wt)
-            if merge_head and self.ws.in_progress(wt) is None:
-                self.ws.git("update-ref", "MERGE_HEAD", merge_head, cwd=wt)
-            self.store.event("agent_commits_absorbed", issue=n, from_head=head, to=before)
-        # the issue's branch, as before the call: the soft reset handled it
-        deleted, restored, left = self.ws.undo_ref_updates({r: u for r, u in updates.items() if r != own})
-        if deleted:
-            self.store.event("agent_refs_deleted", issue=n, refs=sorted(deleted))
-        if restored:
-            self.store.event("agent_refs_restored", issue=n, refs=sorted(restored))
-        if left:
-            self.store.event("agent_ref_left", issue=n, refs=sorted(left),
-                             reason="changed again by someone else after the agent")
+    def _absorb_agent_commits(self, n: int, wt: Path, call: AgentCall, merge_head: str | None = None) -> None:
+        """Only the engine creates history. The agent ran against a private git directory
+        (`Workspace.agent_call`), so its commits, checkouts and refs never reached the shared
+        repository: its working tree is kept as it is, and is committed, verified and reviewed
+        like everything else. Nothing shared is written here; the events say what was dropped.
+        `merge_head`: main's merge was in progress before the call. It stays in progress unless
+        the agent dropped it (aborted, quit or reset without committing it), which ends it here
+        too, so the conflict goes back to its author."""
+        if call.after_branch != call.branch:
+            self.store.event("agent_checkout_undone", issue=n, was=call.after_branch or call.after_head,
+                             branch=call.branch)
+        if call.after_head and call.after_head != call.head:
+            self.store.event("agent_commits_absorbed", issue=n, from_head=call.after_head, to=call.head)
+        if call.branch:
+            now = self.ws.git("rev-parse", "-q", "--verify", call.branch, check=False) or None
+            if now != call.head:   # not the agent: someone else moved it; left alone
+                self.store.event("issue_branch_moved_externally", issue=n, branch=call.branch,
+                                 **{"from": call.head, "to": now})
+        if merge_head and call.after_merge_head is None and not call.merge_committed:
+            self.ws.git("merge", "--quit", cwd=wt)   # the index and the files are kept
+            self.store.event("agent_merge_dropped", issue=n, merge_head=merge_head)
+        if call.created:
+            self.store.event("agent_refs_deleted", issue=n, refs=call.created)
+        if call.discarded:
+            self.store.event("agent_ref_changes_discarded", issue=n, refs=call.discarded)
 
     def _delivery(self, st: IssueState, merged_head: str) -> tuple[str, list[str] | None]:
         """How a merged PR found on the issue's branch relates to this delivery: "same" (the
@@ -553,11 +549,10 @@ class Engine:
         for f in retired:
             (wt / f).unlink()
         if design.check_files:
-            before = self.ws.head(wt), self.ws.branch(wt)
-            with self.ws.agent_call(wt) as updates:
+            with self.ws.agent_call(wt) as call:
                 self.agents.write_checks(self.other, self._req(n), replace(design, check_files=lane), wt,
                                          feedback=st.amend or None)
-            self._absorb_agent_commits(n, wt, before, updates)
+            self._absorb_agent_commits(n, wt, call)
             outside = [f for f in self.ws.uncommitted(wt)
                        if f not in retired and not any(scheduler.overlaps(f, c) for c in lane)]
             if outside:
@@ -641,10 +636,9 @@ class Engine:
         design = self._design(st)
         if files:   # the implementer may change the conflicted files this round
             design = replace(design, files=sorted(set(design.files) | {f for f in files if f not in st.locked}))
-        before = self.ws.head(wt), self.ws.branch(wt)
-        with self.ws.agent_call(wt) as updates:
+        with self.ws.agent_call(wt) as call:
             result = self.agents.implement(self.op, self._req(n), design, wt, feedback)
-        self._absorb_agent_commits(n, wt, before, updates, merge_head=sync.main if files else None)
+        self._absorb_agent_commits(n, wt, call, merge_head=sync.main if files else None)
         unresolved = []
         if files:
             st = self.store.issue(n)
@@ -768,11 +762,10 @@ class Engine:
                     f"{', '.join(lane)}. The merge is in progress: resolve the conflict markers in those files, "
                     f"keeping the requirements of both sides (main's side checks work already merged). Change "
                     f"nothing else; do not run git merge, commit or abort."]
-        before = self.ws.head(wt), self.ws.branch(wt)
-        with self.ws.agent_call(wt) as updates:
+        with self.ws.agent_call(wt) as call:
             self.agents.write_checks(self.other, self._req(n), replace(self._design(st), check_files=lane), wt,
                                      feedback=feedback)
-        self._absorb_agent_commits(n, wt, before, updates, merge_head=merge_head)
+        self._absorb_agent_commits(n, wt, call, merge_head=merge_head)
         restored = []
         index_now = self.ws.index_entries(wt)
         changed_in_index = {f for f in set(index) | set(index_now) if index.get(f) != index_now.get(f)}
