@@ -74,8 +74,9 @@ Source trace of the reviewed page, backing "Step runs one forward pass" beyond t
 
 ## Host timing (proxy, not the 2020 laptop)
 
-From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page, run on
-2026-10-15. "Cold" is navigation start to first painted token, with Step clicked at
+From the A3 test in `tools/html-pages/tests/tiny-lm.test.mjs` on the reviewed page, taken from one
+full passing run of `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm.test.mjs`
+on 2026-10-15. "Cold" is navigation start to first painted token, with Step clicked at
 DOMContentLoaded. "Step" is the Step click to the painted token. Fresh browser context per trial,
 offline, `file://`. All rows come from this one host.
 
@@ -85,21 +86,29 @@ offline, `file://`. All rows come from this one host.
 
 | CPU throttle | Trial | Cold (ms) | Step (ms) |
 | --- | --- | --- | --- |
-| 1× | 1 | 145.6 | 27.4 |
-| 1× | 2 | 121.1 | 27.9 |
-| 1× | 3 | 116.2 | 30.0 |
-| 1× | 4 | 112.6 | 25.9 |
-| 1× | 5 | 118.5 | 25.3 |
-| 4× (CDP) | 1 | 447.6 | 82.8 |
-| 4× (CDP) | 2 | 487.1 | 75.3 |
-| 4× (CDP) | 3 | 471.8 | 88.8 |
-| 4× (CDP) | 4 | 563.6 | 92.4 |
-| 4× (CDP) | 5 | 885.5 | 142.0 |
+| 1× | 1 | 157.4 | 35.1 |
+| 1× | 2 | 133.3 | 30.4 |
+| 1× | 3 | 152.6 | 36.5 |
+| 1× | 4 | 214.1 | 71.7 |
+| 1× | 5 | 180.6 | 40.3 |
+| 4× (CDP) | 1 | 731.5 | 104.4 |
+| 4× (CDP) | 2 | 563.9 | 85.3 |
+| 4× (CDP) | 3 | 529.5 | 103.3 |
+| 4× (CDP) | 4 | 581.0 | 87.1 |
+| 4× (CDP) | 5 | 629.3 | 162.4 |
 
-All trials are under 1000 ms. At native speed the margin is wide (under 150 ms cold). Under 4×
-throttling it is narrower: most cold trials are around 450 to 560 ms, one outlier is 885.5 ms, and
-each Step stays under 150 ms, so most of the cold time is loading the 1.5 MB page before Step
-runs, not the forward pass. These are proxy numbers only.
+All trials in this run are under 1000 ms. At native speed the margin is wide (about 130 to 215 ms
+cold). Under 4× throttling it is narrower: cold trials are 530 to 730 ms here, and each Step stays
+under 165 ms, so most of the cold time is loading the 1.5 MB page before Step runs, not the forward
+pass. These are proxy numbers only.
+
+The 4× margin is not reliable on this host. Over about 25 repeated runs of the A3 timing test
+alone and 8 full-suite runs, on the same day and host with the page unchanged, the typical 4× cold
+trial was 500 to 850 ms. But 7 of the isolated runs and 1 of the full-suite runs each had a single
+4× cold trial over the limit (values recorded: 1032.9, 1199.1 and 1213.2 ms), which fails the test
+and so the whole suite. Native-speed trials never came near the
+limit. This proxy therefore says the page is close to the 1 s budget at 4× throttling, not
+comfortably inside it.
 
 ## 2020 laptop (owner obligation, open)
 
