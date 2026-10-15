@@ -318,8 +318,9 @@ class Workspace:
 
     def reattach(self, path: Path) -> None:
         """Put back the worktree's own git directory when a killed agent call left `path` on its
-        private one (only this run's: another run's attachment is never touched), keep the ignored
-        paths its agent staged (`_keep_ignored_entries`), then delete the private directory."""
+        private one (only this run's: another run's attachment is never touched), keep the staged
+        work its agent left that the files cannot rebuild (`_keep_carried_entries`: ignored paths,
+        index-only executable bits), then delete the private directory."""
         with self._mutex:
             target = self._gitfile_target(path)
             root = (self.dir / "agent-git").resolve()
@@ -336,13 +337,14 @@ class Workspace:
                                    "worktree registered for it")
                 original = f"gitdir: {admin}\n".encode()
             try:
-                staged = self._ignored_entries(path)
+                staged = self.index_entries(path)
+                names = self._carried_names(path, staged)
             except GitError:
-                staged = None   # a private index the kill left unreadable: the files are kept anyway
+                names = None   # a private index the kill left unreadable: the files are kept anyway
             self._write_gitfile(path, original)
             try:
-                if staged is not None:
-                    self._keep_ignored_entries(path, private, staged)
+                if names is not None:
+                    self._keep_carried_entries(path, private, staged, names)
             finally:
                 shutil.rmtree(private, ignore_errors=True)
 
@@ -445,26 +447,40 @@ class Workspace:
         call.created = sorted(r for r in after if r not in refs)
         call.discarded = sorted(r for r, oid in refs.items() if after.get(r) != oid and r != call.branch)
 
-    def _ignored_entries(self, path: Path) -> dict[str, list[str]]:
-        """The index entries of ignored paths (`index_entries`), of whichever git directory
-        `path` is attached to: the staged work `git add --all` cannot rebuild from the files."""
-        entries: dict[str, list[str]] = {}
-        out = self.git("ls-files", "--cached", "--ignored", "--exclude-standard", "--stage", "-z",
-                       cwd=path, strip=False)
-        for record in out.split("\0"):
-            if "\t" in record:
-                entries.setdefault(record.split("\t", 1)[1], []).append(record)
-        return entries
+    def _carried_names(self, path: Path, index: dict[str, list[str]]) -> set[str]:
+        """The paths of `index` (`index_entries` of whichever git directory `path` is attached to)
+        whose staged state `git add --all` cannot rebuild from the files: ignored paths, and
+        regular files whose single stage-0 entry records an executable bit the file on disk does
+        not have, or the reverse (`update-index --chmod`; under `core.fileMode=false` the index is
+        git's only record of it)."""
+        out = self.git("ls-files", "--cached", "--ignored", "--exclude-standard", "-z", cwd=path, strip=False)
+        names = {name for name in out.split("\0") if name}
+        for name, entries in index.items():
+            if len(entries) != 1:
+                continue
+            mode, _, stage = entries[0].split("\t", 1)[0].split()
+            if stage != "0" or mode not in ("100644", "100755"):
+                continue
+            try:
+                info = os.lstat(path / name)
+            except OSError:
+                continue
+            if stat.S_ISREG(info.st_mode) and bool(info.st_mode & stat.S_IXUSR) != (mode == "100755"):
+                names.add(name)
+        return names
 
-    def _keep_ignored_entries(self, path: Path, private: Path, staged: dict[str, list[str]]) -> None:
-        """Carry the agent's index entries for ignored paths (`staged`, read from its private index)
-        into the worktree's own index, with the blobs they name copied into the shared object store,
-        where nothing refers to them until the engine commits. Every other path is rebuilt from the
-        working tree by `commit_all`, so the shared index is otherwise left as it was."""
-        kept = self._ignored_entries(path)
-        for name in sorted(set(staged) | set(kept)):
-            entries = staged.get(name, [])
-            if entries == kept.get(name, []):
+    def _keep_carried_entries(self, path: Path, private: Path, private_index: dict[str, list[str]],
+                              names: set[str]) -> None:
+        """Carry the agent's index entries (`private_index`, read from its private index) for the
+        paths `_carried_names` picks, there (`names`) or in the worktree's own index, into that
+        index, with the blobs they name copied into the shared object store, where nothing refers to
+        them until the engine commits. Only entries the agent's index records differently are
+        written, so a mode the agent left alone is never overridden. Every other path is rebuilt
+        from the working tree by `commit_all`, so the shared index is otherwise left as it was."""
+        shared_index = self.index_entries(path)
+        for name in sorted(names | self._carried_names(path, shared_index)):
+            entries = private_index.get(name, [])
+            if entries == shared_index.get(name, []):
                 continue
             for record in entries:
                 mode, oid = record.split(" ", 2)[:2]
@@ -488,9 +504,9 @@ class Workspace:
         process run in the worktree, whatever its environment, then reads and writes refs, HEAD,
         the index and operation state there, never in the shared repository, so nothing the agent
         does to git can reach another run's or a person's refs, and nothing has to be undone. The
-        working tree is the real one, and the ignored paths the agent staged (`git add -f`) are
-        carried into the worktree's index, the only staged work `commit_all` could not rebuild from
-        it. Yields an `AgentCall` that is filled in once the block exits; the gitfile is put back
+        working tree is the real one, and the agent's index entries `commit_all` could not rebuild
+        from it are carried into the worktree's index: ignored paths it staged (`git add -f`) and
+        executable bits recorded only in the index (`update-index --chmod`). Yields an `AgentCall` that is filled in once the block exits; the gitfile is put back
         and the private directory deleted whatever happens."""
         with self._mutex:
             self.reattach(path)
@@ -513,15 +529,16 @@ class Workspace:
             yield call
         finally:
             with self._mutex:
-                staged = None
+                staged = names = None
                 try:
-                    staged = self._ignored_entries(path)   # still attached: the agent's index
+                    staged = self.index_entries(path)   # still attached: the agent's index
+                    names = self._carried_names(path, staged)
                     self._read_private(private, call, refs)
                 finally:
                     self._write_gitfile(path, original)
                     try:
-                        if staged is not None:
-                            self._keep_ignored_entries(path, private, staged)
+                        if names is not None:
+                            self._keep_carried_entries(path, private, staged, names)
                     finally:
                         shutil.rmtree(private, ignore_errors=True)
 
