@@ -5,7 +5,6 @@ real, local operations. The two-run test uses disjoint plans, as agreed in the d
 """
 
 import json
-import shlex
 import subprocess
 import sys
 import threading
@@ -89,10 +88,15 @@ class LoopCase(unittest.TestCase):
             args += ["-p", parent]
         return git(*args, cwd=self.repo.work)
 
-    def assert_no_recorder_override(self, path):
-        # --worktree reads only that scope once extensions.worktreeConfig is enabled.
-        result = git_result(path, "config", "--worktree", "--get", "core.hooksPath")
-        self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
+    def assert_registered_gitfile(self, path):
+        entry = (path / ".git").read_text().strip()
+        self.assertTrue(entry.startswith("gitdir: "), entry)
+        admin = Path(entry.removeprefix("gitdir: "))
+        if not admin.is_absolute():
+            admin = path / admin
+        self.assertEqual(Path((admin / "gitdir").read_text().strip()).resolve(),
+                         (path / ".git").resolve())
+        self.assertEqual(admin.resolve().parent, (self.repo.work / ".git/worktrees").resolve())
 
 
 class RefOwnershipTests(LoopCase):
@@ -102,7 +106,7 @@ class RefOwnershipTests(LoopCase):
         review = run.agents.review
 
         def observe_cleanup(vendor, role, req, design, worktree, *args, **kwargs):
-            self.assert_no_recorder_override(worktree)
+            self.assert_registered_gitfile(worktree)
             observed.append(worktree)
             return review(vendor, role, req, design, worktree, *args, **kwargs)
 
@@ -145,6 +149,13 @@ class RefOwnershipTests(LoopCase):
             git("update-ref", "-d", deleted, cwd=worktree)
             git("update-ref", raced, first, cwd=worktree)
             git("update-ref", raced, third, cwd=self.repo.work)
+            # Inspect during the call: cleanup must never have to undo an agent
+            # mutation in the shared repository.
+            for ref in (moved, deleted):
+                self.assertEqual(git("rev-parse", ref, cwd=self.repo.work), base)
+            self.assertEqual(git("rev-parse", raced, cwd=self.repo.work), third)
+            for ref in created:
+                self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
             observations.append(True)
             return implement(vendor, req, design, worktree, feedback)
 
@@ -152,7 +163,7 @@ class RefOwnershipTests(LoopCase):
         review = run.agents.review
 
         def inspect(vendor, role, req, design, worktree, *args, **kwargs):
-            self.assert_no_recorder_override(worktree)
+            self.assert_registered_gitfile(worktree)
             return review(vendor, role, req, design, worktree, *args, **kwargs)
 
         run.agents.review = inspect
@@ -167,10 +178,8 @@ class RefOwnershipTests(LoopCase):
         for ref in created:
             self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
         self.assertEqual([e["refs"] for e in self.events(run, "agent_refs_deleted")], [created])
-        restored = {ref for e in self.events(run, "agent_refs_restored") for ref in e["refs"]}
-        self.assertEqual(restored, {moved, deleted})
-        self.assertTrue(any(raced in json.dumps(e) for e in self.events(run, "agent_ref_left")),
-                        "leaving a ref changed by another party must be reported")
+        discarded = {ref for e in self.events(run, "agent_ref_changes_discarded") for ref in e["refs"]}
+        self.assertEqual(discarded, {moved, deleted, raced})
 
     def test_check_author_refs_are_also_attributed_and_person_refs_survive(self):
         run = self.run_fixture(n=19)
@@ -194,48 +203,6 @@ class RefOwnershipTests(LoopCase):
         for ref in agent_refs:
             self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
         self.assertEqual([e["refs"] for e in self.events(run, "agent_refs_deleted")], [agent_refs])
-
-    def test_recorder_preserves_hooks_and_cleans_up_after_an_exception(self):
-        run = self.run_fixture()
-        wt = run.ws.issue_worktree(run.n, "feat/hook-probe")
-        hooks = self.repo.tmp / "original-hooks"
-        hooks.mkdir()
-        transcript = self.repo.tmp / "hook-transcript"
-        for name in ("reference-transaction", "pre-commit"):
-            hook = hooks / name
-            hook.write_text("#!/bin/sh\n" +
-                            f"printf '%s\\n' {shlex.quote(name)} \"$1\" >> {shlex.quote(str(transcript))}\n" +
-                            (f"cat >> {shlex.quote(str(transcript))}\n" if name == "reference-transaction" else ""))
-            hook.chmod(0o755)
-        git("config", "core.hooksPath", str(hooks), cwd=self.repo.work)
-        agent_ref = "refs/tags/hook-probe"
-        with self.assertRaisesRegex(RuntimeError, "intentional interruption"):
-            with run.ws.agent_call(wt):
-                recorder = Path(git("config", "--worktree", "--get", "core.hooksPath", cwd=wt))
-                git("tag", "hook-probe", cwd=wt)
-                (wt / "hook-file.txt").write_text("hook content\n")
-                git("add", "hook-file.txt", cwd=wt)
-                git("commit", "-qm", "exercise forwarded pre-commit", cwd=wt)
-                raise RuntimeError("intentional interruption")
-        self.assert_no_recorder_override(wt)
-        self.assertFalse(recorder.exists(), "a completed call must remove its temporary recorder")
-        self.assertEqual(git("config", "--get", "core.hooksPath", cwd=wt), str(hooks))
-        text = transcript.read_text()
-        self.assertIn("pre-commit", text)
-        self.assertIn("reference-transaction\nprepared\n", text)
-        self.assertIn("reference-transaction\ncommitted\n", text)
-        self.assertIn(agent_ref, text, "the original reference hook must receive stdin too")
-
-    def test_reusing_a_worktree_cleans_a_recorder_left_by_a_crashed_call(self):
-        run = self.run_fixture()
-        wt = run.ws.issue_worktree(run.n, "feat/stale-recorder")
-        with run.ws.agent_call(wt):
-            recorder = Path(git("config", "--worktree", "--get", "core.hooksPath", cwd=wt))
-        # Reconstruct the per-worktree override a process killed mid-call leaves behind.
-        recorder.mkdir(parents=True, exist_ok=True)
-        git("config", "--worktree", "core.hooksPath", str(recorder), cwd=wt)
-        self.assertEqual(run.ws.issue_worktree(run.n, "feat/stale-recorder"), wt)
-        self.assert_no_recorder_override(wt)
 
 
 class ConcurrentRunsTests(LoopCase):
@@ -302,19 +269,24 @@ class ConcurrentRunsTests(LoopCase):
             ref = "refs/heads/feat/issue-34"
             before_oid = git("rev-parse", ref, cwd=self.repo.work)
             before_tree = snapshot(b_path)
+            b_index = Path(git("rev-parse", "--git-path", "index", cwd=b_path))
+            if not b_index.is_absolute():
+                b_index = b_path / b_index
+            before_index = b_index.read_bytes()
             before_state = (b.store.dir / "state.json").read_bytes()
             before_git_file = (b_path / ".git").read_bytes()
             before_checks = (b_path / "checks/issue_34.sh").read_bytes()
-            before_refs = {r: git("rev-parse", r, cwd=self.repo.work) for r in refs(b)}
+            before_refs = {r: git("rev-parse", r, cwd=b_path) for r in refs(b)}
             release_a.set()
             wait(a_absorbed, "run A to finish absorbing its check author")
             self.assertEqual(git("rev-parse", ref, cwd=self.repo.work), before_oid)
             self.assertEqual(snapshot(b_path), before_tree)
+            self.assertEqual(b_index.read_bytes(), before_index)
             self.assertEqual((b.store.dir / "state.json").read_bytes(), before_state)
             self.assertEqual((b_path / ".git").read_bytes(), before_git_file)
             self.assertEqual((b_path / "checks/issue_34.sh").read_bytes(), before_checks)
             for other_ref, oid in before_refs.items():
-                self.assertEqual(git("rev-parse", other_ref, cwd=self.repo.work), oid)
+                self.assertEqual(git("rev-parse", other_ref, cwd=b_path), oid)
             self.assertEqual([e["refs"] for e in self.events(a, "agent_refs_deleted")], [refs(a)])
             release_b.set()
             wait(b_done, "run B to finish")
