@@ -58,9 +58,23 @@ CREDENTIAL = r"(?:api[_-]?key|token|secret|password|passwd)"
 CREDENTIAL_KEY = re.compile(r"(?:.*[_-])?" + CREDENTIAL, re.I)
 # `name = value`, `name: "value"`, `"name": "value"`. A quoted name (a JSON field) needs a quoted
 # value, so `"token": null` or `"token": {` is not a finding; a bare name takes either.
-QUOTED = r"\"(?!<(?:key|redacted)>\")[^\"\n]+\"|'(?!<(?:key|redacted)>')[^'\n]+'"
+# A quoted value ends at its own closing quote, never at an escaped one inside it: a plain quote
+# (`"a\"b"`) is read escape by escape; an escaped quote, as in JSON held in a JSON string
+# (`\"a\\\"b\"`), closes only behind exactly its own backslashes, since a quote escaped inside the
+# value always has more. With no closing quote the value runs to the end of the line, so an odd
+# value is masked too much rather than too little. A placeholder exempts a value only when the
+# closing quote ends it; `"<key>"rest"` is still a finding.
+EOL = r"(?=\n|\Z)"
+AFTER = r"(?=\Z|[\s,;:)}\]'\"`])"
+QUOTED = (
+    r"(?P<quote>[\"'])(?!(?P=quote))(?!<(?:key|redacted)>(?:(?P=quote)" + AFTER + "|" + EOL + "))"
+    r"(?:\\(?:.|" + EOL + r")|[^\\\n])+?(?:(?P<shut>(?P=quote))|" + EOL + ")"
+    r"|(?P<esc>\\+)(?P<escquote>[\"'])(?!(?P=esc)(?P=escquote))"
+    r"(?!<(?:key|redacted)>(?:(?P=esc)(?P=escquote)(?:" + AFTER + r"|(?=\\[nrt]))|" + EOL + "))"
+    r".+?(?:(?<!\\)(?P<escshut>(?P=esc)(?P=escquote))|" + EOL + ")"
+)
 ASSIGNMENT = re.compile(
-    r"(?<![A-Za-z0-9])" + CREDENTIAL + r"(?P<close>[\"'])?\s*[=:]\s*"
+    r"(?<![A-Za-z0-9])" + CREDENTIAL + r"(?P<close>\\*[\"'])?\s*[=:]\s*"
     r"(?P<value>" + QUOTED + r"|(?(close)(?!)|" + NOT_PLACEHOLDER + r"(?![{\[(])" + VALUE + r"))", re.I)
 KEY_PATTERNS = (
     ("private_key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )?PRIVATE KEY-----")),
@@ -110,8 +124,12 @@ def encoded(path):
 
 def mask_assignment(match):
     """Keep the name and the quotes of `name = "value"`; only the value becomes <key>."""
-    value = match.group("value")
-    masked = value[0] + "<key>" + value[-1] if value[0] in "\"'" else "<key>"
+    if match.group("quote"):
+        masked = match.group("quote") + "<key>" + (match.group("shut") or "")
+    elif match.group("esc"):
+        masked = match.group("esc") + match.group("escquote") + "<key>" + (match.group("escshut") or "")
+    else:
+        masked = "<key>"
     return match.group()[:match.start("value") - match.start()] + masked
 
 
@@ -329,11 +347,26 @@ def self_test():
         "suffix_name": f"client_{sec} = '{filler}'",
         "json_in_text": json.dumps({tok: filler}),
         "json_in_text_suffix": json.dumps({"access_" + tok: filler}),
+        # The secret sits after an escaped quote inside the value, so stopping there would leak it.
+        "escaped_quote": f'{pw}="prefix\\"{filler}"',
+        "json_escaped_quote": json.dumps({pw: 'prefix"' + filler, "keep": "visible"}),
+        "json_in_json_escaped_quote": json.dumps({"x": json.dumps({pw: 'prefix"' + filler})}),
+        "backslash_before_close": json.dumps({pw: filler + "\\", "keep": "visible"}),
+        "unterminated": f'{tok}="{filler}',
     }
+    # Embedded JSON is the usual form of tool output: a credential in it must not survive either.
+    embedded = json.dumps({pw: 'prefix"' + filler})
     fields = {"json_field": {tok: filler}, "json_nested_field": {"auth": {api: filler}},
-              "json_list_field": [{"refresh_" + tok: filler}]}
+              "json_list_field": [{"refresh_" + tok: filler}],
+              "tool_result_escaped_quote": {"type": "tool_result", "content": embedded},
+              "tool_result_nested_escaped_quote": {"type": "tool_result", "content": json.dumps({"x": embedded})}}
+    # Text after a value that closes properly is kept.
+    kept = {"json_escaped_quote", "backslash_before_close"}
+    # What a sanitizer that stopped at the escaped quote left behind: the scan must still see it.
+    residues = [json.dumps({"content": "{\"" + pw + "\": \"<key>\"" + filler + "\"}"})]
     negatives = [f'"{tok}": null', f"max_{tok}s=4", '"output_' + tok + 's": 12', f'"{tok}": {{"type": "string"}}',
-                 f'{pw}=""', f"{tok}=<key>", f'{api}="<key>"', f"{pw}: '<key>'", json.dumps({tok: "<key>"})]
+                 f'{pw}=""', f"{tok}=<key>", f'{api}="<key>"', f"{pw}: '<key>'", json.dumps({tok: "<key>"}),
+                 json.dumps({"x": json.dumps({tok: "<key>"})}), f"`{pw}: '<key>'`"]
     failed = []
     sanitizer, scanner = Sanitizer(), Scanner()
     with tempfile.TemporaryDirectory() as folder:
@@ -348,6 +381,8 @@ def self_test():
             once = path.read_text(encoding="utf-8")
             if filler in once or scanner.file(path, None):
                 failed.append(f"{name}: survives sanitizing")
+            if name in kept and "visible" not in once:
+                failed.append(f"{name}: sanitizing masks text after the value")
             sanitizer.file(path)
             if path.read_text(encoding="utf-8") != once:
                 failed.append(f"{name}: sanitizing is not idempotent")
@@ -360,6 +395,11 @@ def self_test():
                 failed.append(f"negative {index}: reported by the scan")
             if sanitizer.file(path):
                 failed.append(f"negative {index}: rewritten by the sanitizer")
+        for index, text in enumerate(residues):
+            path = Path(folder) / "residue.jsonl"
+            path.write_text(text + "\n", encoding="utf-8")
+            if not scanner.file(path, None):
+                failed.append(f"residue {index}: not found by the scan")
     return failed
 
 
