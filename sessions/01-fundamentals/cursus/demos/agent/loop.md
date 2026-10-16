@@ -94,6 +94,15 @@ The narrative's "the agent forgets an earlier instruction" beat belongs to the
 No login, no network, a CLI error or a refused model: the script stops with a message that ends
 with the replay command. Replay the recordings instead. They start no CLI and open no socket.
 
+First choice, on the projector: the agent-loop replay widget, opened straight from disk. It steps
+through every thought, tool call, tool result (with its exit code) and message of a recording:
+[Claude Code, run 1](../../labs/agent-loop.html#run=loop-claude-run1),
+[Codex, run 1](../../labs/agent-loop.html#run=loop-codex-run1),
+[Claude Code, run 2](../../labs/agent-loop.html#run=loop-claude-run2),
+[Codex, run 2](../../labs/agent-loop.html#run=loop-codex-run2).
+
+Second choice, in a terminal:
+
 ```sh
 uv run agent_demo.py replay loop --via claude
 uv run agent_demo.py replay loop --via codex

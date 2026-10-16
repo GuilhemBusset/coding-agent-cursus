@@ -186,6 +186,18 @@ instead of `codex mcp add`.
 No login, no network, a CLI error or no tmux: replay the recordings. They start no CLI and open
 no socket.
 
+First choice, on the projector: the agent-loop replay widget, opened straight from disk. Each arm
+shows the answer and the usage the CLI reported, and a disclosure holds the full `/context` or
+`/status` captures from before and after:
+[Claude Code without](../../labs/agent-loop.html#run=bomb-claude-run1-without),
+[with](../../labs/agent-loop.html#run=bomb-claude-run1-with),
+[with, tool search off](../../labs/agent-loop.html#run=bomb-claude-run1-with-tool-search-off);
+[Codex without](../../labs/agent-loop.html#run=bomb-codex-run1-without),
+[with](../../labs/agent-loop.html#run=bomb-codex-run1-with). The run 2 arms are in the same
+page's selector.
+
+Second choice, in a terminal:
+
 ```sh
 uv run agent_demo.py replay bomb --via claude
 uv run agent_demo.py replay bomb --via codex
@@ -230,9 +242,11 @@ Byte-for-byte snapshots, never edited:
 | --- | --- | --- |
 | [`upstream/server.py.txt`](upstream/server.py.txt) | `server.py` | `faec004e6dab4e1ca9a73f582db1dbbca12ccb710855470c34a6d1a78d236db2` |
 | [`upstream/README.md.txt`](upstream/README.md.txt) | `README.md` | `041fc46a6733b42a1fb392b3d9f71f7f5c1f045d637ad355ba37329911d32b19` |
+| [`upstream/LICENSE.txt`](upstream/LICENSE.txt) | `LICENSE` (repository root) | `834c9a7d9ead7c08a7a2c9fde89a051b1f8ff89457dfd11dd1f1e4ed27bffa76` |
 
 License and attribution: the workshop repository is MIT-licensed ("Copyright (c) 2026
-agentic-or-workshop contributors") and has the same author as this course. The port keeps that
+agentic-or-workshop contributors"; full text in [`upstream/LICENSE.txt`](upstream/LICENSE.txt),
+fetched at the pinned commit on 2026-10-16) and has the same author as this course. The port keeps that
 attribution here and in the server's docstring. The workshop's `THIRD_PARTY.md` concerns its
 FICO Xpress dependency, which the context-bomb server does not use. Neither does this port, nor
 anything else in this folder.

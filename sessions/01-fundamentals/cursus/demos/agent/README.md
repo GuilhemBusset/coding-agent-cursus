@@ -77,7 +77,7 @@ Recorded runs table and in each `*.meta.json`.
 
 - `recorded/<demo>-<cli>-run<N>[-<arm>].jsonl`: the CLI's own stdout, one JSON event per line,
   exactly as `claude -p --output-format stream-json --verbose` or `codex exec --json` printed it
-  (these are the inputs the agent-loop replay widget's normalizer will read). Only scrubbed: the
+  (the inputs of the replay widget's normalizer, see below). Only scrubbed: the
   home folder becomes `~`, the user name `<user>`, the account email `<account>`, the agent's own
   folder `.` (so a recorded plan still reads as relative paths) and the rest of the work root
   `<work>`; session, thread, message and request IDs become placeholders.
@@ -93,16 +93,30 @@ loop or after either plan-first arm, or when a bomb probe does not answer exactl
 that did not reach its outcome never reports success.
 
 Each demo was rehearsed twice in a row with each CLI, with the reset between the two runs. No
-recording is edited by hand. `uv run agent_demo.py replay …` reads them and prints the tool calls,
-the red and green pytest lines and the token tables. That terminal replay is the fallback today.
+recording is edited by hand.
 
-**Open: playback in the agent-loop replay widget.** The issue asks that each fallback play in the
-agent-loop replay widget (`cursus/labs/agent-loop.html`). That widget (#47) and the normalizer
-that turns these raw streams into its fixtures (#42, `cursus/fixtures/runs/`) do not exist yet, so
-no recording here has been shown to play in it. This folder ships the raw streams in the formats
-#42 reads. Once #42 and #47 land, confirm that every file in `recorded/` plays in the widget
-(#47's "works offline with every committed recording" check). Until then this criterion stays
-open.
+## Fallbacks: the replay widget, then the terminal
+
+Every raw stream in `recorded/` plays in the agent-loop replay widget,
+[`cursus/labs/agent-loop.html`](../../labs/agent-loop.html). Open it from disk, with no server, CLI
+or network. Pick a run (demo, harness, rehearsal, arm) and step through its thoughts, tool calls,
+tool results (with exit codes and errors) and messages. The header gives the CLI version, the
+model and its provenance, the effort, the UTC times and the usage the CLI reported. Bomb runs add
+the `/context` or `/status` captures. `#run=<recording>` links to one run, as each runbook's
+Fallback section does.
+
+The page carries its own copy of the catalog
+[`cursus/fixtures/runs/agent-demos.json`](../../fixtures/runs/README.md), which
+`normalize_runs.py` builds from the raw streams and their `*.meta.json`. After any `--record`,
+rebuild both from `sessions/01-fundamentals`:
+
+```sh
+uv run cursus/fixtures/runs/normalize_runs.py           # rewrites the catalog and the page's copy
+uv run cursus/fixtures/runs/normalize_runs.py --check   # writes nothing, exits 1 if either is stale
+```
+
+The second fallback is the terminal: `uv run agent_demo.py replay <demo> --via <cli>` reads the
+same recordings and prints the tool calls, the red and green pytest lines and the token tables.
 
 ## No proprietary solver
 

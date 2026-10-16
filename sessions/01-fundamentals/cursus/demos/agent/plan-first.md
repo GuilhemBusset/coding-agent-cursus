@@ -99,6 +99,18 @@ with no tests yet, or a wide change, the plan is what you review instead of a di
 No login, no network, a CLI error or a refused model: replay the recordings. They start no CLI
 and open no socket.
 
+First choice, on the projector: the agent-loop replay widget, opened straight from disk. Each arm
+is its own recording; show the direct arm, then the plan, then the build of that plan:
+[Claude Code direct](../../labs/agent-loop.html#run=plan-claude-run1-direct),
+[plan](../../labs/agent-loop.html#run=plan-claude-run1-plan),
+[build](../../labs/agent-loop.html#run=plan-claude-run1-build);
+[Codex direct](../../labs/agent-loop.html#run=plan-codex-run1-direct),
+[plan](../../labs/agent-loop.html#run=plan-codex-run1-plan),
+[build](../../labs/agent-loop.html#run=plan-codex-run1-build). The run 2 arms are in the same
+page's selector. The comparison table above is the one to read afterwards.
+
+Second choice, in a terminal:
+
 ```sh
 uv run agent_demo.py replay plan --via claude
 uv run agent_demo.py replay plan --via codex
