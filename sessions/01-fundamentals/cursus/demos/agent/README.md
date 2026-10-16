@@ -88,11 +88,21 @@ Recorded runs table and in each `*.meta.json`.
   file list and the full text of `p00_model.py`.
 - for the bomb, the `/context` (Claude Code) or `/status` (Codex) captures, before and after.
 
+`run` exits non-zero when a CLI call fails, when the script's own pytest is still red after the
+loop or after either plan-first arm, or when a bomb probe does not answer exactly `OK`. A rehearsal
+that did not reach its outcome never reports success.
+
 Each demo was rehearsed twice in a row with each CLI, with the reset between the two runs. No
 recording is edited by hand. `uv run agent_demo.py replay …` reads them and prints the tool calls,
-the red and green pytest lines and the token tables. Playback in the agent-loop replay widget
-(`cursus/labs/agent-loop.html`) waits for that widget and its normalizer, which are separate
-issues and are not in this folder.
+the red and green pytest lines and the token tables. That terminal replay is the fallback today.
+
+**Open: playback in the agent-loop replay widget.** The issue asks that each fallback play in the
+agent-loop replay widget (`cursus/labs/agent-loop.html`). That widget (#47) and the normalizer
+that turns these raw streams into its fixtures (#42, `cursus/fixtures/runs/`) do not exist yet, so
+no recording here has been shown to play in it. This folder ships the raw streams in the formats
+#42 reads. Once #42 and #47 land, confirm that every file in `recorded/` plays in the widget
+(#47's "works offline with every committed recording" check). Until then this criterion stays
+open.
 
 ## No proprietary solver
 

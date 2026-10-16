@@ -622,7 +622,19 @@ def run_loop(cli, args, version):
         write_raw(meta["raw"], events)
         write_meta(f"{stem('loop', cli, args.run)}.meta.json", meta)
         print(f"recorded recorded/{stem('loop', cli, args.run)}.*")
-    return result["exit_code"]
+    return verdict([result["exit_code"]], {"loop": post["pytest_exit_code"]})
+
+
+def verdict(exit_codes, final_pytest):
+    """The run's exit status: a CLI failure, else 1 if this script's own pytest is still red."""
+    worst = max(abs(code) for code in exit_codes)
+    if worst:
+        return worst
+    red = [name for name, code in final_pytest.items() if code != 0]
+    if red:
+        print(f"\nFAILED: the contract suite is still red after the agent ({', '.join(red)})", file=sys.stderr)
+        return 1
+    return 0
 
 
 def plan_text_of(events, cli):
@@ -685,7 +697,8 @@ def run_plan(cli, args, version):
             write_raw(f"{stem('plan', cli, run)}-{name}.jsonl", events)
         write_meta(f"{stem('plan', cli, run)}.meta.json", meta)
         print(f"recorded recorded/{stem('plan', cli, run)}*")
-    return max(abs(arm["exit_code"]) for arm in arms.values())
+    return verdict([arm["exit_code"] for arm in arms.values()],
+                   {name: row["pytest_exit_code"] for name, row in meta["comparison"].items()})
 
 
 def comparison(arms):
@@ -865,7 +878,12 @@ def run_bomb(cli, args, version):
             (RECORDED / f"{stem('bomb', cli, run)}-{name}.txt").write_text(text, encoding="utf-8")
         write_meta(f"{stem('bomb', cli, run)}.meta.json", meta)
         print(f"recorded recorded/{stem('bomb', cli, run)}*")
-    return max(abs(c) for c in codes.values())
+    worst = max(abs(c) for c in codes.values())
+    wrong = [name for name, arm in arms.items() if arm["answer"] != "OK"]
+    if not worst and wrong:
+        print(f"\nFAILED: the probe did not answer exactly OK ({', '.join(wrong)})", file=sys.stderr)
+        return 1
+    return worst
 
 
 def print_bomb(cli, meta):
