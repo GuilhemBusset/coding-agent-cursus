@@ -2,6 +2,7 @@
 
     python sanitize.py [--identity TEXT ...] [--work DIR] [--tmp DIR ...] PATH...
     python sanitize.py --scan [--identity TEXT ...] PATH...
+    python sanitize.py --self-test            # positive and negative controls of the key rules
 
 Rewrites every file in place (directories are walked). JSONL files are rewritten line by
 line: every string at any depth, keys included, goes through the same rules and the key
@@ -9,7 +10,11 @@ order is kept; unchanged lines stay byte-identical. A file holding one JSON docu
 rewritten the same way; anything else is plain text. Nothing is ever truncated.
 
 Rules, in order: opaque crypto blobs (`signature`, `encrypted_content` values) become
-<redacted>; PEM private keys and the known key families become <key>; email addresses
+<redacted>; a JSON string field named like a credential (`token`, `api_key`, `password`,
+`secret`, also as a suffix such as `access_token`) becomes <key>; PEM private keys, the
+known key families become <key>, and so does the value of a credential assignment, bare
+or quoted, or of a JSON credential field inside text, keeping its name and quotes
+(`password: '<key>'`); email addresses
 become <email>; the recording workspace becomes <work> and its temporary root <tmp> (also
 in the dash-encoded spelling Claude Code uses for project folders); home folders on Linux,
 macOS and Windows become ~, dash-encoded home paths -<work>; identity tokens become <user>
@@ -35,6 +40,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 
 HERE = Path(__file__).resolve().parent
@@ -47,6 +53,15 @@ NOT_NAMES = {"root", "runner", "user", "admin", "work", "tmp", "key", "email", "
 # A secret-looking value must not be one of our placeholders standing alone.
 NOT_PLACEHOLDER = r"(?!<(?:key|redacted)>(?:$|[\s\"',;}]))"
 VALUE = r"[^\s\"',;}]+"
+# Names that carry a credential, also as the last part of a longer one (access_token, OPENAI_API_KEY).
+CREDENTIAL = r"(?:api[_-]?key|token|secret|password|passwd)"
+CREDENTIAL_KEY = re.compile(r"(?:.*[_-])?" + CREDENTIAL, re.I)
+# `name = value`, `name: "value"`, `"name": "value"`. A quoted name (a JSON field) needs a quoted
+# value, so `"token": null` or `"token": {` is not a finding; a bare name takes either.
+QUOTED = r"\"(?!<(?:key|redacted)>\")[^\"\n]+\"|'(?!<(?:key|redacted)>')[^'\n]+'"
+ASSIGNMENT = re.compile(
+    r"(?<![A-Za-z0-9])" + CREDENTIAL + r"(?P<close>[\"'])?\s*[=:]\s*"
+    r"(?P<value>" + QUOTED + r"|(?(close)(?!)|" + NOT_PLACEHOLDER + r"(?![{\[(])" + VALUE + r"))", re.I)
 KEY_PATTERNS = (
     ("private_key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )?PRIVATE KEY-----")),
     ("github_key", re.compile(r"\b(?:gh[pousr]_|github_pat_)[A-Za-z0-9_]{8,}")),
@@ -55,7 +70,7 @@ KEY_PATTERNS = (
     ("aws_key", re.compile(r"\bAKIA[A-Z0-9]{16}\b")),
     ("slack_key", re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{8,}")),
     ("bearer", re.compile(r"\bBearer\s+" + NOT_PLACEHOLDER + VALUE, re.I)),
-    ("assignment", re.compile(r"\b(?:api[_-]?key|token|secret|password)\s*[=:]\s*" + NOT_PLACEHOLDER + VALUE, re.I)),
+    ("assignment", ASSIGNMENT),
 )
 EMAIL = re.compile(r"[\w.+%-]+@[\w.-]+\.[A-Za-z]{2,}")
 HOME_PATHS = (
@@ -93,6 +108,18 @@ def encoded(path):
     return re.sub(r"[^A-Za-z0-9]", "-", path)
 
 
+def mask_assignment(match):
+    """Keep the name and the quotes of `name = "value"`; only the value becomes <key>."""
+    value = match.group("value")
+    masked = value[0] + "<key>" + value[-1] if value[0] in "\"'" else "<key>"
+    return match.group()[:match.start("value") - match.start()] + masked
+
+
+def is_credential_field(key, value):
+    return (isinstance(key, str) and CREDENTIAL_KEY.fullmatch(key) is not None
+            and isinstance(value, str) and value.strip() != "" and value not in PLACEHOLDERS)
+
+
 class Sanitizer:
     def __init__(self, identities=(), work=None, tmp=()):
         self.paths = []
@@ -110,7 +137,7 @@ class Sanitizer:
 
     def text(self, value):
         for _, pattern in KEY_PATTERNS:
-            value = pattern.sub("<key>", value)
+            value = pattern.sub(mask_assignment if pattern is ASSIGNMENT else "<key>", value)
         value = EMAIL.sub("<email>", value)
         for spelling, placeholder in self.paths:
             value = value.replace(spelling, placeholder)
@@ -127,6 +154,8 @@ class Sanitizer:
         if isinstance(value, str):
             if key in OPAQUE_KEYS and value:
                 return "<redacted>"
+            if is_credential_field(key, value):
+                return "<key>"
             return self.text(value)
         if isinstance(value, dict):
             return {self.text(k): self.value(v, k) for k, v in value.items()}
@@ -194,6 +223,15 @@ def strings(value):
             yield from strings(child)
 
 
+def credential_fields(value):
+    """True if a decoded JSON value holds a credential-named field with a real string value."""
+    if isinstance(value, dict):
+        return any(is_credential_field(key, child) or credential_fields(child) for key, child in value.items())
+    if isinstance(value, list):
+        return any(credential_fields(child) for child in value)
+    return False
+
+
 def sha(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -244,6 +282,8 @@ class Scanner:
             if value is not None:
                 for item in strings(value):
                     categories |= self.categories(item)
+                if credential_fields(value):
+                    categories.add("credential_field")
             findings.extend((number, category) for category in sorted(categories))
         for name, pattern in KEY_PATTERNS:
             for match in pattern.finditer(text):
@@ -253,6 +293,8 @@ class Scanner:
             categories = set()
             for item in strings(document):
                 categories |= self.categories(item)
+            if credential_fields(document):
+                categories.add("credential_field")
             # Decoded strings of a multi-line document have no single line; report line 0.
             reported = {category for _, category in findings}
             findings.extend((0, category) for category in sorted(categories - reported))
@@ -271,14 +313,71 @@ def scan(paths, identities):
     return 1 if total else 0
 
 
+def self_test():
+    """Positive and negative controls for the credential rules; returns the failed control names.
+
+    Every secret-looking value is assembled at run time, so this file holds none itself.
+    """
+    filler = "Q7n8r9T0u1V2w3X4y5Z6"
+    api, tok, pw, sec = "api_" + "key", "tok" + "en", "pass" + "word", "sec" + "ret"
+    positives = {
+        "double_quoted": f'{api}="{filler}"',
+        "single_quoted": f"{pw}='{filler}'",
+        "spaced_quoted": f'{tok.upper()} : "{filler}"',
+        "bare": f"{tok}={filler}",
+        "env_name": f"export OPENAI_{api.upper()}={filler}",
+        "suffix_name": f"client_{sec} = '{filler}'",
+        "json_in_text": json.dumps({tok: filler}),
+        "json_in_text_suffix": json.dumps({"access_" + tok: filler}),
+    }
+    fields = {"json_field": {tok: filler}, "json_nested_field": {"auth": {api: filler}},
+              "json_list_field": [{"refresh_" + tok: filler}]}
+    negatives = [f'"{tok}": null', f"max_{tok}s=4", '"output_' + tok + 's": 12', f'"{tok}": {{"type": "string"}}',
+                 f'{pw}=""', f"{tok}=<key>", f'{api}="<key>"', f"{pw}: '<key>'", json.dumps({tok: "<key>"})]
+    failed = []
+    sanitizer, scanner = Sanitizer(), Scanner()
+    with tempfile.TemporaryDirectory() as folder:
+        cases = [(name, "case.txt", text) for name, text in positives.items()]
+        cases += [(name, "case.jsonl", json.dumps(value) + "\n") for name, value in fields.items()]
+        for name, filename, text in cases:
+            path = Path(folder) / filename
+            path.write_text(text + "\n", encoding="utf-8")
+            if not {category for _, category in scanner.file(path, None)} & {"assignment", "credential_field"}:
+                failed.append(f"{name}: not found by the scan")
+            sanitizer.file(path)
+            once = path.read_text(encoding="utf-8")
+            if filler in once or scanner.file(path, None):
+                failed.append(f"{name}: survives sanitizing")
+            sanitizer.file(path)
+            if path.read_text(encoding="utf-8") != once:
+                failed.append(f"{name}: sanitizing is not idempotent")
+            if filename.endswith(".jsonl") and parse(once) is None:
+                failed.append(f"{name}: sanitized line is not JSON")
+        for index, text in enumerate(negatives):
+            path = Path(folder) / "negative.txt"
+            path.write_text(text + "\n", encoding="utf-8")
+            if scanner.file(path, None):
+                failed.append(f"negative {index}: reported by the scan")
+            if sanitizer.file(path):
+                failed.append(f"negative {index}: rewritten by the sanitizer")
+    return failed
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--self-test", action="store_true", help="run the credential-rule controls and exit")
     parser.add_argument("--scan", action="store_true", help="report findings instead of rewriting")
     parser.add_argument("--identity", action="append", default=[], help="extra name, login or email to remove")
     parser.add_argument("--work", help="recording workspace, replaced by <work>")
     parser.add_argument("--tmp", action="append", default=[], help="temporary folder of the recording, replaced by <tmp>")
-    parser.add_argument("paths", nargs="+", type=Path)
+    parser.add_argument("paths", nargs="*", type=Path)
     args = parser.parse_args(argv)
+    if args.self_test:
+        failed = self_test()
+        print("\n".join(failed) if failed else "credential controls: ok")
+        return 1 if failed else 0
+    if not args.paths:
+        parser.error("PATH is required")
     if args.scan:
         live = local_identities() if not os.environ.get("CI") else set()
         return scan(args.paths, live | set(args.identity))
