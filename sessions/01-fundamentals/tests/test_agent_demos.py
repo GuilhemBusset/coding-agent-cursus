@@ -29,6 +29,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from urllib.parse import unquote, urlsplit
 
 import pytest
@@ -709,6 +710,10 @@ def driver_harness(tmp_path):
     session = tmp_path / "session"
     folder = session / "cursus/demos/agent"
     shutil.copytree(DEMO, folder, ignore=shutil.ignore_patterns("__pycache__"))
+    # Give this copied checkout its own boundary. An ancestor .git (for example
+    # an engine sandbox marker under /tmp) must not make its sibling work/
+    # appear to be inside the course checkout.
+    (session / ".git").mkdir()
     shutil.copytree(PACK, session / "exercises/p00-lab", ignore=shutil.ignore_patterns("__pycache__"))
     for name in ("pyproject.toml", "uv.lock", "mise.toml"):
         shutil.copy2(SESSION / name, session / name)
@@ -975,14 +980,55 @@ def test_d3_pinned_upstream_and_attribution():
     upstream = read(DEMO / "upstream/server.py.txt")
     ast.parse(upstream)
     assert "bomb_status" in upstream
-    assert all(key in upstream for key in ("answer", "context_blocks", "context_characters"))
+    assert "answer" in upstream
+    # Upstream's README documents these keys, but its implementation returns
+    # sizing fields instead. Preserve both snapshots byte-for-byte; the live
+    # port's response contract is exercised by the stdio test above.
+    upstream_readme = read(DEMO / "upstream/README.md.txt")
+    assert all(key in upstream_readme for key in ("answer", "context_blocks", "context_characters"))
     # Whether the attribution/licensing rationale and deviations are accurate
     # is a source-review obligation; structural evidence must still be present.
     assert re.search(r"licen[cs]e|attribution|same.author|authorship", doc, re.I)
     assert re.search(r"deviation|porting|port notes|differences", doc, re.I)
 
 
-def mcp_evidence(events, cli):
+def codex_required_mcp_connected(row):
+    """A successful required-server invocation proves startup without JSON events.
+
+    codex exec can emit only turn/agent events for the OK probe even when MCP
+    startup succeeds. An MCP list alone proves configuration, not connection.
+    Match required=true to the server actually running our port, and respect
+    later overrides rather than accepting a flag that was subsequently undone.
+    """
+    if type(field(row, "exit_code", default=None)) is not int or field(row, "exit_code") != 0:
+        return False
+    argv = command(row)
+    settings = []
+    for index, token in enumerate(argv):
+        if token in {"-c", "--config"} and index + 1 < len(argv):
+            settings.append(argv[index + 1])
+        elif token.startswith(("-c=", "--config=")):
+            settings.append(token.split("=", 1)[1])
+    servers = {}
+    for setting in settings:
+        match = re.fullmatch(r"mcp_servers\.([\w-]+)\.(command|args|required|enabled)\s*=\s*(.*)", setting)
+        if match:
+            try:
+                value = tomllib.loads("value = " + match[3])["value"]
+            except tomllib.TOMLDecodeError:
+                return False
+            servers.setdefault(match[1], {})[match[2]] = value
+    for config in servers.values():
+        if (config.get("required") is not True or config.get("enabled", True) is not True
+                or not config.get("command")):
+            continue
+        targets = [config["command"], *config.get("args", [])]
+        if any(isinstance(target, str) and Path(target).name == "context_bomb.py" for target in targets):
+            return True
+    return False
+
+
+def mcp_evidence(events, cli, row=None):
     if cli == "claude":
         init = [e for e in events if e.get("type") == "system" and e.get("subtype") == "init"]
         assert init and isinstance(init[0].get("tools"), list) and isinstance(init[0].get("mcp_servers"), list)
@@ -997,9 +1043,39 @@ def mcp_evidence(events, cli):
         evidence = [e for e in events if "mcp" in str(e.get("type", "")).lower() or
                     "mcp" in str(e.get("item", {}).get("type", "")).lower() or
                     "mcp" in str(e.get("method", "")).lower()]
-        assert any(("bomb_status" in json.dumps(e) or "bomb" in json.dumps(e).lower()) and
-                   re.search(r"ready|connect|complete|success|bomb_status", json.dumps(e), re.I)
-                   for e in evidence), "No raw Codex MCP startup/discovery evidence"
+        connected = any(("bomb_status" in json.dumps(e) or "bomb" in json.dumps(e).lower()) and
+                        re.search(r"ready|connect|complete|success|bomb_status", json.dumps(e), re.I)
+                        for e in evidence)
+        assert connected or (row is not None and codex_required_mcp_connected(row)), (
+            "No Codex MCP startup/discovery event or successful required-server invocation")
+
+
+@pytest.mark.parametrize("config_flag", ("-c", "--config"))
+def test_d3_codex_mcp_connection_evidence_requires_successful_startup(config_flag):
+    # Use a different registration name: evidence must follow the configured
+    # port, not a hard-coded server name or the assistant's prose.
+    events = [{"type": "item.completed", "item": {
+        "type": "agent_message", "text": "context_bomb connected; bomb_status is ready"}}]
+    argv = ["codex", "exec", "--json"]
+    for setting in ('mcp_servers.rehearsal.command="python3"',
+                    'mcp_servers.rehearsal.args=["/tmp/other-demo/context_bomb.py"]',
+                    'mcp_servers.rehearsal.required=true'):
+        argv.extend([config_flag, setting])
+    row = {"command": argv, "exit_code": 0}
+    mcp_evidence(events, "codex", row)
+    rejected = [
+        {**row, "exit_code": 1},
+        {**row, "exit_code": None},
+        {**row, "command": argv[:-2]},  # Optional startup can fail with exit 0.
+        {**row, "command": argv + [config_flag, "mcp_servers.rehearsal.required=false"]},
+        {**row, "command": argv + [config_flag, "mcp_servers.rehearsal.enabled=false"]},
+        {**row, "command": argv + [config_flag, 'mcp_servers.rehearsal.args=["other_server.py"]']},
+        {**row, "command": ["codex", "exec", "--json"],
+         "effective_mcp_servers": [{"name": "context_bomb", "enabled": True}]},
+    ]
+    for invalid in rejected:
+        with pytest.raises(AssertionError, match="No Codex MCP"):
+            mcp_evidence(events, "codex", invalid)
 
 
 def token_table(doc, key, arm_name, counts, baseline_counts):
@@ -1066,7 +1142,7 @@ def test_d3_bomb_recordings_usage_captures_and_search_findings(cli, run):
         token_table(doc, stem("bomb", cli, run), name, counts, baseline_counts)
         argv = command(effective(meta, row))
         if name != "without":
-            mcp_evidence(events, cli)
+            mcp_evidence(events, cli, effective(meta, row))
             if cli == "claude":
                 assert option(argv, "--mcp-config")
             else:
