@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en" data-page-kind="deck" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Act I · The sampler</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <style>/* Page-specific layout for the Act I deck; uses the shared tokens. */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem var(--space); align-items: start; }
+.cols > * { min-width: 0; }
+@media (min-width: 800px) { .cols.wide-left { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+@media (max-width: 799px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.tight { padding-left: 1.25rem; }
+.tight li + li { margin-top: .3rem; }
+.cite { color: var(--muted); font-size: .8125rem; line-height: 1.45; margin: .75rem 0 0; padding-top: .5rem; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+.cite cite { font-style: normal; color: var(--secondary); }
+.hedge { border-left-color: var(--amber); }
+.hedge .label { color: var(--amber); }
+.formula { font: 600 clamp(1.5rem, 3vw, 2.25rem)/1.3 var(--mono); margin: 0 0 .5rem; overflow-wrap: anywhere; }
+.formula.small { font-size: clamp(1.15rem, 2vw, 1.5rem); }
+.formula sub, .formula sup { font-size: .7em; }
+.process.compact { gap: .75rem; margin-bottom: .6rem; }
+.process.compact > li, [data-deck-paged] .process.compact > li { padding-block: .4rem; gap: .25rem; }
+.process.compact strong, .process.compact .process-value, [data-deck-paged] .process.compact strong, [data-deck-paged] .process.compact .process-value { font-size: clamp(1.1rem, 1.8vw, 1.35rem); }
+.process.compact > li > span:last-child:not(.label), [data-deck-paged] .process.compact > li > span:last-child:not(.label) { font-size: .9375rem; }
+.takeaway { font-size: clamp(1.15rem, 1.8vw, 1.35rem); font-weight: 650; line-height: 1.3; }
+.activity { border-left-color: var(--accent); }
+.go { font-size: 1.125rem; font-weight: 650; }
+.steps { padding-left: 1.5rem; }
+.steps li + li { margin-top: .3rem; }
+.tag { display: inline-block; padding: 0 .4rem; border: 1px solid var(--amber); color: var(--amber); font: 600 .75rem/1.6 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.compare blockquote { margin: 0 0 .5rem; padding: .35rem .75rem; border-left: 3px solid var(--rule); background: var(--paper); }
+.compare blockquote p { margin: 0; }
+.compare blockquote p + p { margin-top: .25rem; }
+.compare figure { margin: 0; }
+.compare .ask { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1rem; margin-bottom: .5rem; }
+.compare .ask blockquote { flex: 1 1 16rem; margin: 0; }
+.compare figcaption { color: var(--secondary); font: 600 .8125rem/1.5 var(--mono); margin-bottom: .25rem; }
+.compare .false { border-left-color: var(--red); }
+.compare .question { border-left-color: var(--accent); }
+.objective pre { margin-bottom: .5rem; padding: .6rem .9rem; font-size: clamp(.9375rem, 1.6vw, 1.25rem); white-space: pre-wrap; overflow-x: visible; }
+.objective pre code { overflow-wrap: anywhere; }
+.objective .right { border-left: 3px solid var(--accent); }
+.objective .wrong { border-left: 3px solid var(--red); }
+.speaker-notes { margin: .75rem 0 0; padding: 0; border-top: 1px dashed var(--rule); border-bottom: 0; font-size: .9375rem; line-height: 1.55; }
+.speaker-notes > summary { min-height: 44px; padding-block: .6rem 0; color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; }
+.speaker-notes[open] > summary { margin-bottom: .5rem; }
+.notes-body { max-height: min(40vh, 22rem); overflow-y: auto; overflow-wrap: anywhere; padding: .25rem .75rem .25rem 0; color: var(--secondary); }
+.notes-body p, .notes-body ul { margin-bottom: .6rem; }
+.notes-body > :last-child { margin-bottom: 0; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .masthead .lede { display: none; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); margin-bottom: .6rem; }
+  [data-deck-paged] [data-slide] p, [data-deck-paged] [data-slide] ul, [data-deck-paged] [data-slide] ol { margin-bottom: .6rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-slide] > .speaker-notes { margin-top: auto; }
+}
+@media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
+  [data-deck-paged] [data-slide] { font-size: .96875rem; line-height: 1.5; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); }
+  [data-deck-paged] .formula { font-size: 1.6rem; }
+  [data-deck-paged] .formula.small { font-size: 1.2rem; }
+  [data-deck-paged] [data-prob-row] + [data-prob-row] { margin-top: .25rem; }
+  [data-deck-paged] figure:has(> [data-prob-chart]) > figcaption { margin-bottom: .5rem; }
+}
+@media print {
+  .notes-body { max-height: none; overflow: visible; color: inherit; }
+}
+</style>
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to slides</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act I · 45 minutes</p>
+      <h1 id="deck-title">The sampler</h1>
+      <p class="lede">From one equation to a correct picture of what a language model is, with a widget after each idea. The act ends on a single forward pass so that Act II can open on the loop.</p>
+    </header>
+    <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
+      <section id="title" data-slide data-minutes="1" tabindex="-1" aria-labelledby="title-title">
+        <p class="eyebrow">Act I · The sampler</p>
+        <h2 id="title-title">What is a language model, exactly?</h2>
+        <p class="lede">One equation, then everything an agent is built on: tokens, a distribution, attention, how the model is made, and what it cannot know.</p>
+        <ol class="steps">
+          <li>One conditional distribution, written on the board.</li>
+          <li>Tokens and IDs; the strawberry demo and the pivot to code.</li>
+          <li>A forward pass gives probabilities; sampling picks one token.</li>
+          <li>Attention as a soft lookup.</li>
+          <li>Pretraining, post-training, RL with verifiable rewards.</li>
+          <li>Cutoff, hallucination and what is at stake in OR.</li>
+        </ol>
+        <p class="takeaway">Four labs along the way. Open them when the slide says so.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 1 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: by the end of this act everyone should hold a correct, unglamorous picture: a model is a function that returns a probability for the next token, and a sampler that draws one. Everything clever happens around that loop, which is Act II.</p>
+            <p>Say that each idea is followed by a widget they use on their own laptop, and that the four labs work offline from the course folder.</p>
+            <p>Background for you, not for the slides: Andrej Karpathy, <a href="https://www.youtube.com/watch?v=7xTGNNLPyMI">Deep Dive into LLMs like ChatGPT</a> (YouTube) covers the same arc from pretraining data to RL at greater length.</p>
+            <p>Transition: “Let us start with the only equation of the session.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="factorization" data-slide data-minutes="3" tabindex="-1" aria-labelledby="factorization-title">
+        <p class="eyebrow">01 · One equation</p>
+        <h2 id="factorization-title">A language model is one conditional distribution, used again and again.</h2>
+        <div class="cols wide-left">
+          <div>
+            <p class="formula">p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
+            <p>x<sub>t</sub> is the token at position t. x<sub>&lt;t</sub> is every token before it, x<sub>1</sub> … x<sub>t−1</sub>: the whole context, not just the last word.</p>
+            <p class="formula small">p(x<sub>1</sub>, …, x<sub>T</sub>) = ∏<sub>t=1</sub><sup>T</sup> p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
+            <p>The chain rule factorizes the joint distribution of a whole sequence into these conditionals, exactly. <strong>Autoregression</strong> is the modelling choice: one network computes every factor, and generation draws x<sub>1</sub>, then x<sub>2</sub> given x<sub>1</sub>, and so on.</p>
+          </div>
+          <div class="callout">
+            <p class="label">Boundaries</p>
+            <p>At t = 1 the context x<sub>&lt;1</sub> is empty; in practice the model sees a beginning-of-sequence token there.</p>
+            <p>An end-of-sequence token is part of the vocabulary, so “stop here” is one more outcome and the length T is modelled too.</p>
+          </div>
+        </div>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Write p(x_t | x_&lt;t) on the board before you show the slide and leave it there all session; Act II and the labs come back to it.</p>
+            <p>Talk track: read it aloud as “the probability of the next token given everything before it”. Then write the product underneath: the probability of a whole text is the product of these conditionals. This is the chain rule of probability, a factorization that holds for any joint distribution, so it is not an approximation. The approximation is the network that computes each factor.</p>
+            <p>Mention the two boundary conventions: an empty context, or a BOS token, at t = 1; and an EOS token so the model can choose to stop.</p>
+            <p>Predict question: “Is writing a text one token at a time a simplification that loses something?” Answer: no, the factorization is exact; what limits the model is how well it learns each conditional.</p>
+            <p>Transition: “What exactly is an x_t? Not a letter, and not quite a word.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="tokens" data-slide data-minutes="2" tabindex="-1" aria-labelledby="tokens-title">
+        <p class="eyebrow">02 · Tokens</p>
+        <h2 id="tokens-title">The model reads integer IDs, not letters.</h2>
+        <figure class="process-figure">
+          <figcaption>What GPT-2 receives for the text “ strawberry”, leading space included</figcaption>
+          <ol class="process compact">
+            <li><span class="label">Text</span> <code class="process-value">" strawberry"</code> <span>10 letters and a space</span></li>
+            <li><span class="label">GPT-2 tokenizer</span> <strong>One vocabulary lookup</strong> <span>50,257 entries</span></li>
+            <li><span class="label">Model input</span> <strong class="accent">ID 41236</strong> <span>one integer, no letters</span></li>
+          </ol>
+        </figure>
+        <p>A token is a word, a piece of one, a few digits or a character. Each becomes its integer ID: a sentence is a list of numbers.</p>
+        <div class="callout hedge">
+          <p>The ID carries no spelling. A model can only pick up which letters a token contains indirectly, from training text, so spelling and letter counting are hard for it, not impossible.</p>
+        </div>
+        <p class="cite">Token ID recorded in <code>fixtures/next_token.json</code> with the GPT-2 tokenizer, <code>openai-community/gpt2</code> at revision 607a30d783dfa663caf39e06633721c8d4cfcd7e, 2026-10-10.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: point at the x_t on the board. Each x_t is an integer ID. For GPT-2, “ strawberry” with its leading space is a single token, ID 41236. The model never sees s, t, r: it sees 41236.</p>
+            <p>Qualification to keep: models do learn some spelling facts about tokens from text that spells words out, so they can sometimes count letters. It is unreliable rather than impossible.</p>
+            <p>Predict question for the lab: “How many tokens is ‘ strawberry’?” Let them guess before they open it.</p>
+            <p>Transition: “Open the tokenizer lab and lock in your two predictions.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="tokenizer-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="tokenizer-lab-title">
+        <p class="eyebrow">Lab · 3 minutes</p>
+        <h2 id="tokenizer-lab-title">Tokens, not letters: predict, then look.</h2>
+        <p class="go"><a href="labs/tokenizer.html">Open the tokenizer lab</a> <span class="muted">(<code>labs/tokenizer.html</code>, works offline)</span></p>
+        <ol class="steps">
+          <li>Answer both predict questions and lock in before you scroll.</li>
+          <li>Reveal, then read the worked examples: a French word and a long number.</li>
+          <li>Find the line that says what an ID tells you about the letters inside it.</li>
+        </ol>
+        <div class="callout hedge">
+          <p class="label">Read the label</p>
+          <p>The lab’s splits and IDs are illustrative, written by hand (“␣straw” + “berry”). The real GPT-2 tokenizer keeps “ strawberry” as one token, 41236. Every model family splits differently, and Claude’s tokenizer is not public.</p>
+        </div>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Activity: two minutes in the lab, one minute of debrief. Everyone locks in both answers before revealing; a show of hands for 1, 2, 3 or 11 tokens.</p>
+            <p>Debrief: the number of pieces depends on the tokenizer, and the lab says its splits are hand-written. Whatever the split, the model receives IDs. The second question’s answer, “none directly”, is the point.</p>
+            <p>If someone asks for a real tokenizer: the lab’s last section names one to try online. Do not open it during class; the deck stays offline.</p>
+            <p>Transition: “So let us ask a model to count letters, and watch what happens.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="strawberry" data-slide data-minutes="4" tabindex="-1" aria-labelledby="strawberry-title">
+        <p class="eyebrow">Demo · 4 minutes · Strawberry pivot</p>
+        <h2 id="strawberry-title">Counting letters is a guess. Code that counts is not.</h2>
+        <div class="cols">
+          <div>
+            <ol class="steps">
+              <li><strong>Predict.</strong> Same model, same question, five times, no tools: how many right?</li>
+              <li><strong>Ask.</strong> How many r’s in a 300-letter invented word? True count: 146.</li>
+              <li><strong>Pivot to code.</strong> The agent writes <code>work/count_r.py</code>, runs it, and prints 146, every run.</li>
+            </ol>
+            <p>Recorded 2026-10-11, tools off: <code>claude-haiku-5-5</code> wrong 2 of 5, <code>gpt-6-luna</code> wrong 4 of 5, off by up to 32.</p>
+          </div>
+          <div class="callout activity">
+            <p class="label">Runbook</p>
+            <p><a href="demos/model/strawberry.md"><code>demos/model/strawberry.md</code></a></p>
+            <p><code>uv run strawberry.py</code><br><code>uv run strawberry.py --pivot</code></p>
+            <p>Claude Code or Codex, whichever is logged in. Fallback: <code>uv run --offline strawberry.py --replay</code></p>
+          </div>
+        </div>
+        <p class="takeaway">When a question has a mechanical answer, the agent should write and run code. The rest of the course does that with solvers.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 4 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Run the runbook as written, from <code>sessions/01-fundamentals/cursus/demos/model</code>. It uses the longer invented word, not “strawberry” itself, because current models have seen the strawberry question many times. The script picks Claude Code or Codex, whichever is installed and logged in; <code>--via codex</code> or <code>--via claude</code> forces one.</p>
+            <p>Predict question (runbook): “I will ask the same model the same question five times, with no tools. How many of the five answers will be the right count?” Hands for 0, 1–2, 3–4 and 5. Then: “And if it may write code?”</p>
+            <p>If all five live answers are right, say so, replay the recording, and pivot anyway: a correct guess is still a guess. If there is no login or network, go straight to the replay.</p>
+            <p>Debrief: tokens, not letters, plus a sampled answer, give a number that moves between runs. The pivot is the course thesis: the model does not count, it writes the program that counts. Reset with the runbook’s reset step after class.</p>
+            <p>Transition: “Why did the answer move between runs? Because one pass gives a distribution.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="distribution" data-slide data-minutes="3" tabindex="-1" aria-labelledby="distribution-title">
+        <p class="eyebrow">03 · One forward pass</p>
+        <h2 id="distribution-title">One forward pass gives a distribution, not an answer.</h2>
+        <div class="cols">
+          <figure>
+            <figcaption>GPT-2’s top 5 after “The capital of France is” (recorded; ␣ = space)</figcaption>
+            <ol data-prob-chart>
+              <li data-prob-row data-value="0.0846"><span data-prob-label><code>␣the</code></span> <span data-prob-value>8.5%</span></li>
+              <li data-prob-row data-value="0.0479"><span data-prob-label><code>␣now</code></span> <span data-prob-value>4.8%</span></li>
+              <li data-prob-row data-value="0.0461"><span data-prob-label><code>␣a</code></span> <span data-prob-value>4.6%</span></li>
+              <li data-prob-row data-value="0.0324"><span data-prob-label><code>␣France</code></span> <span data-prob-value>3.2%</span></li>
+              <li data-prob-row data-value="0.0323" data-highlight><span data-prob-label><code>␣Paris</code> <span class="visually-hidden" data-prob-flag> (highlighted)</span></span> <span data-prob-value>3.2%</span></li>
+            </ol>
+          </figure>
+          <div>
+            <p>The network returns one score z<sub>i</sub> per vocabulary entry. Then:</p>
+            <p class="formula small">p = softmax(z/T)</p>
+            <p>A <strong>sampler</strong> draws one token from p and appends it. Temperature T&nbsp;&lt;&nbsp;1 sharpens towards the top token (argmax as T&nbsp;→&nbsp;0); T&nbsp;&gt;&nbsp;1 flattens.</p>
+          </div>
+        </div>
+        <p class="callout"><strong>Name it: System 1.</strong> Each token costs one fixed pass through the network, with no extra passes for a harder token.</p>
+        <p class="cite">Probabilities at T = 1 over the full vocabulary, from the logits and log-sum-exp recorded in <code>fixtures/next_token.json</code> (GPT-2 small, 2026-10-10). The top 20 hold 45.7% of the mass.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: GPT-2 does not answer “Paris”. It returns probabilities, and “ Paris” is fifth at 3.2%, behind “ the” at 8.5%, because “The capital of France is the city of Paris” is also a good continuation. The answer appears only when a sampler draws.</p>
+            <p>Write softmax(z/T) next to the equation on the board: divide the scores by T, exponentiate, normalize. Low T piles mass on the top token; T → 0 is argmax, the same token every time; high T spreads it out.</p>
+            <p>Name System 1 now: one pass, fixed compute per token for a given model, context and configuration. It does not mean constant latency: a longer context makes each pass slower. It means there is no step where the model decides to think longer about a hard token.</p>
+            <p>Transition: “Bet against GPT-2 in the next-token lab.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="next-token-lab" data-slide data-minutes="4" tabindex="-1" aria-labelledby="next-token-lab-title">
+        <p class="eyebrow">Lab · 4 minutes</p>
+        <h2 id="next-token-lab-title">Bet on the next token, then reshape the distribution.</h2>
+        <p class="go"><a href="labs/next-token.html">Open the next-token lab</a> <span class="muted">(<code>labs/next-token.html</code>, real GPT-2 data)</span></p>
+        <ol class="steps">
+          <li>On “minimize total”, type a guess and lock it. Then reveal what GPT-2 assigned.</li>
+          <li>In the sandbox, move T from 1 to 0.3, then to 2. Watch the top bar.</li>
+          <li>Set top-p to 0.5: which candidates can never be drawn?</li>
+          <li>Press Sample ×100 twice. Switch to Argmax and press it again.</li>
+        </ol>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 4 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Activity: on a shared screen, collect three or four guesses from the room and lock each; the tally is local to the browser. Reveal, then compare the class’s top guess with GPT-2’s top token. Move to a second prompt if there is time.</p>
+            <p>Predict question before Sample ×100: “Will two batches of 100 give the same counts?” No in Sample mode; yes in Argmax mode, because the top token is chosen every time.</p>
+            <p>Point out the sandbox’s honesty note: only the top 20 logits are stored, so it renormalizes among them.</p>
+            <p>Transition: “That was one step. Now watch a real model take forty of them.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="tiny-lm-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="tiny-lm-lab-title">
+        <p class="eyebrow">Lab · 3 minutes</p>
+        <h2 id="tiny-lm-lab-title">Run a real model one forward pass at a time.</h2>
+        <p class="go"><a href="labs/tiny-lm.html">Open the tiny language model lab</a> <span class="muted">(<code>labs/tiny-lm.html</code>, 260,000 parameters, in the page)</span></p>
+        <ol class="steps">
+          <li>Press Step five times: one forward pass, one draw, one new token each.</li>
+          <li>Press Run 40 tokens. Click a token in the middle to rewind and resample.</li>
+          <li>Reset with the same seed and run again: same text. Change the seed: new text.</li>
+        </ol>
+        <p class="muted">Trained on TinyStories only: it shows the mechanism, not the capability.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Activity: everyone generates a story. Ask two people with different seeds to read their first line aloud: same prompt, same model, different stories.</p>
+            <p>Talk track: each Step is the loop on the board. One forward pass computes p(x_t | x_&lt;t), the seeded sampler draws, the token is appended, repeat. A chat model’s answer is this loop with a much larger model.</p>
+            <p>Predict question before the reset: “Same seed, same settings, same clicks: same text?” Yes, which sets up the next slide.</p>
+            <p>Transition: “So why can you not get the same answer twice from a chatbot?”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="reproducibility" data-slide data-minutes="3" tabindex="-1" aria-labelledby="reproducibility-title">
+        <p class="eyebrow">04 · Why outputs differ</p>
+        <h2 id="reproducibility-title">Same prompt, different answer: sampling, not a bug.</h2>
+        <div class="cols">
+          <ul class="tight">
+            <li>Each answer is a draw. A flat distribution gives different outputs; a peaked one can repeat itself. Sampling allows a difference; it does not guarantee one.</li>
+            <li>A fixed seed or argmax reproduces locally, as in the tiny-LM lab.</li>
+            <li>Neither agent CLI lets you fix a seed, and even greedy decoding on shared GPU servers can drift: batching can change the order of floating-point additions.</li>
+          </ul>
+          <div class="callout activity">
+            <p class="label">Demo · 3 minutes</p>
+            <p><a href="demos/model/sampling.md"><code>demos/model/sampling.md</code></a>: one prompt, five runs, count the distinct answers.</p>
+            <p>Recorded 2026-10-11: <code>claude-haiku-5-5</code> 5 of 5 distinct; <code>gpt-6-luna</code> 4 of 5.</p>
+          </div>
+        </div>
+        <p class="cite">As of 2026-10-11, neither CLI exposes a temperature, top-p or seed option: <a href="https://code.claude.com/docs/en/cli-reference">Claude Code CLI reference</a>, <a href="https://developers.openai.com/codex/cli/reference">Codex CLI reference</a>, as checked in the sampling runbook.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Run the sampling runbook: predict question “Same prompt, same model, same settings, five times. How many different names do we get?”, hands for 1, 2–3 and 4–5, then <code>uv run sampling.py</code> (or <code>--via codex</code>). Fallback: <code>uv run --offline sampling.py --replay</code>.</p>
+            <p>Report whatever count you get. A live run can repeat a favourite name; that is a peaked distribution, not determinism.</p>
+            <p>Talk track for reproducibility: local and seeded, outputs reproduce; hosted, you cannot fix the seed and should not rely on even temperature-0 outputs being bit-identical. For the course this means: do not judge an agent from one run, and keep what you need to reproduce (code, data, solver logs) in files.</p>
+            <p>Transition: “What happens inside that one pass? One mechanism matters most: attention.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="attention" data-slide data-minutes="2" tabindex="-1" aria-labelledby="attention-title">
+        <p class="eyebrow">05 · Inside the pass</p>
+        <h2 id="attention-title">Attention is a soft database lookup.</h2>
+        <p>A database matches a query against keys and returns the one value whose key matches. In attention, the current token’s <strong>query</strong> q is scored against the <strong>key</strong> k<sub>i</sub> of every earlier token and itself; softmax turns the scores into weights that sum to 1, and the output is the weighted average of their <strong>values</strong> v<sub>i</sub>.</p>
+        <ol class="process compact">
+          <li><span class="label">Query</span> <strong>What am I looking for?</strong> <span>one vector per token</span></li>
+          <li><span class="label">Match keys</span> <strong>Score q·k<sub>i</sub>/√d</strong> <span>softmax turns scores into weights</span></li>
+          <li><span class="label">Blend values</span> <strong>Σ<sub>i</sub> w<sub>i</sub> v<sub>i</sub></strong> <span>a soft, not exact, lookup</span></li>
+        </ol>
+        <p class="formula small">softmax(qK<sup>T</sup>/√d)·V</p>
+        <p>Causal: a token looks only at itself and earlier tokens, which is what keeps each factor p(x<sub>t</sub> | x<sub>&lt;t</sub>). GPT-2 small runs 12 heads in each of 12 layers.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: a dictionary lookup is hard: exact key, one value. Attention makes it soft and differentiable: every key gets a similarity score, softmax turns the scores into a probability measure, and the output is the expectation of the values under it. d is the key dimension; dividing by √d keeps the scores from growing with it.</p>
+            <p>This is the only mechanism slide of the act. Each head learns its own queries, keys and values, and stacking layers lets later lookups use earlier results. The lab shows a real GPT-2 head linking “it” to “animal”.</p>
+            <p>Transition: “Drag a query and watch the weights move.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="attention-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="attention-lab-title">
+        <p class="eyebrow">Lab · 3 minutes</p>
+        <h2 id="attention-lab-title">Move the query; watch the weights and the output.</h2>
+        <p class="go"><a href="labs/attention.html">Open the attention lab</a> <span class="muted">(<code>labs/attention.html</code>, keyboard sliders included)</span></p>
+        <ol class="steps">
+          <li>Toy panel: drag the query, or use the sliders, towards one key. Watch its weight rise and the output move to its value.</li>
+          <li>Raise the scale s until one record takes nearly all the mass: a hard lookup. Set s to 0: a plain average.</li>
+          <li>GPT-2 panel: focus “it”, then change layer and head. Which heads look back at “animal”?</li>
+        </ol>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Activity: two minutes on the toy, one on GPT-2. The toy’s four records are invented; the GPT-2 weights are recorded from the real model on one sentence.</p>
+            <p>Predict question before they drag: “If the query points exactly at one key, does the output equal that key’s value?” Only as s grows; at the default scale the other values still pull the output.</p>
+            <p>Debrief: most heads do not do anything human-readable; the lab opens on the one that puts the most weight from “it” on “animal”.</p>
+            <p>Transition: “Where do these weights come from? Three stages of training.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="pretraining" data-slide data-minutes="2" tabindex="-1" aria-labelledby="pretraining-title">
+        <p class="eyebrow">06 · How a model is made · 1/3</p>
+        <h2 id="pretraining-title">Pretraining: predict the next token of a vast amount of text.</h2>
+        <ul class="tight">
+          <li>Training minimizes −log p(x<sub>t</sub> | x<sub>&lt;t</sub>) over the corpus. That quantity is a code length: with arithmetic coding, a better predictor is a better <strong>lossless</strong> compressor.</li>
+          <li>The weights are far smaller than the text they read, so they cannot keep it verbatim. What survives is what helps predict. Think of the model as a <strong>lossy compression</strong> of its training text.</li>
+          <li>The result is a <strong>base model</strong>: a document continuer, not an assistant.</li>
+        </ul>
+        <div class="callout hedge"><p>The paper is about prediction as lossless compression of a sequence. “Lossy compression” of the corpus is our metaphor for what the weights keep, not a result of the paper.</p></div>
+        <p class="cite">Source: Grégoire Delétang et al., <cite>Language Modeling Is Compression</cite>, <a href="https://arxiv.org/abs/2309.10668">arXiv 2309.10668</a> (2023), abstract.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: the loss on the board is the number of bits the model would need to encode the text. Delétang et al. state in their abstract that predictive models and lossless compressors are equivalent, and that a large language model trained mostly on text is also a strong general-purpose compressor.</p>
+            <p>Our framing on top: the weights are a lossy compression of the training text, Karpathy’s “lossy zip file of the internet” in the deep-dive video. Frequent regularities survive; rare facts may survive partially or not at all, and the model cannot tell which.</p>
+            <p>Transition: “A base model continues documents. Ask it a question and see what you get.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="post-training" data-slide data-minutes="3" tabindex="-1" aria-labelledby="post-training-title">
+        <p class="eyebrow">06 · How a model is made · 2/3</p>
+        <h2 id="post-training-title">Post-training turns a document continuer into an assistant.</h2>
+        <div class="compare" data-fixture-id="factual">
+          <figure class="ask">
+            <figcaption>Shared user question</figcaption>
+            <blockquote class="question"><p>What is the capital of Australia?</p></blockquote>
+          </figure>
+          <div class="cols">
+            <figure>
+              <figcaption>Base model · SmolLM2-135M · excerpt, its first three lines</figcaption>
+              <blockquote class="false"><p>The capital of Australia is Canberra.</p><p>What is the capital of New Zealand?</p><p>New Zealand is the second largest country in the world, with a population of 5.1 million people.</p></blockquote>
+            </figure>
+            <figure>
+              <figcaption>Assistant · SmolLM2-135M-Instruct · complete, stopped itself</figcaption>
+              <blockquote><p>The capital of Australia is Canberra.</p></blockquote>
+            </figure>
+          </div>
+        </div>
+        <p>Fine-tuning on conversations, then on preferences, teaches the format: answer, then stop. It changes behaviour; it adds no fact checker.</p>
+        <p class="cite">Recorded 2026-10-10 by <code>fixtures/build_fixtures.py</code> into <code>fixtures/base_vs_instruct.json</code>: HuggingFaceTB/SmolLM2-135M at 93efa2f097d58c2a74874c7e644dbc9b0cee75a2 and HuggingFaceTB/SmolLM2-135M-Instruct at 12fd25f77366fa6b3b4b768ec3050bf629380bac, greedy decoding, max 48 new tokens, CPU; the instruct input used its chat template.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 3 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Predict question, before you reveal the right column: “Same question, a model of the same size. What does the base model write after it?” Many will expect a plain answer.</p>
+            <p>Talk track: the base model gets the capital right, then keeps going because the most likely document is a quiz page: it invents the next question and a false answer about New Zealand. The base excerpt shown is the first three lines of its 48 tokens; it was still writing when the limit cut it off. The instruct model, the same architecture after post-training, answers and emits end-of-sequence.</p>
+            <p>Post-training is supervised fine-tuning on conversations in a chat template, then preference tuning. It teaches the role and the format. It does not make the model check facts: the same weights could still produce the New Zealand line in another context.</p>
+            <p>Transition: “The newest stage adds a reward that can be checked by a program.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="rlvr" data-slide data-minutes="2" tabindex="-1" aria-labelledby="rlvr-title">
+        <p class="eyebrow">06 · How a model is made · 3/3</p>
+        <h2 id="rlvr-title">RL with verifiable rewards: the reward comes from a checker.</h2>
+        <ol class="process compact">
+          <li><span class="label">Task</span> <strong>A checkable problem</strong> <span>maths with a known answer, code with tests</span></li>
+          <li><span class="label">Sample</span> <strong>Many attempts</strong> <span>drawn from the model</span></li>
+          <li><span class="label">Verify</span> <strong>A program scores each</strong> <span>reward 1 if it passes, else 0</span></li>
+          <li><span class="label">Update</span> <strong>Reinforce what passed</strong> <span>those tokens get more likely</span></li>
+        </ol>
+        <div class="callout hedge"><p>The model learns to pass the checker, not to be right. A weak checker gets gamed; Act V shows how.</p></div>
+        <p class="cite">Term from Nathan Lambert et al., <cite>Tülu 3: Pushing Frontiers in Open Language Model Post-Training</cite>, <a href="https://arxiv.org/abs/2411.15124">arXiv 2411.15124</a> (2024). Rule-based rewards at scale: DeepSeek-AI, <cite>DeepSeek-R1</cite>, <a href="https://arxiv.org/abs/2501.12948">arXiv 2501.12948</a> (2025).</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: preference tuning needs a judge, human or model. RLVR replaces the judge with a verifiable reward: a program that checks the final answer or runs the tests. The model samples many attempts, the passing ones are reinforced, and over many rounds the model gets better at producing answers that pass.</p>
+            <p>Link to OR: our problems are unusually checkable. Feasibility of a plan and its objective value can be recomputed without trusting whoever produced them. That is why agents can be trusted more here, and why our checks must be honest.</p>
+            <p>Transition: “Three things no training stage fixes.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="cutoff" data-slide data-minutes="1" tabindex="-1" aria-labelledby="cutoff-title">
+        <p class="eyebrow">07 · Limits · 1/3</p>
+        <h2 id="cutoff-title">Knowledge cutoff: the weights stop at a date.</h2>
+        <ul class="tight">
+          <li>The training text was collected up to a cutoff. After it, the weights hold nothing, and the model may not know its own cutoff precisely.</li>
+          <li>Ask about a newer library version and you get a fluent answer about an older one.</li>
+          <li><strong>Context can carry newer facts.</strong> What the agent reads at run time (your files, the docs, a search result, a tool’s output) is part of x<sub>&lt;t</sub>.</li>
+        </ul>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 1 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: no vendor cutoff date on the slide on purpose; they change with every model and a date here would age badly. The point is structural: the weights are frozen at training time.</p>
+            <p>The practical fix is the context: an agent that reads the installed package’s docs or runs <code>--help</code> gets the current API, because those tokens are part of x_&lt;t.</p>
+            <p>Transition: “Even before the cutoff, nothing guarantees an answer is true.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="hallucination" data-slide data-minutes="2" tabindex="-1" aria-labelledby="hallucination-title">
+        <p class="eyebrow">07 · Limits · 2/3</p>
+        <h2 id="hallucination-title">No truth oracle, so hallucination is structural.</h2>
+        <ul class="tight">
+          <li>Pretraining rewards likely text, not true text. Nothing in p(x<sub>t</sub> | x<sub>&lt;t</sub>) consults the world: there is no truth oracle inside the model.</li>
+          <li>So a false continuation is produced the same way as a true one, and reads the same. Recall the base model: “New Zealand is the second largest country in the world.”</li>
+          <li>Structural does not mean always wrong. Models often get common facts right, and post-training can teach them to say “I don’t know”. It means any single answer can be wrong.</li>
+        </ul>
+        <p class="takeaway">The check has to come from outside the model: tests, a source, a solver’s feasibility check.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: hallucination is not a bug that a later version removes. The objective is likelihood, and likelihood is not truth. Fluency is evidence of a good language model, not of a correct answer.</p>
+            <p>Predict question: “Can you tell the hallucinated line from the true one by how it reads?” Show the post-training slide again if needed: the Canberra line and the New Zealand line read the same.</p>
+            <p>Transition: “In our field, a wrong line reads just as well and still runs.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="or-stake" data-slide data-minutes="2" tabindex="-1" aria-labelledby="or-stake-title">
+        <p class="eyebrow">07 · Limits · 3/3 · <span class="tag">Illustrative</span></p>
+        <h2 id="or-stake-title">The OR stake: a flipped objective reads as fluently as a correct one.</h2>
+        <p>Stated problem: open plants and ship to meet every customer’s demand at <strong>least total cost</strong>.</p>
+        <div class="objective">
+          <pre class="right"><code>h.changeObjectiveSense(highspy.ObjSense.kMinimize)</code></pre>
+          <pre class="wrong"><code>h.changeObjectiveSense(highspy.ObjSense.kMaximize)</code></pre>
+        </div>
+        <p>Both lines are equally fluent, both run, and the solver calls both results optimal. Only the first, minimize, matches the stated problem.</p>
+        <p class="takeaway">Read the model, not the status: check the objective sense against the problem statement.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: these two lines are invented for the slide, but the trap is real and you will meet it. In P00 the model sets the sense with <code>h.changeObjectiveSense(highspy.ObjSense.kMinimize)</code>; the P00 lab’s flipped-sense variant changes only that to kMaximize, and HiGHS still reports “optimal”, with an objective of 1085 instead of 485.</p>
+            <p>Predict question: “Which line would a model write if it had seen many profit-maximizing examples?” Either, with similar fluency: nothing in the text tells you which one is right except the problem statement.</p>
+            <p>Transition: “Let us name what we have seen all act.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="system-1" data-slide data-minutes="2" tabindex="-1" aria-labelledby="system-1-title">
+        <p class="eyebrow">Close · System 1</p>
+        <h2 id="system-1-title">Everything in this act was one forward pass: System 1.</h2>
+        <div class="cols">
+          <ul class="tight">
+            <li>One pass maps x<sub>&lt;t</sub> to p(x<sub>t</sub> | x<sub>&lt;t</sub>); a sampler draws one token.</li>
+            <li><strong>Fixed compute per token</strong>: for a given model, context and configuration, the same layers run once per token, however hard the question.</li>
+            <li>Longer context makes a pass slower; it does not make the model think longer.</li>
+          </ul>
+          <div class="callout">
+            <p class="label">Next · Act II</p>
+            <p>Put the pass in a loop: let the model write tokens it then reads, call tools, run code and check results. That is how an agent spends more compute on a hard problem.</p>
+          </div>
+        </div>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 2 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: point at the board one last time. The model is p(x_t | x_&lt;t) plus a sampler. Each token gets a fixed amount of computation, System 1, fast and fluent, with no step where it decides to think harder about a hard token.</p>
+            <p>Be precise about “fixed”: a longer context costs more time per pass, but that is reading more, not reasoning more. For a given model, context and settings, the work per token does not adapt to difficulty.</p>
+            <p>Transition into Act II: “If one pass cannot think longer, how do reasoning models and agents solve hard problems? They run this pass in a loop. That is the next act.”</p>
+          </div>
+        </details>
+      </section>
+      <nav data-deck-nav hidden aria-label="Slide navigation">
+        <button type="button" data-prev>Previous</button>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 18</span>
+        <button type="button" data-next>Next</button>
+        <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
+      </nav>
+    </main>
+    <footer>Recorded numbers come from this session’s fixtures and demo recordings, dated on each slide. The objective-sense code on the OR-stake slide is illustrative.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+</body>
+</html>
