@@ -682,20 +682,78 @@ def local_identities():
     return {value.casefold() for value in values if value.strip()}
 
 
+JSON_ESCAPES = re.compile(r'\\(?:u[0-9a-fA-F]{4}|["\\/bfnrt])')
+
+
 def scan_texts(path):
-    """Inspect raw spelling and decoded strings (including escaped JSON paths)."""
+    """Scan JSON spelling without escape artifacts, plus every decoded string.
+
+    An escaped newline before a Python decorator must not create an email.
+    Decode before masking so escaped secrets remain visible in string values
+    and keys. Non-JSON text retains its original spelling, including newlines.
+    """
     text = path.read_text(encoding="utf-8")
-    yield text
     try:
-        value = decode(text)
+        values = [decode(text)]
     except (ValueError, AssertionError):
-        for line in text.splitlines():
+        raw_parts, values = [], []
+        for line in text.splitlines(keepends=True):
             try:
-                yield from strings(decode(line))
+                value = decode(line)
             except (ValueError, AssertionError):
-                pass
+                raw_parts.append(line)
+            else:
+                raw_parts.append(JSON_ESCAPES.sub(" ", line))
+                values.append(value)
+        yield "".join(raw_parts)
     else:
+        yield JSON_ESCAPES.sub(" ", text)
+    for value in values:
         yield from strings(value)
+
+
+@pytest.mark.parametrize("format", ("json", "jsonl"))
+def test_a1_json_escapes_do_not_turn_decorators_into_emails(tmp_path, format):
+    code = "\n@pytest.fixture\ndef fixture():\n    pass\n\t@pytest.mark.parametrize\n"
+    value = {"tool_result": [{"text": code}], "other": "\r@sample.decorator"}
+    text = json.dumps(value)
+    if format == "jsonl":
+        text += "\n" + json.dumps({"text": code}) + "\n"
+    path = tmp_path / f"decorators.{format}"
+    path.write_text(text, encoding="utf-8")
+    assert "email" in privacy_categories(text), "Control must exercise escaped spelling"
+    scanned = list(scan_texts(path))
+    assert code in scanned, "Decoded evidence must remain complete"
+    assert not set().union(*(privacy_categories(part) for part in scanned))
+
+
+@pytest.mark.parametrize("format", ("json", "jsonl", "text", "malformed"))
+def test_a1_scanning_encoded_files_still_finds_real_secrets(tmp_path, format):
+    aliases = {"mac_home": "home", "project_key": "openai_key", "github_pat": "github_key"}
+    path = tmp_path / f"controls.{format}"
+    for name, secret in secret_controls().items():
+        # Put a real secret after an escaped newline as well as in a JSON key.
+        value = {secret: {"text": "\n" + secret}}
+        text = json.dumps(value)
+        if format == "jsonl":
+            text += "\n" + json.dumps({"safe": True}) + "\n"
+        elif format == "text":
+            text = secret
+        elif format == "malformed":
+            text = '{"unfinished":\n' + secret
+        path.write_text(text, encoding="utf-8")
+        found = set().union(*(privacy_categories(part) for part in scan_texts(path)))
+        assert aliases.get(name, name) in found, f"Missed {name} in {format}"
+
+
+def test_a1_unicode_escaped_emails_in_json_keys_and_values_are_detected(tmp_path):
+    secret = "reviewer" + "@" + "corp.example"
+    encoded = "".join(f"\\u{ord(char):04x}" for char in secret)
+    path = tmp_path / "escaped.json"
+    for text in ('{"contact":"' + encoded + '"}', '{"' + encoded + '":"safe"}'):
+        assert "email" not in privacy_categories(text), "Control requires JSON decoding"
+        path.write_text(text, encoding="utf-8")
+        assert any("email" in privacy_categories(part) for part in scan_texts(path))
 
 
 def test_a1_every_fixture_file_is_private_and_scanner_agrees():
