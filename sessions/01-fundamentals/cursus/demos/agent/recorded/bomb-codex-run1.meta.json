@@ -1,0 +1,177 @@
+{
+  "demo": "bomb",
+  "cli": "codex",
+  "run": 1,
+  "cli_version": "codex-cli 0.162.1",
+  "model": "gpt-6-luna",
+  "model_source": "requested",
+  "reported_models": [],
+  "effort": "low",
+  "started_at": "2026-10-16T19:40:28Z",
+  "ended_at": "2026-10-16T19:41:04Z",
+  "host": "Linux (instructor machine), CLI logged in with its own account",
+  "context_method": "Codex TUI /status (and /mcp) after one 'Reply with exactly: OK' turn, captured with tmux capture-pane",
+  "captures": {
+    "status-before": {
+      "command": [
+        "codex",
+        "-m",
+        "gpt-6-luna",
+        "-c",
+        "model_reasoning_effort=\"low\"",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\""
+      ],
+      "keys": [
+        "Reply with exactly: OK",
+        "/status",
+        "/mcp"
+      ],
+      "exit_code": 0
+    },
+    "status-after": {
+      "command": [
+        "codex",
+        "-m",
+        "gpt-6-luna",
+        "-c",
+        "model_reasoning_effort=\"low\"",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "-c",
+        "mcp_servers.context_bomb.command=\"<session>/.venv/bin/python3\"",
+        "-c",
+        "mcp_servers.context_bomb.args=[\"<session>/cursus/demos/agent/context_bomb.py\"]",
+        "-c",
+        "mcp_servers.context_bomb.required=true"
+      ],
+      "keys": [
+        "Reply with exactly: OK",
+        "/status",
+        "/mcp"
+      ],
+      "exit_code": 0
+    }
+  },
+  "cwd": "<work>/bomb",
+  "prompt": "Reply with exactly: OK",
+  "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+  "pre_state": {
+    "file_hashes": {
+      "mcp.json": "9bce6cdf02acc470bf0d94d881755dd246a6d77c5da1695ff593c5c0d69ab631"
+    }
+  },
+  "exit_codes": {
+    "status-before": 0,
+    "without": 0,
+    "with": 0,
+    "status-after": 0
+  },
+  "arms": {
+    "without": {
+      "command": [
+        "codex",
+        "exec",
+        "--json",
+        "--ephemeral",
+        "-C",
+        "<work>/bomb",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "-m",
+        "gpt-6-luna",
+        "-c",
+        "model_reasoning_effort=\"low\"",
+        "--skip-git-repo-check",
+        "<prompt>"
+      ],
+      "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+      "started_at": "2026-10-16T19:40:43Z",
+      "ended_at": "2026-10-16T19:40:46Z",
+      "exit_code": 0,
+      "usage": {
+        "input": 13497,
+        "output": 5,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cached_input": 13312,
+        "reasoning_output": 0,
+        "total": 13502
+      },
+      "tool_calls": 0,
+      "dropped_stdout_lines": 0,
+      "effective_mcp_servers": [],
+      "server_required": false,
+      "answer": "OK"
+    },
+    "with": {
+      "command": [
+        "codex",
+        "exec",
+        "--json",
+        "--ephemeral",
+        "-C",
+        "<work>/bomb",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "-m",
+        "gpt-6-luna",
+        "-c",
+        "model_reasoning_effort=\"low\"",
+        "--skip-git-repo-check",
+        "-c",
+        "mcp_servers.context_bomb.command=\"<session>/.venv/bin/python3\"",
+        "-c",
+        "mcp_servers.context_bomb.args=[\"<session>/cursus/demos/agent/context_bomb.py\"]",
+        "-c",
+        "mcp_servers.context_bomb.required=true",
+        "<prompt>"
+      ],
+      "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+      "started_at": "2026-10-16T19:40:46Z",
+      "ended_at": "2026-10-16T19:40:49Z",
+      "exit_code": 0,
+      "usage": {
+        "input": 13497,
+        "output": 5,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cached_input": 11648,
+        "reasoning_output": 0,
+        "total": 13502
+      },
+      "tool_calls": 0,
+      "dropped_stdout_lines": 0,
+      "effective_mcp_servers": [
+        {
+          "name": "context_bomb",
+          "enabled": true,
+          "disabled_reason": null,
+          "transport": {
+            "type": "stdio",
+            "command": "<session>/.venv/bin/python3",
+            "args": [
+              "<session>/cursus/demos/agent/context_bomb.py"
+            ],
+            "env": null,
+            "env_vars": [],
+            "cwd": null
+          },
+          "startup_timeout_sec": null,
+          "tool_timeout_sec": null,
+          "auth_status": "unsupported"
+        }
+      ],
+      "server_required": true,
+      "answer": "OK"
+    }
+  }
+}
