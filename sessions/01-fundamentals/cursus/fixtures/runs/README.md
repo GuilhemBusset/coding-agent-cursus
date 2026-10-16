@@ -92,6 +92,10 @@ Sanitizing happens in the scratch folder, before anything is written under `raw/
   assignments, bare or quoted, and string JSON fields named like a credential (`token`,
   `access_token`, `api_key`, `secret`, `password`). The name and the quotes stay:
   `password: '<key>'` or `{"token": "<key>"}`.
+- A quoted value, in single, double, triple or escaped quotes, runs to its own closing quote,
+  across lines if need be. With no closing quote it runs to the end of the text, or of the
+  decoded JSON string it sits in. A placeholder counts as clean only when its closing quote or
+  that end follows it, so a value cut off at a line end is still a finding.
 - `signature` and `encrypted_content` blobs become `<redacted>`. They hold no readable
   evidence.
 - Nothing is truncated.

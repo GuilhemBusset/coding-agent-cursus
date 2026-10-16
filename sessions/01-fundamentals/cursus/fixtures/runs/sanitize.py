@@ -14,7 +14,8 @@ Rules, in order: opaque crypto blobs (`signature`, `encrypted_content` values) b
 `secret`, also as a suffix such as `access_token`) becomes <key>; PEM private keys, the
 known key families become <key>, and so does the value of a credential assignment, bare
 or quoted, or of a JSON credential field inside text, keeping its name and quotes
-(`password: '<key>'`); email addresses
+(`password: '<key>'`). A quoted value, triple quotes included, runs to its own closing quote
+across lines; with none it runs to the end of the text or decoded string. Email addresses
 become <email>; the recording workspace becomes <work> and its temporary root <tmp> (also
 in the dash-encoded spelling Claude Code uses for project folders); home folders on Linux,
 macOS and Windows become ~, dash-encoded home paths -<work>; identity tokens become <user>
@@ -25,10 +26,13 @@ user.name (whole and per word) and user.email, plus every --identity.
 itself, and exits 1 if there is any. It checks the same families, the local identities
 (skipped when CI is set, since a CI runner has its own), every --identity, and the
 sha256 digests listed in scan-identities.json beside this script, which are compared with
-every casefolded word and word pair. Exact placeholders are exempt; a placeholder glued to more
-text is not. In JSON, the raw line is scanned with its escape sequences blanked (an escape
-ends in a letter, so a newline before `@pytest.fixture` would read as an address), and every
-decoded string is scanned as it is.
+every casefolded word and word pair. Exact placeholders are exempt when their closing quote or
+the end of the text follows; a placeholder glued to more text, or followed by more value on
+the next line, is not. In JSON, the raw line is scanned with its escape sequences blanked (an
+escape ends in a letter, so a newline before `@pytest.fixture` would read as an address), and
+every decoded string is scanned as it is. Credential assignments are matched only where the
+sanitizer rewrites them: in every line and the whole text of a plain file, in non-JSON lines of
+a JSONL file, and in decoded JSON strings, never across a raw JSON line.
 """
 
 import argparse
@@ -58,20 +62,22 @@ CREDENTIAL = r"(?:api[_-]?key|token|secret|password|passwd)"
 CREDENTIAL_KEY = re.compile(r"(?:.*[_-])?" + CREDENTIAL, re.I)
 # `name = value`, `name: "value"`, `"name": "value"`. A quoted name (a JSON field) needs a quoted
 # value, so `"token": null` or `"token": {` is not a finding; a bare name takes either.
-# A quoted value ends at its own closing quote, never at an escaped one inside it: a plain quote
-# (`"a\"b"`) is read escape by escape; an escaped quote, as in JSON held in a JSON string
-# (`\"a\\\"b\"`), closes only behind exactly its own backslashes, since a quote escaped inside the
-# value always has more. With no closing quote the value runs to the end of the line, so an odd
-# value is masked too much rather than too little. A placeholder exempts a value only when the
-# closing quote ends it; `"<key>"rest"` is still a finding.
-EOL = r"(?=\n|\Z)"
+# A quoted value (single, double or triple quotes) ends at its own closing quote, never at an
+# escaped one inside it, and may span lines (LF or CRLF): a plain quote (`"a\"b"`) is read escape
+# by escape; an escaped quote, as in JSON held in a JSON string (`\"a\\\"b\"`), closes only behind
+# exactly its own backslashes, since a quote escaped inside the value always has more. With no
+# closing quote the value runs to the end of the unit being sanitized (the whole text, or one
+# decoded JSON string), keeping a final newline, so an odd value is masked too much rather than
+# too little. A placeholder exempts a value only when its closing quote or the end of the unit
+# follows it; `"<key>"rest"` and `"<key>` with more value on the next line are still findings.
+END = r"(?=\r?\n?\Z)"
 AFTER = r"(?=\Z|[\s,;:)}\]'\"`])"
 QUOTED = (
-    r"(?P<quote>[\"'])(?!(?P=quote))(?!<(?:key|redacted)>(?:(?P=quote)" + AFTER + "|" + EOL + "))"
-    r"(?:\\(?:.|" + EOL + r")|[^\\\n])+?(?:(?P<shut>(?P=quote))|" + EOL + ")"
+    r"(?P<quote>\"\"\"|'''|[\"'])(?!(?P=quote))(?!<(?:key|redacted)>(?:(?P=quote)" + AFTER + "|" + END + "))"
+    r"(?:\\[\s\S]|[^\\])+?(?:(?P<shut>(?P=quote))|" + END + ")"
     r"|(?P<esc>\\+)(?P<escquote>[\"'])(?!(?P=esc)(?P=escquote))"
-    r"(?!<(?:key|redacted)>(?:(?P=esc)(?P=escquote)(?:" + AFTER + r"|(?=\\[nrt]))|" + EOL + "))"
-    r".+?(?:(?<!\\)(?P<escshut>(?P=esc)(?P=escquote))|" + EOL + ")"
+    r"(?!<(?:key|redacted)>(?:(?P=esc)(?P=escquote)(?:" + AFTER + r"|(?=\\[nrt]))|" + END + "))"
+    r"[\s\S]+?(?:(?<!\\)(?P<escshut>(?P=esc)(?P=escquote))|" + END + ")"
 )
 ASSIGNMENT = re.compile(
     r"(?<![A-Za-z0-9])" + CREDENTIAL + r"(?P<close>\\*[\"'])?\s*[=:]\s*"
@@ -182,7 +188,8 @@ class Sanitizer:
         return value
 
     def file(self, path):
-        original = path.read_text(encoding="utf-8")
+        # Bytes, so a CRLF is kept as it is rather than translated.
+        original = path.read_bytes().decode("utf-8")
         document = parse(original)
         if path.name.endswith(".jsonl"):
             result = "\n".join(self.line(line) for line in original.split("\n"))
@@ -269,8 +276,9 @@ class Scanner:
         home = str(Path.home())
         self.home = home if home not in {"/", "."} and len(home) > 1 else None
 
-    def categories(self, text):
-        found = {name for name, pattern in KEY_PATTERNS if pattern.search(text)}
+    def categories(self, text, assignments=True):
+        found = {name for name, pattern in KEY_PATTERNS
+                 if (assignments or pattern is not ASSIGNMENT) and pattern.search(text)}
         found.update(name for name, pattern in HOME_PATHS if pattern.search(text))
         if EMAIL.search(text):
             found.add("email")
@@ -289,28 +297,37 @@ class Scanner:
         findings = []
         if path.is_symlink() and root is not None and not path.resolve().is_relative_to(root.resolve()):
             return [(0, "escaping_symlink")]
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = path.read_bytes().decode("utf-8", errors="replace")
         document = parse(text)
+        jsonl = path.name.endswith(".jsonl")
+        plain = not jsonl and document is None
         for number, line in enumerate(text.split("\n"), 1):
             value = parse(line)
             # In JSON, an escape such as a newline's ends in a letter, so a decorator right after
             # it reads as an address. The raw pass skips escapes; decoded strings are scanned as-is.
             raw = JSON_ESCAPE.sub(" ", line) if value is not None or document is not None else line
-            categories = self.categories(raw)
+            categories = self.categories(raw, assignments=False)
+            # Assignments are matched only in the units the sanitizer rewrites: a line of plain
+            # text or a non-JSON line of a JSONL file, and every decoded JSON string. A raw JSON
+            # line would let a value run past its own string into the next one.
+            if (plain or (jsonl and value is None)) and ASSIGNMENT.search(line):
+                categories.add("assignment")
             if value is not None:
                 for item in strings(value):
-                    categories |= self.categories(item)
+                    categories |= self.categories(item, assignments=not plain)
                 if credential_fields(value):
                     categories.add("credential_field")
             findings.extend((number, category) for category in sorted(categories))
         for name, pattern in KEY_PATTERNS:
+            if pattern is ASSIGNMENT and not plain:
+                continue
             for match in pattern.finditer(text):
                 if "\n" in match.group():
                     findings.append((text.count("\n", 0, match.start()) + 1, name))
         if document is not None and "\n" in text.strip():
             categories = set()
             for item in strings(document):
-                categories |= self.categories(item)
+                categories |= self.categories(item, assignments=not jsonl)
             if credential_fields(document):
                 categories.add("credential_field")
             # Decoded strings of a multi-line document have no single line; report line 0.
@@ -353,25 +370,47 @@ def self_test():
         "json_in_json_escaped_quote": json.dumps({"x": json.dumps({pw: 'prefix"' + filler})}),
         "backslash_before_close": json.dumps({pw: filler + "\\", "keep": "visible"}),
         "unterminated": f'{tok}="{filler}',
+        # Values spanning lines: the whole filler sits on a later line of the value.
+        "multiline_double": f'{pw} = "first\n{filler}\nlast"\nvisible',
+        "multiline_single": f"{tok}: 'first\n{filler}'\nvisible",
+        "triple_double": f'{sec} = """first "quoted" words\n{filler}\n"""\nvisible',
+        "triple_single": f"{api} = '''first\n{filler}'''\nvisible",
+        "crlf": f'{pw}="first\r\n{filler}\r\nlast"\r\nvisible',
+        "escaped_delimiter_newline": f'{pw}="first\\"\n{filler}"\nvisible',
+        "unterminated_multiline": f'{tok}="first\n{filler}\nlast',
+        "json_in_text_newline": 'embedded {\\"' + pw + '\\": \\"first\n' + filler + '\\", \\"keep\\": \\"visible\\"}',
     }
     # Embedded JSON is the usual form of tool output: a credential in it must not survive either.
     embedded = json.dumps({pw: 'prefix"' + filler})
     fields = {"json_field": {tok: filler}, "json_nested_field": {"auth": {api: filler}},
               "json_list_field": [{"refresh_" + tok: filler}],
               "tool_result_escaped_quote": {"type": "tool_result", "content": embedded},
-              "tool_result_nested_escaped_quote": {"type": "tool_result", "content": json.dumps({"x": embedded})}}
+              "tool_result_nested_escaped_quote": {"type": "tool_result", "content": json.dumps({"x": embedded})},
+              "tool_result_multiline": {"type": "tool_result", "content": f'{pw} = "first\n{filler}"\nvisible'}}
     # Text after a value that closes properly is kept.
-    kept = {"json_escaped_quote", "backslash_before_close"}
-    # What a sanitizer that stopped at the escaped quote left behind: the scan must still see it.
-    residues = [json.dumps({"content": "{\"" + pw + "\": \"<key>\"" + filler + "\"}"})]
+    kept = {"json_escaped_quote", "backslash_before_close", "multiline_double", "multiline_single",
+            "triple_double", "triple_single", "crlf", "escaped_delimiter_newline", "json_in_text_newline",
+            "tool_result_multiline"}
+    # What a sanitizer that stopped too early left behind: the scan must still see it, and
+    # sanitizing again repairs it. One stopped at an escaped quote, the others at a line end.
+    unclosed = f'{pw}="<key>\n{filler}"\nvisible'
+    residues = [("residue.jsonl", json.dumps({"content": "{\"" + pw + "\": \"<key>\"" + filler + "\"}"}), False),
+                ("residue.txt", unclosed, True),
+                ("residue.jsonl", json.dumps({"type": "tool_result", "content": unclosed}), True)]
     negatives = [f'"{tok}": null', f"max_{tok}s=4", '"output_' + tok + 's": 12', f'"{tok}": {{"type": "string"}}',
                  f'{pw}=""', f"{tok}=<key>", f'{api}="<key>"', f"{pw}: '<key>'", json.dumps({tok: "<key>"}),
-                 json.dumps({"x": json.dumps({tok: "<key>"})}), f"`{pw}: '<key>'`"]
+                 json.dumps({"x": json.dumps({tok: "<key>"})}), f"`{pw}: '<key>'`",
+                 f'{tok} = """<key>"""', f'{pw}="<key>"\nordinary "quoted" words']
     failed = []
     sanitizer, scanner = Sanitizer(), Scanner()
     with tempfile.TemporaryDirectory() as folder:
         cases = [(name, "case.txt", text) for name, text in positives.items()]
         cases += [(name, "case.jsonl", json.dumps(value) + "\n") for name, value in fields.items()]
+        # An unterminated value ends with its own decoded string: a later line's apostrophe
+        # must neither close it nor make the sanitized file a finding.
+        later = json.dumps({"type": "message", "content": "an apostrophe ' later"})
+        cases.append(("tool_result_unterminated_then_apostrophe", "case.jsonl",
+                      json.dumps({"type": "tool_result", "content": f"{pw} = 'first\n{filler}\n"}) + "\n" + later))
         for name, filename, text in cases:
             path = Path(folder) / filename
             path.write_text(text + "\n", encoding="utf-8")
@@ -386,7 +425,7 @@ def self_test():
             sanitizer.file(path)
             if path.read_text(encoding="utf-8") != once:
                 failed.append(f"{name}: sanitizing is not idempotent")
-            if filename.endswith(".jsonl") and parse(once) is None:
+            if filename.endswith(".jsonl") and any(parse(line) is None for line in once.splitlines() if line.strip()):
                 failed.append(f"{name}: sanitized line is not JSON")
         for index, text in enumerate(negatives):
             path = Path(folder) / "negative.txt"
@@ -395,11 +434,16 @@ def self_test():
                 failed.append(f"negative {index}: reported by the scan")
             if sanitizer.file(path):
                 failed.append(f"negative {index}: rewritten by the sanitizer")
-        for index, text in enumerate(residues):
-            path = Path(folder) / "residue.jsonl"
+        for index, (filename, text, repairable) in enumerate(residues):
+            path = Path(folder) / filename
             path.write_text(text + "\n", encoding="utf-8")
             if not scanner.file(path, None):
                 failed.append(f"residue {index}: not found by the scan")
+            if not repairable:
+                continue
+            sanitizer.file(path)
+            if filler in path.read_text(encoding="utf-8") or scanner.file(path, None):
+                failed.append(f"residue {index}: not repaired by sanitizing")
     return failed
 
 
