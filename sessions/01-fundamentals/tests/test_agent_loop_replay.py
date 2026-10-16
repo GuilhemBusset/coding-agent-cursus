@@ -12,9 +12,9 @@ its command/changes/arguments; neither may lose the actual tool arguments.
 import ast
 from collections import defaultdict
 from datetime import datetime
+from email.parser import Parser
 import hashlib
 from html.parser import HTMLParser
-from importlib.metadata import metadata as package_metadata
 import json
 import os
 from pathlib import Path
@@ -25,6 +25,7 @@ import sys
 import tomllib
 from urllib.parse import unquote, urlsplit
 
+import highspy
 import pytest
 
 
@@ -571,5 +572,11 @@ def test_a3_no_proprietary_solver():
     packages = {row["name"].lower() for row in lock["package"]}
     assert "highspy" in packages and not packages & PROPRIETARY
     assert "highspy" in set(imports(read(SESSION / "exercises/p00-lab/p00_model.py")))
-    license_meta = package_metadata("highspy")
+    # Read the locked distribution's metadata beside the imported package.
+    # The session's self-containment guard forbids importlib, including its
+    # metadata module; inspecting this data file needs no dynamic imports.
+    highs_package = next(row for row in lock["package"] if row["name"].lower() == "highspy")
+    metadata_file = (Path(highspy.__file__).resolve().parent.parent /
+                     f"highspy-{highs_package['version']}.dist-info" / "METADATA")
+    license_meta = Parser().parsestr(read(metadata_file))
     assert "MIT" in (license_meta.get("License-Expression", "") + license_meta.get("License", ""))
