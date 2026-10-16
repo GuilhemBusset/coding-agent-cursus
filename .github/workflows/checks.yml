@@ -62,6 +62,11 @@ jobs:
       - name: Turn-in tests
         run: uv run --no-project --with pytest==8.3.5 pytest -q tests/turn_in
 
+      # Session 1 agent-run recordings (#42): schema, sanitizing and deterministic replay.
+      # Standard library plus pytest only; no vendor CLI, no network.
+      - name: Agent-run recordings
+        run: uv run --no-project --with pytest==8.3.5 pytest -q sessions/01-fundamentals/tests/test_agent_runs.py
+
       # The implement loop engine: standard library only; pytest is needed only for the tests
       # that check how the verifier treats pytest results.
       - uses: actions/setup-python@v5
