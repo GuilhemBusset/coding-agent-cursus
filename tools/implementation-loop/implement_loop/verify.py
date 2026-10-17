@@ -399,6 +399,7 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
     shutil.rmtree(report_dir, ignore_errors=True)
     report_dir.mkdir(parents=True)
     env = dict(os.environ) | dict(extra_env or {})
+    env.setdefault("PYTHONDONTWRITEBYTECODE", "1")   # never write caches into the tree being judged
     env.pop("LOOP_PYTEST_PID", None)   # a verification is never nested in an outer one's pytest
     env["LOOP_REPORT_DIR"] = str(report_dir)
     env["LOOP_REPO_ROOT"] = str(Path(root).resolve())

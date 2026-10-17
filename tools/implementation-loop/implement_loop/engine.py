@@ -763,9 +763,12 @@ class Engine:
                                     "agent_part": i.get("agent_part")})
         # The examiner's triage saw the zones: protected ones it did not object to are approved
         # (never the safety surface in a fault-repair run).
-        st.grants = [g for g in st.grants if g.get("source") != "plan"] + [
-            {"path": z, "source": "plan", "protected": is_protected(z)} for z in plan["zones"]
-            if not (self.repair and is_safety_surface(z))]
+        # Earlier plans' zones stay granted, with their provenance: a replan never takes away a path
+        # the branch was allowed to change (the redesign that did so parked #42 and #78).
+        kept = [{**g, "source": "earlier plan"} if g.get("source") == "plan" else g for g in st.grants]
+        st.grants = kept + [{"path": z, "source": "plan", "protected": is_protected(z)} for z in plan["zones"]
+                            if not (self.repair and is_safety_surface(z))
+                            and not any(g["path"] == z for g in kept)]
         if any(is_protected(z) for z in plan["zones"]):
             self._decide(st, {"id": "protected-zones", "choice": "the plan's protected zones are approved at triage: "
                               + ", ".join(z for z in plan["zones"] if is_protected(z)),
@@ -818,6 +821,9 @@ class Engine:
         except graph.CycleError:
             self.store.event("dependency_cycle", issue=n, on=m, item=item)
         self._obligate(st, {"item": item, "kind": "deferred", "detail": f"#{m}", "issue": m})
+        if st.plan:   # the item is owed, never proven or ticked here
+            st.plan["items"] = [{**i, "proof": "deferred", "depends_on": m, "depends_quote": quote}
+                                if i["id"] == item else i for i in st.plan["items"]]
         self._decide(st, {"id": f"depends-{item}", "choice": f"{item} is deferred to #{m}",
                           "rationale": f"it needs #{m} (\"{quote}\"), which this run does not build"})
         self.store.event("dependency_deferred", issue=n, on=m, item=item)
@@ -1759,6 +1765,8 @@ class Engine:
                 self.store.put(st)
                 self._sync(n)
                 continue
+            if any(o.get("kind") == "deferred" for o in st.obligations):
+                continue   # it closes once its deferred items are delivered, not on ticked boxes
             body = (self._safe(self.gh.get_issue, n) or {}).get("body") or ""
             items = issue_parser.ledger(body)
             if items and all(i.checked for i in items):
