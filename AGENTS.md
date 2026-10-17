@@ -49,13 +49,15 @@ branch, and never rewrite one. See ADR 0009.
 ## Implementing issues with the loop
 
 To implement an epic or an issue end to end, use the shared `implement` skill (`/implement <n>` in
-Claude Code, `$implement <n>` in Codex, or `scripts/implement.sh` from a terminal). A
-deterministic engine (`tools/implementation-loop/`, ADR 0008) designs, checks, implements,
-reviews and merges each open sub-issue; the vendor that did not write a change reviews it, and
-issues close only with evidence. A run never waits for a person (ADR 0011): the engine decides
-ambiguities and publishes its decisions in each PR, recovers from failures, or parks an issue
-and carries on. The operator only launches and reports: never relay questions, edit a run's
-worktrees or issues, commit, merge or tick issue checkboxes by hand while it runs.
+Claude Code, `$implement <n>` in Codex, or `scripts/implement.sh supervise` from a terminal). A
+deterministic engine (`tools/implementation-loop/`, ADR 0008, ADR 0012) works each open
+sub-issue: a builder from the operator's vendor plans and builds it with its own tests, the other
+vendor examines, probes and certifies the exact commit that lands, and issues close only with
+evidence. A run never waits for a person and never parks (ADR 0011, ADR 0012): the loop decides
+ambiguities and publishes its decisions in each PR, waits out what it cannot do yet, and a
+supervisor resumes it; what only a person can provide becomes an owner obligation. The operator
+only launches and reports: never relay questions, edit a run's worktrees or issues, commit, merge
+or tick issue checkboxes by hand while it runs.
 
 ## Enforcement
 
