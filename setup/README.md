@@ -49,6 +49,13 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
+`npm --prefix setup test` runs `tools/html-pages/tests/run-all.mjs`, which lists that directory
+and passes every `*.test.mjs` file in it to a single `node --test` (Node 22 or newer, the version
+CI uses). A new suite is collected by adding the file; there is no list to register it in. Extra
+arguments go to `node --test` as options, for example
+`npm --prefix setup test -- --test-reporter=tap`. To run one suite and reject skipped or empty
+results, use `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`.
+
 The tiny-lm suite also needs a C compiler on `PATH` as `cc` (OS-level; for example
 `sudo apt-get install gcc` on Debian or Ubuntu, which GitHub's Ubuntu runners already have). It
 compiles llama2.c's `run.c`, vendored at a pinned commit in
