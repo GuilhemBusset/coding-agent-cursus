@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="en" data-page-kind="lab" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Next-token bets and sampling</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+  <style>
+/* Page-specific layout for the next-token lab; shared tokens and components above. */
+.nt-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space); align-items: start; }
+@media (max-width: 60rem) { .nt-top { grid-template-columns: minmax(0, 1fr); } }
+.nt-carousel { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.nt-carousel .nt-status { margin-left: auto; }
+.nt-status { margin: 0; font: .875rem/1.5 var(--mono); color: var(--secondary); font-variant-numeric: tabular-nums; }
+.nt-prompt { font: 1.375rem/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: var(--paper); border: 1px solid var(--rule); border-radius: .2rem; margin-bottom: .75rem; }
+.nt-caret { color: var(--accent); }
+.nt-pieces { font-size: .875rem; }
+.nt-pieces code { display: inline-block; white-space: pre; margin: 0 .375rem .25rem 0; padding: 0 .125rem; border-bottom: 1px dotted var(--muted); }
+.nt-guess-row { display: flex; flex-wrap: wrap; gap: .75rem; }
+.nt-guess-row input { flex: 1 1 12rem; font-family: var(--mono); }
+.nt-help { font-size: .875rem; margin-top: .5rem; }
+.nt-locked { padding-left: 1.5rem; font-family: var(--mono); }
+.nt-locked code, .nt-chart code, #nt-common code { white-space: pre; }
+.nt-reveal-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1.25rem; }
+.nt-message { margin: 0; color: var(--secondary); font-size: .9375rem; }
+.nt-tally { border-top: 1px solid var(--rule); padding-top: 1rem; }
+.nt-tally-list { list-style: none; padding: 0; font-variant-numeric: tabular-nums; }
+.nt-tally-list li + li { margin-top: .25rem; }
+.nt-real figure, .nt-sampling figure { margin: 0; }
+.nt-chart [data-prob-row] { grid-template-columns: clamp(4.5rem, 28%, 9rem) minmax(0, 1fr) 4.5rem; padding: .125rem .25rem; border-left: 3px solid transparent; }
+.nt-chart [data-prob-row] + [data-prob-row] { margin-top: .25rem; }
+.nt-chart .nt-other { border-top: 1px solid var(--rule); padding-top: .5rem; color: var(--secondary); }
+.nt-q-chart [data-prob-row], .nt-histogram [data-prob-row] { grid-template-columns: clamp(4.5rem, 26%, 8rem) minmax(0, 1fr) 4.5rem 4.5rem; }
+.nt-q-chart [data-prob-row][data-nucleus] { background: var(--accent-soft); border-left-color: var(--accent); }
+.nt-tag, .nt-count { grid-column: 4; text-align: right; font: .8125rem var(--mono); color: var(--muted); }
+.nt-q-chart [data-nucleus] .nt-tag { color: var(--ink); font-weight: 650; }
+.nt-coverage { color: var(--secondary); }
+.nt-sampling { margin-top: 2.5rem; border-top: 1px solid var(--rule); padding-top: var(--space); }
+.nt-sandbox { border-left-color: var(--amber); max-width: 72ch; }
+.nt-sampling-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space); align-items: start; margin-bottom: 1.5rem; }
+@media (max-width: 60rem) { .nt-sampling-grid { grid-template-columns: minmax(0, 1fr); } }
+.nt-controls [data-formula] { margin-block: 0 1rem; }
+.nt-readout { font: .875rem/1.5 var(--mono); color: var(--secondary); }
+.nt-decoding { border: 1px solid var(--rule); border-radius: .2rem; padding: .5rem 1rem; margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; }
+.nt-decoding legend { font-weight: 650; padding-inline: .25rem; }
+.nt-choice { display: flex; align-items: center; gap: .5rem; }
+.nt-choice input { width: 44px; height: 44px; margin: 0; }
+.nt-choice label { margin: 0; font-weight: 400; }
+.nt-repro { border-left-color: var(--amber); }
+@media print { .nt-carousel, .nt-form, .nt-reveal-row, #nt-reset-tally, #nt-batch { display: none !important; } .nt-top, .nt-sampling-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to experiment</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act I · Lab</p>
+      <h1>Next-token bets and sampling</h1>
+      <p class="lede">A forward pass returns a distribution, not an answer. Bet on the next token, reveal what GPT-2 actually assigned to it, then reshape that distribution and sample from it.</p>
+    </header>
+    <main id="content" tabindex="-1">
+      <noscript><p class="callout nt-noscript">The prompt carousel, guesses and sampling panel need JavaScript. Without it, the recorded GPT-2 data is still available as <a href="../fixtures/next_token.json">next_token.json</a>.</p></noscript>
+      <div class="nt-top">
+        <section class="panel nt-bet" aria-labelledby="nt-bet-title">
+          <h2 id="nt-bet-title">Place your bets</h2>
+          <div class="nt-carousel">
+            <button type="button" id="nt-prev" disabled>Previous prompt</button>
+            <button type="button" id="nt-next" disabled>Next prompt</button>
+            <p id="nt-status" class="nt-status" aria-live="polite">Prompt 1 of 20</p>
+          </div>
+          <p class="label" id="nt-category">Operations research</p>
+          <p class="nt-prompt" id="nt-prompt"><span id="nt-prompt-text">The transport problem: choose shipments to minimize total</span><span class="nt-caret" aria-hidden="true">▍</span></p>
+          <p class="nt-pieces muted"><span id="nt-piece-count">GPT-2 reads this as 9 tokens:</span> <span id="nt-pieces"></span></p>
+          <form id="nt-form" class="nt-form" autocomplete="off">
+            <label for="nt-guess">Your guess for the next token</label>
+            <div class="nt-guess-row">
+              <input id="nt-guess" type="text" spellcheck="false" aria-describedby="nt-guess-help" disabled>
+              <button type="submit" id="nt-lock" disabled>Lock guess</button>
+            </div>
+            <p id="nt-guess-help" class="muted nt-help">Spaces count: GPT-2 has separate tokens for <code>␣cat</code> and <code>cat</code>. Type <code>␣</code> (or a real space) for a leading space, and <code>↵</code> or <code>\n</code> for a newline. Lock as many guesses as the class calls out; a locked guess cannot be edited.</p>
+          </form>
+          <ol id="nt-locked" class="nt-locked" aria-label="Locked guesses"></ol>
+          <div class="nt-reveal-row">
+            <button type="button" id="nt-reveal" disabled>Reveal distribution</button>
+            <p id="nt-message" class="nt-message" role="status"></p>
+          </div>
+          <section class="nt-tally" aria-labelledby="nt-tally-title">
+            <h3 id="nt-tally-title">Class tally for this prompt</h3>
+            <ul class="nt-tally-list">
+              <li>Total guesses: <strong id="nt-total">0</strong></li>
+              <li id="nt-rank1" hidden>Hits at rank 1: <strong id="nt-rank1-count">0</strong></li>
+              <li id="nt-top5" hidden>Hits in top 5: <strong id="nt-top5-count">0</strong></li>
+              <li id="nt-hits-pending">Hits at rank 1 and in the top 5 show after Reveal.</li>
+            </ul>
+            <p id="nt-common" hidden></p>
+            <p id="nt-storage" class="muted nt-help">Kept in this browser only (localStorage), so a class sharing one screen builds one tally. Nothing is sent anywhere.</p>
+            <button type="button" id="nt-reset-tally" disabled>Reset tally</button>
+          </section>
+        </section>
+        <section class="nt-real" aria-labelledby="nt-real-title">
+          <h2 id="nt-real-title">What GPT-2 assigned</h2>
+          <p id="nt-placeholder" class="muted">The distribution stays hidden until at least one guess is locked and someone presses Reveal.</p>
+          <div id="nt-real-panel" hidden>
+            <figure>
+              <figcaption>GPT-2's real next-token probabilities (full vocabulary, T = 1), recorded from the model. Highlighted rows were guessed.</figcaption>
+              <ol data-prob-chart id="nt-real-chart" class="nt-chart"></ol>
+            </figure>
+            <p id="nt-coverage" class="nt-coverage"></p>
+          </div>
+        </section>
+      </div>
+      <section id="nt-sampling" class="nt-sampling" aria-labelledby="nt-sampling-title" hidden>
+        <h2 id="nt-sampling-title">Reshape and sample: a top-20 sandbox</h2>
+        <p class="callout nt-sandbox">The fixture stores only GPT-2's 20 largest logits, so the full-vocabulary tempered softmax cannot be recomputed here. This sandbox applies softmax(z/T) to the 20 shown candidates, renormalized among them, then cuts with top-k and top-p.</p>
+        <div class="nt-sampling-grid">
+          <div class="nt-controls">
+            <div data-formula="nt-temperature">
+              <label for="nt-temperature">Temperature T</label>
+              <input id="nt-temperature" type="range" data-formula-input min="0.1" max="2" step="0.05" value="1" disabled>
+              <output data-formula-output for="nt-temperature">T = 1.00 · p_i = exp(z_i / 1.00) / Σ_j exp(z_j / 1.00)</output>
+              <div class="formula-row"><button type="button" data-formula-reset disabled>Reset temperature to 1</button></div>
+            </div>
+            <div data-formula="nt-top-k">
+              <label for="nt-top-k">Top-k: keep the k most likely candidates</label>
+              <input id="nt-top-k" type="range" data-formula-input min="1" max="20" step="1" value="20" disabled>
+              <output data-formula-output for="nt-top-k">k = 20 · keep all 20 candidates</output>
+              <div class="formula-row"><button type="button" data-formula-reset disabled>Reset top-k to all</button></div>
+            </div>
+            <div data-formula="nt-top-p">
+              <label for="nt-top-p">Top-p: nucleus mass</label>
+              <input id="nt-top-p" type="range" data-formula-input min="0.05" max="1" step="0.05" value="1" disabled>
+              <output data-formula-output for="nt-top-p">p = 1.00 · keep every candidate</output>
+              <div class="formula-row"><button type="button" data-formula-reset disabled>Reset top-p to 1</button></div>
+            </div>
+            <p class="muted nt-help">Order: divide the logits by T, keep the k most likely, renormalize, keep the smallest top-ranked set whose mass reaches p (the token that crosses p is kept), renormalize again.</p>
+          </div>
+          <div>
+            <figure>
+              <figcaption>The distribution that gets sampled, q. Shaded rows marked “kept” form the nucleus; “cut” rows can never be drawn.</figcaption>
+              <ol data-prob-chart id="nt-sampling-chart" class="nt-chart nt-q-chart"></ol>
+            </figure>
+            <p id="nt-kept" class="nt-readout" aria-live="polite"></p>
+          </div>
+        </div>
+        <div class="nt-sampling-grid">
+          <div>
+            <fieldset class="nt-decoding">
+              <legend>Decoding</legend>
+              <div class="nt-choice"><input type="radio" id="nt-mode-sample" name="nt-mode" value="sample" checked><label for="nt-mode-sample">Sample</label></div>
+              <div class="nt-choice"><input type="radio" id="nt-mode-argmax" name="nt-mode" value="argmax"><label for="nt-mode-argmax">Argmax</label></div>
+            </fieldset>
+            <button type="button" id="nt-batch">Sample ×100</button>
+            <p id="nt-batch-status" class="nt-readout" aria-live="polite">No draws yet.</p>
+            <aside class="callout nt-repro" aria-label="Why runs are not reproducible">
+              <p>Why two runs differ: in Sample mode every draw uses fresh randomness, so pressing the button again gives different counts, and hosted chat products generally do not let you fix the random seed. Even greedy decoding on shared GPU servers can drift, because batching changes the order of floating-point additions and nudges the logits. Argmax here is deterministic: the same 20 stored logits always give the same token.</p>
+            </aside>
+          </div>
+          <figure>
+            <figcaption>Simulated draws from the probabilities above: counts out of 100, cleared whenever the distribution changes.</figcaption>
+            <ol data-prob-chart id="nt-histogram" class="nt-chart nt-histogram"></ol>
+          </figure>
+        </div>
+      </section>
+    </main>
+    <footer id="nt-footer">
+      <p>Recorded data, not illustrative: next-token logits from <code>openai-community/gpt2</code> at revision <code>607a30d783dfa663caf39e06633721c8d4cfcd7e</code>, float32 on CPU, generated 2026-10-10 by <a href="../fixtures/build_fixtures.py"><code>cursus/fixtures/build_fixtures.py</code></a> with torch 2.14.1+cu130 and transformers 5.18.0. Each prompt keeps the 20 largest logits (rounded to 3 decimals) and the full-vocabulary log-sum-exp; the data is <a href="../fixtures/next_token.json">next_token.json</a>, embedded in this page. Sample ×100 draws are simulated in your browser.</p>
+    </footer>
+  </div>
+  <script type="application/json" id="next-token-data">{"meta":{"date":"2026-10-10","device":"cpu","dtype":"float32","generator":"cursus/fixtures/build_fixtures.py","libraries":{"torch":"2.14.1+cu130","transformers":"5.18.0"},"logits":{"decimals":3,"logsumexp":"over the full vocabulary, before rounding the logits","order":"descending rounded logit, ties by ascending token id","position":"last prompt token","top":20},"models":[{"id":"openai-community/gpt2","revision":"607a30d783dfa663caf39e06633721c8d4cfcd7e"}]},"prompts":[{"category":"or","expect":" cost","id":"or-minimize-total","logsumexp":-95.04,"prompt":"The transport problem: choose shipments to minimize total","prompt_tokens":[{"id":464,"text":"The"},{"id":4839,"text":" transport"},{"id":1917,"text":" problem"},{"id":25,"text":":"},{"id":3853,"text":" choose"},{"id":29311,"text":" shipments"},{"id":284,"text":" to"},{"id":17775,"text":" minimize"},{"id":2472,"text":" total"}],"top":[{"id":3484,"logit":-97.439,"text":" costs"},{"id":1575,"logit":-97.65,"text":" cost"},{"id":8440,"logit":-98.358,"text":" shipping"},{"id":4839,"logit":-98.362,"text":" transport"},{"id":3067,"logit":-98.666,"text":" travel"},{"id":6115,"logit":-98.739,"text":" volume"},{"id":7030,"logit":-98.742,"text":" waste"},{"id":3463,"logit":-98.81,"text":" weight"},{"id":2994,"logit":-99.049,"text":" loss"},{"id":30724,"logit":-99.229,"text":" freight"},{"id":2526,"logit":-99.362,"text":" risk"},{"id":15892,"logit":-99.391,"text":" cargo"},{"id":4979,"logit":-99.481,"text":" traffic"},{"id":16119,"logit":-99.515,"text":" delays"},{"id":8971,"logit":-99.747,"text":" emissions"},{"id":1271,"logit":-99.78,"text":" number"},{"id":5252,"logit":-99.8,"text":" fuel"},{"id":9358,"logit":-99.825,"text":" transportation"},{"id":9089,"logit":-99.86,"text":" losses"},{"id":5127,"logit":-99.896,"text":" supply"}]},{"category":"or","id":"or-subject-to","logsumexp":-76.456,"prompt":"minimize 3x + 2y subject to","prompt_tokens":[{"id":1084,"text":"min"},{"id":48439,"text":"imize"},{"id":513,"text":" 3"},{"id":87,"text":"x"},{"id":1343,"text":" +"},{"id":362,"text":" 2"},{"id":88,"text":"y"},{"id":2426,"text":" subject"},{"id":284,"text":" to"}],"top":[{"id":262,"logit":-80.012,"text":" the"},{"id":257,"logit":-80.85,"text":" a"},{"id":513,"logit":-80.97,"text":" 3"},{"id":2620,"logit":-81.253,"text":" increase"},{"id":1487,"logit":-81.336,"text":" change"},{"id":307,"logit":-81.378,"text":" be"},{"id":362,"logit":-81.388,"text":" 2"},{"id":534,"logit":-81.473,"text":" your"},{"id":352,"logit":-81.523,"text":" 1"},{"id":787,"logit":-81.537,"text":" make"},{"id":642,"logit":-81.601,"text":" 5"},{"id":604,"logit":-81.698,"text":" 4"},{"id":428,"logit":-81.841,"text":" this"},{"id":2948,"logit":-81.885,"text":" prevent"},{"id":2836,"logit":-81.894,"text":" user"},{"id":4646,"logit":-81.919,"text":" reduce"},{"id":597,"logit":-81.953,"text":" any"},{"id":3368,"logit":-81.98,"text":" avoid"},{"id":651,"logit":-82.013,"text":" get"},{"id":10070,"logit":-82.044,"text":" decrease"}]},{"category":"or","expect":" function","id":"or-objective","logsumexp":-106.897,"prompt":"In linear programming, the function we optimize is called the objective","prompt_tokens":[{"id":818,"text":"In"},{"id":14174,"text":" linear"},{"id":8300,"text":" programming"},{"id":11,"text":","},{"id":262,"text":" the"},{"id":2163,"text":" function"},{"id":356,"text":" we"},{"id":27183,"text":" optimize"},{"id":318,"text":" is"},{"id":1444,"text":" called"},{"id":262,"text":" the"},{"id":9432,"text":" objective"}],"top":[{"id":2163,"logit":-107.928,"text":" function"},{"id":13,"logit":-109.079,"text":"."},{"id":286,"logit":-110.039,"text":" of"},{"id":11,"logit":-110.343,"text":","},{"id":12,"logit":-110.399,"text":"-"},{"id":7885,"logit":-111.024,"text":" variable"},{"id":1430,"logit":-111.376,"text":" program"},{"id":357,"logit":-111.386,"text":" ("},{"id":290,"logit":-111.483,"text":" and"},{"id":23989,"logit":-111.818,"text":" optimization"},{"id":11507,"logit":-111.826,"text":" parameter"},{"id":9052,"logit":-111.83,"text":" loop"},{"id":6436,"logit":-111.848,"text":" optim"},{"id":2446,"logit":-111.86,"text":" method"},{"id":25,"logit":-112.068,"text":":"},{"id":1988,"logit":-112.131,"text":" value"},{"id":2099,"logit":-112.151,"text":" type"},{"id":329,"logit":-112.197,"text":" for"},{"id":2134,"logit":-112.269,"text":" object"},{"id":12660,"logit":-112.297,"text":" evaluation"}]},{"category":"or","id":"or-vertex","logsumexp":-55.127,"prompt":"The simplex method moves from one vertex of the feasible region to","prompt_tokens":[{"id":464,"text":"The"},{"id":2829,"text":" simple"},{"id":87,"text":"x"},{"id":2446,"text":" method"},{"id":6100,"text":" moves"},{"id":422,"text":" from"},{"id":530,"text":" one"},{"id":37423,"text":" vertex"},{"id":286,"text":" of"},{"id":262,"text":" the"},{"id":23498,"text":" feasible"},{"id":3814,"text":" region"},{"id":284,"text":" to"}],"top":[{"id":1194,"logit":-55.745,"text":" another"},{"id":262,"logit":-56.154,"text":" the"},{"id":257,"logit":-58.568,"text":" a"},{"id":530,"logit":-59.464,"text":" one"},{"id":477,"logit":-59.771,"text":" all"},{"id":281,"logit":-60.307,"text":" an"},{"id":663,"logit":-60.431,"text":" its"},{"id":734,"logit":-60.751,"text":" two"},{"id":597,"logit":-60.885,"text":" any"},{"id":584,"logit":-60.927,"text":" other"},{"id":1811,"logit":-61.506,"text":" several"},{"id":3294,"logit":-61.603,"text":" multiple"},{"id":1306,"logit":-61.806,"text":" next"},{"id":1111,"logit":-61.91,"text":" both"},{"id":326,"logit":-61.913,"text":" that"},{"id":790,"logit":-62.018,"text":" every"},{"id":1123,"logit":-62.07,"text":" each"},{"id":1115,"logit":-62.643,"text":" three"},{"id":15909,"logit":-62.768,"text":" adjacent"},{"id":867,"logit":-62.807,"text":" many"}]},{"category":"or","expect":" 0","id":"or-constraints","logsumexp":-92.958,"prompt":"x + y <= 10, x >= 0, y >=","prompt_tokens":[{"id":87,"text":"x"},{"id":1343,"text":" +"},{"id":331,"text":" y"},{"id":19841,"text":" <="},{"id":838,"text":" 10"},{"id":11,"text":","},{"id":2124,"text":" x"},{"id":18189,"text":" >="},{"id":657,"text":" 0"},{"id":11,"text":","},{"id":331,"text":" y"},{"id":18189,"text":" >="}],"top":[{"id":838,"logit":-94.462,"text":" 10"},{"id":657,"logit":-94.535,"text":" 0"},{"id":352,"logit":-95.765,"text":" 1"},{"id":532,"logit":-96.069,"text":" -"},{"id":331,"logit":-96.391,"text":" y"},{"id":1802,"logit":-96.793,"text":" 100"},{"id":642,"logit":-96.915,"text":" 5"},{"id":362,"logit":-96.955,"text":" 2"},{"id":1160,"logit":-97.022,"text":" 20"},{"id":2124,"logit":-97.1,"text":" x"},{"id":513,"logit":-97.213,"text":" 3"},{"id":860,"logit":-97.241,"text":" 9"},{"id":1367,"logit":-97.268,"text":" 11"},{"id":807,"logit":-97.393,"text":" 8"},{"id":1315,"logit":-97.563,"text":" 15"},{"id":1105,"logit":-97.578,"text":" 12"},{"id":8576,"logit":-97.618,"text":" 1000"},{"id":767,"logit":-97.785,"text":" 7"},{"id":604,"logit":-97.816,"text":" 4"},{"id":718,"logit":-97.854,"text":" 6"}]},{"category":"tokenization","id":"strawberry","logsumexp":-25.903,"prompt":" strawberry","prompt_tokens":[{"id":41236,"text":" strawberry"}],"top":[{"id":11,"logit":-28.867,"text":","},{"id":13,"logit":-29.229,"text":"."},{"id":290,"logit":-29.311,"text":" and"},{"id":12,"logit":-29.845,"text":"-"},{"id":198,"logit":-29.974,"text":"\n"},{"id":284,"logit":-30.136,"text":" to"},{"id":318,"logit":-30.193,"text":" is"},{"id":262,"logit":-30.349,"text":" the"},{"id":338,"logit":-30.408,"text":"'s"},{"id":287,"logit":-30.41,"text":" in"},{"id":286,"logit":-30.531,"text":" of"},{"id":357,"logit":-30.71,"text":" ("},{"id":257,"logit":-30.726,"text":" a"},{"id":373,"logit":-30.86,"text":" was"},{"id":25,"logit":-30.909,"text":":"},{"id":393,"logit":-30.994,"text":" or"},{"id":329,"logit":-31.022,"text":" for"},{"id":366,"logit":-31.035,"text":" \""},{"id":326,"logit":-31.119,"text":" that"},{"id":355,"logit":-31.18,"text":" as"}]},{"category":"tokenization","id":"strawberry-count","logsumexp":-132.614,"prompt":"The number of times the letter r appears in the word strawberry is","prompt_tokens":[{"id":464,"text":"The"},{"id":1271,"text":" number"},{"id":286,"text":" of"},{"id":1661,"text":" times"},{"id":262,"text":" the"},{"id":3850,"text":" letter"},{"id":374,"text":" r"},{"id":3568,"text":" appears"},{"id":287,"text":" in"},{"id":262,"text":" the"},{"id":1573,"text":" word"},{"id":41236,"text":" strawberry"},{"id":318,"text":" is"}],"top":[{"id":407,"logit":-135.563,"text":" not"},{"id":257,"logit":-135.656,"text":" a"},{"id":2048,"logit":-136.329,"text":" almost"},{"id":635,"logit":-136.477,"text":" also"},{"id":845,"logit":-136.496,"text":" very"},{"id":2407,"logit":-136.514,"text":" quite"},{"id":546,"logit":-136.894,"text":" about"},{"id":3649,"logit":-136.923,"text":" increasing"},{"id":262,"logit":-136.935,"text":" the"},{"id":1682,"logit":-137.039,"text":" actually"},{"id":23508,"logit":-137.057,"text":" staggering"},{"id":2192,"logit":-137.124,"text":" probably"},{"id":281,"logit":-137.259,"text":" an"},{"id":2383,"logit":-137.303,"text":" significant"},{"id":1884,"logit":-137.331,"text":" likely"},{"id":517,"logit":-137.332,"text":" more"},{"id":881,"logit":-137.342,"text":" much"},{"id":1690,"logit":-137.348,"text":" often"},{"id":3957,"logit":-137.351,"text":" growing"},{"id":1290,"logit":-137.395,"text":" far"}]},{"category":"factual","expect":" Paris","id":"factual-capital","logsumexp":-97.78,"prompt":"The capital of France is","prompt_tokens":[{"id":464,"text":"The"},{"id":3139,"text":" capital"},{"id":286,"text":" of"},{"id":4881,"text":" France"},{"id":318,"text":" is"}],"top":[{"id":262,"logit":-100.25,"text":" the"},{"id":783,"logit":-100.818,"text":" now"},{"id":257,"logit":-100.856,"text":" a"},{"id":4881,"logit":-101.21,"text":" France"},{"id":6342,"logit":-101.214,"text":" Paris"},{"id":287,"logit":-101.405,"text":" in"},{"id":635,"logit":-101.414,"text":" also"},{"id":407,"logit":-101.517,"text":" not"},{"id":1363,"logit":-101.537,"text":" home"},{"id":991,"logit":-101.946,"text":" still"},{"id":739,"logit":-102.031,"text":" under"},{"id":5140,"logit":-102.053,"text":" located"},{"id":319,"logit":-102.093,"text":" on"},{"id":530,"logit":-102.263,"text":" one"},{"id":1900,"logit":-102.445,"text":" known"},{"id":379,"logit":-102.522,"text":" at"},{"id":281,"logit":-102.613,"text":" an"},{"id":852,"logit":-102.659,"text":" being"},{"id":1541,"logit":-102.774,"text":" already"},{"id":284,"logit":-103.136,"text":" to"}]},{"category":"factual","expect":" Paris","id":"factual-landmark","logsumexp":-92.175,"prompt":"The Eiffel Tower is located in the city of","prompt_tokens":[{"id":464,"text":"The"},{"id":412,"text":" E"},{"id":733,"text":"iff"},{"id":417,"text":"el"},{"id":8765,"text":" Tower"},{"id":318,"text":" is"},{"id":5140,"text":" located"},{"id":287,"text":" in"},{"id":262,"text":" the"},{"id":1748,"text":" city"},{"id":286,"text":" of"}],"top":[{"id":6342,"logit":-94.928,"text":" Paris"},{"id":3576,"logit":-95.252,"text":" London"},{"id":24377,"logit":-95.553,"text":" Amsterdam"},{"id":968,"logit":-95.627,"text":" New"},{"id":11307,"logit":-95.818,"text":" Berlin"},{"id":406,"logit":-96.287,"text":" L"},{"id":412,"logit":-96.371,"text":" E"},{"id":34923,"logit":-96.402,"text":" Cologne"},{"id":32526,"logit":-96.485,"text":" Hamburg"},{"id":360,"logit":-96.555,"text":" D"},{"id":16445,"logit":-96.565,"text":" Brussels"},{"id":520,"logit":-96.597,"text":" St"},{"id":347,"logit":-96.657,"text":" B"},{"id":2986,"logit":-96.882,"text":" San"},{"id":43412,"logit":-96.926,"text":" Zurich"},{"id":5401,"logit":-96.993,"text":" Los"},{"id":4842,"logit":-97.058,"text":" Chicago"},{"id":402,"logit":-97.095,"text":" G"},{"id":15142,"logit":-97.109,"text":" Barcelona"},{"id":10843,"logit":-97.15,"text":" Jerusalem"}]},{"category":"factual","expect":" Germany","id":"factual-analogy","logsumexp":-96.939,"prompt":"Paris is to France as Berlin is to","prompt_tokens":[{"id":40313,"text":"Paris"},{"id":318,"text":" is"},{"id":284,"text":" to"},{"id":4881,"text":" France"},{"id":355,"text":" as"},{"id":11307,"text":" Berlin"},{"id":318,"text":" is"},{"id":284,"text":" to"}],"top":[{"id":6342,"logit":-98.66,"text":" Paris"},{"id":3576,"logit":-98.914,"text":" London"},{"id":11307,"logit":-99.14,"text":" Berlin"},{"id":10598,"logit":-100.011,"text":" Rome"},{"id":262,"logit":-100.083,"text":" the"},{"id":9070,"logit":-100.731,"text":" Moscow"},{"id":23825,"logit":-100.962,"text":" Vienna"},{"id":4881,"logit":-101.2,"text":" France"},{"id":4492,"logit":-101.258,"text":" England"},{"id":16445,"logit":-101.335,"text":" Brussels"},{"id":4486,"logit":-101.345,"text":" Germany"},{"id":11790,"logit":-101.54,"text":" Tokyo"},{"id":32955,"logit":-101.568,"text":" Warsaw"},{"id":22418,"logit":-101.582,"text":" Munich"},{"id":24377,"logit":-101.655,"text":" Amsterdam"},{"id":31970,"logit":-101.686,"text":" Frankfurt"},{"id":968,"logit":-101.722,"text":" New"},{"id":8031,"logit":-101.833,"text":" Italy"},{"id":2253,"logit":-101.983,"text":" America"},{"id":29702,"logit":-101.985,"text":" Venice"}]},{"category":"numeric","expect":" 10","id":"numeric-sequence","logsumexp":-123.914,"prompt":"2, 4, 6, 8,","prompt_tokens":[{"id":17,"text":"2"},{"id":11,"text":","},{"id":604,"text":" 4"},{"id":11,"text":","},{"id":718,"text":" 6"},{"id":11,"text":","},{"id":807,"text":" 8"},{"id":11,"text":","}],"top":[{"id":860,"logit":-124.817,"text":" 9"},{"id":838,"logit":-125.581,"text":" 10"},{"id":1367,"logit":-126.315,"text":" 11"},{"id":1105,"logit":-126.469,"text":" 12"},{"id":807,"logit":-126.781,"text":" 8"},{"id":1511,"logit":-127.655,"text":" 13"},{"id":290,"logit":-128.027,"text":" and"},{"id":1467,"logit":-128.104,"text":" 16"},{"id":1478,"logit":-128.565,"text":" 14"},{"id":1315,"logit":-128.59,"text":" 15"},{"id":767,"logit":-128.642,"text":" 7"},{"id":1596,"logit":-128.695,"text":" 17"},{"id":642,"logit":-129.062,"text":" 5"},{"id":352,"logit":-129.145,"text":" 1"},{"id":718,"logit":-129.181,"text":" 6"},{"id":393,"logit":-129.365,"text":" or"},{"id":1222,"logit":-129.387,"text":" &"},{"id":1160,"logit":-129.444,"text":" 20"},{"id":1248,"logit":-129.449,"text":" 18"},{"id":604,"logit":-129.562,"text":" 4"}]},{"category":"numeric","id":"numeric-arithmetic","logsumexp":-92.4,"prompt":"12 + 7 =","prompt_tokens":[{"id":1065,"text":"12"},{"id":1343,"text":" +"},{"id":767,"text":" 7"},{"id":796,"text":" ="}],"top":[{"id":657,"logit":-95.417,"text":" 0"},{"id":352,"logit":-95.54,"text":" 1"},{"id":807,"logit":-95.733,"text":" 8"},{"id":718,"logit":-95.885,"text":" 6"},{"id":767,"logit":-95.921,"text":" 7"},{"id":362,"logit":-95.965,"text":" 2"},{"id":838,"logit":-96.015,"text":" 10"},{"id":604,"logit":-96.055,"text":" 4"},{"id":860,"logit":-96.059,"text":" 9"},{"id":642,"logit":-96.082,"text":" 5"},{"id":513,"logit":-96.137,"text":" 3"},{"id":532,"logit":-96.235,"text":" -"},{"id":1105,"logit":-96.255,"text":" 12"},{"id":1367,"logit":-96.526,"text":" 11"},{"id":1343,"logit":-96.559,"text":" +"},{"id":1315,"logit":-96.662,"text":" 15"},{"id":720,"logit":-96.706,"text":" $"},{"id":1467,"logit":-96.794,"text":" 16"},{"id":1511,"logit":-96.841,"text":" 13"},{"id":1478,"logit":-96.863,"text":" 14"}]},{"category":"numeric","expect":" 14","id":"numeric-year","logsumexp":-160.196,"prompt":"Columbus sailed across the Atlantic in the year","prompt_tokens":[{"id":36063,"text":"Columb"},{"id":385,"text":"us"},{"id":33835,"text":" sailed"},{"id":1973,"text":" across"},{"id":262,"text":" the"},{"id":10596,"text":" Atlantic"},{"id":287,"text":" in"},{"id":262,"text":" the"},{"id":614,"text":" year"}],"top":[{"id":1596,"logit":-162.322,"text":" 17"},{"id":1467,"logit":-162.337,"text":" 16"},{"id":1248,"logit":-163.147,"text":" 18"},{"id":1315,"logit":-163.407,"text":" 15"},{"id":1478,"logit":-163.662,"text":" 14"},{"id":1511,"logit":-163.75,"text":" 13"},{"id":286,"logit":-163.765,"text":" of"},{"id":1160,"logit":-163.977,"text":" 20"},{"id":1105,"logit":-164.152,"text":" 12"},{"id":838,"logit":-164.213,"text":" 10"},{"id":362,"logit":-164.257,"text":" 2"},{"id":1367,"logit":-164.344,"text":" 11"},{"id":513,"logit":-164.422,"text":" 3"},{"id":860,"logit":-164.452,"text":" 9"},{"id":352,"logit":-164.465,"text":" 1"},{"id":807,"logit":-164.491,"text":" 8"},{"id":35665,"logit":-164.501,"text":" 1700"},{"id":767,"logit":-164.522,"text":" 7"},{"id":718,"logit":-164.523,"text":" 6"},{"id":604,"logit":-164.552,"text":" 4"}]},{"category":"story","expect":",","id":"story-opening","logsumexp":-49.614,"prompt":"Once upon a time","prompt_tokens":[{"id":7454,"text":"Once"},{"id":2402,"text":" upon"},{"id":257,"text":" a"},{"id":640,"text":" time"}],"top":[{"id":11,"logit":-50.466,"text":","},{"id":262,"logit":-52.354,"text":" the"},{"id":314,"logit":-52.817,"text":" I"},{"id":339,"logit":-52.915,"text":" he"},{"id":612,"logit":-53.14,"text":" there"},{"id":287,"logit":-53.205,"text":" in"},{"id":340,"logit":-53.37,"text":" it"},{"id":618,"logit":-53.393,"text":" when"},{"id":286,"logit":-53.4,"text":" of"},{"id":484,"logit":-53.662,"text":" they"},{"id":257,"logit":-53.755,"text":" a"},{"id":356,"logit":-54.043,"text":" we"},{"id":673,"logit":-54.221,"text":" she"},{"id":345,"logit":-54.228,"text":" you"},{"id":428,"logit":-54.487,"text":" this"},{"id":357,"logit":-54.825,"text":" ("},{"id":290,"logit":-54.946,"text":" and"},{"id":393,"logit":-55.003,"text":" or"},{"id":465,"logit":-55.026,"text":" his"},{"id":326,"logit":-55.038,"text":" that"}]},{"category":"idiom","expect":" much","id":"idiom-thanks","logsumexp":-45.42,"prompt":"Thank you very","prompt_tokens":[{"id":10449,"text":"Thank"},{"id":345,"text":" you"},{"id":845,"text":" very"}],"top":[{"id":881,"logit":-45.429,"text":" much"},{"id":845,"logit":-51.394,"text":" very"},{"id":11,"logit":-51.405,"text":","},{"id":29482,"logit":-52.46,"text":"much"},{"id":13111,"logit":-53.232,"text":" Much"},{"id":880,"logit":-53.78,"text":" well"},{"id":4047,"logit":-53.995,"text":" highly"},{"id":9257,"logit":-54.033,"text":" greatly"},{"id":29093,"logit":-54.134,"text":" sincerely"},{"id":45859,"logit":-54.351,"text":" MUCH"},{"id":7744,"logit":-55.28,"text":" deeply"},{"id":922,"logit":-55.394,"text":" good"},{"id":7773,"logit":-55.537,"text":" carefully"},{"id":1266,"logit":-55.544,"text":" best"},{"id":867,"logit":-55.637,"text":" many"},{"id":1327,"logit":-55.747,"text":" hard"},{"id":1611,"logit":-55.771,"text":" kind"},{"id":3016,"logit":-55.803,"text":" nearly"},{"id":1310,"logit":-55.905,"text":" little"},{"id":46379,"logit":-55.941,"text":" dearly"}]},{"category":"idiom","expect":" be","id":"idiom-shakespeare","logsumexp":-45.685,"prompt":"To be or not to","prompt_tokens":[{"id":2514,"text":"To"},{"id":307,"text":" be"},{"id":393,"text":" or"},{"id":407,"text":" not"},{"id":284,"text":" to"}],"top":[{"id":307,"logit":-45.728,"text":" be"},{"id":423,"logit":-51.091,"text":" have"},{"id":1716,"logit":-51.242,"text":" become"},{"id":651,"logit":-52.351,"text":" get"},{"id":1355,"logit":-52.577,"text":" Be"},{"id":407,"logit":-52.655,"text":" not"},{"id":779,"logit":-53.189,"text":" use"},{"id":1254,"logit":-53.209,"text":" feel"},{"id":11,"logit":-53.224,"text":","},{"id":787,"logit":-53.306,"text":" make"},{"id":2152,"logit":-53.382,"text":" exist"},{"id":467,"logit":-53.403,"text":" go"},{"id":910,"logit":-53.418,"text":" say"},{"id":466,"logit":-53.485,"text":" do"},{"id":711,"logit":-53.534,"text":" play"},{"id":9348,"logit":-53.581,"text":" BE"},{"id":1011,"logit":-53.676,"text":" take"},{"id":588,"logit":-53.685,"text":" like"},{"id":3520,"logit":-53.732,"text":" remain"},{"id":760,"logit":-53.747,"text":" know"}]},{"category":"code","expect":" np","id":"code-import","logsumexp":-85.214,"prompt":"import numpy as","prompt_tokens":[{"id":11748,"text":"import"},{"id":299,"text":" n"},{"id":32152,"text":"umpy"},{"id":355,"text":" as"}],"top":[{"id":45941,"logit":-85.377,"text":" np"},{"id":299,"logit":-88.519,"text":" n"},{"id":279,"logit":-89.337,"text":" p"},{"id":277,"logit":-89.598,"text":" f"},{"id":334,"logit":-90.174,"text":" u"},{"id":257,"logit":-90.238,"text":" a"},{"id":285,"logit":-90.381,"text":" m"},{"id":288,"logit":-90.908,"text":" d"},{"id":256,"logit":-91.149,"text":" t"},{"id":48700,"logit":-91.151,"text":" tf"},{"id":374,"logit":-91.414,"text":" r"},{"id":458,"logit":-91.46,"text":" pl"},{"id":269,"logit":-91.545,"text":" c"},{"id":399,"logit":-91.692,"text":" N"},{"id":514,"logit":-91.717,"text":" us"},{"id":4808,"logit":-91.866,"text":" _"},{"id":1312,"logit":-92.001,"text":" i"},{"id":264,"logit":-92.096,"text":" s"},{"id":11192,"logit":-92.127,"text":" tens"},{"id":7177,"logit":-92.173,"text":" array"}]},{"category":"code","expect":" +","id":"code-return","logsumexp":-58.644,"prompt":"def add(a, b):\n    return a","prompt_tokens":[{"id":4299,"text":"def"},{"id":751,"text":" add"},{"id":7,"text":"("},{"id":64,"text":"a"},{"id":11,"text":","},{"id":275,"text":" b"},{"id":2599,"text":"):"},{"id":198,"text":"\n"},{"id":220,"text":" "},{"id":220,"text":" "},{"id":220,"text":" "},{"id":1441,"text":" return"},{"id":257,"text":" a"}],"top":[{"id":1343,"logit":-59.834,"text":" +"},{"id":198,"logit":-60.51,"text":"\n"},{"id":11,"logit":-60.814,"text":","},{"id":13,"logit":-61.466,"text":"."},{"id":1635,"logit":-62.232,"text":" *"},{"id":58,"logit":-62.364,"text":"["},{"id":26,"logit":-62.387,"text":";"},{"id":10,"logit":-63.077,"text":"+"},{"id":532,"logit":-63.08,"text":" -"},{"id":837,"logit":-63.149,"text":" ,"},{"id":329,"logit":-63.216,"text":" for"},{"id":611,"logit":-63.352,"text":" if"},{"id":764,"logit":-63.438,"text":" ."},{"id":13163,"logit":-63.626,"text":" >>>"},{"id":825,"logit":-63.633,"text":" def"},{"id":6624,"logit":-63.648,"text":" =="},{"id":1220,"logit":-63.761,"text":" /"},{"id":290,"logit":-63.767,"text":" and"},{"id":930,"logit":-63.799,"text":" |"},{"id":62,"logit":-63.807,"text":"_"}]},{"category":"multilingual","id":"multilingual-french","logsumexp":-64.549,"prompt":"Le chat est sur la","prompt_tokens":[{"id":3123,"text":"Le"},{"id":8537,"text":" chat"},{"id":1556,"text":" est"},{"id":969,"text":" sur"},{"id":8591,"text":" la"}],"top":[{"id":410,"logit":-67.606,"text":" v"},{"id":300,"logit":-68.455,"text":" l"},{"id":42392,"logit":-68.521,"text":" lang"},{"id":299,"logit":-68.558,"text":" n"},{"id":277,"logit":-68.652,"text":" f"},{"id":442,"logit":-68.745,"text":" ch"},{"id":285,"logit":-68.828,"text":" m"},{"id":264,"logit":-68.923,"text":" s"},{"id":279,"logit":-69.079,"text":" p"},{"id":269,"logit":-69.08,"text":" c"},{"id":256,"logit":-69.207,"text":" t"},{"id":778,"logit":-69.211,"text":" pr"},{"id":275,"logit":-69.24,"text":" b"},{"id":374,"logit":-69.278,"text":" r"},{"id":7608,"logit":-69.42,"text":" vo"},{"id":2796,"logit":-69.6,"text":" fem"},{"id":474,"logit":-69.773,"text":" j"},{"id":39073,"logit":-69.83,"text":" dé"},{"id":288,"logit":-69.898,"text":" d"},{"id":40560,"logit":-69.913,"text":" ré"}]},{"category":"open","id":"open-ended","logsumexp":-87.808,"prompt":"The best thing about learning is","prompt_tokens":[{"id":464,"text":"The"},{"id":1266,"text":" best"},{"id":1517,"text":" thing"},{"id":546,"text":" about"},{"id":4673,"text":" learning"},{"id":318,"text":" is"}],"top":[{"id":326,"logit":-88.849,"text":" that"},{"id":284,"logit":-90.538,"text":" to"},{"id":345,"logit":-90.759,"text":" you"},{"id":262,"logit":-90.88,"text":" the"},{"id":407,"logit":-91.211,"text":" not"},{"id":703,"logit":-91.334,"text":" how"},{"id":340,"logit":-91.431,"text":" it"},{"id":4673,"logit":-91.453,"text":" learning"},{"id":6970,"logit":-91.785,"text":" knowing"},{"id":11,"logit":-91.928,"text":","},{"id":852,"logit":-91.946,"text":" being"},{"id":618,"logit":-91.959,"text":" when"},{"id":1719,"logit":-91.973,"text":" having"},{"id":1972,"logit":-92.078,"text":" getting"},{"id":644,"logit":-92.442,"text":" what"},{"id":655,"logit":-92.568,"text":" just"},{"id":4379,"logit":-92.611,"text":" seeing"},{"id":4917,"logit":-92.699,"text":" finding"},{"id":314,"logit":-92.78,"text":" I"},{"id":534,"logit":-92.782,"text":" your"}]}]}</script>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+  <script>
+/* Next-token lab: pure sampling maths, then the carousel, tally and sampling panel. */
+(function () {
+  'use strict';
+
+  function sum(xs) { return xs.reduce(function (a, b) { return a + b; }, 0); }
+  function byDescending(values) {
+    return function (a, b) { return values[b] - values[a] || a - b; };
+  }
+
+  // softmax(z / T), shifted by the largest logit so exp never overflows.
+  function softmax(logits, temperature) {
+    if (typeof temperature !== 'number' || !Number.isFinite(temperature) || temperature <= 0) {
+      throw new RangeError('temperature must be a finite number above 0');
+    }
+    var largest = Math.max.apply(null, logits);
+    var weights = logits.map(function (z) { return Math.exp((z - largest) / temperature); });
+    var total = sum(weights);
+    return weights.map(function (w) { return w / total; });
+  }
+
+  // Smallest prefix by descending probability (ties: lower index) whose mass reaches p.
+  // The token that crosses p is kept; p = 1 keeps every candidate.
+  function topP(probs, p, candidates) {
+    var order = (candidates ? candidates.slice() : probs.map(function (_, i) { return i; })).sort(byDescending(probs));
+    if (p === 1) return order;
+    var kept = [];
+    var mass = 0;
+    for (var i = 0; i < order.length; i++) {
+      kept.push(order[i]);
+      mass += probs[order[i]];
+      if (mass >= p) break;
+    }
+    return kept;
+  }
+
+  // Temperature, then top-k, renormalize, then top-p on that mass, renormalize again.
+  function distribution(logits, options) {
+    var p = softmax(logits, options.temperature);
+    var k = topP(p, 1).slice(0, options.topK);
+    var kMass = sum(k.map(function (i) { return p[i]; }));
+    var afterK = p.map(function (x, i) { return k.indexOf(i) >= 0 ? x / kMass : 0; });
+    var kept = topP(afterK, options.topP, k);
+    var mass = sum(kept.map(function (i) { return p[i]; }));
+    var q = p.map(function (x, i) { return kept.indexOf(i) >= 0 ? x / mass : 0; });
+    return { p: p, kept: kept, q: q, mass: mass };
+  }
+
+  // Inverse CDF in index order, with exactly one call to rng.
+  function sample(q, rng) {
+    var u = rng();
+    var mass = 0;
+    for (var i = 0; i < q.length; i++) {
+      mass += q[i];
+      if (u < mass) return i;
+    }
+    for (var j = q.length - 1; j >= 0; j--) if (q[j] > 0) return j;
+    return q.length - 1;
+  }
+
+  function argmax(q) {
+    var best = 0;
+    for (var i = 1; i < q.length; i++) if (q[i] > q[best]) best = i;
+    return best;
+  }
+
+  window.NextToken = { softmax: softmax, topP: topP, distribution: distribution, sample: sample, argmax: argmax };
+
+  var dataBlock = document.getElementById('next-token-data');
+  if (!dataBlock) return;
+  var data = JSON.parse(dataBlock.textContent);
+  var prompts = data.prompts;
+  var KEY = 'cursus-s1-next-token-tally-v1';
+  var CATEGORIES = { or: 'Operations research', tokenization: 'Tokenization', factual: 'Factual recall', numeric: 'Numbers',
+    story: 'Story', idiom: 'Idiom', code: 'Code', multilingual: 'Another language', open: 'Open-ended' };
+
+  function $(id) { return document.getElementById(id); }
+  var el = {
+    prev: $('nt-prev'), next: $('nt-next'), status: $('nt-status'), category: $('nt-category'),
+    promptText: $('nt-prompt-text'), pieceCount: $('nt-piece-count'), pieces: $('nt-pieces'),
+    form: $('nt-form'), guess: $('nt-guess'), lock: $('nt-lock'), locked: $('nt-locked'),
+    reveal: $('nt-reveal'), message: $('nt-message'),
+    total: $('nt-total'), rank1: $('nt-rank1'), rank1Count: $('nt-rank1-count'), top5: $('nt-top5'),
+    top5Count: $('nt-top5-count'), pending: $('nt-hits-pending'), common: $('nt-common'),
+    storage: $('nt-storage'), resetTally: $('nt-reset-tally'),
+    placeholder: $('nt-placeholder'), realPanel: $('nt-real-panel'), realChart: $('nt-real-chart'),
+    coverage: $('nt-coverage'), sampling: $('nt-sampling'), samplingChart: $('nt-sampling-chart'),
+    kept: $('nt-kept'), temperature: $('nt-temperature'), topK: $('nt-top-k'), topP: $('nt-top-p'),
+    batch: $('nt-batch'), batchStatus: $('nt-batch-status'), histogram: $('nt-histogram'),
+  };
+
+  // Tokens show a leading space as ␣ and a newline as ↵.
+  function show(text) { return text.replace(/^ /, '␣').replace(/\n/g, '↵'); }
+  function parseGuess(raw) { return raw.replace(/␣/g, ' ').replace(/↵/g, '\n').replace(/\\n/g, '\n'); }
+  function percent(x) { return (x * 100).toFixed(1) + '%'; }
+  function code(text) {
+    var node = document.createElement('code');
+    node.textContent = text;
+    return node;
+  }
+
+  // Exact (whitespace-sensitive) first; otherwise every token equal after trimming.
+  function match(prompt, raw) {
+    var text = parseGuess(raw);
+    var ranks = [];
+    prompt.top.forEach(function (token, i) { if (token.text === text) ranks.push(i); });
+    if (ranks.length) return { text: text, exact: true, ranks: ranks };
+    var trimmed = text.trim();
+    if (trimmed) prompt.top.forEach(function (token, i) { if (token.text.trim() === trimmed) ranks.push(i); });
+    return { text: text, exact: false, ranks: ranks };
+  }
+
+  // Class tally: { version, prompts: { <prompt id>: { hits: { <token id>: n }, miss: { <raw guess>: n } } } }.
+  var store = null;
+  try { store = window.localStorage; } catch (_) { store = null; }
+  var tally = { version: 1, prompts: {} };
+  if (store) {
+    try {
+      var saved = JSON.parse(store.getItem(KEY));
+      if (saved && typeof saved === 'object' && saved.prompts && typeof saved.prompts === 'object') tally = saved;
+    } catch (_) { /* Corrupt or unreadable: start a fresh tally. */ }
+  }
+  function memoryOnly() {
+    store = null;
+    el.storage.textContent = 'Browser storage is unavailable, so this tally lives in memory only and will not be saved when the page reloads.';
+  }
+  if (!store) memoryOnly();
+  function save() {
+    if (!store) return;
+    try { store.setItem(KEY, JSON.stringify(tally)); } catch (_) { memoryOnly(); }
+  }
+  function bucket(prompt) {
+    var record = tally.prompts[prompt.id];
+    if (!record || typeof record !== 'object') record = tally.prompts[prompt.id] = {};
+    if (!record.hits || typeof record.hits !== 'object') record.hits = {};
+    if (!record.miss || typeof record.miss !== 'object') record.miss = {};
+    return record;
+  }
+  function count(value) { return typeof value === 'number' && value > 0 ? value : 0; }
+
+  var state = { index: 0, guesses: [], revealed: false, histogram: null };
+  function current() { return prompts[state.index]; }
+
+  function renderTally() {
+    var prompt = current();
+    var record = tally.prompts[prompt.id] || {};
+    var hits = record.hits || {}, misses = record.miss || {};
+    var entries = [];
+    var total = 0, rank1 = 0, top5 = 0;
+    prompt.top.forEach(function (token, i) {
+      var n = count(hits[String(token.id)]);
+      if (!n) return;
+      total += n;
+      if (i === 0) rank1 += n;
+      if (i < 5) top5 += n;
+      entries.push({ label: show(token.text), n: n });
+    });
+    Object.keys(misses).forEach(function (raw) {
+      var n = count(misses[raw]);
+      if (!n) return;
+      total += n;
+      entries.push({ label: raw, n: n });
+    });
+    el.total.textContent = String(total);
+    el.rank1Count.textContent = String(rank1);
+    el.top5Count.textContent = String(top5);
+    el.rank1.hidden = el.top5.hidden = !state.revealed;
+    el.pending.hidden = state.revealed;
+    entries.sort(function (a, b) { return b.n - a.n; });
+    el.common.replaceChildren();
+    if (state.revealed && entries.length) {
+      el.common.append('Most common guesses: ');
+      entries.slice(0, 5).forEach(function (entry, i) {
+        if (i) el.common.append(', ');
+        el.common.append(code(entry.label), ' ×' + entry.n);
+      });
+    }
+    el.common.hidden = !el.common.childNodes.length;
+  }
+
+  function renderLocked() {
+    var prompt = current();
+    el.locked.replaceChildren();
+    state.guesses.forEach(function (guess) {
+      var item = document.createElement('li');
+      item.append(code(show(guess.result.text)));
+      if (state.revealed) {
+        var ranks = guess.result.ranks;
+        if (!ranks.length) item.append(' → not in the top 20');
+        else if (guess.result.exact) item.append(' → rank ' + (ranks[0] + 1));
+        else {
+          item.append(' → spaces ignored: ');
+          ranks.forEach(function (r, i) {
+            if (i) item.append(', ');
+            item.append(code(show(prompt.top[r].text)), ' at rank ' + (r + 1));
+          });
+        }
+      }
+      el.locked.append(item);
+    });
+    el.locked.hidden = !state.guesses.length;
+  }
+
+  // Rows are inserted before data-value is set, so the shared chart script renders their bars.
+  function row(label, value, extra) {
+    var item = document.createElement('li');
+    item.setAttribute('data-prob-row', '');
+    var name = document.createElement('span');
+    name.setAttribute('data-prob-label', '');
+    name.append(label);
+    var shown = document.createElement('span');
+    shown.setAttribute('data-prob-value', '');
+    shown.textContent = percent(value);
+    item.append(name, shown);
+    if (extra) item.append(extra);
+    return item;
+  }
+  function setValue(item, value) { item.setAttribute('data-value', String(value)); }
+
+  function renderReal() {
+    var prompt = current();
+    var probs = prompt.top.map(function (token) { return Math.exp(token.logit - prompt.logsumexp); });
+    var covered = sum(probs);
+    var other = Math.max(0, 1 - covered);
+    var guessed = {};
+    state.guesses.forEach(function (guess) { guess.result.ranks.forEach(function (r) { guessed[r] = true; }); });
+    var rows = probs.map(function (p, i) {
+      var item = row(code(show(prompt.top[i].text)), p);
+      if (guessed[i]) item.setAttribute('data-highlight', '');
+      return item;
+    });
+    var rest = row('All other tokens', other);
+    rest.classList.add('nt-other');
+    rows.push(rest);
+    el.realChart.replaceChildren.apply(el.realChart, rows);
+    rows.forEach(function (item, i) { setValue(item, i < probs.length ? probs[i] : other); });
+    el.coverage.textContent = 'These are GPT-2’s real probabilities: the ' + prompt.top.length + ' tokens shown hold ' +
+      percent(covered) + ' of the mass, and all other tokens of its 50,257-token vocabulary share the remaining ' + percent(other) + '.';
+  }
+
+  function options() {
+    return { temperature: Number(el.temperature.value), topK: Number(el.topK.value), topP: Number(el.topP.value) };
+  }
+
+  function renderSampling() {
+    var prompt = current();
+    var result = distribution(prompt.top.map(function (token) { return token.logit; }), options());
+    state.q = result.q;
+    var rows = prompt.top.map(function (token, i) {
+      var tag = document.createElement('span');
+      var kept = result.kept.indexOf(i) >= 0;
+      tag.className = 'nt-tag';
+      tag.textContent = kept ? 'kept' : 'cut';
+      var item = row(code(show(token.text)), result.q[i], tag);
+      if (kept) item.setAttribute('data-nucleus', '');
+      return item;
+    });
+    el.samplingChart.replaceChildren.apply(el.samplingChart, rows);
+    rows.forEach(function (item, i) { setValue(item, result.q[i]); });
+    el.kept.textContent = 'Kept ' + result.kept.length + ' of ' + prompt.top.length + ' candidates. Before renormalizing they held ' +
+      percent(result.mass) + ' of the sandbox mass at T = ' + options().temperature.toFixed(2) + '.';
+    clearHistogram();
+  }
+
+  function renderHistogram() {
+    var prompt = current();
+    var counts = state.histogram || prompt.top.map(function () { return 0; });
+    var rows = prompt.top.map(function (token, i) {
+      var tally = document.createElement('span');
+      tally.className = 'nt-count';
+      tally.textContent = counts[i] + (counts[i] === 1 ? ' draw' : ' draws');
+      return row(code(show(token.text)), counts[i] / 100, tally);
+    });
+    el.histogram.replaceChildren.apply(el.histogram, rows);
+    rows.forEach(function (item, i) { setValue(item, counts[i] / 100); });
+  }
+
+  function clearHistogram() {
+    state.histogram = null;
+    renderHistogram();
+    el.batchStatus.textContent = 'No draws yet. Press Sample ×100.';
+  }
+
+  function mode() {
+    var checked = document.querySelector('input[name="nt-mode"]:checked');
+    return checked ? checked.value : 'sample';
+  }
+
+  el.batch.addEventListener('click', function () {
+    var q = state.q;
+    var counts = q.map(function () { return 0; });
+    var greedy = mode() === 'argmax';
+    for (var i = 0; i < 100; i++) counts[greedy ? argmax(q) : sample(q, Math.random)]++;
+    state.histogram = counts;
+    renderHistogram();
+    var distinct = counts.filter(function (n) { return n > 0; }).length;
+    el.batchStatus.textContent = greedy
+      ? 'Argmax: all 100 draws are the most likely kept token. Press again: nothing changes.'
+      : 'Sample: 100 fresh random draws landed on ' + distinct + (distinct === 1 ? ' token' : ' different tokens') + '. Press again: the counts change.';
+  });
+  document.querySelectorAll('input[name="nt-mode"]').forEach(function (radio) {
+    radio.addEventListener('change', clearHistogram);
+  });
+
+  function render() {
+    var prompt = current();
+    var n = prompts.length;
+    el.status.textContent = 'Prompt ' + (state.index + 1) + ' of ' + n;
+    el.category.textContent = CATEGORIES[prompt.category] || prompt.category;
+    el.promptText.textContent = prompt.prompt;
+    el.pieceCount.textContent = 'GPT-2 reads this as ' + prompt.prompt_tokens.length + (prompt.prompt_tokens.length === 1 ? ' token:' : ' tokens:');
+    el.pieces.replaceChildren.apply(el.pieces, prompt.prompt_tokens.map(function (token) { return code(show(token.text)); }));
+    el.prev.disabled = state.index === 0;
+    el.next.disabled = state.index === n - 1;
+    el.guess.disabled = el.lock.disabled = state.revealed;
+    el.reveal.disabled = state.revealed || !state.guesses.length;
+    el.placeholder.hidden = state.revealed;
+    el.realPanel.hidden = el.sampling.hidden = !state.revealed;
+    renderLocked();
+    renderTally();
+    if (state.revealed) renderReal();
+  }
+
+  function go(index) {
+    var focused = document.activeElement;
+    state.index = Math.max(0, Math.min(prompts.length - 1, index));
+    state.guesses = [];
+    state.revealed = false;
+    el.message.textContent = '';
+    el.guess.value = '';
+    el.topK.max = String(current().top.length);
+    if (Number(el.topK.value) > current().top.length) el.topK.value = el.topK.max;
+    render();
+    renderSampling();
+    if (focused === el.prev && el.prev.disabled) el.next.focus();
+    else if (focused === el.next && el.next.disabled) el.prev.focus();
+  }
+
+  el.prev.addEventListener('click', function () { go(state.index - 1); });
+  el.next.addEventListener('click', function () { go(state.index + 1); });
+
+  el.form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (state.revealed) return;
+    var raw = el.guess.value;
+    if (raw === '') { el.message.textContent = 'Type a guess first.'; return; }
+    var prompt = current();
+    var result = match(prompt, raw);
+    var record = bucket(prompt);
+    if (result.ranks.length) {
+      var id = String(prompt.top[result.ranks[0]].id);
+      record.hits[id] = count(record.hits[id]) + 1;
+    } else {
+      record.miss[raw] = count(record.miss[raw]) + 1;
+    }
+    save();
+    state.guesses.push({ raw: raw, result: result });
+    el.guess.value = '';
+    el.message.textContent = 'Locked ' + state.guesses.length + (state.guesses.length === 1 ? ' guess' : ' guesses') + '. Lock more, or Reveal.';
+    render();
+    el.guess.focus();
+  });
+
+  el.reveal.addEventListener('click', function () {
+    if (!state.guesses.length || state.revealed) return;
+    state.revealed = true;
+    el.message.textContent = 'Revealed. Guess entry is closed for this prompt.';
+    render();
+    el.realChart.closest('section').scrollIntoView({ block: 'nearest' });
+  });
+
+  el.resetTally.addEventListener('click', function () {
+    tally = { version: 1, prompts: {} };
+    save();
+    render();
+  });
+
+  function format(value, digits) { return value.toFixed(digits); }
+  window.CursusFormulas = window.CursusFormulas || {};
+  window.CursusFormulas['nt-temperature'] = function (value) {
+    renderSampling();
+    var t = format(value, 2);
+    return 'T = ' + t + ' · p_i = exp(z_i / ' + t + ') / Σ_j exp(z_j / ' + t + ')';
+  };
+  window.CursusFormulas['nt-top-k'] = function (value) {
+    renderSampling();
+    var n = current().top.length;
+    return value >= n ? 'k = ' + value + ' · keep all ' + n + ' candidates' : 'k = ' + value + ' · keep the ' + value + ' most likely of ' + n + ' candidates';
+  };
+  window.CursusFormulas['nt-top-p'] = function (value) {
+    renderSampling();
+    var p = format(value, 2);
+    return value >= 1 ? 'p = ' + p + ' · keep every candidate' : 'p = ' + p + ' · keep the smallest top-ranked set whose mass reaches ' + p;
+  };
+
+  el.topK.max = String(current().top.length);
+  el.topK.value = el.topK.defaultValue = el.topK.max;
+  el.prev.disabled = false;
+  el.guess.disabled = false;
+  el.resetTally.disabled = false;
+  render();
+  renderSampling();
+})();
+</script>
+</body>
+</html>

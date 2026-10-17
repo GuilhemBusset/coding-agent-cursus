@@ -92,7 +92,42 @@ fi
 [ "$(git -C "$tmp/remote.git" rev-parse feat/demo)" = "$remote_tip" ] || fail "remote branch changed after a refused ship"
 pass "a branch behind its remote is refused and nothing is pushed"
 
-# 5. Shipping from main is refused by the script, and the pre-push hook still guards main.
+main_moves() {
+  echo "$1" > "$tmp/seed/$1.txt"
+  git -C "$tmp/seed" add "$1.txt"
+  git -C "$tmp/seed" commit -q -m "main moves: $1"
+  git -C "$tmp/seed" push -q origin HEAD:main
+}
+
+# 5. An unpublished branch that already contains main is pushed unchanged.
+git -C "$tmp/work" fetch -q origin main
+git -C "$tmp/work" switch -q -c feat/current origin/main
+echo current > "$tmp/work/current.txt"
+git -C "$tmp/work" add current.txt
+git -C "$tmp/work" commit -q -m "current"
+before="$(git -C "$tmp/work" rev-parse HEAD)"
+(cd "$tmp/work" && bash "$ship" >/dev/null 2>&1) || fail "shipping a branch that contains main failed"
+[ "$(git -C "$tmp/work" rev-parse HEAD)" = "$before" ] || fail "a branch that contains main was rewritten"
+[ "$(git -C "$tmp/remote.git" rev-parse feat/current)" = "$before" ] || fail "a branch that contains main was not pushed as is"
+pass "an unpublished branch that contains main is pushed unchanged"
+
+# 6. An unpublished branch carrying a merge commit gets main merged in, keeping that merge.
+git -C "$tmp/work" switch -q -c feat/merged origin/main
+echo merged > "$tmp/work/merged.txt"
+git -C "$tmp/work" add merged.txt
+git -C "$tmp/work" commit -q -m "merged"
+main_moves main-4
+git -C "$tmp/work" fetch -q origin main
+git -C "$tmp/work" merge -q --no-edit origin/main
+merge_commit="$(git -C "$tmp/work" rev-parse HEAD)"
+main_moves main-5
+(cd "$tmp/work" && bash "$ship" >/dev/null 2>&1) || fail "shipping an unpublished branch with a merge commit failed"
+pushed="$(git -C "$tmp/remote.git" rev-parse feat/merged)"
+git -C "$tmp/remote.git" merge-base --is-ancestor "$merge_commit" "$pushed" || fail "the branch's merge commit was dropped (rebased?)"
+git -C "$tmp/remote.git" merge-base --is-ancestor main "$pushed" || fail "the new main was not merged in"
+pass "an unpublished branch with a merge commit gets main merged in and keeps its merge"
+
+# 7. Shipping from main is refused by the script, and the pre-push hook still guards main.
 git -C "$tmp/work" switch -q main
 if (cd "$tmp/work" && bash "$ship" >/dev/null 2>&1); then
   fail "shipping from main should be refused"

@@ -6,7 +6,11 @@
 # requirements change or a reproduced defect is amended). A newer acceptance-checks commit may
 # also retire checks a new design no longer uses with "Loop-Unlocks: <path>" trailers
 # (docs/adr/0011-autonomous-implement-loop.md); from that commit on they are no longer locked.
-# Merge commits are ignored: they only bring in main.
+# An acceptance-checks commit may also lock files it does not write, such as a test the
+# implementer already committed unchanged, with "Loop-Locks: <path>" trailers (one path per
+# line, as many as needed): from that commit on they are locked exactly like the files it
+# wrote, and a later "Loop-Unlocks: <path>" releases them the same way. Both trailers count
+# only on acceptance-checks commits. Merge commits are ignored: they only bring in main.
 #
 #   bash scripts/check-loop-guard.sh <base-sha> <head-sha>
 set -euo pipefail
@@ -18,10 +22,12 @@ status=0
 
 is_checks_commit() { git log -1 --format=%B "$1" | grep -q "$trailer"; }
 unlocks() { git log -1 --format=%B "$1" | sed -n 's/^Loop-Unlocks: //p'; }
+locks() { git log -1 --format=%B "$1" | sed -n 's/^Loop-Locks: //p'; }
 
 for locker in $(git rev-list --reverse --no-merges --grep="$trailer" "$base..$head"); do
-  # what this commit wrote, minus what it deleted or retired
-  locked="$(git diff-tree --no-commit-id --name-only --diff-filter=d -r "$locker")"
+  # what this commit wrote or named in Loop-Locks, each once, minus what it deleted or retired
+  locked="$( { git diff-tree --no-commit-id --name-only --diff-filter=d -r "$locker"; locks "$locker"; } \
+    | awk 'NF && !seen[$0]++')"
   own="$(unlocks "$locker")"
   if [ -n "$own" ]; then
     locked="$(grep -Fxv -f <(printf '%s\n' "$own") <<<"$locked" || true)"

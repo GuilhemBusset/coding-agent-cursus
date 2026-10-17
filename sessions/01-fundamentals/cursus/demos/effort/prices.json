@@ -1,0 +1,21 @@
+{
+  "as_of": "2026-10-11",
+  "currency": "USD",
+  "unit": "USD per million tokens, standard (non-batch) list prices",
+  "anthropic": {
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "note": "cache_write_5m and cache_write_1h are the 5-minute and 1-hour cache write rates; the demo prices each cache write at the rate of the duration Claude Code reports for it (see README); cache_read is the cache hit rate. Haiku 5.5 rates are for prompts up to 100,000 tokens.",
+    "models": {
+      "claude-opus-5-5": {"input": 4, "output": 20, "cache_write_5m": 5, "cache_write_1h": 8, "cache_read": 0.2},
+      "claude-sonnet-5-5": {"input": 2, "output": 10, "cache_write_5m": 2.5, "cache_write_1h": 4, "cache_read": 0.1},
+      "claude-haiku-5-5": {"input": 0.1, "output": 0.5, "cache_write_5m": 0.125, "cache_write_1h": 0.2, "cache_read": 0.01}
+    }
+  },
+  "openai": {
+    "source": "https://platform.openai.com/docs/pricing",
+    "note": "Standard tier, short-context rates. cache_write prices Codex's cache_write_input_tokens, which replace ordinary input pricing for those tokens; Codex reported none in the recording.",
+    "models": {
+      "gpt-6-astra": {"input": 10, "output": 50, "cached_input": 1, "cache_write": 12.5}
+    }
+  }
+}

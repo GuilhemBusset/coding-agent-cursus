@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "demo": "sampling",
+    "cli": "claude",
+    "cli_version": "2.1.296 (Claude Code)",
+    "model": "claude-haiku-5-5",
+    "effort": "low",
+    "date": "2026-10-11",
+    "prompt": "Invent a name for a new optimization solver. Reply with the name only.",
+    "command": [
+      "claude",
+      "-p",
+      "<prompt>",
+      "--model",
+      "claude-haiku-5-5",
+      "--effort",
+      "low",
+      "--tools",
+      "",
+      "--strict-mcp-config",
+      "--no-session-persistence",
+      "--output-format",
+      "json"
+    ],
+    "model_reported": [
+      "claude-haiku-5-5"
+    ]
+  },
+  "answers": [
+    "Vantablend",
+    "Quorvex",
+    "Quillstep",
+    "Quillfathom",
+    "Gradientwhisk"
+  ],
+  "raw": [
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "Vantablend",
+        "stop_reason": "end_turn",
+        "duration_ms": 925,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 7,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 3980,
+            "webSearchRequests": 0,
+            "costUSD": 0.0007997000000000001,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 0,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "Quorvex",
+        "stop_reason": "end_turn",
+        "duration_ms": 1071,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 7,
+            "cacheReadInputTokens": 3980,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 4.35e-05,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 0,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "Quillstep",
+        "stop_reason": "end_turn",
+        "duration_ms": 1068,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 7,
+            "cacheReadInputTokens": 3980,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 4.35e-05,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 0,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "Quillfathom",
+        "stop_reason": "end_turn",
+        "duration_ms": 1019,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 8,
+            "cacheReadInputTokens": 3980,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 4.4e-05,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 0,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ],
+    [
+      {
+        "type": "result",
+        "subtype": "success",
+        "is_error": false,
+        "num_turns": 1,
+        "result": "Gradientwhisk",
+        "stop_reason": "end_turn",
+        "duration_ms": 1037,
+        "modelUsage": {
+          "claude-haiku-5-5": {
+            "inputTokens": 2,
+            "outputTokens": 10,
+            "cacheReadInputTokens": 3980,
+            "cacheCreationInputTokens": 0,
+            "webSearchRequests": 0,
+            "costUSD": 4.4999999999999996e-05,
+            "contextWindow": 1000000,
+            "maxOutputTokens": 128000,
+            "thinkingTokens": 0,
+            "canonicalModel": "claude-haiku-5-5",
+            "provider": "firstParty",
+            "costBasis": "list"
+          }
+        }
+      }
+    ]
+  ]
+}
