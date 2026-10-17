@@ -116,7 +116,10 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
 | `exercises/l3-word-problem/` | L3, a weekly staffing MILP to model from a word problem: statement, data, the solution-file format, an independent stdlib checker (`check.py`) and three seeded wrong solutions |
+| `exercises/homework-p01/` | P01, the take-home: EV linehaul scheduling and charging. Statement, revised data, an empty `p01_model.py` for the student's agent to build, an independent stdlib checker (`p01_checker.py`), the solve-contract suite (`p01_contract.py`) and instructor notes |
+| `exercises/turn-in-check.sh` | The session's turn-in gate, run by `/turn-in 01`, `$turn-in 01` and `scripts/turn-in.sh 01`; it runs the P01 checker with `--turn-in` |
 | `tests/` | The session's pytest suite |
+| `tests/fixtures/p01_upstream/` | The untouched 2025 P01 files and their MIT licence, pinned by hash, from which `exercises/homework-p01/data/` is derived |
 
 The boundary between `cursus/` and `exercises/` is load-bearing: `cursus/` holds only what is
 taught live, and `exercises/` holds only what students do on their own time.
