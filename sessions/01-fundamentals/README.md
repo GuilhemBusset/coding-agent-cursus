@@ -128,6 +128,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `prework-verification.md` | Evidence for the pre-work: install and reading sources with the date checked, platform status, recorded runs. Kept outside `exercises/` so it never lands in homework branches |
 | `exercises/p00-lab/` | P00, a seeded fixed-charge transport mini-pack: model, independent checker, contract tests and `export.py` for standalone lab copies |
 | `exercises/l3-word-problem/` | L3, a weekly staffing MILP to model from a word problem: statement, data, the solution-file format, an independent stdlib checker (`check.py`) and three seeded wrong solutions |
+| `exercises/home.html` | The homework sheet: rerun two demos, three sentences on "sampling, not retrieval", solve P01, turn in with `/turn-in 01` or `$turn-in 01`. Each part says what a good answer looks like, and the grading rule is that checker-proven feasibility counts more than the objective value. Students write their notes in `exercises/home-notes.md` |
 | `exercises/homework-p01/` | P01, the take-home: EV linehaul scheduling and charging. Statement, revised data, an empty `p01_model.py` for the student's agent to build, an independent stdlib checker (`p01_checker.py`), the solve-contract suite (`p01_contract.py`) and instructor notes |
 | `exercises/turn-in-check.sh` | The session's turn-in gate, run by `/turn-in 01`, `$turn-in 01` and `scripts/turn-in.sh 01`; it runs the P01 checker with `--turn-in` |
 | `tests/` | The session's pytest suite |
