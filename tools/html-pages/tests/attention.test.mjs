@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { chromium } from '../browser.mjs';
-import { openPage, repoRoot, suites, sizes, eventually } from './component-helpers.mjs';
+import { openPage, repoRoot, sizes, eventually, assertCollected } from './component-helpers.mjs';
 
 /* Issue 39's public DOM contract only: no calls to application functions.
  * Numerical oracles read model coordinates and fixture bytes independently.
@@ -285,9 +285,7 @@ test('D1: self-contained lab structure and registered acceptance suite', async t
   }
   assert.equal(await page.locator('[data-lab], [data-reset]').count(), 0);
   assert.equal(await page.locator('*').evaluateAll(els => els.some(el => [...el.attributes].some(a => a.name.startsWith('data-budget')))), false);
-  assert.ok(suites.includes('attention'), 'component-helpers suites registers attention');
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  assert.match(pkg.scripts.test, /(?:^|\s)\.\.\/tools\/html-pages\/tests\/attention\.test\.mjs(?:\s|$)/);
+  await assertCollected('attention');
   for (const kind of ['permutation', 'multi-head']) {
     const note = page.locator(`[data-attn-note="${kind}"]`);
     await visible(note);

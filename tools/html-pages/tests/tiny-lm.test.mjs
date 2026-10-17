@@ -7,7 +7,7 @@ import { cpus, platform, release } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, scratch, openPage, eventually } from './component-helpers.mjs';
+import { repoRoot, scratch, openPage, eventually, assertCollected } from './component-helpers.mjs';
 
 /* Issue 29's agreed public surface, with the otherwise unspecified sampling
  * call convention made explicit:
@@ -323,9 +323,7 @@ test('D1: real inline checkpoint, tokenizer, public API and registered offline l
   assert.equal(rows.length, tokens.length);
   rows.forEach(row => { assert.equal(row.length, 512); assert.ok(row.every(Number.isFinite)); });
   assert.deepEqual(await state(page), before, 'fresh logits must not touch UI cache or counters');
-  assert.ok(suites.includes('tiny-lm'), 'register component-helpers suite');
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  assert.ok(pkg.scripts.test.split(/\s+/).includes('../tools/html-pages/tests/tiny-lm.test.mjs'));
+  await assertCollected('tiny-lm');
   const readme = await readAsset('README.md');
   assert.match(readme, /embed_weights\.py/);
   assert.match(readme, /(?:\d[\d.,]*\s*(?:bytes|[kKmM][bB])|page (?:size|weight))/i);

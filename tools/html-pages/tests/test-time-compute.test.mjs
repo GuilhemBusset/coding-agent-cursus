@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, eventually, initialPredict } from './component-helpers.mjs';
+import { repoRoot, eventually, initialPredict, assertCollected } from './component-helpers.mjs';
 
 /* Locked acceptance contract for issue 31. Expected numbers are computed here,
  * never by calling the page's API. Only the agreed API, geometry and data-*
@@ -336,11 +336,7 @@ test('D1: self-contained cursus lab, three ordered panels and registered locked 
   const reserved = await page.locator('*').evaluateAll(nodes => nodes.flatMap(n => Array.from(n.attributes)
     .filter(a => a.name === 'data-lab' || a.name === 'data-reset' || a.name.startsWith('data-budget')).map(a => a.name)));
   assert.deepEqual(reserved, [], 'no starter budget markers');
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  assert.match(pkg.scripts.test, /^node\s+--test\s/);
-  const registered = pkg.scripts.test.trim().split(/\s+/).slice(2).map(p => path.resolve(repoRoot, 'setup', p));
-  assert.equal(registered.filter(p => p === path.join(repoRoot, 'tools/html-pages/tests/test-time-compute.test.mjs')).length, 1);
-  assert.equal(suites.filter(name => name === 'test-time-compute').length, 1, 'component tooling registration');
+  await assertCollected('test-time-compute');
   for (const id of panelIds) {
     const root = panel(page, id);
     for (const selector of ['figure[data-ttc-chart]', 'output[data-ttc-readout]', 'button[data-ttc-reset]'])

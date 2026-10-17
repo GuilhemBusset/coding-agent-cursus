@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import vm from 'node:vm';
 import { chromium } from '../browser.mjs';
-import { openPage, repoRoot, read, suites, count, enabled, eventually, textOf } from './component-helpers.mjs';
+import { openPage, repoRoot, count, enabled, eventually, textOf, assertCollected } from './component-helpers.mjs';
 
 // Issue 36's agreed public DOM contract. No page functions or hidden simulation
 // state are consulted. Citation accuracy and screenshot review are separate PR
@@ -39,9 +39,7 @@ test('D1: session lab has the three panels, offline scripts and CI registration'
     .map(a => a.name).filter(n => n === 'data-lab' || n === 'data-reset' || n.startsWith('data-budget'))));
   assert.deepEqual(reserved, [], 'remove every starter budget marker');
   await count(page.locator('script[src], script[type="module"]'), 0);
-  assert.ok(suites.includes('verifier-gaming'), 'register in component-helpers.mjs, not just npm');
-  const pkg = JSON.parse(await read('setup/package.json'));
-  assert.ok(pkg.scripts.test.split(/\s+/).includes('../tools/html-pages/tests/verifier-gaming.test.mjs'), 'register in the explicit npm suite list');
+  await assertCollected('verifier-gaming');
 });
 
 async function packingState(page) {
