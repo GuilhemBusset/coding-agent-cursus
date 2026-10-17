@@ -62,8 +62,8 @@ class Probe(unittest.TestCase):
 
     def test_A3_agent_part_explicit_untested_platforms(self):
         page = Page((SESSION / 'exercises/00-prework.html').read_text())
-        self.assertEqual(page.statuses, dict.fromkeys(
-            ('linux', 'wsl', 'macos', 'windows-powershell', 'windows-git-bash'), 'untested'))
+        self.assertEqual(page.statuses, dict(dict.fromkeys(
+            ('linux', 'macos', 'windows-powershell', 'windows-git-bash'), 'untested'), wsl='tested'))
         record = (SESSION / 'prework-verification.md').read_text()
         self.assertIn('Fixture runs on WSL2', record)
         self.assertIn('not a full real run', record)
