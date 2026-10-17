@@ -4,8 +4,8 @@ You are the builder. Build this issue in your working directory, following your 
 {{plan}}
 </plan>
 
-- Write the code, **your own tests** for `test` items, any registration they need, and one command
-  per `test`/`command` item that proves it (exact shell, `cwd` relative to the repo root, optional
+- Write the code, **your own tests** for `test` items, any registration they need, and one or more
+  commands per `test`/`command` item that prove it (each is kept and run; exact shell, `cwd` relative to the repo root, optional
   `timeout_s` up to 1800). Run every command yourself until it passes.
   - Python tests: pytest through uv (`uv run --no-project --with pytest==8.3.5 pytest ...`, or the
     session's own `uv run pytest`); there may be no bare `python`. Run each pytest selection as its own
