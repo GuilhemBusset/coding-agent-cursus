@@ -192,7 +192,7 @@ uv run cursus/fixtures/runs/normalize_runs.py --check   # write nothing; exit 1 
 
 The script uses only the Python standard library, opens no socket and finds its paths from its
 own location, so it runs the same from any directory. It changes nothing in the page except that
-one block and its `data-sha256`.
+block, the `agent-run-recordings` block below, and their `data-sha256`.
 
 ### Inputs and how each stream is matched
 
@@ -244,7 +244,26 @@ and on a meta or a declared arm that no stream uses.
   - Texts longer than 1,200 characters keep their first 1,200 characters, with
     `"truncated": true`. `chars` is always the full length. The raw stream keeps the rest.
 
-Serialization: UTF-8, keys sorted, one-space indent, a final newline. Every `<` is written as
+### The page's copy of the agent runs · schema `agent-run-recordings/1`
+
+The same script also writes every normalized `<task>-<vendor>.json` into the page's inline
+`<script type="application/json" id="agent-run-recordings" data-sha256="…">` block, so the replay
+widget plays the three tasks side by side with no fetch. `--check` fails when that block is stale.
+
+```text
+{ "schema": "agent-run-recordings/1",
+  "runs": [ { "meta": as in agent-run/1, "totals": as in agent-run/1,
+              "steps": [ { "i", "type", "t_ms", "tool", "input", "is_error", "tokens",
+                           "text", "chars", "truncated" } ] } ] }
+```
+
+- `meta`, `totals` and the step fields named above are copied unchanged.
+- A tool call's `text` is what the page shows: the command, a Codex `file_change` as
+  `<kind> <path>` lines, or else the input as indented JSON.
+- `text` is clipped at 1,200 characters like the catalog's, with `chars` the full length and
+  `truncated` set. The normalized file keeps the full text.
+
+Serialization (both blocks and the catalog): UTF-8, keys sorted, one-space indent, a final newline. Every `<` is written as
 `\u003c`, so no text can close the page's script block. An `@` directly after a JSON control
 escape is written as `\u0040` (for example a `@pytest` decorator at the start of a line, right
 after `\n`), so a privacy scan of the file does not mistake the `n` before it and the dotted name
