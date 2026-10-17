@@ -1,20 +1,64 @@
 """GitHub access. `GhCli` talks to the real API through `gh api`; `FakeGitHub` is the
 in-memory double used by the tests; `RecordingGitHub` captures real read responses as a
-fixture for those tests."""
+fixture for those tests.
+
+`GhCli` retries transient failures (HTTP 5xx, 429, rate limits, network errors) with backoff.
+A call whose repetition is harmless (GET, PUT, PATCH, DELETE, and the POSTs that only add to a
+set) is retried on any of them. Any other POST creates something, so it is retried only when
+GitHub certainly did not act on it: the host could not be reached, or a rate limit refused the
+request. After a 5xx or a broken connection it may have taken effect, so it is not repeated; the
+engine looks up what it creates (a PR by its branch, an issue or a comment by its marker) before
+creating it again. A transient failure that outlasts the retries raises `GitHubUnavailable`, so
+the engine can tell an outage from a real error; any other failure raises `GitHubError` at once.
+"""
 
 from __future__ import annotations
 
 import json
+import re
 import subprocess
+import time
 import urllib.parse
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
 PER_PAGE = 100
+RETRY_DELAYS_S = (5, 15, 45)   # seconds slept before each retry of a transient failure
+
+_HTTP_STATUS = re.compile(r"\bHTTP (\d{3})\b")
+_RATE_LIMITED = re.compile(r"rate limit|abuse", re.IGNORECASE)
+# The request never reached GitHub: no name resolution (gh says "error connecting to <host>"), no
+# connection, or no TLS session (a request is sent only once the handshake is done).
+_NOT_SENT = re.compile(r"could not resolve host|no such host|error connecting to|connection refused|tls handshake",
+                       re.IGNORECASE)
+# The connection broke or timed out: the request may or may not have reached GitHub.
+_NETWORK = re.compile(r"connection reset|timeout|timed out|\bEOF\b", re.IGNORECASE)
 
 
 class GitHubError(RuntimeError):
     pass
+
+
+class GitHubUnavailable(GitHubError):
+    """GitHub could not be reached, or kept failing transiently through every retry: an outage,
+    not an answer to the request."""
+
+
+def transient(stderr: str, stdout: str = "") -> str | None:
+    """How a failed `gh api` call failed, from its output: "not-sent" when GitHub certainly did not
+    act on it (the host was unreachable, or a rate limit refused it), "unknown" when it may have (a
+    5xx, a broken or timed-out connection), None when the failure is not transient (a 4xx answer,
+    an authentication problem)."""
+    text = f"{stderr}\n{stdout}"
+    codes = _HTTP_STATUS.findall(stderr)
+    if codes:
+        status = int(codes[-1])
+        if status == 429 or (status == 403 and _RATE_LIMITED.search(text)):
+            return "not-sent"
+        return "unknown" if 500 <= status <= 599 else None
+    if _RATE_LIMITED.search(text) or _NOT_SENT.search(text):
+        return "not-sent"
+    return "unknown" if _NETWORK.search(text) else None
 
 
 class GitHub(Protocol):
@@ -45,25 +89,46 @@ class GitHub(Protocol):
 class GhCli:
     """The real API, through the authenticated `gh` CLI. Pins the REST API version."""
 
-    def __init__(self, repo: str, api_version: str = "2022-11-28", runner: Callable[..., subprocess.CompletedProcess] = subprocess.run):
+    def __init__(self, repo: str, api_version: str = "2022-11-28", runner: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+                 sleep: Callable[[float], None] = time.sleep, retry_delays: tuple[float, ...] = RETRY_DELAYS_S):
         self.repo = repo
         self.api_version = api_version
         self._run = runner
+        self._sleep = sleep
+        self.retry_delays = tuple(retry_delays)
 
-    def _api(self, path: str, method: str = "GET", payload: dict | None = None, ok_codes: tuple[int, ...] = ()) -> Any:
+    def _api(self, path: str, method: str = "GET", payload: dict | None = None, ok_codes: tuple[int, ...] = (),
+             idempotent: bool | None = None) -> Any:
+        """One REST call. An HTTP error in `ok_codes` means "nothing to do" and returns None.
+        `idempotent` says whether repeating the call is harmless; by default every method but POST
+        is. What is retried, and what is raised, is in the module docstring."""
         args = ["gh", "api", "--method", method, "-H", f"X-GitHub-Api-Version: {self.api_version}",
                 "-H", "Accept: application/vnd.github+json", path]
         if payload is not None:
             args += ["--input", "-"]
-        proc = self._run(args, input=json.dumps(payload) if payload is not None else None,
-                         capture_output=True, text=True)
-        if proc.returncode != 0:
+        repeatable = method != "POST" if idempotent is None else idempotent
+        attempt = 0
+        while True:
+            attempt += 1
+            proc = self._run(args, input=json.dumps(payload) if payload is not None else None,
+                             capture_output=True, text=True)
+            if proc.returncode == 0:
+                out = proc.stdout.strip()
+                return json.loads(out) if out else None
+            stderr, stdout = proc.stderr or "", proc.stdout or ""
             for code in ok_codes:
-                if f"HTTP {code}" in (proc.stderr or ""):
+                if f"HTTP {code}" in stderr:
                     return None
-            raise GitHubError(f"gh api {method} {path} failed: {(proc.stderr or proc.stdout).strip()[:500]}")
-        out = proc.stdout.strip()
-        return json.loads(out) if out else None
+            detail = (stderr or stdout).strip()[:500]
+            kind = transient(stderr, stdout)
+            if kind is None:
+                raise GitHubError(f"gh api {method} {path} failed: {detail}")
+            if kind == "unknown" and not repeatable:
+                raise GitHubUnavailable(f"gh api {method} {path} failed and may have taken effect, so it was not "
+                                        f"repeated: {detail}")
+            if attempt > len(self.retry_delays):
+                raise GitHubUnavailable(f"gh api {method} {path} still failing after {attempt} attempts: {detail}")
+            self._sleep(self.retry_delays[attempt - 1])
 
     def _pages(self, path: str) -> list[dict]:
         items: list[dict] = []
@@ -132,14 +197,17 @@ class GhCli:
         return self._api(self._r(f"issues/{n}"), "PATCH", payload)
 
     def add_labels(self, n, labels):
+        # adds to the issue's label set: adding a label it already has changes nothing
         if labels:
-            self._api(self._r(f"issues/{n}/labels"), "POST", {"labels": labels})
+            self._api(self._r(f"issues/{n}/labels"), "POST", {"labels": labels}, idempotent=True)
 
     def remove_label(self, n, label):
         self._api(self._r(f"issues/{n}/labels/{urllib.parse.quote(label, safe='')}"), "DELETE", ok_codes=(404,))
 
     def ensure_label(self, name, color, description):
-        self._api(self._r("labels"), "POST", {"name": name, "color": color, "description": description}, ok_codes=(422,))
+        # repeating a creation that took effect answers 422 (already exists): fine, see ok_codes
+        self._api(self._r("labels"), "POST", {"name": name, "color": color, "description": description},
+                  ok_codes=(422,), idempotent=True)
 
     def create_pr(self, head, base, title, body):
         return self._api(self._r("pulls"), "POST", {"head": head, "base": base, "title": title, "body": body})

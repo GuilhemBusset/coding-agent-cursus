@@ -21,7 +21,7 @@ from implement_loop.engine import Engine
 from implement_loop.github import FakeGitHub
 from implement_loop.graph import build_plan
 from implement_loop.live import LiveAgents
-from implement_loop.model import Finding, Phase
+from implement_loop.model import Phase
 from implement_loop.state import RunStore
 from implement_loop.workspace import GitError, Workspace
 
@@ -114,11 +114,11 @@ class InterleavedRefUpdateTests(IsolationCase):
         ref = f"refs/{suffix}"
         if initial:
             git("update-ref", ref, values[initial], cwd=self.repo.work)
-        implement = self.agents.implement
+        build = self.agents.build
         observed = []
         expected = [values[initial] if initial else None]
 
-        def worker(vendor, req, design, wt, feedback):
+        def worker(vendor, req, plan, wt, feedback):
             shared = expected[0]
             for actor, value in operations:
                 where = wt if actor == "agent" else self.repo.work
@@ -133,9 +133,9 @@ class InterleavedRefUpdateTests(IsolationCase):
                 self.assert_ref(self.repo.work, ref, shared)
             expected[0] = shared
             observed.append(True)
-            return implement(vendor, req, design, wt, feedback)
+            return build(vendor, req, plan, wt, feedback)
 
-        self.agents.implement = worker
+        self.agents.build = worker
         self.engine.run()
         self.assert_done()
         self.assertEqual(observed, [True])
@@ -172,15 +172,15 @@ class InterleavedRefUpdateTests(IsolationCase):
                         [("agent", "B"), ("external", None), ("agent", "C")])
 
     def test_outside_commit_on_the_issue_branch_survives_absorption(self):
-        implement = self.agents.implement
+        build = self.agents.build
         observed = []
 
-        def worker(vendor, req, design, wt, feedback):
+        def worker(vendor, req, plan, wt, feedback):
             before = git("rev-parse", "HEAD", cwd=wt)
             own = git("symbolic-ref", "HEAD", cwd=wt)
             external = self.commit_object("person advanced active issue branch", before)
             git("update-ref", own, external, before, cwd=self.repo.work)
-            answer = implement(vendor, req, design, wt, feedback)
+            answer = build(vendor, req, plan, wt, feedback)
             git("add", "--all", cwd=wt)
             git("commit", "-qm", "private worker commit", cwd=wt)
             agent_head = git("rev-parse", "HEAD", cwd=wt)
@@ -189,12 +189,12 @@ class InterleavedRefUpdateTests(IsolationCase):
             observed.append((before, external, agent_head))
             return answer
 
-        self.agents.implement = worker
+        self.agents.build = worker
         self.engine.run()
         self.assert_done()
         self.assertEqual(len(observed), 1)
         before, external, agent_head = observed[0]
-        head = self.store.issue(self.n).reviewed_sha
+        head = self.store.issue(self.n).certified_sha
         self.assertEqual(result(self.repo.work, "merge-base", "--is-ancestor", external, head).returncode, 0)
         events = self.events("issue_branch_moved_externally")
         self.assertEqual(len(events), 1)
@@ -202,28 +202,31 @@ class InterleavedRefUpdateTests(IsolationCase):
         absorbed = self.events("agent_commits_absorbed")
         self.assertTrue(any(e["from_head"] == agent_head and e["to"] == before for e in absorbed))
 
-    def test_finding_verifier_refs_never_reach_the_shared_repository(self):
+    def test_examiner_refs_never_reach_the_shared_repository(self):
         wt = self.worktree()
         original = (wt / ".git").read_bytes()
         live = LiveAgents("claude", self.store.dir, self.ws)
-        refs = ["refs/heads/verifier/temporary", "refs/tags/verifier/temporary"]
+        refs = ["refs/heads/examiner/temporary", "refs/tags/examiner/temporary"]
         observed = []
 
-        def verifier(vendor, role, scratch, prompt, number):
-            self.assertEqual(role, "verify_finding")
+        def examiner(vendor, role, scratch, prompt, number):
+            self.assertEqual(role, "examine")
             self.assertNotEqual(scratch, wt)
             for ref in refs:
                 git("update-ref", ref, "HEAD", cwd=scratch)
                 self.assert_ref(self.repo.work, ref, None)
+            (scratch / "README.md").write_text("an examiner's edit stays in its copy\n")
             observed.append(scratch)
-            return {"reproduced": False}
+            return {"verdicts": [], "findings": [], "probes": [], "certify": True, "summary": ""}
 
         self.engine._reconcile()
-        finding = Finding(id="isolation-probe", reviewer="cross", priority=1,
-                          confidence=1.0, title="Probe scratch isolation", file="README.md", line=1)
-        with mock.patch.object(live, "call", verifier):
-            self.assertFalse(live.verify_finding("claude", self.engine._req(self.n), wt, finding))
+        head = git("rev-parse", "HEAD", cwd=wt)
+        with mock.patch.object(live, "call", examiner):
+            result = live.examine("claude", self.engine._req(self.n), {"items": []}, wt, head, head, [], [], [], None)
+        self.assertTrue(result.certify)
         self.assertEqual(len(observed), 1)
+        self.assertEqual((wt / "README.md").read_text(), "test repo\n")
+        self.assertEqual(git("status", "--porcelain", cwd=wt), "")
         self.assertFalse(observed[0].exists())
         self.assert_registered(wt, original)
         for ref in refs:
@@ -497,23 +500,26 @@ class AgentGitDirTests(IsolationCase):
 class MergeStateTests(IsolationCase):
     def prepare_conflict(self, *, locked=False):
         self.script.lines = {"README.md": "issue-side"}
-        # Stop after the first honest implementation; it has committed an append to
-        # README. Main then independently appends, yielding a real same-hunk conflict.
-        step = self.engine._step_implement
+        # Stop after the first honest build; it has committed an append to README. Main then
+        # independently appends, yielding a real same-hunk conflict. A conflict in the test only
+        # goes to the other vendor once the test is locked, at the first examination.
+        name = "_step_examine" if locked else "_step_build"
+        step = getattr(self.engine, name)
 
         def stop(n):
             step(n)
-            (self.store.dir / "STOP").write_text("stop after implementing\n")
+            (self.store.dir / "STOP").write_text("stop after the first step\n")
 
-        with mock.patch.object(self.engine, "_step_implement", stop):
+        with mock.patch.object(self.engine, name, stop):
             self.engine.run()
         self.assertEqual(self.store.issue(self.n).phase, Phase.VERIFY)
         wt = Path(self.store.issue(self.n).worktree)
+        check = f"checks/issue_{self.n}.sh"
+        self.assertEqual(check in self.store.issue(self.n).locked, locked)
         git("checkout", "-q", "main", cwd=self.repo.merger)
         (self.repo.merger / "README.md").write_text("test repo\nmain-side\n")
         (self.repo.merger / "main-only.txt").write_text("retain main's new file\n")
         if locked:
-            check = f"checks/issue_{self.n}.sh"
             target = self.repo.merger / check
             target.parent.mkdir(exist_ok=True)
             target.write_text((wt / check).read_text() + "test -e main-only.txt\n")
@@ -522,18 +528,27 @@ class MergeStateTests(IsolationCase):
         git("push", "-q", "origin", "HEAD:main", cwd=self.repo.merger)
         main = git("rev-parse", "HEAD", cwd=self.repo.merger)
         st = self.store.issue(self.n)
-        st.phase = Phase.IMPLEMENT
+        st.phase = Phase.BUILD
         self.store.put(st)
         (self.store.dir / "STOP").unlink()
         self.engine = self.new_engine()
         return wt, main
 
+    def stop_after_build(self, note):
+        step = self.engine._step_build
+
+        def stop(n):
+            step(n)
+            (self.store.dir / "STOP").write_text(note)
+
+        return mock.patch.object(self.engine, "_step_build", stop)
+
     def drop_merge(self, action):
         wt, main = self.prepare_conflict()
-        implement = self.agents.implement
+        build = self.agents.build
         seen = []
 
-        def worker(vendor, req, design, path, feedback):
+        def worker(vendor, req, plan, path, feedback):
             self.assertEqual(git("rev-parse", "MERGE_HEAD", cwd=path), main)
             if action == "abort":
                 git("merge", "--abort", cwd=path)
@@ -543,28 +558,22 @@ class MergeStateTests(IsolationCase):
                 git("reset", "--hard", "HEAD", cwd=path)
             # Resolve marker text too: lack of markers alone must not convince the
             # engine to conclude a merge the private worker explicitly dropped.
-            answer = implement(vendor, req, design, path, feedback)
+            answer = build(vendor, req, plan, path, feedback)
             self.assertNotEqual(result(path, "rev-parse", "--verify", "MERGE_HEAD").returncode, 0)
             seen.append(True)
             return answer
 
-        self.agents.implement = worker
-        step = self.engine._step_implement
-
-        def stop(n):
-            step(n)
-            (self.store.dir / "STOP").write_text("inspect dropped merge\n")
-
-        with mock.patch.object(self.engine, "_step_implement", stop):
+        self.agents.build = worker
+        with self.stop_after_build("inspect dropped merge\n"):
             self.engine.run()
         self.assertEqual(seen, [True])
         self.assertEqual(self.events("step_crashed"), [])
-        self.assertEqual(self.store.issue(self.n).phase, Phase.IMPLEMENT)
+        self.assertEqual(self.store.issue(self.n).phase, Phase.BUILD)
         self.assertEqual(len(self.events("agent_merge_dropped")), 1)
         self.assertEqual(len(self.events("conflict_unresolved")), 1)
         self.assertNotEqual(result(wt, "rev-parse", "--verify", "MERGE_HEAD").returncode, 0)
         self.assertEqual([c for c in self.gh.calls if c[0] == "merge_pr"], [])
-        self.agents.implement = implement
+        self.agents.build = build
         (self.store.dir / "STOP").unlink()
         self.engine = self.new_engine()
         self.engine.run()
@@ -578,47 +587,41 @@ class MergeStateTests(IsolationCase):
         self.assertIn("issue-side", content.splitlines())
         self.assertNotIn("<<<<<<<", content)
         self.assertEqual(result(self.repo.work, "merge-base", "--is-ancestor", main,
-                                self.store.issue(self.n).reviewed_sha).returncode, 0)
+                                self.store.issue(self.n).certified_sha).returncode, 0)
 
-    def test_an_implementer_aborting_the_private_merge_returns_to_conflict_resolution(self):
+    def test_a_builder_aborting_the_private_merge_returns_to_conflict_resolution(self):
         self.drop_merge("abort")
 
-    def test_an_implementer_quitting_the_private_merge_returns_to_conflict_resolution(self):
+    def test_a_builder_quitting_the_private_merge_returns_to_conflict_resolution(self):
         self.drop_merge("quit")
 
-    def test_an_implementer_resetting_the_private_merge_returns_to_conflict_resolution(self):
+    def test_a_builder_resetting_the_private_merge_returns_to_conflict_resolution(self):
         self.drop_merge("reset")
 
-    def test_a_check_author_aborting_the_private_merge_returns_to_check_resolution(self):
+    def test_a_locked_test_resolver_aborting_the_private_merge_returns_to_resolution(self):
         wt, main = self.prepare_conflict(locked=True)
-        write_checks = self.agents.write_checks
+        resolve = self.agents.resolve_locked
         observed = []
 
-        def worker(vendor, req, design, path, feedback=None):
+        def worker(vendor, req, path, files, feedback):
             self.assertEqual(git("rev-parse", "MERGE_HEAD", cwd=path), main)
-            self.assertEqual(design.check_files, [f"checks/issue_{self.n}.sh"])
+            self.assertEqual((vendor, files), (self.agents.other, [f"checks/issue_{self.n}.sh"]))
             git("merge", "--abort", cwd=path)
-            answer = write_checks(vendor, req, design, path, feedback)
+            answer = resolve(vendor, req, path, files, feedback)
             observed.append(True)
             return answer
 
-        self.agents.write_checks = worker
-        step = self.engine._step_implement
-
-        def stop(n):
-            step(n)
-            (self.store.dir / "STOP").write_text("inspect dropped check repair\n")
-
-        with mock.patch.object(self.engine, "_step_implement", stop):
+        self.agents.resolve_locked = worker
+        with self.stop_after_build("inspect the dropped resolution\n"):
             self.engine.run()
         self.assertEqual(observed, [True])
         self.assertEqual(self.events("step_crashed"), [])
-        self.assertEqual(self.store.issue(self.n).phase, Phase.IMPLEMENT)
+        self.assertEqual(self.store.issue(self.n).phase, Phase.BUILD)
         self.assertEqual(len(self.events("agent_merge_dropped")), 1)
         self.assertEqual(len(self.events("check_conflict_unresolved")), 1)
         self.assertEqual([c for c in self.gh.calls if c[0] == "merge_pr"], [])
         self.assertNotEqual(result(wt, "rev-parse", "--verify", "MERGE_HEAD").returncode, 0)
-        self.agents.write_checks = write_checks
+        self.agents.resolve_locked = resolve
         (self.store.dir / "STOP").unlink()
         self.engine = self.new_engine()
         self.engine.run()
@@ -626,16 +629,16 @@ class MergeStateTests(IsolationCase):
         self.assert_main_preserved(main)
         self.assertIn("test -e main-only.txt", self.repo.main_file(f"checks/issue_{self.n}.sh"))
 
-    def test_an_implementer_committing_the_private_merge_is_absorbed_and_lands(self):
+    def test_a_builder_committing_the_private_merge_is_absorbed_and_lands(self):
         wt, main = self.prepare_conflict()
-        implement = self.agents.implement
+        build = self.agents.build
         observed = []
 
-        def worker(vendor, req, design, path, feedback):
+        def worker(vendor, req, plan, path, feedback):
             self.assertEqual(git("rev-parse", "MERGE_HEAD", cwd=path), main)
             before = git("rev-parse", "HEAD", cwd=path)
             own = git("symbolic-ref", "HEAD", cwd=path)
-            answer = implement(vendor, req, design, path, feedback)
+            answer = build(vendor, req, plan, path, feedback)
             git("add", "--all", cwd=path)
             git("commit", "-qm", "worker commits main's resolved merge", cwd=path)
             agent_head = git("rev-parse", "HEAD", cwd=path)
@@ -644,7 +647,7 @@ class MergeStateTests(IsolationCase):
             observed.append(agent_head)
             return answer
 
-        self.agents.implement = worker
+        self.agents.build = worker
         self.engine.run()
         self.assert_done()
         self.assertEqual(len(observed), 1)

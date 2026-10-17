@@ -5,8 +5,9 @@
 # claude_model: alias or full id for `claude --model`; "" uses your Claude Code default.
 # codex_model:  model for `codex exec -m`; "" uses your Codex default.
 #
-# Explorers are cheap fact-finders; every other role works at high effort. Cost is not capped
-# (by decision); each call's cost and tokens are logged to <run dir>/agents.jsonl.
+# Explorers are cheap fact-finders; every other role works at high effort. Each issue has a
+# persistent call ceiling (config.py, ADR 0012); every call's cost and tokens are logged to
+# <run dir>/agents.jsonl.
 
 [roles.explore]
 effort = "low"
@@ -14,34 +15,56 @@ timeout_s = 900
 claude_model = "sonnet"
 codex_model = ""
 
-[roles.propose]
+[roles.plan]
 effort = "high"
 timeout_s = 1800
 
-[roles.audit]
+[roles.triage]
 effort = "high"
 timeout_s = 1200
 
-[roles.critique]
-effort = "high"
-timeout_s = 1200
-
-[roles.judge]
-effort = "high"
-timeout_s = 1800
-
-[roles.write_checks]
-effort = "high"
-timeout_s = 2400
-
-[roles.implement]
+[roles.build]
 effort = "high"
 timeout_s = 5400
 
-[roles.review]
-effort = "high"
-timeout_s = 2400
-
-[roles.verify_finding]
+[roles.resolve_locked]
 effort = "high"
 timeout_s = 1800
+
+[roles.examine]
+effort = "high"
+timeout_s = 3600
+
+[roles.decide]
+effort = "high"
+timeout_s = 1800
+
+[roles.arbitrate]
+effort = "high"
+timeout_s = 1200
+
+# What this host cannot provide (ADR 0012). Only these make an item the owner's; the doctor adds
+# what it can verify (missing API keys, a WSL host lacking native Linux). Agents have network
+# access, a browser, Python and Node.
+[host]
+lacks = [
+  "hardware:laptop",
+  "hardware:other-machine",
+  "platform:macos",
+  "platform:windows",
+  "human:rehearsal",
+  "human:audience",
+  "account:non-owner",
+]
+
+# Safety invariants: a finding that names one blocks even when it quotes no ledger item.
+[invariants]
+names = [
+  "secret exposure",
+  "check or gate bypass",
+  "data loss",
+  "cross-run corruption",
+  "wrong results presented as correct",
+  "a false done",
+  "edits to another issue's merged deliverable",
+]
