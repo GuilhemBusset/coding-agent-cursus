@@ -10,21 +10,21 @@ the check itself has run on is in [Platform status](#platform-status).
 
 ## Platform status
 
-"Tested" means a full real run of the setup check (real `gh` login, network, push to the course
-repo or a fork, and a real agent), done once with Claude Code alone and once with Codex alone,
-with both summary blocks recorded below together with the OS, kernel, script hash and CLI
-versions. Anything less is listed as untested on the page.
+"Tested" means both entry points were run on the platform itself, once with Claude Code alone
+and once with Codex alone, and passed, with the summary blocks recorded below together with the
+OS, kernel, script hash and CLI versions. Each row says what the runs covered. A platform with
+no such run is listed as untested on the page.
 
 | Platform | Status | Evidence |
 | --- | --- | --- |
-| Native Linux | untested | No full run on a native Linux kernel recorded. |
-| WSL 2 (Ubuntu 26.04) | untested | Fixture-tested on WSL2 only (see [Fixture runs on WSL2](#fixture-runs-on-wsl2)): real git, uv and agents, local stand-ins for gh, the network and GitHub. No full real run recorded: the implementation loop's agent is not permitted to use `gh` on this host (its `gh auth status` calls were denied on 2026-10-10, and denied again on a later attempt the same day), so it cannot make the real login check and push. Running `check-setup.sh` itself would make those same `gh` calls and push to GitHub, so the agent did not do that either. The owner's run is pending. |
+| Native Linux | untested | No run on a native Linux kernel recorded. |
+| WSL 2 (Ubuntu 26.04) | tested | Scope: both entry points (`bash check-setup.sh`, `pwsh -File check-setup.ps1`) on this WSL2 host with real git, uv and Python, and the real Claude Code and Codex alone in turn ([A1: each agent alone, live](#a1-each-agent-alone-live)), plus every scenario in [Fixture runs on WSL2](#fixture-runs-on-wsl2). Not covered: `gh`, its login, the network and GitHub were local stand-ins (a stub `gh`, a local HTTP server, local bare repositories), so this is not a full real run. The implementation loop's agent is not permitted to use `gh` on this host (its `gh auth status` calls were denied on 2026-10-10) or to push to GitHub, so it did not run the check against GitHub. |
 | macOS | untested | No run recorded. |
 | Windows PowerShell 5.1 | untested | `check-setup.ps1` parses under PowerShell 7.6.6 with no 7-only syntax (test `test_ps51_syntax_and_launch_contract`); never run on Windows. |
 | Windows Git Bash | untested | No run recorded. |
 
-To record a full run, on the platform itself, from the root of a course clone, once with only
-Claude Code on `PATH` and once with only Codex:
+To record a full run (real `gh` login, network and push), on the platform itself, from the root
+of a course clone, once with only Claude Code on `PATH` and once with only Codex:
 
 ```sh
 bash sessions/01-fundamentals/exercises/check-setup.sh
@@ -32,7 +32,9 @@ bash sessions/01-fundamentals/exercises/check-setup.sh
 
 Paste both summary blocks under a new heading here with the date, `uname -a` (or the Windows
 version), `sha256sum` of the three scripts, and `claude --version` / `codex --version`. Then set
-that platform's `data-status` to `tested` on the page and its row above to `tested`.
+that platform's `data-status` to `tested` on the page and its row above to `tested`. The run on
+native Linux is the owner's part of the issue's "Tested on Linux and WSL" (this host has no
+native Linux kernel). On WSL, a full run removes the "Not covered" part of its row.
 
 ## Install sources
 

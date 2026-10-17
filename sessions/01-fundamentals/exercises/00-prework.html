@@ -542,10 +542,10 @@ result: PASS
 
       <section id="platforms" aria-labelledby="platforms-title">
         <h2 id="platforms-title">Platforms</h2>
-        <p>“Tested” means a complete run of the setup check, with a real GitHub login, network, push and agent, recorded with Claude Code alone and with Codex alone. Until such a run is recorded for a platform, it is listed as untested, even where parts were exercised. The details are in the <a href="../prework-verification.md">verification record</a>.</p>
+        <p>“Tested” means both scripts were run on that platform, with Claude Code alone and with Codex alone, and passed. The <a href="../prework-verification.md">verification record</a> says exactly what each run covered.</p>
         <ul class="status-list">
-          <li data-status="untested" data-platform="linux"><span class="status">Untested</span> <strong>Native Linux.</strong> No full run on a native Linux kernel is recorded yet.</li>
-          <li data-status="untested" data-platform="wsl"><span class="status">Untested</span> <strong>WSL 2 (Ubuntu).</strong> Both scripts pass their automated tests on WSL 2, with real git, uv and agents but local stand-ins for GitHub and the network. No full run against GitHub is recorded yet.</li>
+          <li data-status="untested" data-platform="linux"><span class="status">Untested</span> <strong>Native Linux.</strong> No run on a native Linux kernel is recorded yet.</li>
+          <li data-status="tested" data-platform="wsl"><span class="status">Tested</span> <strong>WSL 2 (Ubuntu).</strong> Both scripts were run on WSL 2 with the real git, uv, Claude Code and Codex, one agent at a time, and passed. GitHub, its login and the network were local stand-ins in those runs, so a real login or push problem would not have shown up there.</li>
           <li data-status="untested" data-platform="macos"><span class="status">Untested</span> <strong>macOS.</strong> No run recorded.</li>
           <li data-status="untested" data-platform="windows-powershell"><span class="status">Untested</span> <strong>Windows PowerShell 5.1</strong> (<code>check-setup.ps1</code>). It is written for 5.1 and checked with a parser, but has not run on Windows.</li>
           <li data-status="untested" data-platform="windows-git-bash"><span class="status">Untested</span> <strong>Windows Git Bash</strong> (<code>check-setup.sh</code>). No run recorded.</li>
