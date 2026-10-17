@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { openPage } from './component-helpers.mjs';
+import { openPage, repoRoot } from './component-helpers.mjs';
 
-const root = process.cwd();
+const root = repoRoot;
 const cursus = path.join(root, 'sessions/01-fundamentals/cursus');
 const file = path.join(cursus, 'labs/agent-loop.html');
 const url = pathToFileURL(file).href;

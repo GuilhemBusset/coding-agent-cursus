@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { chromium } from '../browser.mjs';
-import { openPage } from './component-helpers.mjs';
+import { openPage, repoRoot } from './component-helpers.mjs';
 
-const root = process.cwd();
+const root = repoRoot;
 const cursus = path.join(root, 'sessions/01-fundamentals/cursus');
 const file = path.join(cursus, 'labs/agent-loop.html');
 const fixtures = path.join(cursus, 'fixtures/runs');
