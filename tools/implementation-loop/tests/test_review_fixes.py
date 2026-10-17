@@ -871,6 +871,50 @@ class Fault90SeveralCommandsPerItem(FixCase):
         self.assertNotEqual(VERSION, "1.0.0")
 
 
+@unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
+class Fault94CriterionNamesTheItem(FixCase):
+    """#24 (engine 1.0.0) gave its probe commands criteria like "D2, D3, A1: the examiner's probes";
+    each was dropped in silence, so their tests never ran and every round failed the same way."""
+    path = "tests/test_criterion_2.py"
+
+    def builder(self, extra=()):
+        def hook(result, req, worktree, k):
+            (worktree / "tests").mkdir(exist_ok=True)
+            (worktree / self.path).write_text("def test_alpha():\n    assert open('docs/a.txt').read().strip() == 'alpha'\n")
+            result.tests = result.tests + [self.path]
+            result.commands = [CheckSpec(f"{c.criterion}, D1: the builder's check", command=c.command)
+                               for c in result.commands] + [
+                CheckSpec("A1: the builder's own pytest file",
+                          command=f"{sys.executable} -m pytest -q -p no:cacheprovider {self.path}")] + list(extra)
+            return result
+        return hook
+
+    def test_fault_94_a_criterion_leading_with_an_item_id_is_kept_and_run(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine(agents=Agents(self.scripts, plan=with_zone(self.path), build=self.builder()))
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        builder = [c for c in self.store.issue(2).commands if c.get("author") == "builder"]
+        self.assertLessEqual({c["criterion"] for c in builder}, {"A1", "D1"})
+        self.assertTrue([c for c in builder if c["criterion"] == "A1" and self.path in c["command"]])
+        self.assertFalse(self.events("commands_dropped", 2))
+        self.assertFalse([p for e in self.events("verified", 2) for p in e["problems"] if "no command selects" in p])
+
+    def test_fault_94_a_command_naming_no_item_is_reported_to_the_builder(self):
+        self.add_work(2, "docs/a.txt", "alpha", wrong_attempts=1)
+        self.epic(2)
+        stray = CheckSpec("Regression: the whole suite", command="true")
+        agents = Agents(self.scripts, plan=with_zone(self.path), build=self.builder([stray]))
+        self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        self.assertTrue(self.events("commands_dropped", 2))
+        feedback = [f for c in agents.calls if c[0] == "build" and c[2] == 2 for f in c[3]]
+        self.assertTrue([f for f in feedback if "were not kept" in f and "Regression: the whole suite" in f], feedback)
+
+    def test_fault_94_the_engine_version_moved_past_the_faulted_one(self):
+        self.assertNotEqual(VERSION, "1.0.1")
+
+
 class FindingNew1OwnerFindings(unittest.TestCase):
     """On an owner item only the agent part can block: a finding must quote the plan's agent part."""
     item_text = {"D1": "`docs/a.txt` contains `alpha`.", "D2": "Runs under a second on a 2020 laptop."}
