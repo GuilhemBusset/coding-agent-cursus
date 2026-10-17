@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from '../browser.mjs';
-import { openPage, repoRoot, read, suites, count, enabled, focused, textOf, eventually } from './component-helpers.mjs';
+import { openPage, repoRoot, count, enabled, focused, textOf, eventually, assertCollected } from './component-helpers.mjs';
 
 // Issue 26: public deck/component contracts, not page-specific JS internals.
 // check-page supplies accessibility, print, offline assets and generic layout checks.
@@ -325,11 +325,8 @@ test('A1: every quantitative slide has a dated source, including no-JS answers',
   }
 });
 
-test('A2: acceptance suite is registered in both durable suite lists', async () => {
-  assert.ok(suites.includes('opening-close'), 'register opening-close in component-helpers.mjs');
-  const pkg = JSON.parse(await read('setup/package.json'));
-  assert.ok(pkg.scripts.test.split(/\s+/).includes('../tools/html-pages/tests/opening-close.test.mjs'),
-    'register opening-close.test.mjs in the explicit npm test command');
+test('A2: npm --prefix setup test collects the acceptance suite', async () => {
+  await assertCollected('opening-close');
 });
 
 for (const [name, file] of Object.entries(decks)) {

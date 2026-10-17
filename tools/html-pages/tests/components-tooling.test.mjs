@@ -1,27 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { chromium } from '../browser.mjs';
 import { createPage } from '../create-page.mjs';
-import { repoRoot, sample, read, suites, scratch, openPage, count } from './component-helpers.mjs';
+import { repoRoot, sample, read, suites, scratch, openPage, count, assertCollected } from './component-helpers.mjs';
 import { completePass } from './run-suite.mjs';
+import { discoverSuites, testsDir } from './suites.mjs';
+
+// A child runner is a new runner, not a worker of this runner's binary IPC protocol.
+const childEnv = { ...process.env };
+delete childEnv.NODE_TEST_CONTEXT;
+delete childEnv.NODE_TEST_WORKER_ID;
 
 test('D5: npm collects all Node suites using the unchanged pinned browser dependencies', async () => {
   const pkg = JSON.parse(await read('setup/package.json'));
-  assert.match(pkg.scripts.test, /^node\s+--test\s/);
-  const argv = pkg.scripts.test.trim().split(/\s+/);
-  assert.deepEqual(argv.slice(0, 2), ['node', '--test']);
-  const expected = ['pages', ...suites].map(name => path.join(repoRoot, `tools/html-pages/tests/${name}.test.mjs`));
-  assert.deepEqual(argv.slice(2).map(file => path.resolve(repoRoot, 'setup', file)).sort(), expected.sort(), 'explicit suite list, without filtering or shell wrappers');
+  // The test script runs the discovery runner with no filter; discovery is the directory listing.
+  await assertCollected('components-tooling');
+  const present = (await readdir(testsDir, { withFileTypes: true }))
+    .filter(entry => entry.isFile() && entry.name.endsWith('.test.mjs')).map(entry => path.join(testsDir, entry.name));
+  assert.ok(present.length > 1, 'the suites in tools/html-pages/tests are found');
+  assert.deepEqual(discoverSuites(), present.sort(), 'discovery yields exactly the *.test.mjs files present');
+  assert.deepEqual(suites, present.map(file => path.basename(file, '.test.mjs')), 'component-helpers suites come from the directory');
   assert.equal(pkg.devDependencies.playwright, '1.63.0');
   assert.equal(pkg.devDependencies['@axe-core/playwright'], '4.13.0');
-  for (const name of suites) {
-    const source = await read(`tools/html-pages/tests/${name}.test.mjs`);
-    assert.match(source, /import\s+[^;]+\s+from\s+['"]node:test['"]/);
-    assert.match(source, /import\s+[^;]+\s+from\s+['"]\.\.\/browser\.mjs['"]/);
+  for (const file of present) {
+    const source = await readFile(file, 'utf8');
+    assert.match(source, /import\s+[^;]+\s+from\s+['"]node:test['"]/, file);
+    assert.match(source, /import\s+[^;]+\s+from\s+['"]\.\.\/browser\.mjs['"]/, file);
   }
   async function visit(dir) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -30,6 +38,45 @@ test('D5: npm collects all Node suites using the unchanged pinned browser depend
     }
   }
   await visit(path.join(repoRoot, 'tools/html-pages/tests'));
+});
+
+test('D5: the npm runner runs every suite it discovers, and picks up a newly added one', async t => {
+  // The real runner and discovery module, copied next to fixture suites: they list their own directory.
+  const dir = await scratch(t);
+  for (const name of ['run-all.mjs', 'suites.mjs']) await copyFile(path.join(testsDir, name), path.join(dir, name));
+  const suite = name => `import test from 'node:test'; test('suite ${name}', () => {});\n`;
+  const boom = "throw new Error('not a suite: must never run');\n";
+  await writeFile(path.join(dir, 'alpha.test.mjs'), suite('alpha'));
+  await writeFile(path.join(dir, 'helper.mjs'), boom);
+  await writeFile(path.join(dir, 'alpha.test.mjs.bak'), boom);
+  await mkdir(path.join(dir, 'nested'));
+  await writeFile(path.join(dir, 'nested', 'deep.test.mjs'), boom);
+  await mkdir(path.join(dir, 'folder.test.mjs'));
+  const run = () => {
+    const result = spawnSync(process.execPath, [path.join(dir, 'run-all.mjs'), '--test-reporter=tap'],
+      { cwd: dir, encoding: 'utf8', timeout: 30000, env: childEnv });
+    assert.ifError(result.error);
+    return { ...result, ran: [...result.stdout.matchAll(/^ok \d+ - suite (\w+)$/gm)].map(match => match[1]).sort() };
+  };
+  const files = names => names.map(name => path.join(dir, `${name}.test.mjs`));
+
+  assert.deepEqual(discoverSuites(dir), files(['alpha']));
+  let result = run();
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(result.ran, ['alpha']);
+  assert.ok(completePass(result.stdout, result.status), 'one complete passing run');
+
+  await writeFile(path.join(dir, 'beta.test.mjs'), suite('beta'));
+  assert.deepEqual(discoverSuites(dir), files(['alpha', 'beta']));
+  result = run();
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.deepEqual(result.ran, ['alpha', 'beta'], 'a new suite is collected without registering it anywhere');
+
+  await writeFile(path.join(dir, 'gamma.test.mjs'), "import test from 'node:test'; test('suite gamma', () => { throw Error('deliberate'); });\n");
+  result = run();
+  assert.equal(result.status, 1, 'a failing discovered suite fails npm test');
+  assert.deepEqual(result.ran, ['alpha', 'beta']);
+  assert.match(result.stdout, /^not ok \d+ - suite gamma$/m);
 });
 
 test('D5: every generator kind embeds shared components, and the sample has current snapshot hashes', async t => {
@@ -92,10 +139,6 @@ test('D5: suite runner rejects empty, skipped, todo, cancelled and failing evide
   for (const name of ['fail', 'cancelled', 'skipped', 'todo']) assert.equal(completePass(good.replace(`# ${name} 0`, `# ${name} 1`), 0), false);
   for (const directive of ['SKIP', 'TODO']) assert.equal(completePass(good.replace('ok 1 - example', `ok 1 - example # ${directive}`), 0), false);
   const dir = await scratch(t);
-  // A child suite is a new runner, not a worker of this runner's binary IPC protocol.
-  const childEnv = { ...process.env };
-  delete childEnv.NODE_TEST_CONTEXT;
-  delete childEnv.NODE_TEST_WORKER_ID;
   for (const [name, source, expected] of [
     ['pass', "import test from 'node:test'; test('real test', () => {});", 0],
     ['skip', "import test from 'node:test'; test.skip('not evidence', () => {});", 1],

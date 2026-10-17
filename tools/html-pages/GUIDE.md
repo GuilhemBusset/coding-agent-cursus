@@ -215,6 +215,8 @@ Before calling the page finished:
   During authoring put disposable checks under `tools/html-pages/`, import browser tools
   from `./browser.mjs`, and remove the checks after use. Keep reusable checks in
   `tools/html-pages/tests/`, naming the target page; use `pathToFileURL` to open its actual file.
+  Name such a suite `<name>.test.mjs`: `npm --prefix setup test` runs every `*.test.mjs` file in
+  that directory, so a new suite is collected without registering it anywhere.
   Such checks are authoring infrastructure, not runtime imports in a session.
 - Verify no-JavaScript reading, reduced motion, and print behavior. Check meaningful formulas,
   tables and diagrams at the intended projector size, not just in a tiny screenshot.

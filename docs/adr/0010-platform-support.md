@@ -32,7 +32,8 @@ that passed on Linux and macOS could not merge.
   quirks no longer block teaching material.
 - Pages stay static files opened over `file://`. A student can still open one in any browser,
   but only Linux Chromium is checked.
-- CI does not enforce exercise portability yet: no workflow runs the sessions' tests. A
-  cross-platform job for the sessions' exercises is the natural follow-up.
+- CI does not enforce exercise portability yet. Since 2026-10-17 each session's pytest suite runs
+  in the `required` check on Linux (`.github/workflows/session-tests.yml`); a cross-platform job for
+  the sessions' exercises is the natural follow-up.
 - The shell scripts students run (the setup helper, `turn-in`) stay Bash, which Windows
   students run in Git Bash.
