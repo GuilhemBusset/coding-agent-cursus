@@ -989,7 +989,9 @@ class Engine:
         if files and not unresolved:
             self._relock(n, wt, expected, sources)
         st = self.store.issue(n)
+        known = {r["id"] for r in st.requests}
         self._absorb_build(st, result)
+        requests = requests + [r for r in st.requests if r["id"] not in known]   # a locked command's change, decided now
         self.store.put(st)
         self.store.event("built", issue=n, sha=sha, status=result.status, note=result.note[:600],
                          requests=[r["id"] for r in requests])
@@ -1103,10 +1105,11 @@ class Engine:
             if f is None:
                 r["status"], r["reason"] = "refused", "no such open finding"
                 continue
-            ruling = self.agents.arbitrate(self.other, self._req(n), {
-                "kind": "finding", "finding": f, "item_text": self._item_text(n).get(f.get("item") or ""),
-                "invariants": list(self.invariants), "argument": r.get("detail"), "lacks": self.lacks,
-                "history": [x for x in st.findings if x.get("item") == f.get("item")][-5:]})
+            with self.ws.disposable(wt) as scratch:
+                ruling = self.agents.arbitrate(self.other, self._req(n), {
+                    "kind": "finding", "finding": f, "item_text": self._item_text(n).get(f.get("item") or ""),
+                    "invariants": list(self.invariants), "argument": r.get("detail"), "lacks": self.lacks,
+                    "history": [x for x in st.findings if x.get("item") == f.get("item")][-5:]}, scratch)
             if ruling.upheld:
                 r["status"], r["reason"] = "refused", f"the arbiter upheld the finding: {ruling.reason}"
             else:
@@ -1527,10 +1530,15 @@ class Engine:
                 return self._round_failed(n, [f"no verdict on {', '.join(missing)} after two requests"], [], missing)
             # No independent probe after two requests: a second key decides whether the builder's
             # locked tests prove those items as written. If not, the builder strengthens them.
-            ruling = self.agents.arbitrate(self.other, self._req(n), {
-                "kind": "probe_waiver", "items": {i: self._item_text(n).get(i) for i in unprobed},
-                "tests": sorted(st.tests), "commands": [c for c in st.commands if c.get("criterion") in unprobed],
-                "question": "Do these locked tests, run by these commands, prove each item as written?"})
+            with self.ws.disposable(wt) as scratch:   # the arbiter reads the verified head itself
+                ruling = self.agents.arbitrate(self.other, self._req(n), {
+                    "kind": "probe_waiver", "items": {i: self._item_text(n).get(i) for i in unprobed},
+                    "tests": sorted(st.tests), "commands": [c for c in st.commands if c.get("criterion") in unprobed],
+                    "manifest": st.manifest, "head": head,
+                    "evidence": [{k: e.get(k) for k in ("criterion", "command", "passed", "tests", "note")}
+                                 for e in st.evidence],
+                    "question": "Your working directory is the verified head. Read the tests: do these locked tests, "
+                                "run by these commands, prove each item as written?"}, scratch)
             st = self.store.issue(n)
             if not ruling.upheld:
                 return self._round_failed(n, [f"no independent probe could be written for {', '.join(unprobed)}, and the "
@@ -1556,8 +1564,14 @@ class Engine:
                 tokens = shlex.split(c.get("command") or "")
             except ValueError:
                 continue
+            base = wt / (c.get("cwd") or ".")
+            expanded = []
             for tok in tokens:
-                rel = Path(c.get("cwd") or ".") / tok.split("::")[0]
+                tok = tok.split("::")[0]
+                expanded += ([str(p.relative_to(base)) for p in base.glob(tok)] if any(ch in tok for ch in "*?[")
+                             else [tok])
+            for tok in expanded:
+                rel = Path(c.get("cwd") or ".") / tok
                 path = (wt / rel).resolve()
                 if not path.is_file() or not path.is_relative_to(wt.resolve()):
                     continue
@@ -1890,8 +1904,13 @@ class Engine:
                     f"fix-forward did not repair it. Check that `{main_sha[:12]}..{head[:12]}` only undoes that "
                     f"change and leaves main working."]), {"items": [], "zones": []}, scratch, main_sha, head, [], [], [],
                     None)
-            serious = [f for f in exam.findings if gate.invariant_ok(f.invariant, self.invariants)
-                       or self._reproduces(wt, f.reproduction, f.cwd or ".", None) is True]
+            serious = []
+            for f in exam.findings:   # the same rule as any examination: reproduced, witnessed, tied to an invariant
+                probe = next((p for p in exam.probes if f.probe and p.file == f.probe), None)
+                reproduced = (self._reproduces(wt, probe.command, probe.cwd, (probe.file, probe.content)) if probe
+                              else self._reproduces(wt, f.reproduction, f.cwd or ".", None))
+                if gate.classify(f, {}, self.invariants, reproduced, set(), set()).blocking:
+                    serious.append(f)
             if not exam.certify or serious:
                 why = exam.summary[:300] if not exam.certify else "; ".join(f.title for f in serious)[:300]
                 return self._fail(n, "main_broken", f"the other vendor did not certify the revert: {why}")

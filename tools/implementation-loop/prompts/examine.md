@@ -32,7 +32,9 @@ Return, in **one** pass:
   `observed` (what happens) against `expected` (what the item, or a safety invariant, requires), and
   a `reproduction` command that fails while the problem holds and passes once fixed (or a `probe`
   file you also return). To block, a finding must name the violated `item` and `quote` at least three
-  of its words, or name one of these safety invariants:
+  of its words (for an `owner` item, quote its `agent_part` from the plan: only that part is the
+  agents' to deliver; the owner's real-world evidence is not a defect), or name one of these safety
+  invariants:
 {{invariants}}
   Anything else is still worth reporting: it becomes a follow-up issue, not a blocker. Never report
   something no item or invariant requires as if it were one; never write a reproduction that fails

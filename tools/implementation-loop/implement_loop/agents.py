@@ -160,7 +160,7 @@ class Agents(Protocol):
     def examine(self, vendor: str, req: IssueRequest, plan: dict, worktree: Path, base_sha: str, head_sha: str,
                 evidence: list[dict], memory: list[dict], requests: list[dict], since: str | None) -> ExamResult: ...
     def decide(self, vendor: str, req: IssueRequest, worktree: Path, requests: list[dict]) -> list[Decision]: ...
-    def arbitrate(self, vendor: str, req: IssueRequest, dispute: dict) -> Ruling: ...
+    def arbitrate(self, vendor: str, req: IssueRequest, dispute: dict, worktree: Path | None = None) -> Ruling: ...
 
 
 # --------------------------------------------------------------------------- fake
@@ -414,7 +414,7 @@ class FakeAgents:
         self.calls.append(("decide", vendor, n, tuple(r["id"] for r in requests)))
         return self._metered(n, "decide", vendor, lambda: [Decision(r["id"], True, "fine") for r in requests])
 
-    def arbitrate(self, vendor, req, dispute):
+    def arbitrate(self, vendor, req, dispute, worktree=None):
         n = req.issue.number
         self.calls.append(("arbitrate", vendor, n, dispute.get("kind")))
         return self._metered(n, "arbitrate", vendor, lambda: Ruling(True, "the item as written requires it"))

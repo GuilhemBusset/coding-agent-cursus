@@ -75,7 +75,7 @@ class Supervisor:
             outages = self._outages(store)
             unreachable = [v for v in outages if self._reachable(v) is False]
             if outages and len(unreachable) == len(outages) and not self._other_work(store):
-                delay = BACKOFF_S[min(quiet, len(BACKOFF_S) - 1)]
+                delay = min(BACKOFF_S[min(quiet, len(BACKOFF_S) - 1)], max(self._deadline - self.clock(), 0))
                 self.log(f"supervise #{self.root}: {', '.join(unreachable)} still unreachable; waiting {delay}s")
                 quiet += 1
                 self.sleep(delay)
@@ -104,7 +104,7 @@ class Supervisor:
                 self.log(f"supervise #{self.root}: the run exited {code}; relaunching after a pause")
             quiet = quiet + 1 if after == before else 0
             delay = BACKOFF_S[min(quiet, len(BACKOFF_S) - 1)] if quiet else BACKOFF_S[0]
-            self.sleep(delay)
+            self.sleep(min(delay, max(self._deadline - self.clock(), 0)))
 
     def _expired(self, started: float) -> bool:
         return self.clock() - started >= self.max_hours * 3600

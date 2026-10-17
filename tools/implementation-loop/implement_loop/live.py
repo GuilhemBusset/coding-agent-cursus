@@ -145,8 +145,8 @@ class LiveAgents:
 
     def terminate_all(self) -> None:
         """Stop every running agent (its whole process group)."""
-        self._stopped = True
         with self._lock:
+            self._stopped = True
             procs = list(self._active)
         for proc in procs:
             try:
@@ -162,6 +162,12 @@ class LiveAgents:
         with self._lock:
             self._active.add(proc)
             self._write_pids()
+            stopped_meanwhile = self._stopped
+        if stopped_meanwhile:   # a stop that arrived between the check above and the registration
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
         try:
             out, err = proc.communicate(prompt, timeout=timeout)
             code = proc.returncode
@@ -384,7 +390,7 @@ class LiveAgents:
         return [Decision(request=d["request"], approve=d["approve"], reason=d["reason"],
                          dispositions={x["test"]: x["disposition"] for x in d["dispositions"]}) for d in v["decisions"]]
 
-    def arbitrate(self, vendor, req, dispute):
+    def arbitrate(self, vendor, req, dispute, worktree=None):
         prompt = render("arbitrate", dispute=json.dumps(dispute, indent=1)[:20000], **self._issue_vars(req, "arbiter"))
-        v = self.call(vendor, "arbitrate", self._root(), prompt, req.issue.number)
+        v = self.call(vendor, "arbitrate", worktree or self._root(), prompt, req.issue.number)
         return Ruling(upheld=v["upheld"], reason=v["reason"])
