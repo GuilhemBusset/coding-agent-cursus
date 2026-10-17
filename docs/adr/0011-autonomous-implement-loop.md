@@ -1,6 +1,6 @@
 # ADR 0011 — The implement loop runs to the end without waiting for a person
 
-- **Status:** Accepted
+- **Status:** Accepted; the parked outcome, the redesign-then-park ladder and budgets carried across redesigns superseded by [ADR 0012](0012-builder-examiner-loop.md)
 - **Date:** 2026-10-04
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0008](0008-implement-loop.md), [ADR 0005](0005-drop-per-agent-guard-layer.md), [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md), [ADR 0010](0010-platform-support.md)

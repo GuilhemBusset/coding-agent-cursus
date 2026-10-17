@@ -4,7 +4,7 @@ import { readFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, eventually } from './component-helpers.mjs';
+import { repoRoot, eventually, assertCollected } from './component-helpers.mjs';
 
 // Issue 41's public contracts: native labelled select, toolkit stepper, and
 // data-step-type on each visible step. No page-specific functions or IDs.
@@ -135,11 +135,8 @@ async function captureDetails(page, run) {
   assert.ok(found, `${run.id}: disclosure with both unchanged /context or /status captures`);
 }
 
-test('A2: browser suite is registered in both explicit suite inventories', async () => {
-  assert.ok(suites.includes('agent-loop'));
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  assert.ok(pkg.scripts.test.split(/\s+/).some(arg => path.resolve(repoRoot, 'setup', arg) ===
-    path.join(repoRoot, 'tools/html-pages/tests/agent-loop.test.mjs')));
+test('A2: browser suite is collected by npm --prefix setup test', async () => {
+  await assertCollected('agent-loop');
 });
 
 test('A2: every recorded stream steps through offline with exact fixture text', { timeout: 240000 }, async t => {

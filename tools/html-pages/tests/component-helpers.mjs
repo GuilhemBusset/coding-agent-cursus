@@ -5,12 +5,24 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 import { createPage } from '../create-page.mjs';
+import { discoverSuites, testsDir, SUITE_SUFFIX } from './suites.mjs';
 
 export const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 export const sample = path.join(repoRoot, 'sessions/01-fundamentals/cursus/demos/components.html');
 export const sizes = [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 390, height: 844 }];
-export const suites = ['predict', 'probability-chart', 'formula-slider', 'stepper', 'components-tooling', 'components-a11y', 'browser-env', 'verifier-gaming', 'opening-close', 'tiny-lm', 'next-token', 'attention', 'world-model', 'test-time-compute', 'context', 'tokenizer', 'sampler', 'agent-loop'];
+// Every Node suite in this directory, by name ('pages' for pages.test.mjs), found by listing it.
+export const suites = discoverSuites().map(file => path.basename(file, SUITE_SUFFIX));
 export const read = relative => readFile(path.join(repoRoot, relative), 'utf8');
+
+// `npm --prefix setup test` runs run-all.mjs, which runs every suite in this directory: a suite
+// is collected by existing here, with nothing to register. This checks both halves for `name`.
+export async function assertCollected(name) {
+  const pkg = JSON.parse(await read('setup/package.json'));
+  const [command, ...args] = pkg.scripts.test.trim().split(/\s+/);
+  assert.deepEqual([command, ...args.map(arg => path.resolve(repoRoot, 'setup', arg))],
+    ['node', path.join(testsDir, 'run-all.mjs')], 'npm --prefix setup test runs the suite discovery runner, unfiltered');
+  assert.equal(suites.filter(suite => suite === name).length, 1, `npm --prefix setup test collects ${name}${SUITE_SUFFIX}`);
+}
 
 export async function scratch(t) {
   const dir = await mkdtemp(path.join(tmpdir(), 'cursus-components-'));

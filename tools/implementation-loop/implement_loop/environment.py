@@ -19,6 +19,11 @@ It never runs `setup/html-pages.mjs` (the human setup path, whose plain `npm ci`
 Nothing here touches shell profiles or global configuration. The unpacked libraries reach only
 browser processes: `browser_env` names them in CURSUS_BROWSER_LIBS, and
 `tools/html-pages/browser.mjs` adds them to the browser's own environment.
+
+Two more questions about the host, which no recipe can fix: `host_lacks` lists the capabilities
+it lacks (configured ones, plus the credentials and platform facts it can verify), and
+`vendor_reachable` makes the doctor's smoke call (`smoke_call`) to one vendor's CLI, to tell
+whether an outage is over.
 """
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -306,3 +312,104 @@ def fingerprint(probes: list[Probe]) -> str:
     can tell whether the environment changed since a failure."""
     text = "\n".join(sorted(f"{p.kind}/{p.name}={'pass' if p.ok else 'fail'}" for p in probes))
     return hashlib.sha256(text.encode()).hexdigest()[:12]
+
+
+# ---------------------------------------------------------------- what the host lacks
+
+VERIFIED_CREDENTIALS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY")
+PROC_VERSION = Path("/proc/version")
+_WSL = re.compile(r"microsoft|wsl", re.IGNORECASE)
+
+
+def host_lacks(configured: list[str], env: dict[str, str] | None = None, platform_text: str | None = None) -> list[str]:
+    """The capabilities this host lacks, sorted and each once: the `configured` ones (declared
+    for the host, such as "hardware:laptop", "human:rehearsal", "platform:macos",
+    "platform:windows" or "account:non-owner"), plus the facts checked here:
+    "credentials:<VAR>" for each API key variable absent or empty in `env` (default: this
+    process's environment), and "platform:native-linux" when `platform_text` (default: the
+    contents of /proc/version, empty if unreadable) names Microsoft or WSL."""
+    env = os.environ if env is None else env
+    if platform_text is None:
+        try:
+            platform_text = PROC_VERSION.read_text()
+        except OSError:
+            platform_text = ""
+    lacks = {c.strip() for c in configured if c.strip()}
+    lacks.update(f"credentials:{var}" for var in VERIFIED_CREDENTIALS if not (env.get(var) or "").strip())
+    if _WSL.search(platform_text):
+        lacks.add("platform:native-linux")
+    return sorted(lacks)
+
+
+# ---------------------------------------------------------------- is a vendor back?
+
+VENDORS = ("claude", "codex")
+SMOKE_ROLE = "explore"
+SMOKE_PROMPT = 'Do not use any tool. Return {"notes": "ok"}.'
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def smoke_call(agents, vendor: str, cwd: Path) -> dict:
+    """The doctor's smoke call (`implement doctor --smoke`): one tiny structured answer from
+    `vendor`, through the live adapter exactly as a run asks for one. Raises when it fails."""
+    return agents.call(vendor, SMOKE_ROLE, cwd, SMOKE_PROMPT)
+
+
+class _NotInstalled(Exception):
+    """The vendor's CLI is not on PATH."""
+
+
+def _runner_agents(runner: Runner, run_dir: Path, timeout_s: int):
+    """Live agents whose processes go through `runner`, one attempt per call, each process
+    limited to `timeout_s`; and the exception a failed call raises."""
+    from .live import AgentFailure, LiveAgents, agent_env
+
+    class RunnerAgents(LiveAgents):
+        def _exec(self, cmd: list[str], cwd: Path, timeout: int, prompt: str | None = None) -> tuple[int | None, str, str]:
+            try:
+                proc = runner(cmd, cwd=cwd, env=agent_env(self.no_gh_dir, self.extra_env), input=prompt,
+                              capture_output=True, text=True, timeout=timeout)
+            except FileNotFoundError:
+                raise _NotInstalled(cmd[0]) from None
+            except subprocess.TimeoutExpired:
+                return None, "", f"{cmd[0]} timed out after {timeout}s"
+            except OSError as e:
+                return 126, "", f"{cmd[0]}: {e}"
+            return proc.returncode, proc.stdout or "", proc.stderr or ""
+
+        def _spawn(self, cmd, prompt, cwd, timeout):
+            return self._exec(cmd, cwd, timeout, prompt)
+
+        def _codex_mcp_off(self, cwd):
+            # LiveAgents._codex_mcp_off through the runner: disable every MCP server, fail closed
+            code, out, _ = self._exec([self.bins["codex"], "mcp", "list", "--json"], cwd, min(60, timeout_s))
+            try:
+                servers = json.loads(out[out.index("["):]) if code == 0 else None
+            except ValueError:
+                servers = None
+            if not isinstance(servers, list):
+                raise AgentFailure("could not list Codex MCP servers to disable them; refusing to run Codex")
+            names = sorted(s["name"] for s in servers if isinstance(s, dict) and s.get("name"))
+            return [arg for name in names for arg in ("-c", f"mcp_servers.{name}.enabled=false")]
+
+    agents = RunnerAgents("claude", run_dir, None, retries=0)
+    agents.roles[SMOKE_ROLE].timeout_s = timeout_s
+    return agents, AgentFailure
+
+
+def vendor_reachable(vendor: str, runner: Runner = subprocess.run, timeout_s: int = 120) -> bool | None:
+    """Whether `vendor` ("claude" or "codex") answers the doctor's smoke call right now: True or
+    False, or None when its CLI is not installed. One attempt, no retries, each process limited
+    to `timeout_s`, in the repository root; for a supervisor deciding whether an outage is over.
+    It is a real call: it costs cents."""
+    if vendor not in VENDORS:
+        raise ValueError(f"unknown vendor {vendor!r}: expected one of {', '.join(VENDORS)}")
+    with tempfile.TemporaryDirectory(prefix="implement-reachable-") as scratch:
+        agents, failure = _runner_agents(runner, Path(scratch), timeout_s)
+        try:
+            smoke_call(agents, vendor, REPO_ROOT)
+        except _NotInstalled:
+            return None
+        except failure:
+            return False
+    return True
