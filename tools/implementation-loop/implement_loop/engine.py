@@ -522,7 +522,12 @@ class Engine:
         fingerprint = hashlib.sha256(f"stall:{cause}:{n}".encode()).hexdigest()[:10]
         body = (f"{report.FAULT_MARKER.format(fingerprint)}\nThe implement loop could not deliver #{n} (run for "
                 f"#{self.plan.root}, engine {VERSION}): **{cause}**.\n\n{detail[:1500]}\n\nThe issue resumes once, with a "
-                f"fresh ceiling, on the next engine version. Its branch keeps the work.\n")
+                f"fresh ceiling, on the next engine version. Its branch keeps the work.\n\n"
+                f"## Deliverables\n- [ ] From #{n}'s run log (`events.jsonl` and `calls/`), the cause is diagnosed and fixed "
+                f"in the engine or its prompts, with a regression test.\n"
+                f"- [ ] The engine version (`implement_loop/__init__.py`) is bumped, so #{n} resumes.\n\n"
+                f"## Acceptance criteria\n- [ ] The engine's full test suite passes.\n"
+                f"- [ ] Nothing on the loop's safety surface changes.\n")
         self.faults.record(fingerprint, f"implement loop: #{n} not delivered ({cause})", body, issue=n, run=self.plan.root)
         self.store.event("failed", issue=n, cause=cause, detail=detail[:800])
         self.log(f"#{n} failed ({cause}): {detail[:200]}")
@@ -564,8 +569,10 @@ class Engine:
                 f"local run log (`events.jsonl`, event `step_crashed`, fingerprint `{fingerprint}`).\n\nEngine frames:\n\n"
                 f"```\n{engine_frames(exc)}\n```\n\n"
                 f"## Deliverables\n- [ ] A regression test reproduces this fault's path ({engine_frames(exc).splitlines()[-1] if engine_frames(exc) else 'unknown'}).\n"
-                f"- [ ] The engine handles that path, and the test passes.\n\n## Acceptance criteria\n"
-                f"- [ ] The engine's full test suite passes.\n- [ ] Nothing on the loop's safety surface changes.\n")
+                f"- [ ] The engine handles that path, and the test passes.\n"
+                f"- [ ] The engine version (`implement_loop/__init__.py`) is bumped, so waiting issues resume.\n\n"
+                f"## Acceptance criteria\n- [ ] The engine's full test suite passes.\n"
+                f"- [ ] Nothing on the loop's safety surface changes.\n")
         self.faults.record(fingerprint, title, body, issue=n, run=self.plan.root)
         resume = Phase(phase) if phase not in (Phase.WAITING.value, Phase.FAILED.value) else Phase.PENDING
         self._wait(n, WAIT_ENGINE, f"engine error {type(exc).__name__} in phase {phase} (fault {fingerprint})",
@@ -1713,11 +1720,25 @@ class Engine:
         return out
 
     def _reconcile_delivered(self) -> None:
-        """A delivered issue whose owner has since ticked every remaining box, and whose deferred
-        items' issues have landed, is done (the deferred ones reopen under the supervisor)."""
+        """A delivered issue whose owner has since ticked every remaining box is done. A deferred
+        item whose issue has since been delivered or closed reopens: a new round delivers it."""
         for n in self.plan.work:
             st = self.store.issue(n)
             if st.phase != Phase.DELIVERED:
+                continue
+            landed = [o for o in st.obligations if o.get("kind") == "deferred"
+                      and ((self._safe(self.gh.get_issue, o.get("issue")) or {}).get("state") == "closed")]
+            if landed:
+                st.obligations = [o for o in st.obligations if o not in landed]
+                st.plan = {**(st.plan or {}), "items": [
+                    {**i, "proof": "review" if i["proof"] == "deferred" else i["proof"]}
+                    if any(o["item"] == i["id"] for o in landed) else i for i in (st.plan or {}).get("items", [])]}
+                self.store.event("deferred_reopened", issue=n, items=[o["item"] for o in landed])
+                self._new_round(st, [f"{o['item']} was deferred to {o['detail']}, which has landed; deliver it now."
+                                     for o in landed], owner_edit=False)
+                st.phase = Phase.PLAN
+                self.store.put(st)
+                self._sync(n)
                 continue
             body = (self._safe(self.gh.get_issue, n) or {}).get("body") or ""
             items = issue_parser.ledger(body)

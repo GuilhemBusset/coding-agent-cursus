@@ -267,6 +267,30 @@ def cmd_run(args) -> int:
     return 0 if not (summary["waiting"] or summary["failed"]) else 3
 
 
+def cmd_supervise(args) -> int:
+    """Run the loop for a root until every issue is terminal, within the supervisor's bounds."""
+    from .supervisor import Supervisor
+    root = repo_root()
+    operator = args.operator or detect_operator()
+    if operator not in ("claude", "codex"):
+        sys.exit("implement: say who is driving this run with --operator claude or --operator codex")
+    if not args.yes:
+        sys.exit("implement: confirm with --yes once the user has agreed that these runs merge their own PRs")
+    if args.detach:
+        log = RunStore.for_root(root, args.issue).dir / "supervisor.log"
+        cmd = [sys.executable, str(root / "tools" / "implementation-loop" / "implement.py"), "supervise", str(args.issue),
+               "--operator", operator, "--yes", "--max-runs", str(args.max_runs), "--max-hours", str(args.max_hours)]
+        with open(log, "a") as out:
+            proc = subprocess.Popen(cmd, cwd=root, stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    start_new_session=True)
+        print(f"Supervising #{args.issue} in the background (pid {proc.pid}); log: {log}")
+        return 0
+    outcome = Supervisor(root, args.issue, operator, max_runs=args.max_runs, max_hours=args.max_hours).supervise()
+    print(json.dumps({"finished": outcome.finished, "reason": outcome.reason, "runs": outcome.runs,
+                      "repairs": outcome.repairs, "waiting": outcome.waiting, "failed": outcome.failed}, indent=1))
+    return 0 if outcome.finished and not outcome.failed else 3
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="implement", description="Implement an epic or an issue, with evidence.")
     parser.add_argument("--version", action="version", version=f"implement-loop {VERSION}")
@@ -296,6 +320,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("issue", type=int, help="the run's root issue")
     p.add_argument("items", type=int, nargs="*", help="issues to retry (default: every failed or waiting one)")
     p.set_defaults(func=cmd_retry)
+    p = sub.add_parser("supervise", help="run the loop for a root until every issue is terminal (bounded)")
+    p.add_argument("issue", type=int)
+    p.add_argument("--operator", choices=["claude", "codex"])
+    p.add_argument("--yes", action="store_true", help="the user confirmed that these runs merge their own PRs")
+    p.add_argument("--max-runs", type=int, default=10)
+    p.add_argument("--max-hours", type=float, default=24)
+    p.add_argument("--detach", action="store_true", help="keep supervising after this terminal or session closes")
+    p.set_defaults(func=cmd_supervise)
     p = sub.add_parser("record-fixture", help="record GitHub reads for offline tests")
     p.add_argument("issue", type=int)
     p.add_argument("out")
