@@ -4,8 +4,13 @@
 import json
 import os
 import shutil
+import signal
+import subprocess
 import sys
 import tempfile
+import threading
+import time
+import types
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -13,12 +18,12 @@ from unittest import mock
 from helpers import HAS_PYTEST, SHIP, git, issue_body
 from test_engine import EPIC, EngineCase
 
-from implement_loop import VERSION, verify
+from implement_loop import VERSION, gate, verify
 from implement_loop.agents import Decision, FakeAgents, Objection, Probe, Request, Ruling, Script
 from implement_loop.config import Caps, Config
 from implement_loop.engine import Engine
 from implement_loop.graph import build_plan
-from implement_loop.model import CheckSpec, IssueState, Phase
+from implement_loop.model import CheckSpec, Finding, IssueState, Phase
 from implement_loop.state import RepoClaims, RunStore, runs_root
 from implement_loop.supervisor import Supervisor
 from implement_loop.workspace import Workspace
@@ -719,6 +724,333 @@ class Finding19InterruptedAttempts(FixCase):
         b = self.store.budget(2)
         self.assertEqual((b["infra"], b["pending"]), (1, 0))
         self.assertEqual(self.phase(2), Phase.DONE)
+
+
+class Finding02RevertFindings(FixCase):
+    """The revert's examination is classified like any other: an invariant finding its reproduction
+    (or its probe) reproduces on the revert head refuses it."""
+
+    def revert_with(self, findings, probes=()):
+        self.breaking_pair()
+
+        def report(result, req, plan, since):
+            if is_revert(req):
+                result.findings, result.probes = list(findings), list(probes)
+            return result
+        self.run_engine(agents=Agents(self.scripts, examine=report))
+        return self.store.issue(3)
+
+    def test_2_a_reproduced_invariant_finding_refuses_the_revert(self):
+        st = self.revert_with([Finding(id="", title="the revert drops the owner's notes", invariant="data loss",
+                                       observed="docs/notes.txt is gone", expected="a revert keeps work it did not bring",
+                                       reproduction="test -f docs/notes.txt")])
+        self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "main_broken"))
+        self.assertIn("the revert drops the owner's notes", st.fail["detail"])
+        self.assertFalse(self.revert_prs())
+
+    def test_2_a_finding_its_returned_probe_reproduces_refuses_the_revert(self):
+        probe = Probe("checks/revert_probe.sh", "", "bash checks/revert_probe.sh",
+                      content='#!/usr/bin/env bash\ntest "$(cat docs/a.txt)" = beta\n')
+        st = self.revert_with([Finding(id="", title="the revert restores a stale value", probe=probe.file,
+                                       invariant="wrong results presented as correct", observed="alpha",
+                                       expected="beta")], [probe])
+        self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "main_broken"))
+        self.assertIn("the revert restores a stale value", st.fail["detail"])
+        self.assertFalse(self.revert_prs())
+
+    def test_2_findings_that_do_not_reproduce_or_name_no_invariant_let_the_revert_land(self):
+        self.revert_with([
+            Finding(id="", title="it might lose data", invariant="data loss", observed="o", expected="e",
+                    reproduction="test -f README.md"),                     # passes on the revert head
+            Finding(id="", title="a nicer revert message", observed="terse", expected="friendlier",
+                    reproduction="test -f docs/friendlier.txt")])          # reproduced, but no invariant
+        self.assertTrue(self.events("reverted", 3))
+        self.assertTrue(self.revert_prs()[0]["merged"])
+
+
+class Finding05LateLock(FixCase):
+    def test_5_a_test_file_first_run_after_the_first_examination_locks_at_that_verify(self):
+        late = ["checks/late_2a.sh", "checks/late_2b.sh"]
+        self.add_work(2, "docs/a.txt", "alpha", findings=1)
+        self.epic(2)
+
+        def zones(result, req):
+            result.zones = sorted(set(result.zones) | set(late))
+            return result
+
+        def add_late_tests(result, req, worktree, k):
+            if k >= 1:   # after the first examination: new test files, run through a glob
+                for f in late:
+                    (worktree / f).write_text("#!/usr/bin/env bash\ntest -s docs/a.txt\n")
+                result.commands = [CheckSpec(c.criterion, command=c.command + " && ls checks/late_2*.sh | xargs -n1 bash")
+                                   if c.criterion == "D1" else c for c in result.commands]
+            return result
+        self.run_engine(agents=Agents(self.scripts, plan=zones, build=add_late_tests))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        locked = [e for e in self.events("tests_locked", 2) if e.get("late")]
+        self.assertEqual([e["locked"] for e in locked], [late])
+        reverified = [e for e in self.events("verified", 2) if e["seq"] > locked[0]["seq"]][0]
+        self.assertTrue(reverified["ok"])
+        self.assertTrue(git("log", "-1", "--format=%s", reverified["head"], cwd=self.repo.work)
+                        .startswith("Lock newly run tests for #2"), "the new head is verified again")
+        self.assertTrue(set(late) <= set(self.store.issue(2).locked))
+        bodies = git("log", "--format=%B", "origin/feat/issue-2", cwd=self.repo.work)
+        self.assertIn("Lock newly run tests for #2", bodies)
+        for f in late:
+            self.assertIn(f"Loop-Locks: {f}", bodies)
+
+
+@unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
+class Finding12ManifestFromEmpty(FixCase):
+    def test_12_an_empty_manifest_grows_with_a_python_test_first_run_later(self):
+        path = "tests/test_late_2.py"
+        self.add_work(2, "docs/a.txt", "alpha", findings=1)
+        self.epic(2)
+        engine = []
+
+        def add_a_python_test(result, req, worktree, k):
+            if k >= 1:
+                (worktree / "tests").mkdir(exist_ok=True)
+                (worktree / path).write_text("def test_late():\n    assert open('docs/a.txt').read().strip() == 'alpha'\n")
+                result.tests = result.tests + [path]
+                result.commands = [CheckSpec("A1", command=f"{sys.executable} -m pytest -q -p no:cacheprovider {path}")
+                                   if c.criterion == "A1" else c for c in result.commands]
+                st = self.engine.store.issue(2)
+                st.manifest = {}   # as an earlier engine left it: nothing selected yet
+                self.engine.store.put(st)
+            return result
+        self.run_engine(agents=Agents(self.scripts, plan=with_zone(path), build=add_a_python_test))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertTrue([e for e in self.events("tests_locked", 2) if e.get("late") and path in e["locked"]])
+        self.assertIn(f"{path}::test_late", self.store.issue(2).manifest.get("*", []))
+
+
+class FindingNew1OwnerFindings(unittest.TestCase):
+    """On an owner item only the agent part can block: a finding must quote the plan's agent part."""
+    item_text = {"D1": "`docs/a.txt` contains `alpha`.", "D2": "Runs under a second on a 2020 laptop."}
+    parts = {"D2": "time the page on this host"}
+
+    def classify(self, quote, reproduced=True, invariant=None):
+        f = Finding(id="F", title="t", item="D2", quote=quote, invariant=invariant, observed="slow", expected="fast",
+                    reproduction="test -f timing.txt")
+        return gate.classify(f, self.item_text, gate.DEFAULT_INVARIANTS, reproduced, {"D1"}, {"D2"}, self.parts)
+
+    def test_new_1_a_finding_quoting_the_owner_items_own_text_never_blocks(self):
+        f = self.classify("under a second on a 2020 laptop")
+        self.assertEqual((f.status, f.blocking), ("advisory", False))
+
+    def test_new_1_a_reproduced_finding_quoting_the_agent_part_blocks(self):
+        f = self.classify("time the page on this host")
+        self.assertEqual((f.status, f.blocking), ("open", True))
+
+    def test_new_1_an_agent_part_finding_that_does_not_reproduce_is_advisory(self):
+        self.assertEqual(self.classify("time the page on this host", reproduced=False).blocking, False)
+
+    def test_new_1_an_invariant_on_an_owner_item_still_blocks(self):
+        f = self.classify("under a second on a 2020 laptop", invariant="data loss")
+        self.assertEqual((f.status, f.blocking), ("open", True))
+
+
+class FindingNew1OwnerFindingsInARun(FixCase):
+    def owner_issue_with(self, quote):
+        self.add_work(2, "docs/a.txt", "alpha", items=["`docs/a.txt` contains `alpha`.",
+                                                        "Runs under a second on a 2020 laptop."], owner_items=("D2",))
+        self.epic(2)
+
+        def report(result, req, plan, since):
+            if since is None:
+                result.findings = result.findings + [Finding(
+                    id="", title="the timing is never measured", item="D2", quote=quote, observed="no timing",
+                    expected="a timing of the page", reproduction="test -f edge_2.txt")]
+            return result
+        self.run_engine(agents=Agents(self.scripts, plan=with_zone("edge_2.txt"), examine=report))
+
+    def test_new_1_a_finding_on_the_agent_part_blocks_until_fixed(self):
+        self.owner_issue_with("time it on this host")   # the fake plan's agent part
+        self.assertEqual(self.phase(2), Phase.DELIVERED)
+        blocking = [f for f in self.store.issue(2).findings if f["blocking"]]
+        self.assertEqual([(f["item"], f["status"]) for f in blocking], [("D2", "closed")])
+        self.assertEqual(len(self.builds()), 2)
+
+    def test_new_1_a_finding_on_the_owners_evidence_never_blocks(self):
+        self.owner_issue_with("Runs under a second")
+        self.assertEqual(self.phase(2), Phase.DELIVERED)
+        self.assertFalse([f for f in self.store.issue(2).findings if f["blocking"]])
+        self.assertEqual(len(self.builds()), 1)
+
+
+class FindingNew2Dispositions(FixCase):
+    def test_new_2_dispositions_retire_exact_node_ids_and_a_bare_function_retires_its_cases(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        engine = self.make_engine()
+        st = engine.store.issue(2)
+        st.manifest = {"*": ["t.py::test_p[1]", "t.py::test_p[2]", "t.py::test_q[1]", "t.py::test_q[2]", "t.py::test_r"]}
+        st.commands = [{"criterion": "D1", "command": "pytest t.py", "cwd": ".", "author": "builder"}]
+        request = {"id": "R2-1", "kind": "command_change", "item": "D1", "detail": "select fewer cases", "reason": "fine",
+                   "command": {"criterion": "D1", "command": "pytest t.py -k 'not p'", "cwd": ".", "author": "builder"}}
+        engine._apply_request(2, st, self.repo.work, request, {"t.py::test_p": "excluded: obsolete",
+                                                               "t.py::test_q[1]": "excluded: flaky upstream"})
+        self.assertEqual(st.manifest, {"*": ["t.py::test_q[2]", "t.py::test_r"]})
+        self.assertEqual(st.commands[-1]["command"], "pytest t.py -k 'not p'")
+
+
+class FindingNew3Stopping(FixCase):
+    def test_new_3_the_engine_sees_a_stop_during_a_long_agent_call_and_terminates_the_agents(self):
+        from concurrent import futures
+        from implement_loop import engine as engine_mod
+        from implement_loop.agents import AgentStopped
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        store_dir = self.store_dir()
+
+        class LongBuild(FakeAgents):
+            def __init__(self, scripts):
+                super().__init__(scripts)
+                self.released, self.terminated = threading.Event(), 0
+
+            def terminate_all(self):
+                self.terminated += 1
+                self.released.set()
+
+            def build(self, vendor, req, plan, worktree, feedback):
+                (store_dir / "STOP").write_text("the operator stops the run\n")
+                if self.released.wait(15):   # an agent call that only a terminate ends
+                    raise AgentStopped("run stopped")
+                return super().build(vendor, req, plan, worktree, feedback)
+
+        def quick(fs, timeout=None, return_when=futures.ALL_COMPLETED):
+            return futures.wait(fs, timeout=None if timeout is None else min(timeout, 0.2), return_when=return_when)
+        agents = LongBuild(self.scripts)
+        started = time.monotonic()
+        with mock.patch.object(engine_mod, "wait", quick):
+            summary = self.run_engine(agents=agents)
+        self.assertLess(time.monotonic() - started, 12, "the stop did not wait for the agent call to end")
+        self.assertTrue(summary["stopped"])
+        self.assertEqual(agents.terminated, 1)
+        self.assertEqual(len(self.events("stop_requested")), 1)
+        self.assertTrue(self.events("step_interrupted", 2))
+        self.assertEqual(self.phase(2), Phase.BUILD)
+
+    def test_new_3_an_agent_started_as_a_stop_arrives_is_killed(self):
+        from implement_loop import live
+        agents = live.LiveAgents("claude", self.repo.tmp / "live-run", None)
+        real_popen = subprocess.Popen
+
+        def popen_then_stop(*args, **kwargs):
+            proc = real_popen(*args, **kwargs)
+            agents.terminate_all()   # the stop lands between the check and the registration
+            return proc
+        started = time.monotonic()
+        with mock.patch.object(live.subprocess, "Popen", popen_then_stop):
+            with self.assertRaises(live.AgentStopped):
+                agents._spawn([sys.executable, "-c", "import time; time.sleep(30)"], "", self.repo.tmp, 60)
+        self.assertLess(time.monotonic() - started, 10, "the late agent was killed, not waited for")
+
+
+FAKE_ENGINE = r"""
+import os, signal, subprocess, sys, time
+from pathlib import Path
+run_dir = Path(os.environ["FAKE_RUN_DIR"])
+run_dir.mkdir(parents=True, exist_ok=True)
+mode = os.environ["FAKE_MODE"]
+agent = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"], start_new_session=True)
+(run_dir / "agents.pids").write_text(str(agent.pid))
+(run_dir / "fake-agent.pid").write_text(str(agent.pid))
+if mode == "stubborn":
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+else:
+    signal.signal(signal.SIGTERM, lambda *a: (run_dir / "got-sigterm").write_text("1") or sys.exit(143))
+while True:
+    if mode == "polite" and (run_dir / "STOP").exists():
+        agent.terminate()
+        agent.wait()
+        sys.exit(3)
+    time.sleep(0.05)
+"""
+
+
+class FastPopen(subprocess.Popen):
+    """The supervisor's grace periods (minutes) shortened to half a second each."""
+
+    def wait(self, timeout=None):
+        return super().wait(timeout=None if timeout is None else min(timeout, 0.5))
+
+
+def gone(pid: int, within: float = 10) -> bool:
+    deadline = time.monotonic() + within
+    while time.monotonic() < deadline:
+        try:
+            state = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
+        except (OSError, IndexError):
+            return True
+        if state in ("Z", "X"):
+            return True
+        time.sleep(0.05)
+    return False
+
+
+class FindingNew3Supervisor(SupervisorCase):
+    def test_new_3_one_deadline_is_set_at_the_start_for_repair_and_root_runs(self):
+        self.put(2, Phase.WAITING, wait={"kind": "engine", "resume": "build", "version": "0.0.1"})
+        self.fault()
+        now = [100.0]
+        deadlines = []
+        sup = None
+
+        def script(args):
+            deadlines.append(sup._deadline)
+            now[0] += 600
+            if "--repair" not in args:
+                self.put(2, Phase.DONE)
+        sup = self.sup(script, max_hours=2, clock=lambda: now[0])
+        out = sup.supervise()
+        self.assertTrue(out.finished)
+        self.assertEqual(len(deadlines), 2)
+        self.assertEqual(set(deadlines), {100.0 + 2 * 3600})
+
+    def test_new_3_the_backoff_never_sleeps_past_the_deadline(self):
+        self.put(2, Phase.WAITING, wait={"kind": "ci", "resume": "land"})
+        now, slept = [0.0], []
+
+        def sleep(s):
+            slept.append(s)
+            now[0] += s
+        sup = self.sup(lambda args: None, max_hours=0.01, clock=lambda: now[0])
+        sup.sleep = sleep
+        out = sup.supervise()
+        self.assertFalse(out.finished)
+        self.assertEqual(slept, [36.0], "60 s of backoff, capped by the 36 s left")
+
+    def engine_script(self):
+        script = self.repo.work / "tools" / "implementation-loop" / "implement.py"
+        script.parent.mkdir(parents=True, exist_ok=True)
+        script.write_text(FAKE_ENGINE)
+
+    def run_past_the_deadline(self, mode):
+        from implement_loop import supervisor as supervisor_mod
+        self.engine_script()
+        run_dir = RunStore.for_root(self.repo.work, EPIC).dir
+        sup = Supervisor(self.repo.work, EPIC, "claude", log=lambda m: None)
+        sup._deadline = sup.clock() - 1   # the supervision's time is up as the run starts
+        proxy = types.SimpleNamespace(Popen=FastPopen, TimeoutExpired=subprocess.TimeoutExpired, run=subprocess.run)
+        with mock.patch.dict(os.environ, {"FAKE_RUN_DIR": str(run_dir), "FAKE_MODE": mode}), \
+                mock.patch.object(supervisor_mod, "subprocess", proxy):
+            code = sup._run_engine(["run", str(EPIC), "--operator", "claude", "--yes"])
+        return code, run_dir
+
+    def test_new_3_a_run_past_the_deadline_is_asked_to_stop_first(self):
+        code, run_dir = self.run_past_the_deadline("polite")
+        self.assertEqual(code, 3)
+        self.assertTrue((run_dir / "STOP").exists())
+        self.assertFalse((run_dir / "got-sigterm").exists(), "a run that stops is never signalled")
+        self.assertTrue(gone(int((run_dir / "fake-agent.pid").read_text())))
+
+    def test_new_3_a_run_that_ignores_stop_and_sigterm_is_killed_and_its_agents_reaped(self):
+        code, run_dir = self.run_past_the_deadline("stubborn")
+        self.assertEqual(code, -signal.SIGKILL)
+        self.assertTrue((run_dir / "STOP").exists())
+        self.assertTrue(gone(int((run_dir / "fake-agent.pid").read_text())), "the agent's own session was reaped")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import tempfile
 import threading
@@ -726,6 +727,10 @@ class Engine:
         return "later", sorted({f for f in touched.splitlines() if f and any(scheduler.overlaps(f, a) for a in allowed)})
 
     def _verify(self, root: Path, st: IssueState, head: str, work_dir: Path, check_tamper: bool = True):
+        with self.ws.disposable(root) as scratch:
+            return self._verify_in(scratch, st, head, work_dir, check_tamper)
+
+    def _verify_in(self, root: Path, st: IssueState, head: str, work_dir: Path, check_tamper: bool = True):
         return verify.verify(root, self._specs(st), head, work_dir, st.locked, sorted(set(st.tests) | set(st.probes)),
                              st.manifest or None, self.caps.check_timeout_s,
                              extra_env=self.check_env, check_tamper=check_tamper)
@@ -990,7 +995,7 @@ class Engine:
             self._relock(n, wt, expected, sources)
         st = self.store.issue(n)
         known = {r["id"] for r in st.requests}
-        self._absorb_build(st, result)
+        self._absorb_build(st, result, wt)
         requests = requests + [r for r in st.requests if r["id"] not in known]   # a locked command's change, decided now
         self.store.put(st)
         self.store.event("built", issue=n, sha=sha, status=result.status, note=result.note[:600],
@@ -1011,15 +1016,19 @@ class Engine:
         self._set_phase(n, Phase.VERIFY, head_sha=self.ws.head(wt), feedback=self._request_feedback(
             [r for r in st.requests if r["id"] in {q["id"] for q in requests}]))
 
-    def _absorb_build(self, st: IssueState, result) -> None:
+    def _absorb_build(self, st: IssueState, result, wt: Path | None = None) -> None:
         """The builder's tests, commands and dispositions. Before the first examination they are its
         own; after it, commands for locked items change only through an approved request."""
         agent = self._agent_items(st) | {i["id"] for i in self._items(st) if i["proof"] == "owner"}
-        st.tests = sorted(set(st.tests) | {t for t in result.tests if t})
+        inside = (lambda rel: self._inside(wt, rel)) if wt is not None else (lambda rel: True)
+        refused = [t for t in result.tests if t and not inside(t)]
+        if refused:
+            self.store.event("test_paths_refused", issue=st.number, paths=refused[:8])
+        st.tests = sorted(set(st.tests) | {t for t in result.tests if t and inside(t)})
         current = {c["criterion"]: c for c in st.commands if c.get("author") == "builder"}
         probes = [c for c in st.commands if c.get("author") == "examiner"]
         for c in result.commands:
-            if c.criterion not in agent or not c.command:
+            if c.criterion not in agent or not c.command or not inside(c.cwd or "."):
                 continue
             entry = asdict(c) | {"author": "builder",
                                  "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)}
@@ -1151,14 +1160,17 @@ class Engine:
         elif kind == "depends":
             self._depend(n, st, r.get("item") or "", int(r["depends_on"]), r.get("depends_quote") or "")
         elif kind == "test_change":
-            content = r.get("content") or {}
+            content = {p: c for p, c in (r.get("content") or {}).items()
+                       if self._inside(wt, p) and (not self.repair or not is_safety_surface(p))}
             for p, text in content.items():
                 target = wt / p
-                if text is None:
-                    target.unlink(missing_ok=True)
-                else:
+                if target.is_symlink() or text is None:
+                    target.unlink(missing_ok=True)   # replace a link itself, never write through it
+                if text is not None:
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text(text)
+                    tmp = target.with_name(f".{target.name}.loop-new")
+                    tmp.write_text(text)
+                    os.replace(tmp, target)
             removed = [p for p, t in content.items() if t is None]
             sha = self.ws.commit_all(wt, f"Change locked tests for #{n} (approved {r['id']})", "acceptance-checks", n,
                                      unlocks=removed or None,
@@ -1335,9 +1347,13 @@ class Engine:
         if not st.commands and self._agent_items(st) - self._review_items(st):
             problems.append("no commands prove the test/command items; return one command per item")
         locked_tests = sorted(set(st.tests) | set(st.probes))
-        ok, evidence, vproblems, ran = verify.verify(wt, self._specs(st), head, self.store.issue_dir(n), st.locked,
-                                                     locked_tests, st.manifest or None, self.caps.check_timeout_s,
-                                                     extra_env=self.check_env, check_tamper=bool(st.examined_sha))
+        # Checks are agent-written commands: they run in a throwaway copy of the head on a private git
+        # directory, so nothing they do reaches the worktree or another run's refs.
+        with self.ws.disposable(wt) as scratch:
+            ok, evidence, vproblems, ran = verify.verify(scratch, self._specs(st), head, self.store.issue_dir(n),
+                                                         st.locked, locked_tests, st.manifest or None,
+                                                         self.caps.check_timeout_s, extra_env=self.check_env,
+                                                         check_tamper=bool(st.examined_sha))
         problems += vproblems
         selected = {"*": sorted(set(ran) | {t for v in (st.manifest or {}).values() for t in v})}
         unselected = verify.unselected(wt, [t for t in locked_tests if (wt / t).is_file() and t.endswith(".py")],
@@ -1775,9 +1791,10 @@ class Engine:
             return self._owner_round(n, edited)
         coord = self.ws.coord()
         head = self.ws.head(coord)
-        ok, evidence, problems, _ = verify.verify(coord, self._specs(st), head, self.store.issue_dir(n), st.locked,
-                                                  sorted(set(st.tests) | set(st.probes)), st.manifest or None,
-                                                  self.caps.check_timeout_s, extra_env=self.check_env)
+        with self.ws.disposable(coord) as scratch:
+            ok, evidence, problems, _ = verify.verify(scratch, self._specs(st), head, self.store.issue_dir(n), st.locked,
+                                                      sorted(set(st.tests) | set(st.probes)), st.manifest or None,
+                                                      self.caps.check_timeout_s, extra_env=self.check_env)
         self.store.event("post_merge_verify", issue=n, head=head, ok=ok, problems=problems)
         if not ok:
             env = environment_problem(evidence)
@@ -1971,10 +1988,11 @@ class Engine:
                       if c.get("kind", "command") == "command"]
             if m == n or not checks:
                 continue
-            ok, evidence, problems, _ = verify.verify(coord, checks, head, self.store.issue_dir(m) / "regression", {},
-                                                      entry.get("check_files", []), entry.get("manifest") or None,
-                                                      self.caps.check_timeout_s, extra_env=self.check_env,
-                                                      check_tamper=False)
+            with self.ws.disposable(coord) as scratch:
+                ok, evidence, problems, _ = verify.verify(scratch, checks, head, self.store.issue_dir(m) / "regression",
+                                                          {}, entry.get("check_files", []), entry.get("manifest") or None,
+                                                          self.caps.check_timeout_s, extra_env=self.check_env,
+                                                          check_tamper=False)
             self.store.event("regression_check", issue=n, of=m, head=head, ok=ok, problems=problems)
             if not ok and not environment_problem(evidence):
                 out.append(f"after #{n} merged, #{m}'s checks fail on main: " + "; ".join(problems)[:400])

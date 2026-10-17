@@ -290,7 +290,8 @@ class RequirementRegressions(RecoveryCase):
 
         def verify_then_edit(root, *args, **kwargs):
             result = real_verify(root, *args, **kwargs)
-            if Path(root).name == "coord":
+            # post-merge verification: it runs while the issue is merged (in a copy of the coord worktree)
+            if RunStore.for_root(self.repo.work, EPIC).issue(2).phase == Phase.MERGED:
                 ticked.append("- [x] The test passes on main." in self.gh.issues[2]["body"])
                 self.gh.issues[2]["body"] = self.gh.issues[2]["body"].replace("The test passes on main.",
                                                                              "Something else entirely.")

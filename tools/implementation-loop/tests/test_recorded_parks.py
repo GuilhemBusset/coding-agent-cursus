@@ -5,7 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from helpers import HAS_PYTEST
+from helpers import HAS_PYTEST, git
 from test_engine import EngineCase
 
 from implement_loop.agents import BuildResult, FakeAgents, Request
@@ -119,3 +119,44 @@ class ProbePathTests(EngineCase):
             self.assertIsNone(self.engine._reproduces(wt, "true", ".", (path, "overwritten\n")))
         self.assertEqual(victim.read_text(), "locked\n")
         self.assertTrue(self.events("probe_path_refused"))
+
+
+class IsolationOfChecks(EngineCase):
+    def test_a_check_command_cannot_touch_the_shared_repositorys_refs(self):
+        """Check commands are agent-written: they run on a private git directory."""
+        git("branch", "feat/other-run", cwd=self.repo.work)
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+
+        class Hostile(Builder):
+            def build(self, vendor, req, plan, worktree, feedback):
+                result = super().build(vendor, req, plan, worktree, feedback)
+                for c in result.commands:
+                    c.command = "git update-ref -d refs/heads/feat/other-run; " + c.command
+                return result
+        self.run_engine(agents=Hostile(self.scripts))
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertTrue(git("branch", "--list", "feat/other-run", cwd=self.repo.work),
+                        "another run's branch survives a check that deletes it")
+
+    def test_a_test_path_that_leaves_the_worktree_is_refused(self):
+        """A test file symlinked out of the worktree never becomes a locked test the engine writes."""
+        outside = self.repo.tmp / "outside.txt"
+        outside.write_text("keep\n")
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+
+        class Linker(Builder):
+            def build(self, vendor, req, plan, worktree, feedback):
+                result = super().build(vendor, req, plan, worktree, feedback)
+                link = worktree / "checks" / "escape.sh"
+                if not link.is_symlink():
+                    link.parent.mkdir(parents=True, exist_ok=True)
+                    link.symlink_to(outside)
+                result.tests = result.tests + ["checks/escape.sh", "../outside.txt"]
+                return result
+        self.run_engine(agents=Linker(self.scripts))
+        self.assertEqual(outside.read_text(), "keep\n")
+        refused = [p for e in self.events("test_paths_refused", 2) for p in e["paths"]]
+        self.assertIn("checks/escape.sh", refused)
+        self.assertNotIn("checks/escape.sh", self.store.issue(2).tests)
