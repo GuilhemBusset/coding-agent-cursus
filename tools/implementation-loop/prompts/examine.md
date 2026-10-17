@@ -42,6 +42,7 @@ Return, in **one** pass:
 - `probes`: at least one independent test per behavioural item, written against the real code
   (`file`, its full `content`, the `command` that runs it, `cwd`, the `criterion` it proves). A probe
   must exercise the deliverable and assert the expected behaviour; it fails only when the behaviour
-  is wrong. Passing probes become locked evidence; a failing one reproduces a finding.
+  is wrong. Passing probes become locked evidence; a failing one reproduces a finding. A probe that
+  defines test functions runs through pytest, so the engine counts each of its tests.
 - `certify`: true when every item an agent must prove is met on this exact commit and no blocking
   finding remains; `summary`: one paragraph.

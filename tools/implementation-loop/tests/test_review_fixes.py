@@ -871,6 +871,92 @@ class Fault90SeveralCommandsPerItem(FixCase):
         self.assertNotEqual(VERSION, "1.0.0")
 
 
+@unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
+class Fault94CriterionNamesTheItem(FixCase):
+    """#24 (engine 1.0.0) gave its probe commands criteria like "D2, D3, A1: the examiner's probes";
+    each was dropped in silence, so their tests never ran and every round failed the same way."""
+    path = "tests/test_criterion_2.py"
+
+    def builder(self, extra=()):
+        def hook(result, req, worktree, k):
+            (worktree / "tests").mkdir(exist_ok=True)
+            (worktree / self.path).write_text("def test_alpha():\n    assert open('docs/a.txt').read().strip() == 'alpha'\n")
+            result.tests = result.tests + [self.path]
+            result.commands = [CheckSpec(f"{c.criterion}, D1: the builder's check", command=c.command)
+                               for c in result.commands] + [
+                CheckSpec("A1: the builder's own pytest file",
+                          command=f"{sys.executable} -m pytest -q -p no:cacheprovider {self.path}")] + list(extra)
+            return result
+        return hook
+
+    def test_fault_94_a_criterion_leading_with_an_item_id_is_kept_and_run(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine(agents=Agents(self.scripts, plan=with_zone(self.path), build=self.builder()))
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        builder = [c for c in self.store.issue(2).commands if c.get("author") == "builder"]
+        self.assertLessEqual({c["criterion"] for c in builder}, {"A1", "D1"})
+        self.assertTrue([c for c in builder if c["criterion"] == "A1" and self.path in c["command"]])
+        self.assertFalse(self.events("commands_dropped", 2))
+        self.assertFalse([p for e in self.events("verified", 2) for p in e["problems"] if "no command selects" in p])
+
+    def test_fault_94_a_command_naming_no_item_is_reported_to_the_builder(self):
+        self.add_work(2, "docs/a.txt", "alpha", wrong_attempts=1)
+        self.epic(2)
+        stray = CheckSpec("Regression: the whole suite", command="true")
+        agents = Agents(self.scripts, plan=with_zone(self.path), build=self.builder([stray]))
+        self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        self.assertTrue(self.events("commands_dropped", 2))
+        feedback = [f for c in agents.calls if c[0] == "build" and c[2] == 2 for f in c[3]]
+        self.assertTrue([f for f in feedback if "were not kept" in f and "Regression: the whole suite" in f], feedback)
+
+    def test_fault_94_the_engine_version_moved_past_the_faulted_one(self):
+        self.assertNotEqual(VERSION, "1.0.1")
+
+
+@unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
+class Fault95TypedCommandChangeAdds(FixCase):
+    """#37 (engine 1.0.0) had two approved `command_change` requests for one item, each with one
+    command; the second replaced every command of the item, so the whole-file pytest command was
+    gone, its locked tests never ran and every round failed the same way (no_progress)."""
+    path = "tests/test_typed_2.py"
+
+    def test_fault_95_typed_single_commands_add_to_the_item_and_show_what_they_replace(self):
+        self.add_work(2, "docs/a.txt", "alpha", findings=1)
+        self.epic(2)
+        pytest = f"{sys.executable} -m pytest -q -p no:cacheprovider"
+        added = [f"{pytest} {self.path}::test_one", f"{pytest} {self.path}::test_two"]
+
+        def hook(result, req, worktree, k):
+            (worktree / "tests").mkdir(exist_ok=True)
+            (worktree / self.path).write_text("def test_one():\n    assert True\n\n\ndef test_two():\n    assert True\n")
+            result.tests = result.tests + [self.path]
+            result.commands = result.commands + [CheckSpec("A1", command=f"{pytest} {self.path}")] + [
+                CheckSpec("A1", command=c) for c in (added if k >= 2 else [])]
+            if k == 1:
+                result.requests = [Request("command_change", f"also run {c.split('::')[1]} alone", item="A1",
+                                           command={"criterion": "A1", "command": c, "cwd": ".", "timeout_s": None,
+                                                    "author": "builder"}) for c in added]   # as live.py gives it
+            return result
+        seen = []
+        agents = Agents(self.scripts, plan=with_zone(self.path), build=hook,
+                        decide=lambda requests: seen.extend(requests) or [Decision(r["id"], True, "fine") for r in requests])
+        self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        self.assertFalse([p for e in self.events("verified", 2) for p in e["problems"] if "did not run" in p])
+        a1 = [c["command"] for c in self.store.issue(2).commands if c["criterion"] == "A1" and c.get("author") == "builder"]
+        self.assertIn(f"{pytest} {self.path}", a1)
+        self.assertLessEqual(set(added), set(a1))
+        typed = [r for r in seen if r.get("command")]
+        self.assertEqual(len(typed), 2)
+        for r in typed:
+            self.assertIn({"command": f"{pytest} {self.path}", "cwd": "."}, r["replaces"])
+
+    def test_fault_95_the_engine_version_moved_past_the_faulted_one(self):
+        self.assertNotIn(VERSION, ("1.0.0", "1.0.1", "1.0.2"))
+
+
 class FindingNew1OwnerFindings(unittest.TestCase):
     """On an owner item only the agent part can block: a finding must quote the plan's agent part."""
     item_text = {"D1": "`docs/a.txt` contains `alpha`.", "D2": "Runs under a second on a 2020 laptop."}
