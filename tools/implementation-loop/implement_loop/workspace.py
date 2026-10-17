@@ -738,16 +738,22 @@ class Workspace:
             raise GitError(f"git merge {self.base_ref()} failed: {(proc.stderr or proc.stdout).strip()[:400]}")
 
     # writes ---------------------------------------------------------------------
-    def commit_all(self, path: Path, subject: str, phase: str, issue: int, unlocks: list[str] | None = None) -> str | None:
+    def commit_all(self, path: Path, subject: str, phase: str, issue: int, unlocks: list[str] | None = None,
+                   locks: list[str] | None = None, trailers: dict[str, str] | None = None) -> str | None:
         """Commit everything in the worktree. Returns the new SHA, or None if nothing changed.
-        `unlocks` names check files an earlier acceptance-checks commit locked that a new design
-        no longer uses; the CI guard stops protecting them from this commit on. A merge in
-        progress is concluded even when its resolution leaves the tree as it was."""
+        `unlocks` names test files an earlier acceptance-checks commit locked that are released
+        (an approved change, or an earlier engine's checks taken over by the builder); `locks`
+        names files already on the branch that are locked from this commit on, unchanged. The CI
+        guard reads both trailers. A merge in progress is concluded even when its resolution
+        leaves the tree as it was."""
         with self._mutex:
             self.git("add", "--all", cwd=path)
-            if not self.git("status", "--porcelain", cwd=path) and not unlocks and self.in_progress(path) != "merge":
+            if (not self.git("status", "--porcelain", cwd=path) and not unlocks and not locks
+                    and self.in_progress(path) != "merge"):
                 return None
-            trailers = f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
+            trailers = (f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
+                        + "".join(f"Loop-Locks: {f}\n" for f in locks or [])
+                        + "".join(f"{k}: {v}\n" for k, v in (trailers or {}).items()))
             message = f"{subject}\n\nRefs #{issue}\n\n{trailers}"
             self.git("commit", "--quiet", "--allow-empty", "-m", message, cwd=path)
             return self.head(path)
