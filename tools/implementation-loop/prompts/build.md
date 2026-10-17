@@ -24,7 +24,9 @@ You are the builder. Build this issue in your working directory, following your 
   pytest command naming the file) or given a disposition.
 - `requests`, typed, each decided by the other vendor (or the arbiter):
   - `paths` / `protected_change`: a path outside your zones you must change (say why);
-  - `command_change`: replace a locked command for `item` (give `command`, `cwd`);
+  - `command_change`: add a command to a locked `item` (give `command`, `cwd`); it is kept beside
+    the item's other commands. To change or drop a locked command, list the item's whole new set
+    in `commands` instead: the engine makes it one request;
   - `test_change`: change a locked test (`paths`, and why it is wrong for the item as written);
   - `reclassify`: an agent item that needs a capability this host lacks (`item`, `capability`, and
     in `detail` the part agents still deliver);

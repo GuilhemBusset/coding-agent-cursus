@@ -8,7 +8,9 @@ requests). Run what you need.
 
 For each request return `approve` and a `reason`:
 - `paths` / `protected_change`: approve when the issue genuinely needs that path changed.
-- `command_change`: approve when the new command still proves the item as written.
+- `command_change`: `replaces` lists the item's commands now. A request with one `command` adds it
+  to them; one with `commands` puts that whole list in their place. Approve when the resulting set
+  still proves the item as written and still selects every locked test it selected.
 - `test_change`: approve only when the locked test is wrong for the item as written, and the new
   version still proves it (you hold the second key: never let a test be weakened). If a test node
   disappears, give its disposition (`owner-run` or `excluded: <reason>`) in `dispositions`.
