@@ -461,6 +461,40 @@ class LockedTestRegressions(RecoveryCase):
         guard = self.guard()
         self.assertEqual(guard.returncode, 0, guard.stdout + guard.stderr)
 
+    def test_main_moving_during_the_update_checkpoints_the_uncommitted_work_and_merges(self):
+        # #82 (fault 865d1331f3): main moved after the engine's fetch, and the merge refused to
+        # overwrite what an interrupted build left uncommitted: GitError in the implement step
+        self.add_work(2, "docs/a.txt", "alpha", findings=1)
+        self.epic(2)
+        agents = FakeAgents(self.scripts)
+        original = agents.build
+        store_dir = self.store_dir()
+        stopped = []
+
+        def interrupted(vendor, req, plan, worktree, feedback):
+            if not stopped:
+                stopped.append(True)
+                (worktree / "late.txt").write_text("late\n")
+                (store_dir / "STOP").write_text("stop\n")
+                raise type("AgentStopped", (RuntimeError,), {})("stopped mid-build")
+            return original(vendor, req, plan, worktree, feedback)
+        agents.build = interrupted
+        self.run_engine(agents=agents)
+        self.assertTrue(self.events("step_interrupted", 2))
+
+        update, moved = Workspace.update, []
+
+        def main_moves_first(ws, path):
+            if not moved:
+                moved.append(True)
+                self.move_main({"late.txt": "late\n"})
+            return update(ws, path)
+        with mock.patch.object(Workspace, "update", main_moves_first):
+            self.run_engine(agents=agents)
+        self.assertEqual(self.events("step_crashed", 2), [])
+        self.assertEqual(self.phase(2), Phase.DONE)
+        self.assertTrue([e for e in self.events("checkpoint_before_update", 2) if e.get("retried")])
+
 
 class RecordedRunRegressions(RecoveryCase):
     """The failures of the first live runs (2026-10-04, epic #11 and #21), replayed."""
