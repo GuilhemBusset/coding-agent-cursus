@@ -14,15 +14,16 @@ OpenReview forum page via the Internet Archive, since openreview.net served a bo
   PASS, 0 failed checks (offline `file://`, shared-asset hashes, axe, deck navigation, every
   slide fits without internal scrolling at desktop and laptop sizes, no horizontal overflow at
   390 px, no-JS, reduced motion, print).
-- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking.test.mjs`: the full
-  locked suite passed before the planner amendment. In the tree reviewed here the file is
-  missing (deleted by the acceptance-checks commit a164509), so this command and
-  `components-tooling.test.mjs` (which reads it) fail with ENOENT; reported to the loop as a
-  check defect, not something the deck can fix.
-- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking-planner.test.mjs`:
-  the five deck and lab cases pass (href, fresh lab, recovery from seed 92821 / error 1.00,
-  replay, reduced-motion Step), plus the parser and geometry-oracle cases. Its registration case
-  fails because `thinking-planner` is not yet in `component-helpers.mjs` or `setup/package.json`.
+- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking.test.mjs`
+  (2026-10-17): 3 passed. Every slide has one labelled speaker-notes block, the minutes add up
+  to 45, each lab and demo link sits on its slide and resolves to an existing file and id inside
+  the session, and the suite is collected by `npm --prefix setup test`.
+- `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/thinking-planner.test.mjs`
+  (2026-10-17): 8 passed. These are the five deck and lab cases (href, fresh lab, recovery from
+  seed 92821 / error 1.00, replay, reduced-motion Step), the parser and geometry-oracle cases,
+  and collection. Since main's merge, suites are found by listing the directory (`run-all.mjs`),
+  so they need no registration.
+- `npm --prefix setup test` (2026-10-17): 164 passed, 0 failed.
 - `uv run --locked pytest -q tests/test_pages.py tests/test_self_contained.py` in
   `sessions/01-fundamentals/`: 10 passed (all links relative and inside the session).
 
@@ -59,8 +60,9 @@ The `data-minutes` add up to 45: title 0.5, forward-pass 1, loop 2, system-1-2 2
 search 8 (lab and predict pause), rlvr 2, sharpen-or-expand 2, effort-dials 1, effort-demo 6,
 overthinking 2, cot-faithfulness 2, addition-36-59 2, tool-cues 2, world-models 1,
 internal-representations 2, kepler 3 and repo-model 3 (world-model lab, 6 in total),
-simulators 1, wrap 0.5. This is a plan, not a measured delivery. The live rehearsal and
-`02-thinking/rehearsal.md` remain the instructor's obligation; I did not write one.
+simulators 1, wrap 0.5. This is a plan, not a measured delivery. [`rehearsal.md`](rehearsal.md)
+lays the plan out per slide and leaves an empty table for the timed run. The live rehearsal is
+the owner's obligation.
 
 ## D2 · The loop, System 1 and System 2
 

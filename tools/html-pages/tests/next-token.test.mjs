@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, eventually } from './component-helpers.mjs';
+import { repoRoot, eventually, assertCollected } from './component-helpers.mjs';
 
 /* Locked acceptance checks for issue 38.
  * Only the public NextToken API and markup explicitly agreed in the design are
@@ -301,9 +301,7 @@ test('D1: lab contract, public API, suite registration and hash-bound screenshot
   assert.deepEqual(reserved, []);
   assert.deepEqual(await page.evaluate(() => ['softmax', 'topP', 'distribution', 'sample', 'argmax']
     .map(name => typeof window.NextToken?.[name])), Array(5).fill('function'));
-  assert.ok(suites.includes('next-token'));
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  assert.ok(pkg.scripts.test.split(/\s+/).includes('../tools/html-pages/tests/next-token.test.mjs'));
+  await assertCollected('next-token');
   const bytes = await readFile(file), review = await readFile(reviewFile, 'utf8');
   assert.ok(review.includes(createHash('sha256').update(bytes).digest('hex')), 'review tied to final page');
   assert.match(review.replace(/(?<=\d),(?=\d)/g, ''), new RegExp(`\\b${bytes.length}\\s+bytes\\b`, 'i'));
