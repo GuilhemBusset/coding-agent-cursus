@@ -88,6 +88,7 @@ ENVIRONMENT_FAILURE = re.compile(
     r"|No module named pytest|\b(uv|node|npx|npm|python3): (command )?not found", re.IGNORECASE)
 CI_NO_VERDICT = (None, "missing", "pending", "stale", "cancelled", "startup_failure")
 CONFLICT_MARKER = re.compile(r"^(<{7}|>{7})( |$)", re.MULTILINE)
+CRITERION_LEAD = re.compile(r"\s*([A-Za-z]+\d+)\b")
 
 
 class Engine:
@@ -596,7 +597,7 @@ class Engine:
         st.locked, st.manifest, st.tests, st.probes = {}, {}, [], []
         st.commands = [c for c in st.commands if c.get("author") != "examiner"]   # their probes went with the branch
         st.findings = [f for f in st.findings if f.get("status") == "follow_up"]
-        st.human_tasks, st.reverted = [], []
+        st.human_tasks, st.reverted, st.dropped = [], [], []
         st.feedback = list(feedback)
         if owner_edit:
             self._owner_edit(st)
@@ -1031,11 +1032,20 @@ class Engine:
                 current.setdefault(c["criterion"], []).append(c)
         probes = [c for c in st.commands if c.get("author") == "examiner"]
         given: dict[str, list[dict]] = {}   # an item may need several commands; each one is kept
+        dropped = []
         for c in result.commands:
-            if c.criterion not in agent or not c.command or not inside(c.cwd or "."):
+            item = criterion_item(c.criterion, agent)
+            why = ("its criterion names no plan item" if item is None else "it is empty" if not c.command
+                   else "its cwd is outside the worktree" if not inside(c.cwd or ".") else None)
+            if why:   # said to the builder, never dropped in silence (#24 lost every probe command this way)
+                dropped.append(f"`{(c.command or '')[:120]}` (criterion {(c.criterion or '')[:80]!r}): {why}")
                 continue
-            given.setdefault(c.criterion, []).append(asdict(c) | {
+            given.setdefault(item, []).append(asdict(c) | {
+                "criterion": item, "description": c.description or c.criterion,
                 "author": "builder", "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)})
+        if dropped:
+            self.store.event("commands_dropped", issue=st.number, commands=dropped[:8])
+        st.dropped = dropped
 
         def shape(entries: list[dict]) -> list[tuple[str, str]]:
             return sorted((e["command"], e.get("cwd") or ".") for e in entries)
@@ -1346,6 +1356,13 @@ class Engine:
                          f"propose a change with a `test_change` request.")
             self.store.event("reverted_edits_noted", issue=n, files=st.reverted)
             st.reverted = []
+        if st.dropped:
+            items = sorted(self._agent_items(st) | {i["id"] for i in self._items(st) if i["proof"] == "owner"})
+            notes.append(f"These commands were not kept, so they did not run: {st.dropped[:6]}. A command's "
+                         f"`criterion` is exactly one plan item id ({', '.join(items)}); a command that "
+                         f"proves several items names the first of them.")
+            st.dropped = []
+        if notes:
             st.feedback = list(st.feedback) + notes
             self.store.put(st)
         if not st.commands and self._agent_items(st) - self._review_items(st):
@@ -2126,6 +2143,15 @@ def conflict_feedback(files: list[str], locked: list[str]) -> str:
         text += (f" The conflicts in the locked tests {', '.join(locked)} were resolved by the other vendor; do not "
                  f"edit them.")
     return text + " Do not run git merge, commit or abort: the engine concludes the merge."
+
+
+def criterion_item(criterion: str | None, items: set[str]) -> str | None:
+    """The plan item a command proves: its criterion, or the item id it leads with ("D2, D3: the
+    probes" proves D2). None when it names no item."""
+    if criterion in items:
+        return criterion
+    m = CRITERION_LEAD.match(criterion or "")
+    return m.group(1) if m and m.group(1) in items else None
 
 
 def environment_problem(evidence: list[dict]) -> str | None:

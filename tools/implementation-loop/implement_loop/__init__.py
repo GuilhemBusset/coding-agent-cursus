@@ -5,4 +5,4 @@ GitHub, the checks and the merge queue. Agents (Claude Code or Codex, run headle
 produce proposals, patches and findings through the `Agents` interface in `agents.py`.
 """
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
