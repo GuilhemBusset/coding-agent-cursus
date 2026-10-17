@@ -16,7 +16,7 @@ from unittest import mock
 
 from helpers import REPO_ROOT
 
-from implement_loop import environment
+from implement_loop import environment, schemas
 from implement_loop.environment import Probe
 
 READY = "Ready: Chromium launched and rendered local file:// HTML with networking disabled."
@@ -408,6 +408,173 @@ class FingerprintTests(unittest.TestCase):
         self.assertEqual(len(environment.fingerprint(a)), 12)
         healed = [Probe("node", True, "", "node"), Probe("chromium", True, "", "browser")]
         self.assertNotEqual(environment.fingerprint(a), environment.fingerprint(healed))
+
+
+KEYS = {"ANTHROPIC_API_KEY": "sk-ant-x", "OPENAI_API_KEY": "sk-x"}
+NATIVE = "Linux version 6.8.0-45-generic (buildd@lcy02-amd64-075) (gcc 13.2.0) #45-Ubuntu SMP"
+WSL2 = "Linux version 6.18.33.2-microsoft-standard-WSL2 (root@buildhost) (gcc 13.2.0) #1 SMP"
+WSL1 = "Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com) (gcc version 5.4.0 (GCC) ) #1237-Microsoft"
+
+
+class HostLacksTests(unittest.TestCase):
+    def test_a_native_host_with_both_keys_lacks_only_what_is_configured(self):
+        self.assertEqual(environment.host_lacks([], KEYS, NATIVE), [])
+        self.assertEqual(environment.host_lacks(["platform:windows", "hardware:laptop"], KEYS, NATIVE),
+                         ["hardware:laptop", "platform:windows"])
+
+    def test_the_result_is_sorted_and_each_capability_named_once(self):
+        configured = ["human:rehearsal", "account:non-owner", "platform:macos", "human:rehearsal",
+                      "credentials:OPENAI_API_KEY", "platform:native-linux", " ", ""]
+        self.assertEqual(environment.host_lacks(configured, {}, WSL2),
+                         ["account:non-owner", "credentials:ANTHROPIC_API_KEY", "credentials:OPENAI_API_KEY",
+                          "human:rehearsal", "platform:macos", "platform:native-linux"])
+
+    def test_a_missing_or_empty_key_is_lacked(self):
+        for env, lacked in (({"OPENAI_API_KEY": "sk-x"}, ["credentials:ANTHROPIC_API_KEY"]),
+                            ({"ANTHROPIC_API_KEY": "", "OPENAI_API_KEY": "sk-x"}, ["credentials:ANTHROPIC_API_KEY"]),
+                            ({"ANTHROPIC_API_KEY": "sk-ant-x", "OPENAI_API_KEY": "  "}, ["credentials:OPENAI_API_KEY"]),
+                            ({}, ["credentials:ANTHROPIC_API_KEY", "credentials:OPENAI_API_KEY"])):
+            with self.subTest(env=env):
+                self.assertEqual(environment.host_lacks([], env, NATIVE), lacked)
+
+    def test_wsl_is_not_native_linux(self):
+        for text in (WSL2, WSL1, "something wsl"):
+            with self.subTest(text=text):
+                self.assertEqual(environment.host_lacks([], KEYS, text), ["platform:native-linux"])
+        self.assertEqual(environment.host_lacks([], KEYS, ""), [], "no /proc/version (macOS, Windows): no claim")
+
+    def test_the_defaults_read_this_process_and_proc_version(self):
+        with mock.patch.dict(os.environ, KEYS), \
+             mock.patch.object(environment, "PROC_VERSION", Path(tempfile.gettempdir()) / "no-such-proc-version"):
+            self.assertEqual(environment.host_lacks(["hardware:laptop"]), ["hardware:laptop"])
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}), tempfile.TemporaryDirectory() as tmp:
+            proc = Path(tmp) / "version"
+            proc.write_text(WSL2)
+            with mock.patch.object(environment, "PROC_VERSION", proc):
+                lacks = environment.host_lacks([])
+        self.assertIn("credentials:ANTHROPIC_API_KEY", lacks)
+        self.assertIn("platform:native-linux", lacks)
+
+
+class FakeVendor:
+    """Plays `claude -p`, `codex exec` and `codex mcp list` for the smoke call. `answer` is "ok",
+    "fails" (exits 1), "off-schema", "hangs" (times out) or "missing" (not installed); `mcp` is
+    the server listing, None for a failing `codex mcp list`."""
+
+    def __init__(self, answer="ok", mcp="[]"):
+        self.answer, self.mcp = answer, mcp
+        self.calls: list[tuple[list[str], dict]] = []
+
+    def __call__(self, cmd, **kw):
+        self.calls.append((cmd, kw))
+        if self.answer == "missing":
+            raise FileNotFoundError(2, "No such file or directory", cmd[0])
+        if cmd[1:3] == ["mcp", "list"]:
+            return done(cmd, 1, "", "boom") if self.mcp is None else done(cmd, 0, self.mcp)
+        if self.answer == "hangs":
+            raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+        if self.answer == "fails":
+            return done(cmd, 1, "", "API Error: 529 Overloaded")
+        value = {"notes": "ok"} if self.answer == "ok" else {"other": 1}
+        if cmd[0] == "claude":
+            return done(cmd, 0, json.dumps({"structured_output": value, "total_cost_usd": 0.001}))
+        Path(cmd[cmd.index("-o") + 1]).write_text(json.dumps(value))
+        return done(cmd, 0, '{"type": "turn.completed", "usage": {}}\n')
+
+    def smoke_calls(self) -> list[tuple[list[str], dict]]:
+        return [(cmd, kw) for cmd, kw in self.calls if cmd[1:3] != ["mcp", "list"]]
+
+
+class VendorReachableTests(unittest.TestCase):
+    def test_a_vendor_that_answers_is_reachable(self):
+        for vendor in ("claude", "codex"):
+            with self.subTest(vendor), mock.patch.dict(os.environ, {"GH_TOKEN": "ghp_secret"}):
+                fake = FakeVendor()
+                self.assertIs(environment.vendor_reachable(vendor, fake), True)
+                [(cmd, kw)] = fake.smoke_calls()
+                self.assertEqual(cmd[0], vendor)
+                self.assertEqual(kw["input"], environment.SMOKE_PROMPT)
+                self.assertEqual((kw["cwd"], kw["timeout"]), (environment.REPO_ROOT, 120))
+                self.assertNotIn("GH_TOKEN", kw["env"], "the smoke call runs with the agents' environment")
+
+    def test_it_is_the_doctors_explore_call(self):
+        fake = FakeVendor()
+        environment.vendor_reachable("claude", fake)
+        [(cmd, _)] = fake.smoke_calls()
+        self.assertEqual(cmd[:2], ["claude", "-p"])
+        self.assertEqual(json.loads(cmd[cmd.index("--json-schema") + 1]), schemas.BY_ROLE["explore"])
+        self.assertEqual(cmd[cmd.index("--permission-mode") + 1], "dontAsk")
+        fake = FakeVendor(mcp='[{"name": "browser"}]')
+        environment.vendor_reachable("codex", fake)
+        [(cmd, _)] = fake.smoke_calls()
+        self.assertEqual(cmd[:2], ["codex", "exec"])
+        self.assertEqual(cmd[cmd.index("--sandbox") + 1], "read-only")
+        self.assertIn("mcp_servers.browser.enabled=false", cmd, "MCP servers are disabled as in a run")
+
+    def test_a_failing_or_off_schema_answer_is_unreachable_after_one_attempt(self):
+        for vendor in ("claude", "codex"):
+            for answer in ("fails", "off-schema", "hangs"):
+                with self.subTest(vendor, answer=answer):
+                    fake = FakeVendor(answer)
+                    self.assertIs(environment.vendor_reachable(vendor, fake), False)
+                    self.assertEqual(len(fake.smoke_calls()), 1, "no retries")
+
+    def test_codex_without_its_mcp_listing_is_unreachable(self):
+        fake = FakeVendor(mcp=None)
+        self.assertIs(environment.vendor_reachable("codex", fake), False)
+        self.assertEqual(fake.smoke_calls(), [], "it fails closed, as in a run")
+
+    def test_a_cli_that_is_not_installed_is_none(self):
+        for vendor in ("claude", "codex"):
+            with self.subTest(vendor):
+                self.assertIsNone(environment.vendor_reachable(vendor, FakeVendor("missing")))
+
+    def test_the_timeout_bounds_each_process(self):
+        fake = FakeVendor()
+        environment.vendor_reachable("codex", fake, timeout_s=30)
+        self.assertEqual([kw["timeout"] for _, kw in fake.calls], [30, 30])
+
+    def test_an_unknown_vendor_is_refused(self):
+        with self.assertRaises(ValueError):
+            environment.vendor_reachable("gemini", FakeVendor())
+
+
+class DoctorSmokeTests(unittest.TestCase):
+    def test_the_doctor_makes_the_shared_smoke_call_and_reports_as_before(self):
+        import argparse
+        from implement_loop import cli
+        calls = []
+
+        class Agents:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def call(self, vendor, role, cwd, prompt):
+                calls.append((vendor, role, cwd, prompt))
+                if vendor == "codex":
+                    raise RuntimeError("codex exited 1: boom")
+                return {"notes": "ok"}
+
+        out = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, \
+             mock.patch.object(cli, "repo_root", return_value=Path(tmp)), \
+             mock.patch.object(cli, "runs_dir", return_value=Path(tmp)), \
+             mock.patch.object(cli.environment, "heal", return_value=[]), \
+             mock.patch.object(cli, "_out", return_value=(0, "o/r")), \
+             mock.patch.object(cli, "doctor_checks", return_value=[("PASS", "python", "3.12")]), \
+             mock.patch("implement_loop.live.LiveAgents", Agents), \
+             mock.patch("implement_loop.workspace.Workspace", lambda *args, **kwargs: None), \
+             redirect_stdout(out):
+            code = cli.cmd_doctor(argparse.Namespace(repo=None, smoke=True))
+            root = Path(tmp)
+        self.assertEqual(code, 1)
+        self.assertEqual(out.getvalue().splitlines(), [
+            "PASS  python          3.12",
+            "PASS  smoke claude    a structured call worked",
+            "FAIL  smoke codex     codex exited 1: boom",
+        ])
+        self.assertEqual(calls, [(v, "explore", root, 'Do not use any tool. Return {"notes": "ok"}.')
+                                 for v in ("claude", "codex")])
 
 
 def load_recipe():
