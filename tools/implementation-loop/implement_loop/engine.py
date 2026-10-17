@@ -114,6 +114,7 @@ class Engine:
         self._polling: dict[int, float] = {}
         self.invoked_at = invoked_at if invoked_at is not None else time.time()
         self.run_calls = 0
+        self._charged: set[int] = set()   # issues whose last failed attempt the meter already charged
         agents.meter = self
 
     # ------------------------------------------------------------------ public
@@ -182,6 +183,7 @@ class Engine:
                 st.calls += 1
             elif outcome in ("timeout", "crash"):
                 st.infra += 1
+                self._charged.add(issue)
             self.store.put(st)
             self.store.event("agent_attempt", issue=issue, role=role, vendor=vendor, outcome=outcome,
                              calls=st.calls, infra=st.infra)
@@ -389,7 +391,17 @@ class Engine:
             self.store.event("agent_unavailable", issue=n, failure=kind, error=str(exc)[:500])
             if kind == "outage":
                 self._wait(n, WAIT_OUTAGE, str(exc)[:300], vendor=getattr(exc, "vendor", ""))
-            # a timeout or crash is charged to the infrastructure budget; the step is retried
+                return
+            # a timeout or crash: charged here too (a failure before the meter started is not
+            # charged by it), so retrying the step always ends within the infrastructure budget
+            st = self.store.issue(n)
+            if n not in self._charged:
+                st.infra += 1
+                self.store.put(st)
+            self._charged.discard(n)
+            if st.infra >= self.caps.infra_budget:
+                self._fail(n, "ceiling", f"#{n}'s infrastructure budget of {self.caps.infra_budget} failed attempts "
+                                         f"is spent: {str(exc)[:300]}")
         elif isinstance(exc, GitHubUnavailable):
             self._wait(n, WAIT_GITHUB, str(exc)[:300])
         else:
@@ -749,9 +761,15 @@ class Engine:
             if i["proof"] == "owner":
                 self._obligate(st, {"item": i["id"], "kind": "capability", "detail": i.get("capability"),
                                     "agent_part": i.get("agent_part")})
+        # The examiner's triage saw the zones: protected ones it did not object to are approved
+        # (never the safety surface in a fault-repair run).
         st.grants = [g for g in st.grants if g.get("source") != "plan"] + [
-            {"path": z, "source": "plan", "protected": False} for z in plan["zones"]
+            {"path": z, "source": "plan", "protected": is_protected(z)} for z in plan["zones"]
             if not (self.repair and is_safety_surface(z))]
+        if any(is_protected(z) for z in plan["zones"]):
+            self._decide(st, {"id": "protected-zones", "choice": "the plan's protected zones are approved at triage: "
+                              + ", ".join(z for z in plan["zones"] if is_protected(z)),
+                              "rationale": f"{self.other} saw them in the plan and raised no objection"})
         st.plan = plan
         st.feedback = feedback
         self.store.put(st)
@@ -921,7 +939,7 @@ class Engine:
     def _absorb_build(self, st: IssueState, result) -> None:
         """The builder's tests, commands and dispositions. Before the first examination they are its
         own; after it, commands for locked items change only through an approved request."""
-        agent = self._agent_items(st)
+        agent = self._agent_items(st) | {i["id"] for i in self._items(st) if i["proof"] == "owner"}
         st.tests = sorted(set(st.tests) | {t for t in result.tests if t})
         current = {c["criterion"]: c for c in st.commands if c.get("author") == "builder"}
         probes = [c for c in st.commands if c.get("author") == "examiner"]
@@ -1234,12 +1252,13 @@ class Engine:
         if not st.commands and self._agent_items(st) - self._review_items(st):
             problems.append("no commands prove the test/command items; return one command per item")
         locked_tests = sorted(set(st.tests) | set(st.probes))
-        unselected = verify.unselected(wt, [t for t in locked_tests if (wt / t).is_file()],
-                                       st.manifest or st.last_ran, st.dispositions) if st.examined_sha else []
         ok, evidence, vproblems, ran = verify.verify(wt, self._specs(st), head, self.store.issue_dir(n), st.locked,
                                                      locked_tests, st.manifest or None, self.caps.check_timeout_s,
                                                      extra_env=self.check_env)
         problems += vproblems
+        selected = {"*": sorted(set(ran) | {t for v in (st.manifest or {}).values() for t in v})}
+        unselected = verify.unselected(wt, [t for t in locked_tests if (wt / t).is_file() and t.endswith(".py")],
+                                       selected, st.dispositions)
         if unselected:
             problems.append(f"tests in locked files that no command selects: {unselected[:6]} — select each one in a "
                             f"command, or give it a disposition (owner-run, or excluded: <reason>)")
@@ -1591,7 +1610,7 @@ class Engine:
         unproven = [i.id for i in issue_parser.ledger(issue.get("body") or "") if i.id not in proven and i.id not in owed]
         if unproven:
             return self._fix_forward(n, [f"ledger items without evidence on main: {unproven}"])
-        ticked = issue_parser.tick(issue.get("body") or "", {cid: link for cid in proven})
+        ticked = issue_parser.tick(issue.get("body") or "", {cid: link for cid in proven if cid not in owed})
         if ticked != (issue.get("body") or ""):
             self._safe(self.gh.edit_issue, n, body=ticked)
         st = self.store.issue(n)
