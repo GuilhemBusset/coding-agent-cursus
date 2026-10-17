@@ -107,6 +107,22 @@ Use your installed, configured agent from the cloned repository. The repository 
 `$ship`, `$implement` and `$turn-in` through `.agents/skills/`. No separate skill download or MCP
 registration is needed.
 
+### Instructors: the Session 1 Act III agent demos
+
+[`sessions/01-fundamentals/cursus/demos/agent/`](../sessions/01-fundamentals/cursus/demos/agent/README.md)
+(Linux only) drives both CLIs headless and needs nothing installed beyond the session setup above:
+
+- **The context-bomb MCP server** is `context_bomb.py`, a standard-library script in that folder.
+  It is passed per invocation only (`claude --strict-mcp-config --mcp-config <file>`,
+  `codex exec -c mcp_servers.context_bomb.…`) and never registered with `claude mcp add` or
+  `codex mcp add`. No global agent configuration changes.
+- **To record**: Claude Code and Codex installed and logged in (`claude` then /login,
+  `codex login`), and `tmux` for the Codex `/status` capture. The recordings were made with
+  Claude Code 2.1.301 and codex-cli 0.162.1.
+- **To reset offline**: the session's uv cache warmed once by the session setup (`uv sync`). The
+  reset exports P00 to `<tempdir>/cursus-s1-agent/` and runs `uv sync --locked --offline` there.
+- **To replay**: nothing; the replays start no CLI and open no socket.
+
 ## Students: turning in homework
 
 Prerequisites: Git, Bash (Git Bash on Windows), and the [GitHub CLI](https://cli.github.com/)
@@ -248,6 +264,7 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
 | uv, Python and packages for the session test suites in CI | `astral-sh/setup-uv` installs the uv version pinned in each session's `mise.toml` on the CI runner; `uv run --locked` uses that file's Python version (the runner's, or one uv fetches into its cache) and installs the session's `uv.lock` packages into the session's `.venv/` |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
+| Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
 When adding another repository-wide tool, put its installer, manifests/lockfiles and diagnostic
