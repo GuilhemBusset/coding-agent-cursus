@@ -86,8 +86,8 @@ All on the WSL2 host described below, 2026-10-10.
 
 - OS: Ubuntu 26.04 LTS on WSL2, kernel `6.18.33.2-microsoft-standard-WSL2`.
 - git 2.53.0, uv 0.11.28, Python 3.12.13 (uv-managed), PowerShell 7.6.6 (`bash setup/pwsh.sh`).
-- Claude Code 2.1.296, Codex CLI 0.160.0 (`codex exec --skip-git-repo-check --output-last-message` used by the smoke test).
-- Script hashes (SHA-256): `check_setup.py` c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207,
+- Claude Code 2.1.302, Codex CLI 0.162.1 (`codex exec --skip-git-repo-check --output-last-message` used by the smoke test).
+- Script hashes (SHA-256): `check_setup.py` dd9e44d52105a696613f5579249bb25abe6809d6bff95cdc8a1af3887cb10e98,
   `check-setup.sh` 63f19d05f4f0aae349a87f85dfcb4e1711cd0466bed24fed5f8afc6480bcd348,
   `check-setup.ps1` 67df3101828e2253931a904c57373ae6ef666eda4395c01025c517d55dff0ce7.
 
@@ -114,35 +114,34 @@ only if it still points at the probe's first 12 hex digits. Cleanup never turns 
 FAIL. `push` passes only when `ls-remote` shows the probe.
 
 `PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework_cleanup.py` proves
-this through both entry points against real local bare repositories: 12 passed in 9.5 s. Covered:
+this through both entry points against real local bare repositories. Covered:
 a branch moved before verification, a branch moved between verification and the delete (the
 lease refuses it), same-second runs, a pre-existing empty-tree branch with the old fixed message,
 and unreadable `ls-remote` after the delete or at verification. In every case `main` and
 `homework/*` stay untouched.
 
-The whole session suite (`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests`)
-passed: 331 tests in 893.0 s. About 720 s of that are the four agent smoke-timeout scenarios,
-each of which waits out the checker's 180 s smoke timeout by design. The acceptance checks
-therefore split them by entry point. The D2 selection (bash half) passed 114 tests in 462.4 s.
-The A2 selection (PowerShell half) passed 46 in 391.6 s. The D3 push selection passed 38 in
-48.1 s, plus the 12 cleanup tests. Each stays under the loop's 900 s default.
+On 2026-10-17, `PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework.py
+tests/test_prework_cleanup.py` passed 171 tests in 182.5 s. The four agent smoke-timeout
+scenarios set `CHECK_SETUP_SMOKE_TIMEOUT=5`, the documented override of the checker's 180 s
+default, so they no longer wait three minutes each. The session suite runs in CI
+(`.github/workflows/session-tests.yml`), where none of these tests may skip.
 
 ### A1: each agent alone, live
 
 `PATH="$HOME/.local/bin:$PATH" uv run --locked python tests/prework_live_agents.py`: the real
 `claude`, then the real `codex`, each alone on a `PATH` made only of symlinks (no `/usr/bin`; the
 other agent is asserted absent). gh, the network and the push are local fixtures, so these blocks
-prove A1, not a full real run. All four exited 0.
+prove A1, not a full real run. All four exited 0 (run on 2026-10-17).
 
 Claude Code only, `check-setup.sh` (the PowerShell entry point printed the same lines):
 
 ```text
 ----- BEGIN SETUP SUMMARY -----
-date: 2026-10-10 (UTC)
+date: 2026-10-17 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207
+script: check_setup.py sha256 dd9e44d52105a696613f5579249bb25abe6809d6bff95cdc8a1af3887cb10e98
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
@@ -150,9 +149,9 @@ gh: PASS 2.65.1 (>= 2.0.0)
 gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:43705: PASS reachable (HTTP 200)
+network 127.0.0.1:<port>: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
-claude: PASS 2.1.296
+claude: PASS 2.1.302
 claude-smoke: PASS replied OK
 codex: not installed (fine)
 agent: PASS Claude Code
@@ -164,11 +163,11 @@ Codex only, `check-setup.ps1` under PowerShell 7.6.6 (the bash entry point print
 
 ```text
 ----- BEGIN SETUP SUMMARY -----
-date: 2026-10-10 (UTC)
+date: 2026-10-17 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
-script: check_setup.py sha256 c203ce8c0ab76c9e442ac4d9773bd6f07a65aa2d61a7d09d8088bdfeecc95207
+script: check_setup.py sha256 dd9e44d52105a696613f5579249bb25abe6809d6bff95cdc8a1af3887cb10e98
 github: student-47
 git: PASS 2.53.0 (>= 2.23.0)
 git-identity: PASS user.name and user.email are set
@@ -176,10 +175,10 @@ gh: PASS 2.65.1 (>= 2.0.0)
 gh-auth: PASS logged in to GitHub
 uv: PASS 0.11.28 (>= 0.5.0)
 mise: PASS 2025.3.2 (>= 2024.1.0)
-network 127.0.0.1:35683: PASS reachable (HTTP 200)
+network 127.0.0.1:<port>: PASS reachable (HTTP 200)
 push: PASS to teaching-lab/course-24 (course repo)
 claude: not installed (fine)
-codex: PASS 0.160.0
+codex: PASS 0.162.1
 codex-smoke: PASS replied OK
 agent: PASS Codex
 result: PASS

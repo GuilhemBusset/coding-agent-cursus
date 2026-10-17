@@ -28,6 +28,9 @@ Environment:
                     https://api.openai.com/ when codex is installed). Use it to probe a
                     campus mirror or to test a proxy. Standard proxy variables
                     (HTTPS_PROXY, NO_PROXY) are honoured.
+  CHECK_SETUP_SMOKE_TIMEOUT
+                    Seconds to wait for each agent's smoke-test reply (default 180). A
+                    value that is not a positive whole number keeps the default.
 
 Independent checks run at the same time, so the whole run takes about as long as the
 slowest one (usually the agent smoke test). Lines are still printed in a fixed order.
@@ -69,6 +72,9 @@ INSTALL_HINT = f"see 'Install the tools' on {PAGE}"
 LOGIN_HINT = f"see 'Login troubleshooting' on {PAGE}"
 PROMPT = "Reply with exactly: OK"
 SMOKE_TIMEOUT = 180
+_override = os.environ.get("CHECK_SETUP_SMOKE_TIMEOUT", "")
+if _override.isdigit() and int(_override) > 0:
+    SMOKE_TIMEOUT = int(_override)
 NETWORK_TIMEOUT = 10
 # Minimum versions: git 2.23 has `git switch`, which turn-in uses.
 FLOORS = {"git": (2, 23, 0), "gh": (2, 0, 0), "uv": (0, 5, 0), "mise": (2024, 1, 0)}

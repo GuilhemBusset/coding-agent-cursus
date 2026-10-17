@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="en" data-page-kind="lab" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World models: open loop vs closed loop</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+  <style>
+/* Page-specific layout for the world-model lab; shared tokens and components above. */
+.wm-panel + .wm-panel { margin-top: 2.5rem; }
+.wm-panel h2 { margin-bottom: .75rem; }
+.wm-panel > p, .wm-panel > ul { max-width: 72ch; }
+.wm-formula { margin-block: 0 1.25rem; font: .9375rem/1.7 var(--mono); padding: .75rem 1rem; background: var(--paper); border: 1px solid var(--rule); border-radius: .2rem; overflow-wrap: anywhere; max-width: 72ch; }
+.wm-formula p { margin: 0; }
+.wm-formula p + p { margin-top: .25rem; }
+.wm-controls { display: grid; grid-template-columns: minmax(0, 10rem) minmax(0, 1fr); gap: 1rem var(--space); align-items: end; margin-block: 1.5rem 1rem; }
+.wm-controls > * { min-width: 0; }
+.wm-controls input[type="number"] { width: 100%; font-family: var(--mono); }
+.wm-controls output { display: block; font: .875rem/1.5 var(--mono); color: var(--secondary); font-variant-numeric: tabular-nums; }
+.wm-buttons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+.wm-status { margin: 0; font: .9375rem/1.5 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wm-status [data-wm-mode] { color: var(--secondary); }
+@media (max-width: 36rem) { .wm-controls { grid-template-columns: minmax(0, 1fr); } }
+.wm-views { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space); align-items: start; }
+@media (max-width: 52rem) { .wm-views { grid-template-columns: minmax(0, 1fr); } }
+.wm-view { margin: 0; min-width: 0; }
+.wm-view h3 { margin-bottom: .5rem; }
+.wm-plot { width: 100%; background: var(--paper); border: 1px solid var(--rule); }
+.wm-plot text { font-size: .38px; fill: var(--secondary); }
+.wm-plot .wm-on-shape { fill: var(--ink); }
+.wm-field { fill: none; stroke: var(--faint); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.wm-obstacle { fill: var(--red-soft); stroke: var(--red); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.wm-goal { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.wm-start { fill: var(--muted); }
+.wm-path { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.wm-predicted { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; }
+.wm-agent { fill: var(--ink); stroke: var(--paper); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.wm-legend { list-style: none; padding: 0; margin: .75rem 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .9375rem; color: var(--secondary); }
+.wm-legend li + li { margin-top: 0; }
+.wm-key { display: inline-block; width: 1.75rem; height: 0; margin-right: .5rem; vertical-align: middle; border-top: 3px solid var(--ink); }
+.wm-key-predicted { border-top: 2px dashed var(--amber); }
+.wm-key-orbit-fit { border-top: 2px dashed var(--secondary); }
+.wm-readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem 1rem; }
+.wm-readout dt { color: var(--secondary); font-size: .875rem; }
+.wm-readout dd { font: 650 1.0625rem/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.wm-view[data-outcome="reached goal"] [data-wm-outcome] { color: var(--accent); }
+.wm-view[data-outcome="hit obstacle"] [data-wm-outcome] { color: var(--red); }
+.wm-view[data-outcome="missed goal"] [data-wm-outcome] { color: var(--amber); }
+@media (max-width: 30rem) { .wm-readout { grid-template-columns: minmax(0, 1fr); } }
+.wm-table td, .wm-table th { padding: .375rem .625rem; font-variant-numeric: tabular-nums; }
+.wm-table td { font-family: var(--mono); font-size: .9375rem; white-space: nowrap; }
+.wm-orbit-figure { margin: 0; }
+.wm-orbit-figure .wm-plot { max-width: 44rem; }
+.wm-orbit-figure text { font-size: .11px; }
+.wm-orbit-true { fill: none; stroke-width: 1.75; vector-effect: non-scaling-stroke; }
+.wm-orbit-fit { fill: none; stroke-width: 1.75; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.wm-inner { stroke: var(--accent); }
+.wm-outer { stroke: var(--amber); }
+.wm-sun { fill: var(--ink); }
+.wm-added { fill: var(--red); stroke: var(--paper); stroke-width: 1; vector-effect: non-scaling-stroke; }
+[data-kepler-error] { font: .9375rem/1.6 var(--mono); padding: .75rem 1rem; border-left: 3px solid var(--rule); background: var(--paper); max-width: 72ch; }
+[data-kepler-error][data-verdict="holds"] { border-left-color: var(--accent); }
+[data-kepler-error][data-verdict="drifting"] { border-left-color: var(--amber); }
+[data-kepler-error][data-verdict="broken"] { border-left-color: var(--red); }
+.wm-agents { margin-top: 2.5rem; padding: var(--space); border: 1px solid var(--rule); border-top: 3px solid var(--accent); background: var(--sheet); }
+.wm-agents h2 { margin-bottom: .75rem; }
+.wm-agents > p, .wm-agents > ul { max-width: 72ch; }
+.wm-map { display: grid; gap: 1rem; margin: 1.25rem 0; }
+.wm-map > div { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); gap: .25rem var(--space); padding-top: 1rem; border-top: 1px solid var(--rule); }
+.wm-map dt { font-weight: 650; }
+.wm-map dt span { display: block; color: var(--secondary); font-weight: 400; font-size: .9375rem; }
+.wm-map dd { color: var(--ink); }
+@media (max-width: 40rem) { .wm-map > div { grid-template-columns: minmax(0, 1fr); } }
+.wm-refs { margin-top: 2.5rem; max-width: 72ch; }
+.wm-refs li { color: var(--secondary); }
+@media print {
+  .wm-views { grid-template-columns: minmax(0, 1fr); }
+  .wm-plot { max-width: 30rem; }
+  [data-kepler-reset] { display: none !important; }
+}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to experiment</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act II · Lab</p>
+      <h1>World models: open loop vs closed loop</h1>
+      <p class="lede">A plan made inside an imperfect model drifts away from reality unless you look at what actually happened and plan again. For a coding agent, the tests and the tool output are what it looks at.</p>
+    </header>
+    <main id="content" tabindex="-1">
+      <noscript><p class="callout">The simulations on this page need JavaScript. Without it, the page is a static snapshot: each world shows the obstacle, the goal, the start and the step-0 plan for seed 20261011 at model error 0.50, and the orbit plot shows the two baseline orbits with their fitted curves. The explanations, formulas and the closing card read the same.</p></noscript>
+
+      <section id="planner" class="panel wm-panel" data-panel data-seed="20261011" aria-labelledby="planner-title">
+        <h2 id="planner-title">Plan once, or replan from what you observe</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative simulation, not a measurement.</strong> The world, the learned model, the seed and every number in this panel are invented for teaching. No robot or agent was run to make it.</p></div>
+        <p>A point mass starts on the left and must reach the goal on the right without touching the obstacle. The planner never sees reality directly. It searches for actions inside a <strong>learned dynamics model</strong>, then those actions are executed in the real world.</p>
+        <div class="wm-formula" aria-label="Dynamics">
+          <p>Reality (hidden from the planner): v′ = 0.75 v + 1.3 u, then p′ = p + 0.2 v′, with |u| ≤ 1 per axis.</p>
+          <p>Learned model: s′ = A s + B u + c, with state s = (x, y, vₓ, v<sub>y</sub>) and action u = (uₓ, u<sub>y</sub>).</p>
+        </div>
+        <p data-wm-provenance>The model is a least-squares fit to <span data-wm-training-count>200</span> training transitions sampled from the simulator with seed <span data-wm-seed-echo>20261011</span>. The simulator has no noise, so every seed recovers reality exactly. The <strong>model error</strong> slider then corrupts the fit on purpose: the model believes the controls are rotated and stronger than they are, and that a current pushes the point upwards. Reality never changes.</p>
+        <p>The planner is the <strong>cross-entropy method</strong> (CEM). It samples N = 60 action sequences of H = 30 steps from a Gaussian, rolls each one through the learned model, keeps the K = 8 cheapest, refits the Gaussian to them, and repeats I = 12 times. The cost is the distance from the goal after H steps, plus 20 for each path segment that touches the obstacle, plus 0.001 × Σ|u|².</p>
+        <ul>
+          <li><strong>Open loop</strong> plans once at step 0, then executes all 30 actions without looking.</li>
+          <li><strong>Closed loop</strong> starts from the same plan. At every step it observes the true state, replans from there, and executes only the first action of the new plan.</li>
+        </ul>
+
+        <div class="lab-controls wm-controls">
+          <div>
+            <label for="wm-seed">Seed</label>
+            <input id="wm-seed" type="number" min="0" max="4294967295" step="1" value="20261011" inputmode="numeric" autocomplete="off" data-wm-seed aria-describedby="wm-seed-help" disabled>
+          </div>
+          <div>
+            <label for="wm-error">Model error</label>
+            <input id="wm-error" type="range" min="0" max="1" step="0.05" value="0.5" data-wm-error autocomplete="off" aria-describedby="wm-error-output" disabled>
+            <output id="wm-error-output" for="wm-error" data-wm-error-output>0.50: controls rotated 20°, gain ×1.15, believed current 0.075 per step</output>
+          </div>
+          <p id="wm-seed-help" class="muted wm-buttons" style="margin: 0; font-size: .875rem">The seed sets the training sample and every random draw of the planner. Changing the seed, the error or the added mass in panel 2 stops a run and returns to step 0.</p>
+          <div class="wm-buttons">
+            <button type="button" data-wm-step disabled>Step</button>
+            <button type="button" data-wm-run disabled>Run</button>
+            <button type="button" data-wm-reset disabled>Reset</button>
+          </div>
+        </div>
+        <p class="wm-status"><span data-wm-t role="status">Step 0 of 30</span> · <span data-wm-mode>Static snapshot</span></p>
+
+        <div class="wm-views">
+          <figure class="wm-view" data-wm-view="open" data-outcome="running" aria-labelledby="wm-open-title">
+            <h3 id="wm-open-title">Open loop: plan once, then execute</h3>
+            <svg class="wm-plot" viewBox="-0.5 -0.5 11 7" role="img" aria-labelledby="wm-open-svg-title wm-open-svg-desc">
+              <title id="wm-open-svg-title">Open-loop world</title>
+              <desc id="wm-open-svg-desc">The start is on the left at (1, 3), the obstacle of radius 1.375 is centred at (5, 3.625), and the goal of radius 0.5 is on the right at (9, 3). The solid line is the actual path so far; the dashed line is the path the model predicts for the current plan.</desc>
+              <rect class="wm-field" x="0" y="0" width="10" height="6"/>
+              <circle class="wm-obstacle" data-wm-obstacle cx="5" cy="3.625" r="1.375"/>
+              <text class="wm-on-shape" x="5" y="3.755" text-anchor="middle">obstacle</text>
+              <circle class="wm-goal" data-wm-goal cx="9" cy="3" r="0.5"/>
+              <text x="9" y="2.3" text-anchor="middle">goal</text>
+              <circle class="wm-start" cx="1" cy="3" r="0.1"/>
+              <text x="1" y="2.45" text-anchor="middle">start</text>
+              <polyline class="wm-predicted" data-wm-predicted points="1,3 1.01,3.118 0.878,3.311 0.937,3.648 0.943,3.948 0.981,4.257 1.303,4.481 1.755,4.885 2.086,5.066 2.563,5.2 3.144,5.337 3.778,5.261 4.412,5.273 5.07,5.219 5.832,4.97 6.643,4.794 7.263,4.633 7.727,4.484 8.095,4.36 8.375,4.251 8.607,4.137 8.755,4.028 8.872,3.941 8.962,3.867 9.036,3.772 9.085,3.698 9.112,3.648 9.134,3.564 9.144,3.481 9.134,3.405 9.127,3.321"/>
+              <polyline class="wm-path" data-wm-path points="1,3"/>
+              <circle class="wm-agent" data-wm-agent cx="1" cy="3" r="0.15"/>
+            </svg>
+            <ul class="wm-legend">
+              <li><span class="wm-key" aria-hidden="true"></span>actual path in the real world</li>
+              <li><span class="wm-key wm-key-predicted" aria-hidden="true"></span>the model's predicted path for the step-0 plan (dashed)</li>
+            </ul>
+            <dl class="wm-readout">
+              <div><dt>Outcome</dt><dd data-wm-outcome>Running</dd></div>
+              <div><dt>Distance to goal centre</dt><dd data-wm-distance>8.00</dd></div>
+              <div><dt>Plans computed</dt><dd data-wm-plans>1</dd></div>
+            </dl>
+          </figure>
+          <figure class="wm-view" data-wm-view="closed" data-outcome="running" aria-labelledby="wm-closed-title">
+            <h3 id="wm-closed-title">Closed loop: observe and replan every step</h3>
+            <svg class="wm-plot" viewBox="-0.5 -0.5 11 7" role="img" aria-labelledby="wm-closed-svg-title wm-closed-svg-desc">
+              <title id="wm-closed-svg-title">Closed-loop world</title>
+              <desc id="wm-closed-svg-desc">The start is on the left at (1, 3), the obstacle of radius 1.375 is centred at (5, 3.625), and the goal of radius 0.5 is on the right at (9, 3). The solid line is the actual path so far; the dashed line is the path the model predicts for the current plan.</desc>
+              <rect class="wm-field" x="0" y="0" width="10" height="6"/>
+              <circle class="wm-obstacle" data-wm-obstacle cx="5" cy="3.625" r="1.375"/>
+              <text class="wm-on-shape" x="5" y="3.755" text-anchor="middle">obstacle</text>
+              <circle class="wm-goal" data-wm-goal cx="9" cy="3" r="0.5"/>
+              <text x="9" y="2.3" text-anchor="middle">goal</text>
+              <circle class="wm-start" cx="1" cy="3" r="0.1"/>
+              <text x="1" y="2.45" text-anchor="middle">start</text>
+              <polyline class="wm-predicted" data-wm-predicted points="1,3 1.01,3.118 0.878,3.311 0.937,3.648 0.943,3.948 0.981,4.257 1.303,4.481 1.755,4.885 2.086,5.066 2.563,5.2 3.144,5.337 3.778,5.261 4.412,5.273 5.07,5.219 5.832,4.97 6.643,4.794 7.263,4.633 7.727,4.484 8.095,4.36 8.375,4.251 8.607,4.137 8.755,4.028 8.872,3.941 8.962,3.867 9.036,3.772 9.085,3.698 9.112,3.648 9.134,3.564 9.144,3.481 9.134,3.405 9.127,3.321"/>
+              <polyline class="wm-path" data-wm-path points="1,3"/>
+              <circle class="wm-agent" data-wm-agent cx="1" cy="3" r="0.15"/>
+            </svg>
+            <ul class="wm-legend">
+              <li><span class="wm-key" aria-hidden="true"></span>actual path in the real world</li>
+              <li><span class="wm-key wm-key-predicted" aria-hidden="true"></span>the model's predicted path for the latest plan (dashed)</li>
+            </ul>
+            <dl class="wm-readout">
+              <div><dt>Outcome</dt><dd data-wm-outcome>Running</dd></div>
+              <div><dt>Distance to goal centre</dt><dd data-wm-distance>8.00</dd></div>
+              <div><dt>Plans computed</dt><dd data-wm-plans>1</dd></div>
+            </dl>
+          </figure>
+        </div>
+
+        <h3 style="margin-top: 1.5rem">Try this</h3>
+        <ol>
+          <li>Set the model error to 0 and run. With a perfect model both loops reach the goal; planning once is enough.</li>
+          <li>Back at the default error of 0.50 and the default seed, the open loop's dashed prediction still ends in the goal, but the real path drifts into the obstacle. The closed loop makes the same first mistake, sees it, and corrects it.</li>
+          <li>Push the error to 1.00 and try a few seeds. Feedback still helps, but with a model this wrong the closed loop sometimes fails too.</li>
+        </ol>
+
+        <details>
+          <summary>Learned and corrupted coefficients</summary>
+          <p>A is unchanged by the model error: the model's picture of how position and velocity carry over is right. The error changes B (how actions move the point) and c (a current that is not there).</p>
+          <div class="table-wrap">
+            <table class="wm-table">
+              <caption>Velocity rows of the model, rounded to two decimals</caption>
+              <thead><tr><th scope="col">Row</th><th scope="col">Learned B</th><th scope="col">Planner's B</th><th scope="col">Learned c</th><th scope="col">Planner's c</th></tr></thead>
+              <tbody data-wm-coefficients>
+                <tr><th scope="row">vₓ′</th><td>1.30, 0.00</td><td>1.40, −0.51</td><td>0.00</td><td>0.00</td></tr>
+                <tr><th scope="row">v<sub>y</sub>′</th><td>0.00, 1.30</td><td>0.51, 1.40</td><td>0.00</td><td>−0.07</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <details>
+          <summary>Planner details</summary>
+          <p>Actions are clipped to [−1, 1] per axis. A fresh plan starts from a zero mean with spread 1. Each closed-loop replan starts from the previous plan shifted by one step, plus a final action that stops the predicted motion, with spread 0.2.</p>
+          <p>The cost only looks at where the plan ends after H steps, so it never rewards arriving sooner. A replanner can then postpone arrival forever, always planning to arrive H steps from now. To prevent that, the sampling spread is wide only for actions before step 15, or the next 4 steps once step 15 has passed, and 20 times narrower after it. The planner commits to arriving and then holding position.</p>
+          <p>Every random draw comes from a seeded mulberry32 generator, so a seed, error and step always give the same picture.</p>
+        </details>
+      </section>
+
+      <section id="kepler" class="panel wm-panel" data-panel aria-labelledby="kepler-title">
+        <h2 id="kepler-title">Kepler without Newton: a fit that matches until the world changes</h2>
+        <div class="callout" data-illustrative><p><strong>Illustrative simulation, and a stylised analogy.</strong> The units, masses and orbits are invented. This is not a reproduction of the transformer experiments in <a href="https://arxiv.org/abs/2507.06952">Vafa et al. (2025)</a>; it borrows their framing to show the same kind of failure in a few lines of arithmetic.</p></div>
+        <p>Two test particles orbit a fixed central mass. Reality is Newtonian gravity, integrated in steps of 0.01 time units. The predictor knows no physics. For each orbit it fits a periodic curve to the positions seen up to t = 16, then it is frozen. It is never refitted.</p>
+        <div class="wm-formula" aria-label="Predictor">
+          <p>x̂(t) = a₀ + Σ<sub>h=1…8</sub> [a<sub>h</sub> cos(2πht/T) + b<sub>h</sub> sin(2πht/T)], and the same form for ŷ(t).</p>
+          <p>The period T and the coefficients are chosen by least squares. Error = largest distance between truth and fit over 16 &lt; t ≤ 32, divided by the orbit's size.</p>
+        </div>
+        <p data-kepler-fit>The fitted periods are <span data-kepler-periods>4.50 and 8.11</span> time units.</p>
+
+        <div class="lab-controls wm-controls">
+          <div style="grid-column: 1 / -1">
+            <label for="kepler-mass">Added mass, as a fraction of the central mass</label>
+            <input id="kepler-mass" type="range" min="0" max="0.03" step="0.001" value="0" data-kepler-mass autocomplete="off" aria-describedby="kepler-mass-output" disabled>
+            <output id="kepler-mass-output" for="kepler-mass" data-kepler-mass-output>0.000: no added mass</output>
+          </div>
+          <div class="wm-buttons"><button type="button" data-kepler-reset disabled>Remove added mass</button></div>
+        </div>
+
+        <figure class="wm-orbit-figure">
+          <svg class="wm-plot" viewBox="-2 -1.6 4 3.2" role="img" aria-labelledby="kepler-svg-title kepler-svg-desc">
+            <title id="kepler-svg-title">Two orbits and their frozen curve fits</title>
+            <desc id="kepler-svg-desc">A central mass at the origin with a near-circular inner orbit of radius 0.8 and an elliptical outer orbit reaching 1.6 to the left. Solid lines are the true orbits, dashed lines the frozen fits. When added mass is above zero it is drawn at (1.5, 1.25).</desc>
+            <circle class="wm-sun" cx="0" cy="0" r="0.05"/>
+            <text x="0" y="-0.12" text-anchor="middle">central mass</text>
+            <circle class="wm-added" data-kepler-added cx="1.5" cy="1.25" r="0.06" hidden/>
+            <text data-kepler-added x="1.5" y="1.1" text-anchor="middle" hidden>added mass</text>
+            <text x="0" y="0.45" text-anchor="middle">inner orbit</text>
+            <text x="-1.5" y="-1.3" text-anchor="middle">outer orbit</text>
+            <polyline class="wm-orbit-true wm-inner" data-kepler-true points="0.8,0 0.792,0.111 0.769,0.221 0.731,0.326 0.678,0.424 0.613,0.515 0.535,0.595 0.447,0.664 0.35,0.72 0.247,0.761 0.139,0.789 0.028,0.8 -0.084,0.796 -0.194,0.777 -0.3,0.743 -0.4,0.694 -0.493,0.632 -0.576,0.557 -0.648,0.472 -0.707,0.377 -0.753,0.276 -0.784,0.168 -0.799,0.058 -0.8,-0.053 -0.785,-0.164 -0.754,-0.271 -0.709,-0.373 -0.65,-0.468 -0.579,-0.554 -0.497,-0.629 -0.404,-0.692 -0.304,-0.741 -0.198,-0.776 -0.089,-0.796 0.023,-0.8 0.134,-0.789 0.242,-0.763 0.346,-0.722 0.443,-0.666 0.532,-0.598 0.61,-0.518 0.676,-0.428 0.729,-0.33 0.768,-0.225 0.792,-0.116 0.8,-0.005 0.793,0.107 0.77,0.216 0.733,0.321 0.681,0.42 0.616,0.511 0.539,0.592 0.451,0.661 0.355,0.718 0.251,0.76 0.143,0.788 0.032,0.8 -0.079,0.797 -0.189,0.778 -0.296,0.744 -0.396,0.696 -0.489,0.635 -0.573,0.56 -0.645,0.476 -0.705,0.381 -0.751,0.28 -0.783,0.173 -0.799,0.063 -0.8,-0.049 -0.785,-0.159 -0.756,-0.267 -0.711,-0.369 -0.653,-0.464 -0.582,-0.55 -0.5,-0.626 -0.408,-0.689 -0.309,-0.739 -0.203,-0.775 -0.093,-0.795 0.018,-0.801 0.129,-0.79 0.238,-0.764 0.342,-0.724 0.439,-0.669 0.528,-0.601 0.607,-0.522 0.673,-0.432 0.727,-0.334 0.766,-0.23 0.791,-0.121 0.8,-0.009 0.793,0.102 0.772,0.212 0.735,0.317 0.683,0.416 0.619,0.507 0.542,0.589 0.455,0.659 0.359,0.715 0.256,0.759 0.148,0.787 0.037,0.8 -0.075,0.797 -0.185,0.779 -0.291,0.746 -0.392,0.699 -0.485,0.637 -0.569,0.564 -0.642,0.479 -0.703,0.386 -0.749,0.284 -0.782,0.178 -0.799,0.067 -0.8,-0.044 -0.786,-0.155 -0.757,-0.262 -0.713,-0.365 -0.656,-0.46 -0.586,-0.547 -0.504,-0.623 -0.412,-0.687 -0.313,-0.737 -0.207,-0.774 -0.098,-0.795 0.014,-0.801 0.125,-0.791 0.234,-0.766 0.338,-0.726 0.435,-0.672 0.525,-0.604 0.604,-0.525 0.671,-0.436 0.725,-0.338 0.765,-0.234 0.79,-0.125 0.8,-0.014 0.794,0.098 0.773,0.207 0.736,0.313 0.686,0.412 0.622,0.504 0.545,0.586 0.459,0.656 0.363,0.713 0.26,0.757 0.152,0.786 0.042,0.8 -0.07,0.798 -0.18,0.78 -0.287,0.748 -0.388,0.701 -0.482,0.64 -0.566,0.567 -0.639,0.483 -0.7,0.39 -0.748,0.289 -0.78,0.182 -0.798,0.072 -0.801,-0.039 -0.787,-0.15 -0.759,-0.258 -0.716,-0.361 -0.659,-0.457 -0.589,-0.544 -0.507,-0.62 -0.416,-0.684 -0.317,-0.736 -0.212,-0.772 -0.103,-0.794 0.009,-0.801 0.12,-0.792 0.229,-0.767 0.334,-0.728 0.431,-0.674 0.521,-0.607 0.6,-0.529 0.668,-0.44 0.723,-0.343 0.764,-0.239 0.789,-0.13 0.8,-0.019 0.795,0.093 0.774,0.203 0.738,0.309 0.688,0.408 0.625,0.5 0.549,0.582 0.463,0.653 0.367,0.711 0.265,0.756 0.157,0.785 0.046,0.799 -0.065,0.798 -0.176,0.781 -0.283,0.75 -0.384,0.703 -0.478,0.643 -0.563,0.57 -0.637,0.487 -0.698,0.394 -0.746,0.293 -0.779,0.187 -0.798,0.077 -0.801,-0.035 -0.788,-0.146 -0.76,-0.253 -0.718,-0.357 -0.661,-0.453 -0.592,-0.54 -0.511,-0.617 -0.42,-0.682 -0.322,-0.734 -0.216,-0.771 -0.107,-0.794 0.004,-0.801 0.116,-0.792 0.225,-0.768 0.329,-0.73 0.428,-0.677 0.518,-0.61 0.597,-0.532 0.666,-0.444 0.721,-0.347 0.762,-0.243 0.789,-0.135 0.8,-0.023 0.795,0.088 0.775,0.198 0.74,0.304 0.69,0.404 0.627,0.497 0.552,0.579 0.466,0.65 0.371,0.709 0.269,0.754 0.162,0.784 0.051,0.799 -0.061,0.799 -0.171,0.782 -0.278,0.751 -0.38,0.705 -0.474,0.646 -0.559,0.574 -0.634,0.491 -0.696,0.398 -0.744,0.297 -0.778,0.191 -0.797,0.081 -0.801,-0.03 -0.789,-0.141 -0.762,-0.249 -0.72,-0.352 -0.664,-0.449 -0.595,-0.537 -0.515,-0.614 -0.424,-0.679 -0.326,-0.732 -0.221,-0.77 -0.112,-0.793 0,-0.801 0.111,-0.793 0.22,-0.77 0.325,-0.731 0.424,-0.679 0.514,-0.613 0.594,-0.536 0.663,-0.448 0.719,-0.351 0.761,-0.248 0.788,-0.139 0.8,-0.028 0.796,0.084 0.776,0.194 0.742,0.3 0.693,0.4 0.63,0.493 0.556,0.576 0.47,0.648 0.375,0.707 0.273,0.752 0.166,0.783 0.056,0.799 -0.056,0.799 -0.166,0.783 -0.274,0.753 -0.376,0.708 -0.47,0.649 -0.556,0.577 -0.631,0.494 -0.693,0.402 -0.742,0.302 -0.777,0.196 -0.797,0.086 -0.801,-0.025 -0.79,-0.136 -0.763,-0.245 -0.722,-0.348 -0.666,-0.445 -0.598,-0.533 -0.518,-0.611 -0.428,-0.677 -0.33,-0.73 -0.225,-0.769 -0.116,-0.792 -0.005,-0.801 0.106,-0.794 0.216,-0.771 0.321,-0.733 0.42,-0.682 0.51,-0.616 0.591,-0.539 0.66,-0.452 0.717,-0.355 0.759,-0.252 0.787,-0.144 0.799,-0.033 0.796,0.079 0.777,0.189 0.743,0.296 0.695,0.396 0.633,0.489"/>
+            <polyline class="wm-orbit-true wm-outer" data-kepler-true points="-1.6,0 -1.598,-0.064 -1.592,-0.127 -1.582,-0.19 -1.569,-0.253 -1.551,-0.315 -1.53,-0.377 -1.504,-0.437 -1.475,-0.496 -1.442,-0.554 -1.405,-0.61 -1.364,-0.665 -1.319,-0.718 -1.27,-0.769 -1.217,-0.817 -1.16,-0.863 -1.1,-0.905 -1.036,-0.945 -0.968,-0.981 -0.896,-1.014 -0.821,-1.042 -0.742,-1.066 -0.66,-1.086 -0.574,-1.099 -0.486,-1.107 -0.395,-1.109 -0.301,-1.104 -0.206,-1.092 -0.109,-1.072 -0.011,-1.043 0.087,-1.005 0.184,-0.957 0.279,-0.899 0.371,-0.83 0.458,-0.75 0.538,-0.659 0.609,-0.557 0.67,-0.446 0.717,-0.326 0.75,-0.199 0.767,-0.068 0.768,0.064 0.751,0.195 0.719,0.322 0.672,0.442 0.612,0.554 0.541,0.656 0.462,0.747 0.375,0.827 0.284,0.897 0.189,0.955 0.092,1.004 -0.006,1.042 -0.103,1.072 -0.2,1.092 -0.296,1.105 -0.39,1.111 -0.481,1.109 -0.569,1.102 -0.655,1.088 -0.737,1.069 -0.816,1.046 -0.891,1.018 -0.963,0.985 -1.031,0.949 -1.096,0.91 -1.156,0.867 -1.213,0.822 -1.266,0.774 -1.315,0.723 -1.36,0.671 -1.402,0.616 -1.439,0.56 -1.473,0.502 -1.502,0.443 -1.528,0.383 -1.55,0.322 -1.568,0.26 -1.582,0.197 -1.592,0.134 -1.598,0.07 -1.6,0.007 -1.598,-0.057 -1.593,-0.12 -1.583,-0.184 -1.57,-0.247 -1.553,-0.309 -1.531,-0.37 -1.506,-0.431 -1.477,-0.49 -1.444,-0.548 -1.407,-0.604 -1.367,-0.659 -1.322,-0.712 -1.273,-0.763 -1.221,-0.812 -1.164,-0.858 -1.104,-0.901 -1.04,-0.941 -0.972,-0.977 -0.901,-1.01 -0.826,-1.039 -0.747,-1.063 -0.665,-1.083 -0.58,-1.097 -0.491,-1.106 -0.4,-1.108 -0.307,-1.103 -0.211,-1.091 -0.114,-1.072 -0.016,-1.043 0.082,-1.006 0.179,-0.958 0.275,-0.901 0.367,-0.832 0.454,-0.753 0.534,-0.662 0.606,-0.561 0.667,-0.45 0.716,-0.33 0.749,-0.204 0.767,-0.073 0.768,0.059 0.752,0.19 0.721,0.317 0.674,0.438 0.615,0.55 0.545,0.652 0.466,0.744 0.38,0.825 0.289,0.895 0.194,0.954 0.097,1.003 0,1.042 -0.098,1.072 -0.195,1.093 -0.291,1.106 -0.384,1.112 -0.475,1.111 -0.564,1.104 -0.649,1.091 -0.732,1.072 -0.811,1.049 -0.887,1.021 -0.959,0.989 -1.027,0.954 -1.092,0.915 -1.152,0.872 -1.209,0.827 -1.263,0.779 -1.312,0.729 -1.357,0.676 -1.399,0.622 -1.437,0.566 -1.47,0.508 -1.5,0.45 -1.526,0.389 -1.548,0.328 -1.566,0.266 -1.581,0.204 -1.591,0.141 -1.597,0.077 -1.6,0.013 -1.599,-0.05 -1.593,-0.114 -1.584,-0.177 -1.571,-0.24 -1.554,-0.302 -1.533,-0.364 -1.508,-0.424 -1.479,-0.484 -1.447,-0.542 -1.41,-0.599 -1.37,-0.654 -1.325,-0.707 -1.277,-0.758 -1.224,-0.807 -1.168,-0.853 -1.108,-0.896 -1.044,-0.936 -0.977,-0.973 -0.906,-1.007 -0.831,-1.036 -0.752,-1.06 -0.67,-1.08 -0.585,-1.095 -0.497,-1.104 -0.406,-1.106 -0.312,-1.102 -0.216,-1.091 -0.119,-1.072 -0.021,-1.044 0.077,-1.007 0.175,-0.96 0.27,-0.903 0.362,-0.835 0.45,-0.756 0.531,-0.666 0.603,-0.565 0.665,-0.454 0.714,-0.335 0.748,-0.208 0.767,-0.078 0.768,0.054 0.754,0.186 0.723,0.313 0.677,0.433 0.618,0.546 0.548,0.649 0.47,0.741 0.384,0.822 0.293,0.893 0.199,0.953 0.102,1.002 0.005,1.041 -0.093,1.072 -0.19,1.093 -0.285,1.107 -0.379,1.113 -0.47,1.113 -0.559,1.106 -0.644,1.093 -0.727,1.075 -0.806,1.052 -0.882,1.025 -0.954,0.993 -1.023,0.958 -1.087,0.919 -1.148,0.877 -1.206,0.832 -1.259,0.784 -1.309,0.734 -1.354,0.682 -1.396,0.628 -1.434,0.572 -1.468,0.515 -1.498,0.456 -1.524,0.396 -1.547,0.335 -1.565,0.273 -1.58,0.21 -1.59,0.147 -1.597,0.084 -1.6,0.02 -1.599,-0.044 -1.594,-0.107 -1.585,-0.17 -1.572,-0.233 -1.555,-0.296 -1.535,-0.357 -1.51,-0.418 -1.482,-0.477 -1.449,-0.536 -1.413,-0.593 -1.373,-0.648 -1.328,-0.701 -1.28,-0.752 -1.228,-0.801 -1.172,-0.848 -1.112,-0.892 -1.049,-0.932 -0.981,-0.969 -0.91,-1.003 -0.835,-1.032 -0.757,-1.057 -0.675,-1.078 -0.59,-1.093 -0.502,-1.102 -0.411,-1.105 -0.317,-1.101 -0.222,-1.09 -0.125,-1.071 -0.026,-1.044 0.072,-1.007 0.17,-0.961 0.265,-0.904 0.358,-0.837 0.446,-0.758 0.527,-0.669 0.6,-0.569 0.662,-0.458 0.712,-0.339 0.747,-0.213 0.766,-0.083 0.769,0.05 0.754,0.181 0.724,0.308 0.679,0.429 0.621,0.542 0.552,0.645 0.473,0.738 0.388,0.82 0.298,0.891 0.204,0.951 0.107,1.001 0.01,1.041 -0.088,1.072 -0.184,1.094 -0.28,1.108 -0.373,1.115 -0.465,1.115 -0.553,1.108 -0.639,1.096 -0.722,1.078 -0.801,1.056 -0.877,1.029 -0.949,0.997 -1.018,0.962 -1.083,0.924 -1.144,0.882 -1.202,0.837 -1.255,0.79 -1.305,0.74 -1.351,0.688 -1.393,0.634 -1.431,0.578 -1.466,0.521 -1.496,0.462 -1.523,0.402 -1.545,0.341 -1.564,0.279"/>
+            <polyline class="wm-orbit-fit wm-inner" data-kepler-predicted points="0.8,0 0.792,0.111 0.769,0.221 0.731,0.326 0.678,0.424 0.613,0.515 0.535,0.595 0.447,0.664 0.35,0.72 0.247,0.761 0.139,0.789 0.028,0.8 -0.084,0.796 -0.194,0.777 -0.3,0.743 -0.4,0.694 -0.493,0.632 -0.576,0.557 -0.648,0.472 -0.707,0.377 -0.753,0.276 -0.784,0.168 -0.799,0.058 -0.8,-0.053 -0.785,-0.164 -0.754,-0.271 -0.709,-0.373 -0.65,-0.468 -0.579,-0.554 -0.497,-0.629 -0.404,-0.692 -0.304,-0.741 -0.198,-0.776 -0.089,-0.796 0.023,-0.8 0.134,-0.789 0.242,-0.763 0.346,-0.722 0.443,-0.666 0.532,-0.598 0.61,-0.518 0.676,-0.428 0.729,-0.33 0.768,-0.225 0.792,-0.116 0.8,-0.005 0.793,0.107 0.77,0.216 0.733,0.321 0.681,0.42 0.616,0.511 0.539,0.592 0.451,0.661 0.355,0.718 0.251,0.76 0.143,0.788 0.032,0.8 -0.079,0.797 -0.189,0.778 -0.296,0.744 -0.396,0.696 -0.489,0.635 -0.573,0.561 -0.645,0.476 -0.705,0.381 -0.751,0.28 -0.783,0.173 -0.799,0.063 -0.8,-0.049 -0.785,-0.159 -0.756,-0.267 -0.711,-0.369 -0.653,-0.464 -0.582,-0.55 -0.5,-0.626 -0.408,-0.689 -0.309,-0.739 -0.203,-0.775 -0.093,-0.795 0.018,-0.801 0.129,-0.79 0.238,-0.764 0.342,-0.724 0.439,-0.669 0.528,-0.601 0.607,-0.522 0.673,-0.432 0.727,-0.334 0.766,-0.23 0.791,-0.121 0.8,-0.009 0.793,0.102 0.772,0.212 0.735,0.317 0.683,0.416 0.619,0.507 0.542,0.589 0.455,0.659 0.359,0.715 0.256,0.759 0.148,0.787 0.037,0.8 -0.075,0.797 -0.185,0.779 -0.291,0.746 -0.392,0.699 -0.485,0.637 -0.569,0.564 -0.642,0.479 -0.703,0.386 -0.749,0.284 -0.782,0.178 -0.799,0.067 -0.8,-0.044 -0.786,-0.155 -0.757,-0.262 -0.713,-0.365 -0.656,-0.46 -0.586,-0.547 -0.504,-0.623 -0.412,-0.687 -0.313,-0.737 -0.207,-0.774 -0.098,-0.795 0.014,-0.801 0.125,-0.791 0.234,-0.766 0.338,-0.726 0.435,-0.672 0.525,-0.604 0.604,-0.525 0.671,-0.436 0.725,-0.338 0.765,-0.234 0.79,-0.125 0.8,-0.014 0.794,0.098 0.773,0.207 0.736,0.313 0.686,0.412 0.622,0.504 0.545,0.586 0.459,0.656 0.363,0.713 0.26,0.757 0.152,0.786 0.042,0.8 -0.07,0.798 -0.18,0.78 -0.287,0.748 -0.388,0.701 -0.482,0.64 -0.566,0.567 -0.639,0.483 -0.7,0.39 -0.748,0.289 -0.78,0.182 -0.798,0.072 -0.801,-0.039 -0.787,-0.15 -0.759,-0.258 -0.716,-0.361 -0.659,-0.457 -0.589,-0.544 -0.507,-0.62 -0.416,-0.684 -0.317,-0.736 -0.212,-0.772 -0.103,-0.794 0.009,-0.801 0.12,-0.792 0.229,-0.767 0.334,-0.728 0.431,-0.674 0.521,-0.607 0.6,-0.529 0.668,-0.44 0.723,-0.343 0.764,-0.239 0.789,-0.13 0.8,-0.019 0.795,0.093 0.774,0.203 0.738,0.308 0.688,0.408 0.625,0.5 0.549,0.582 0.463,0.653 0.367,0.711 0.265,0.755 0.157,0.785 0.046,0.799 -0.065,0.798 -0.176,0.781 -0.283,0.75 -0.384,0.703 -0.478,0.643 -0.563,0.57 -0.637,0.487 -0.698,0.394 -0.746,0.293 -0.779,0.187 -0.798,0.077 -0.801,-0.035 -0.788,-0.146 -0.76,-0.254 -0.718,-0.357 -0.661,-0.453 -0.592,-0.54 -0.511,-0.617 -0.42,-0.682 -0.322,-0.734 -0.216,-0.771 -0.107,-0.794 0.004,-0.801 0.116,-0.792 0.225,-0.768 0.329,-0.73 0.428,-0.677 0.518,-0.61 0.597,-0.532 0.666,-0.444 0.721,-0.347 0.762,-0.243 0.789,-0.135 0.8,-0.023 0.795,0.088 0.775,0.198 0.74,0.304 0.69,0.404 0.627,0.497 0.552,0.579 0.466,0.65 0.371,0.709 0.269,0.754 0.162,0.784 0.051,0.799 -0.061,0.799 -0.171,0.782 -0.278,0.751 -0.38,0.705 -0.474,0.646 -0.559,0.574 -0.634,0.491 -0.696,0.398 -0.744,0.297 -0.778,0.191 -0.797,0.081 -0.801,-0.03 -0.789,-0.141 -0.762,-0.249 -0.72,-0.352 -0.664,-0.449 -0.595,-0.537 -0.515,-0.614 -0.424,-0.679 -0.326,-0.732 -0.221,-0.77 -0.112,-0.793 0,-0.801 0.111,-0.793 0.22,-0.77 0.325,-0.731 0.424,-0.679 0.514,-0.613 0.594,-0.536 0.663,-0.448 0.719,-0.351 0.761,-0.248 0.788,-0.139 0.8,-0.028 0.796,0.084 0.776,0.194 0.742,0.3 0.693,0.4 0.63,0.493 0.556,0.576 0.47,0.648 0.375,0.707 0.273,0.752 0.166,0.783 0.056,0.799 -0.056,0.799 -0.166,0.783 -0.274,0.753 -0.376,0.708 -0.47,0.649 -0.556,0.577 -0.631,0.494 -0.693,0.402 -0.742,0.302 -0.777,0.196 -0.797,0.086 -0.801,-0.025 -0.79,-0.136 -0.763,-0.245 -0.722,-0.348 -0.666,-0.445 -0.598,-0.533 -0.518,-0.611 -0.428,-0.677 -0.33,-0.73 -0.225,-0.769 -0.116,-0.792 -0.005,-0.801 0.106,-0.794 0.216,-0.771 0.321,-0.733 0.42,-0.682 0.51,-0.616 0.591,-0.539 0.66,-0.452 0.717,-0.355 0.759,-0.252 0.787,-0.144 0.799,-0.033 0.796,0.079 0.777,0.189 0.743,0.295 0.695,0.396 0.633,0.489"/>
+            <polyline class="wm-orbit-fit wm-outer" data-kepler-predicted points="-1.6,0.002 -1.598,-0.062 -1.592,-0.126 -1.583,-0.189 -1.569,-0.252 -1.551,-0.314 -1.53,-0.375 -1.504,-0.435 -1.475,-0.495 -1.442,-0.553 -1.405,-0.609 -1.364,-0.664 -1.319,-0.717 -1.27,-0.767 -1.217,-0.816 -1.161,-0.862 -1.1,-0.904 -1.036,-0.944 -0.968,-0.98 -0.896,-1.013 -0.821,-1.041 -0.742,-1.066 -0.66,-1.085 -0.575,-1.099 -0.486,-1.107 -0.395,-1.109 -0.301,-1.104 -0.206,-1.091 -0.108,-1.071 -0.011,-1.042 0.087,-1.004 0.185,-0.956 0.28,-0.898 0.371,-0.829 0.458,-0.749 0.538,-0.658 0.61,-0.556 0.67,-0.444 0.718,-0.324 0.75,-0.198 0.767,-0.067 0.768,0.065 0.751,0.196 0.719,0.323 0.672,0.443 0.612,0.555 0.541,0.657 0.461,0.748 0.375,0.828 0.283,0.898 0.189,0.956 0.092,1.004 -0.006,1.043 -0.104,1.072 -0.2,1.093 -0.296,1.106 -0.39,1.112 -0.481,1.11 -0.569,1.102 -0.655,1.089 -0.737,1.07 -0.816,1.047 -0.891,1.019 -0.963,0.986 -1.031,0.951 -1.096,0.911 -1.156,0.869 -1.213,0.823 -1.266,0.775 -1.315,0.724 -1.36,0.672 -1.401,0.617 -1.439,0.561 -1.472,0.504 -1.502,0.445 -1.528,0.385 -1.55,0.323 -1.568,0.261 -1.581,0.198 -1.592,0.134 -1.598,0.07 -1.6,0.006 -1.598,-0.058 -1.593,-0.122 -1.583,-0.185 -1.57,-0.248 -1.553,-0.31 -1.531,-0.372 -1.506,-0.432 -1.477,-0.491 -1.444,-0.549 -1.407,-0.606 -1.366,-0.661 -1.322,-0.714 -1.273,-0.764 -1.221,-0.813 -1.164,-0.859 -1.104,-0.902 -1.04,-0.942 -0.972,-0.978 -0.901,-1.011 -0.825,-1.04 -0.747,-1.064 -0.665,-1.084 -0.58,-1.098 -0.491,-1.107 -0.4,-1.109 -0.307,-1.104 -0.211,-1.092 -0.114,-1.072 -0.016,-1.044 0.082,-1.006 0.179,-0.959 0.274,-0.902 0.366,-0.833 0.453,-0.754 0.534,-0.664 0.606,-0.562 0.667,-0.451 0.715,-0.331 0.749,-0.205 0.767,-0.075 0.768,0.058 0.753,0.188 0.721,0.316 0.675,0.436 0.616,0.549 0.545,0.651 0.466,0.743 0.38,0.824 0.289,0.894 0.194,0.953 0.098,1.002 0,1.041 -0.098,1.071 -0.195,1.092 -0.29,1.106 -0.384,1.111 -0.475,1.11 -0.564,1.103 -0.65,1.09 -0.732,1.071 -0.811,1.048 -0.887,1.02 -0.959,0.988 -1.027,0.953 -1.092,0.914 -1.153,0.871 -1.21,0.826 -1.263,0.778 -1.312,0.727 -1.358,0.675 -1.399,0.621 -1.437,0.565 -1.471,0.507 -1.5,0.448 -1.526,0.388 -1.548,0.327 -1.567,0.265 -1.581,0.202 -1.591,0.138 -1.597,0.074 -1.6,0.01 -1.598,-0.054 -1.593,-0.118 -1.584,-0.182 -1.571,-0.245 -1.554,-0.307 -1.533,-0.368 -1.508,-0.429 -1.479,-0.488 -1.446,-0.546 -1.409,-0.602 -1.369,-0.657 -1.324,-0.711 -1.276,-0.762 -1.224,-0.81 -1.168,-0.856 -1.108,-0.9 -1.044,-0.94 -0.976,-0.976 -0.905,-1.009 -0.83,-1.038 -0.752,-1.063 -0.67,-1.083 -0.585,-1.097 -0.497,-1.106 -0.406,-1.109 -0.312,-1.105 -0.217,-1.093 -0.12,-1.074 -0.022,-1.046 0.076,-1.009 0.173,-0.962 0.269,-0.905 0.361,-0.838 0.449,-0.759 0.53,-0.669 0.602,-0.568 0.664,-0.458 0.713,-0.339 0.747,-0.213 0.766,-0.082 0.768,0.05 0.754,0.181 0.723,0.308 0.678,0.429 0.619,0.542 0.55,0.646 0.471,0.738 0.385,0.82 0.294,0.89 0.2,0.95 0.103,0.999 0.006,1.039 -0.092,1.069 -0.189,1.091 -0.285,1.105 -0.379,1.111 -0.47,1.111 -0.559,1.104 -0.645,1.091 -0.727,1.073 -0.807,1.05 -0.882,1.022 -0.955,0.99 -1.023,0.955 -1.088,0.916 -1.149,0.874 -1.207,0.829 -1.26,0.781 -1.31,0.73 -1.355,0.678 -1.397,0.624 -1.435,0.568 -1.469,0.511 -1.499,0.452 -1.525,0.392 -1.547,0.331 -1.566,0.268 -1.58,0.205 -1.591,0.142 -1.597,0.078 -1.6,0.014 -1.599,-0.051 -1.594,-0.115 -1.585,-0.178 -1.572,-0.241 -1.555,-0.303 -1.534,-0.365 -1.509,-0.425 -1.481,-0.484 -1.448,-0.542 -1.412,-0.599 -1.371,-0.654 -1.327,-0.708 -1.279,-0.759 -1.227,-0.807 -1.171,-0.854 -1.111,-0.897 -1.047,-0.937 -0.98,-0.974 -0.909,-1.008 -0.834,-1.037 -0.756,-1.062 -0.675,-1.082 -0.59,-1.097 -0.502,-1.106 -0.411,-1.109 -0.318,-1.105 -0.222,-1.094 -0.125,-1.075 -0.028,-1.048 0.07,-1.011 0.168,-0.965 0.263,-0.909 0.356,-0.842 0.444,-0.764 0.525,-0.675 0.598,-0.575 0.661,-0.465 0.71,-0.346 0.746,-0.22 0.766,-0.09 0.769,0.042 0.755,0.173 0.726,0.301 0.681,0.423 0.623,0.536 0.554,0.64 0.476,0.733 0.39,0.815 0.3,0.886 0.205,0.947 0.109,0.997 0.011,1.037 -0.086,1.068 -0.184,1.09 -0.279,1.104 -0.373,1.111 -0.465,1.111 -0.554,1.104 -0.64,1.092 -0.723,1.074 -0.802,1.051 -0.878,1.024 -0.951,0.992 -1.019,0.957 -1.085,0.918 -1.146,0.876 -1.203,0.831 -1.257,0.784 -1.307,0.733 -1.353,0.681 -1.395,0.627 -1.433,0.571 -1.467,0.514 -1.497,0.455 -1.524,0.395 -1.546,0.334 -1.565,0.272"/>
+          </svg>
+          <ul class="wm-legend">
+            <li><span class="wm-key" aria-hidden="true"></span>true orbit (Newtonian physics)</li>
+            <li><span class="wm-key wm-key-orbit-fit" aria-hidden="true"></span>frozen curve fit (dashed)</li>
+            <li>teal: inner orbit · amber: outer orbit</li>
+          </ul>
+        </figure>
+        <p data-kepler-error data-verdict="holds" role="status">Worst held-out error: 0.3% of orbit size (inner 0.0%, outer 0.3%). The frozen fit still predicts both orbits.</p>
+        <p>The fit reproduces what it was shown almost perfectly, yet it holds no idea of a force. When a new mass appears, the true orbits bend and the fit carries on drawing the old ellipses. Vafa et al. report a related result for transformers trained on orbital trajectories: they predict well, but when adapted to new physics tasks they fail to apply Newtonian mechanics and behave as if they had learned task-specific heuristics.</p>
+      </section>
+
+      <section id="agents" class="wm-agents" data-wm-agents aria-labelledby="agents-title">
+        <h2 id="agents-title">What this means when you drive a coding agent</h2>
+        <p>A coding agent plans against a model too: its picture of your repository. The parts of panel 1 map onto the agent loop, whichever agent you use.</p>
+        <dl class="wm-map">
+          <div><dt>The learned dynamics model <span>panel 1's s′ = A s + B u + c</span></dt><dd>The agent's picture of your repo: what it believes the code does, how the modules connect, how to build and test it. It is fitted from the files and output it has read so far. Like the corrupted model, it is plausible and partly wrong, and the plan it produces looks fine on paper: the dashed line still ended in the goal.</dd></div>
+          <div><dt>The observation <span>the true state after each step</span></dt><dd>Test output and tool output: a failing test, a compiler error, a stack trace, the actual diff, the result of running the program. This is reality reporting where you really are, as opposed to where the agent's picture says you are.</dd></div>
+          <div><dt>Replanning every step <span>the closed loop</span></dt><dd>The agent loop: make a small change, run the tests, read the output, replan from what actually happened. Open loop is writing the whole change from the first read and never running it; with the default settings of panel 1, that is the run that hit the obstacle.</dd></div>
+          <div><dt>A frozen fit <span>panel 2</span></dt><dd>A picture that matched everything seen so far can still break when something it never saw changes: a new dependency, a migration, a config flag. Agreement with the past is not understanding; only a fresh observation tells you the world moved.</dd></div>
+        </dl>
+        <p><strong>Feedback helps; it is not a guarantee.</strong> At high model error the closed loop sometimes fails as well. If every test run surprises the agent, looping faster will not fix it. Improve the picture instead: point it at the code that matters, explain the architecture, or have it read before it writes.</p>
+        <ul>
+          <li>Give the agent a fast, trustworthy check it can run itself, and ask it to run that check after every change.</li>
+          <li>Prefer small steps with an observation after each one over one large plan executed blind.</li>
+          <li>Read the observation yourself when the agent's summary and the tool output disagree. The output is the ground truth.</li>
+        </ul>
+      </section>
+
+      <section class="wm-refs" aria-labelledby="refs-title">
+        <h2 id="refs-title">Sources and framing</h2>
+        <ul>
+          <li>Keyon Vafa, Peter G. Chang, Ashesh Rambachan, Sendhil Mullainathan, <a href="https://arxiv.org/abs/2507.06952">What Has a Foundation Model Found? Using Inductive Bias to Probe for World Models</a> (arXiv 2507.06952, 2025). Models trained on orbital trajectories predict them well but fail to apply Newtonian mechanics when adapted to new physics tasks. Panel 2 is a stylised analogy, not their experiment.</li>
+          <li>Mido Assran et al., <a href="https://arxiv.org/abs/2506.09985">V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning</a> (arXiv 2506.09985, 2025). A video world model learned mostly from internet video, then action-conditioned on a small amount of robot video and used to plan robot arm actions towards image goals. It is a learned simulator used for planning, as in panel 1.</li>
+          <li>Yann LeCun, <a href="https://openreview.net/pdf?id=BZ5a1r-kVsf">A Path Towards Autonomous Machine Intelligence</a> (OpenReview, 2022). A position paper, not an empirical result, proposing agents built around a predictive world model and planning.</li>
+          <li>Planning by sampling with the cross-entropy method and replanning at every step (model-predictive control) is standard control practice; panel 1 uses the textbook form.</li>
+        </ul>
+      </section>
+    </main>
+    <footer>Session 1 · Act II · Both panels are illustrative simulations computed in your browser; no measured data.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+  <script>
+/* World-model lab numerical core. Pure functions, no DOM: the page renders only what this returns. */
+(function () {
+  'use strict';
+
+  // mulberry32: a small seeded generator. The same seed always gives the same stream.
+  function rng(seed) {
+    var s = seed >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) >>> 0;
+      var v = Math.imul(s ^ (s >>> 15), s | 1);
+      v ^= v + Math.imul(v ^ (v >>> 7), v | 61);
+      return ((v ^ (v >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Box-Muller: two uniform draws give one standard normal draw.
+  function gaussian(random) {
+    var u = 1 - random(), v = random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  var config = {
+    seed: 20261011,
+    world: {
+      // Damped point mass: v' = damping * v + gain * u, then p' = p + dt * v'.
+      dt: 0.2, damping: 0.75, gain: 1.3, steps: 30,
+      bounds: [0, 0, 10, 6],
+      start: [1, 3, 0, 0],
+      goal: { center: [9, 3], radius: 0.5 },
+      obstacle: { center: [5, 3.625], radius: 1.375 },
+      trainingTransitions: 200,
+    },
+    planner: {
+      N: 60, K: 8, I: 12, H: 30, actionLimit: 1,
+      // Sampling spread: initialStd for a fresh plan, replanStd around a warm start. Actions after
+      // the committed arrival step (or a window steps ahead, once that has passed) get lateStd times less.
+      initialStd: 1, replanStd: 0.2, arrivalFraction: 0.5, window: 4, lateStd: 0.05, minStd: 0.01, alpha: 1,
+      weights: { goal: 1, obstacle: 20, effort: 0.001 },
+    },
+    // At error e the model believes controls are rotated by e * 40 degrees and scaled by 1 + 0.3 e,
+    // and that a current changes the velocity by e * (0, -0.15) every step. Reality never changes.
+    error: { min: 0, max: 1, step: 0.05, demonstration: 0.5, rotationDegrees: 40, gainChange: 0.3, drift: [0, -0.15] },
+  };
+
+  // ---- Panel 1: reality, the learned model and the planner. ----
+  function trueStep(s, u) {
+    var w = config.world;
+    var vx = w.damping * s[2] + w.gain * u[0], vy = w.damping * s[3] + w.gain * u[1];
+    return [s[0] + w.dt * vx, s[1] + w.dt * vy, vx, vy];
+  }
+  function modelStep(m, s, u) {
+    var out = [0, 0, 0, 0];
+    for (var i = 0; i < 4; i++) {
+      var v = m.c[i];
+      for (var j = 0; j < 4; j++) v += m.A[i][j] * s[j];
+      out[i] = v + m.B[i][0] * u[0] + m.B[i][1] * u[1];
+    }
+    return out;
+  }
+  // Gauss-Jordan elimination with partial pivoting.
+  function solve(matrix, rhs) {
+    var n = rhs.length, a = matrix.map(function (row, i) { return row.concat([rhs[i]]); }), i, j, k;
+    for (i = 0; i < n; i++) {
+      var p = i;
+      for (k = i + 1; k < n; k++) if (Math.abs(a[k][i]) > Math.abs(a[p][i])) p = k;
+      var swap = a[i]; a[i] = a[p]; a[p] = swap;
+      if (Math.abs(a[i][i]) < 1e-14) throw new Error('rank-deficient system');
+      var d = a[i][i];
+      for (j = i; j <= n; j++) a[i][j] /= d;
+      for (k = 0; k < n; k++) if (k !== i && a[k][i] !== 0) {
+        var f = a[k][i];
+        for (j = i; j <= n; j++) a[k][j] -= f * a[i][j];
+      }
+    }
+    return a.map(function (row) { return row[n]; });
+  }
+  // Ordinary least squares through the normal equations, one solve per output column.
+  function leastSquares(rows, columns) {
+    var n = rows[0].length, gram = [], i, j, k;
+    for (i = 0; i < n; i++) gram.push(new Array(n).fill(0));
+    for (k = 0; k < rows.length; k++) for (i = 0; i < n; i++) for (j = i; j < n; j++) gram[i][j] += rows[k][i] * rows[k][j];
+    for (i = 0; i < n; i++) for (j = 0; j < i; j++) gram[i][j] = gram[j][i];
+    return columns.map(function (values) {
+      var rhs = new Array(n).fill(0);
+      for (k = 0; k < rows.length; k++) for (i = 0; i < n; i++) rhs[i] += rows[k][i] * values[k];
+      return solve(gram, rhs);
+    });
+  }
+  // Fit s' = A s + B u + c to observed transitions [{state, action, nextState}].
+  function fitDynamics(transitions) {
+    var rows = transitions.map(function (t) { return [t.state[0], t.state[1], t.state[2], t.state[3], t.action[0], t.action[1], 1]; });
+    var coef = leastSquares(rows, [0, 1, 2, 3].map(function (i) { return transitions.map(function (t) { return t.nextState[i]; }); }));
+    return { A: coef.map(function (r) { return r.slice(0, 4); }), B: coef.map(function (r) { return r.slice(4, 6); }), c: coef.map(function (r) { return r[6]; }) };
+  }
+  function trainingSet(seed) {
+    var random = rng((seed ^ 0x5EED1E55) >>> 0), w = config.world, out = [];
+    for (var i = 0; i < w.trainingTransitions; i++) {
+      var s = [w.bounds[2] * random(), w.bounds[3] * random(), 4 * random() - 2, 4 * random() - 2];
+      var u = [2 * random() - 1, 2 * random() - 1];
+      out.push({ state: s, action: u, nextState: trueStep(s, u) });
+    }
+    return out;
+  }
+  var learnedCache = {};
+  function learnedModel(seed) {
+    seed = seed >>> 0;
+    if (!learnedCache[seed]) learnedCache[seed] = fitDynamics(trainingSet(seed));
+    return learnedCache[seed];
+  }
+  // Structured model error: rotate and scale the control columns of B, and add a believed current to c.
+  function perturb(m, error) {
+    var e = config.error, th = error * e.rotationDegrees * Math.PI / 180, k = 1 + error * e.gainChange;
+    var cs = Math.cos(th) * k, sn = Math.sin(th) * k, dt = config.world.dt;
+    var drift = [error * e.drift[0], error * e.drift[1]];
+    return {
+      A: m.A.map(function (r) { return r.slice(); }),
+      B: m.B.map(function (r) { return [r[0] * cs + r[1] * sn, -r[0] * sn + r[1] * cs]; }),
+      c: [m.c[0] + dt * drift[0], m.c[1] + dt * drift[1], m.c[2] + drift[0], m.c[3] + drift[1]],
+    };
+  }
+  // Does the straight segment from a to b touch the circle? (Closest point on the segment.)
+  function segmentHits(a, b, circle) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], d2 = dx * dx + dy * dy;
+    var t = d2 === 0 ? 0 : Math.max(0, Math.min(1, ((circle.center[0] - a[0]) * dx + (circle.center[1] - a[1]) * dy) / d2));
+    return Math.hypot(a[0] + t * dx - circle.center[0], a[1] + t * dy - circle.center[1]) <= circle.radius;
+  }
+  function rollout(m, s, actions) {
+    var states = [s];
+    for (var i = 0; i < actions.length; i++) states.push(modelStep(m, states[i], actions[i]));
+    return states;
+  }
+  // Cost = goal * |final position - goal| + obstacle * (segments touching the obstacle) + effort * sum |u|^2.
+  function planCost(m, s, actions) {
+    var p = config.planner, w = config.world, states = rollout(m, s, actions), hits = 0, effort = 0, i;
+    for (i = 1; i < states.length; i++) if (segmentHits(states[i - 1], states[i], w.obstacle)) hits++;
+    for (i = 0; i < actions.length; i++) effort += actions[i][0] * actions[i][0] + actions[i][1] * actions[i][1];
+    var end = states[states.length - 1];
+    return p.weights.goal * Math.hypot(end[0] - w.goal.center[0], end[1] - w.goal.center[1]) + p.weights.obstacle * hits + p.weights.effort * effort;
+  }
+  function clip(v) { var L = config.planner.actionLimit; return Math.max(-L, Math.min(L, v)); }
+  // Per-action sampling spread. k is the absolute step at which the plan starts. A terminal-only
+  // cost never rewards arriving sooner, so without this a replanner can postpone arrival forever.
+  function spread(H, sigma, k) {
+    var p = config.planner, arrive = Math.max(Math.round(p.arrivalFraction * H), k + p.window);
+    return Array.from({ length: H }, function (_, h) {
+      var s = k + h < arrive ? sigma : sigma * p.lateStd;
+      return [s, s];
+    });
+  }
+  // Cross-entropy method: sample N Gaussian action sequences (clipped to the bounds), score each by
+  // rolling it through the model, keep the K cheapest, refit mean and spread to them, repeat I times.
+  function cemPlan(m, state, opts) {
+    opts = opts || {};
+    var p = config.planner, N = opts.N || p.N, K = opts.K || p.K, I = opts.I || p.I, H = opts.H || p.H;
+    var random = opts.rng || rng(opts.seed === undefined ? config.seed : opts.seed);
+    var mean = opts.initialMean ? opts.initialMean.map(function (u) { return [u[0], u[1]]; }) : Array.from({ length: H }, function () { return [0, 0]; });
+    var std = opts.initialStd ? opts.initialStd.map(function (u) { return [u[0], u[1]]; }) : spread(H, p.initialStd, 0);
+    var iterations = [];
+    for (var it = 0; it < I; it++) {
+      var sequences = [], costs = [], n, h, j, e;
+      for (n = 0; n < N; n++) {
+        var seq = [];
+        for (h = 0; h < H; h++) seq.push([clip(mean[h][0] + std[h][0] * gaussian(random)), clip(mean[h][1] + std[h][1] * gaussian(random))]);
+        sequences.push(seq);
+        costs.push(planCost(m, state, seq));
+      }
+      var elites = costs.map(function (_, i) { return i; }).sort(function (a, b) { return costs[a] - costs[b] || a - b; }).slice(0, K);
+      var newMean = [], newStd = [];
+      for (h = 0; h < H; h++) {
+        var mu = [0, 0], sd = [0, 0];
+        for (j = 0; j < 2; j++) {
+          var sum = 0, sq = 0;
+          for (e = 0; e < K; e++) sum += sequences[elites[e]][h][j];
+          var fitted = sum / K;
+          for (e = 0; e < K; e++) sq += Math.pow(sequences[elites[e]][h][j] - fitted, 2);
+          mu[j] = p.alpha * fitted + (1 - p.alpha) * mean[h][j];
+          sd[j] = p.alpha * Math.max(p.minStd, Math.sqrt(sq / K)) + (1 - p.alpha) * std[h][j];
+        }
+        newMean.push(mu); newStd.push(sd);
+      }
+      iterations.push({ sequences: sequences, costs: costs, eliteIndices: elites, meanBefore: mean, stdBefore: std, meanAfter: newMean, stdAfter: newStd });
+      mean = newMean; std = newStd;
+    }
+    var actions = mean.map(function (u) { return [u[0], u[1]]; });
+    return { state: state.slice(), actions: actions, cost: planCost(m, state, actions),
+      predictedPath: rollout(m, state, actions).map(function (s) { return [s[0], s[1]]; }), iterations: iterations };
+  }
+  function planSeed(seed, k) { return (seed + Math.imul(k + 1, 0x9E3779B9)) >>> 0; }
+  // Warm start: drop the executed first action, then append the action that stops the predicted motion.
+  function warmStart(m, state, previous) {
+    var shifted = previous.actions.slice(1).map(function (u) { return [u[0], u[1]]; });
+    var states = rollout(m, state, shifted), s = states[states.length - 1], u;
+    var target = [2, 3].map(function (i) { return -(m.A[i][0] * s[0] + m.A[i][1] * s[1] + m.A[i][2] * s[2] + m.A[i][3] * s[3] + m.c[i]); });
+    try { u = solve([[m.B[2][0], m.B[2][1]], [m.B[3][0], m.B[3][1]]], target); } catch (err) { u = [0, 0]; }
+    shifted.push([clip(u[0]), clip(u[1])]);
+    return shifted;
+  }
+  function outcomeOf(state, next) {
+    var w = config.world;
+    if (segmentHits(state, next, w.obstacle)) return 'hit obstacle';
+    if (Math.hypot(next[0] - w.goal.center[0], next[1] - w.goal.center[1]) <= w.goal.radius) return 'reached goal';
+    return 'running';
+  }
+  // One run, advanced a step at a time. Open loop executes the t=0 plan; closed loop observes the
+  // true state, replans from it with CEM and executes only the new plan's first action.
+  function createRun(kind, seed, error, firstPlan) {
+    seed = seed >>> 0;
+    var w = config.world, p = config.planner, model = perturb(learnedModel(seed), error);
+    var run = { kind: kind, seed: seed, error: error, model: model, records: [], plans: [], state: w.start.slice(), outcome: 'running' };
+    var first = firstPlan || cemPlan(model, run.state, { seed: planSeed(seed, 0) });
+    run.plans.push(Object.assign({ id: 0 }, first));
+    run.step = function () {
+      if (run.outcome !== 'running') return false;
+      var k = run.records.length, plan = run.plans[0];
+      if (kind === 'closed' && k > 0) {
+        var previous = run.plans[run.plans.length - 1];
+        plan = Object.assign({ id: run.plans.length }, cemPlan(model, run.state,
+          { seed: planSeed(seed, k), initialMean: warmStart(model, run.state, previous), initialStd: spread(p.H, p.replanStd, k) }));
+        run.plans.push(plan);
+      }
+      var u = kind === 'open' ? plan.actions[k] : plan.actions[0], next = trueStep(run.state, u);
+      run.records.push({ step: k, state: run.state, action: [u[0], u[1]], nextState: next, planId: plan.id });
+      var outcome = outcomeOf(run.state, next);
+      run.state = next;
+      run.outcome = outcome === 'running' && run.records.length >= Math.min(w.steps, p.H) ? 'missed goal' : outcome;
+      return true;
+    };
+    return run;
+  }
+  function createComparison(seed, error) {
+    var open = createRun('open', seed, error);
+    return { open: open, closed: createRun('closed', seed, error, open.plans[0]) };
+  }
+  function finish(kind, seed, error) {
+    var run = createRun(kind, seed, error);
+    while (run.step()) { /* advance to a terminal outcome */ }
+    return { outcome: run.outcome, records: run.records, plans: run.plans };
+  }
+
+  // ---- Panel 2: two test particles around a fixed attractor, and a frozen curve fit. ----
+  config.orbit = (function () {
+    var dt = 0.01, times = [];
+    for (var i = 0; i <= 320; i++) times.push(i * 10 * dt);
+    return {
+      dt: dt, G: 1, centralMass: 1, centralPosition: [0, 0], addedPosition: [1.5, 1.25], softening: 0.02,
+      mass: { min: 0, max: 0.03, step: 0.001 },
+      initialStates: [[0.8, 0, 0, 1.118], [-1.6, 0, 0, -0.637]], times: times, trainEnd: 16, harmonics: 8,
+    };
+  })();
+  function orbitAcceleration(position, mass) {
+    var o = config.orbit, out = [0, 0], sources = [[o.centralPosition, o.centralMass], [o.addedPosition, mass]];
+    for (var i = 0; i < sources.length; i++) {
+      var center = sources[i][0], m = sources[i][1], d = [center[0] - position[0], center[1] - position[1]];
+      var factor = o.G * m / Math.pow(Math.pow(d[0], 2) + Math.pow(d[1], 2) + Math.pow(o.softening, 2), 1.5);
+      out[0] += factor * d[0]; out[1] += factor * d[1];
+    }
+    return out;
+  }
+  // Fixed-step velocity Verlet. The particles feel the fixed attractors, not each other.
+  function simulateOrbits(mass) {
+    var o = config.orbit;
+    return { orbits: o.initialStates.map(function (initial) {
+      var pos = [initial[0], initial[1]], vel = [initial[2], initial[3]], a = orbitAcceleration(pos, mass), step = 0, points = [];
+      for (var i = 0; i < o.times.length; i++) {
+        var target = Math.round(o.times[i] / o.dt);
+        while (step < target) {
+          var next = [pos[0] + vel[0] * o.dt + 0.5 * a[0] * Math.pow(o.dt, 2), pos[1] + vel[1] * o.dt + 0.5 * a[1] * Math.pow(o.dt, 2)];
+          var b = orbitAcceleration(next, mass);
+          vel = [vel[0] + 0.5 * (a[0] + b[0]) * o.dt, vel[1] + 0.5 * (a[1] + b[1]) * o.dt];
+          pos = next; a = b; step++;
+        }
+        points.push([pos[0], pos[1]]);
+      }
+      return { times: o.times.slice(), points: points };
+    }) };
+  }
+  function fourierRow(t, period, harmonics) {
+    var row = [1];
+    for (var h = 1; h <= harmonics; h++) {
+      var phase = 2 * Math.PI * h * t / period;
+      row.push(Math.cos(phase), Math.sin(phase));
+    }
+    return row;
+  }
+  function fourierFit(samples, period, harmonics) {
+    var rows = samples.map(function (s) { return fourierRow(s.t, period, harmonics); });
+    var coefficients = leastSquares(rows, [samples.map(function (s) { return s.x; }), samples.map(function (s) { return s.y; })]);
+    var residual = 0;
+    rows.forEach(function (row, k) {
+      var fx = 0, fy = 0;
+      for (var j = 0; j < row.length; j++) { fx += row[j] * coefficients[0][j]; fy += row[j] * coefficients[1][j]; }
+      residual += Math.pow(samples[k].x - fx, 2) + Math.pow(samples[k].y - fy, 2);
+    });
+    return { period: period, harmonics: harmonics, coefficients: coefficients, residual: residual };
+  }
+  // Periodic least squares. The period is the one nonlinear parameter: scan candidate frequencies,
+  // refine each promising local minimum by golden section, and keep the highest frequency that fits
+  // as well as the best one (any whole multiple of the period fits equally well).
+  function fitOrbit(samples) {
+    var harmonics = config.orbit.harmonics, ts = samples.map(function (s) { return s.t; });
+    var span = Math.max.apply(null, ts) - Math.min.apply(null, ts);
+    var gaps = ts.slice(1).map(function (t, i) { return Math.abs(t - ts[i]); }).sort(function (a, b) { return a - b; });
+    var spacing = gaps[Math.floor(gaps.length / 2)];
+    var fmin = 1 / span, fmax = 1 / (2 * (2 * harmonics + 1) * spacing), df = 1 / (32 * span);
+    var mean = [0, 0], energy = 0;
+    samples.forEach(function (s) { mean[0] += s.x / samples.length; mean[1] += s.y / samples.length; });
+    samples.forEach(function (s) { energy += Math.pow(s.x - mean[0], 2) + Math.pow(s.y - mean[1], 2); });
+    var cost = function (f) { return fourierFit(samples, 1 / f, harmonics).residual; };
+    var grid = [], g = (Math.sqrt(5) - 1) / 2, minima = [];
+    for (var i = 0; fmin + i * df <= fmax; i++) grid.push({ f: fmin + i * df, cost: cost(fmin + i * df) });
+    grid.forEach(function (point, k) {
+      var left = grid[k - 1], right = grid[k + 1];
+      if ((left && left.cost < point.cost) || (right && right.cost < point.cost) || point.cost > 0.01 * energy) return;
+      var lo = left ? left.f : point.f, hi = right ? right.f : point.f;
+      var x1 = hi - g * (hi - lo), x2 = lo + g * (hi - lo), c1 = cost(x1), c2 = cost(x2);
+      for (var it = 0; it < 80 && hi - lo > 1e-14 * hi; it++) {
+        if (c1 < c2) { hi = x2; x2 = x1; c2 = c1; x1 = hi - g * (hi - lo); c1 = cost(x1); }
+        else { lo = x1; x1 = x2; c1 = c2; x2 = lo + g * (hi - lo); c2 = cost(x2); }
+      }
+      minima.push({ f: (lo + hi) / 2, cost: cost((lo + hi) / 2) });
+    });
+    if (!minima.length) throw new Error('no periodic fit');
+    var best = Math.min.apply(null, minima.map(function (m) { return m.cost; }));
+    var chosen = minima.filter(function (m) { return m.cost <= best + 1e-6 * energy; })
+      .reduce(function (a, b) { return b.f > a.f ? b : a; });
+    var fit = fourierFit(samples, 1 / chosen.f, harmonics);
+    return { period: fit.period, harmonics: harmonics, coefficients: fit.coefficients };
+  }
+  function predictOrbit(fit, times) {
+    return { points: times.map(function (t) {
+      var row = fourierRow(t, fit.period, fit.harmonics), x = 0, y = 0;
+      for (var j = 0; j < row.length; j++) { x += row[j] * fit.coefficients[0][j]; y += row[j] * fit.coefficients[1][j]; }
+      return [x, y];
+    }) };
+  }
+
+  window.WorldModel = {
+    config: config, rng: rng, trueStep: trueStep, fitDynamics: fitDynamics, learnedModel: learnedModel, perturb: perturb,
+    segmentHits: segmentHits, planCost: planCost, cemPlan: cemPlan, createRun: createRun, createComparison: createComparison,
+    runOpenLoop: function (seed, error) { return finish('open', seed, error); },
+    runClosedLoop: function (seed, error) { return finish('closed', seed, error); },
+    simulateOrbits: simulateOrbits, fitOrbit: fitOrbit, predictOrbit: predictOrbit,
+  };
+})();
+</script>
+  <script>
+/* World-model lab UI: renders WorldModel results, never computes physics or plans itself. */
+(function () {
+  'use strict';
+  var W = window.WorldModel, cfg = W.config, steps = Math.min(cfg.world.steps, cfg.planner.H);
+  var q = function (selector, root) { return (root || document).querySelector(selector); };
+  var planner = document.getElementById('planner');
+  var seedInput = q('[data-wm-seed]'), errorInput = q('[data-wm-error]'), errorOutput = q('[data-wm-error-output]');
+  var stepButton = q('[data-wm-step]'), runButton = q('[data-wm-run]'), resetButton = q('[data-wm-reset]');
+  var clock = q('[data-wm-t]'), mode = q('[data-wm-mode]');
+  var views = { open: q('[data-wm-view="open"]'), closed: q('[data-wm-view="closed"]') };
+  var massInput = q('[data-kepler-mass]'), massOutput = q('[data-kepler-mass-output]'), massReset = q('[data-kepler-reset]');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var labels = { 'running': 'Running', 'reached goal': 'Reached goal', 'hit obstacle': 'Hit obstacle', 'missed goal': 'Missed goal' };
+  var state = { comparison: null, k: 0, pending: 0, running: false, frame: 0, last: 0 };
+  var STEP_MS = 125; // about 8 steps per second when animating
+
+  function points(list) { return list.map(function (p) { return p[0].toFixed(5) + ',' + p[1].toFixed(5); }).join(' '); }
+  function seed() {
+    var value = Math.floor(Number(seedInput.value));
+    return Number.isFinite(value) && value >= 0 ? value >>> 0 : cfg.seed;
+  }
+  function error() {
+    var value = Number(errorInput.value);
+    return Number.isFinite(value) ? Math.min(cfg.error.max, Math.max(cfg.error.min, value)) : cfg.error.demonstration;
+  }
+  function finished() {
+    var c = state.comparison;
+    return Boolean(c) && c.open.outcome !== 'running' && c.closed.outcome !== 'running';
+  }
+
+  // ---- Panel 1 ----
+  function describeError(e) {
+    var x = cfg.error;
+    return e.toFixed(2) + ': controls rotated ' + Math.round(e * x.rotationDegrees) + '°, gain ×' + (1 + e * x.gainChange).toFixed(2) +
+      ', believed current ' + Math.abs(e * x.drift[1]).toFixed(3) + ' per step' + (e === 0 ? ' (perfect model)' : '');
+  }
+  function renderModel() {
+    var learned = W.learnedModel(seed()), used = W.perturb(learned, error()), f = function (v) { return (Math.abs(v) < 0.005 ? 0 : v).toFixed(2).replace('-', '−'); };
+    var rows = q('[data-wm-coefficients]').rows;
+    [2, 3].forEach(function (i, r) {
+      rows[r].cells[1].textContent = f(learned.B[i][0]) + ', ' + f(learned.B[i][1]);
+      rows[r].cells[2].textContent = f(used.B[i][0]) + ', ' + f(used.B[i][1]);
+      rows[r].cells[3].textContent = f(learned.c[i]);
+      rows[r].cells[4].textContent = f(used.c[i]);
+    });
+    q('[data-wm-seed-echo]').textContent = String(seed());
+    q('[data-wm-training-count]').textContent = String(cfg.world.trainingTransitions);
+  }
+  function render() {
+    var c = state.comparison;
+    clock.textContent = 'Step ' + state.k + ' of ' + steps;
+    ['open', 'closed'].forEach(function (name) {
+      var run = c[name], view = views[name], records = run.records;
+      var path = [cfg.world.start.slice(0, 2)].concat(records.map(function (r) { return r.nextState.slice(0, 2); }));
+      var plan = run.plans[records.length && name === 'closed' ? records[records.length - 1].planId : 0];
+      var here = path[path.length - 1], goal = cfg.world.goal.center;
+      q('[data-wm-path]', view).setAttribute('points', points(path));
+      q('[data-wm-predicted]', view).setAttribute('points', points(plan.predictedPath));
+      q('[data-wm-agent]', view).setAttribute('cx', here[0].toFixed(5));
+      q('[data-wm-agent]', view).setAttribute('cy', here[1].toFixed(5));
+      q('[data-wm-distance]', view).textContent = Math.hypot(here[0] - goal[0], here[1] - goal[1]).toFixed(2);
+      q('[data-wm-outcome]', view).textContent = labels[run.outcome];
+      q('[data-wm-plans]', view).textContent = String(run.plans.length);
+      view.setAttribute('data-outcome', run.outcome);
+    });
+    controls();
+  }
+  // Show step 0 at once; compute the shared step-0 plan once, on the next frame.
+  function restart() {
+    stop();
+    state.k = 0;
+    state.comparison = null;
+    planner.setAttribute('data-seed', String(seed()));
+    clock.textContent = 'Step 0 of ' + steps;
+    errorOutput.textContent = describeError(error());
+    ['open', 'closed'].forEach(function (name) {
+      var view = views[name], start = cfg.world.start;
+      q('[data-wm-path]', view).setAttribute('points', points([start]));
+      q('[data-wm-agent]', view).setAttribute('cx', start[0].toFixed(5));
+      q('[data-wm-agent]', view).setAttribute('cy', start[1].toFixed(5));
+      q('[data-wm-outcome]', view).textContent = labels.running;
+      view.setAttribute('data-outcome', 'running');
+    });
+    if (!state.pending) state.pending = requestAnimationFrame(prepare);
+    controls();
+  }
+  function prepare() {
+    if (state.pending) cancelAnimationFrame(state.pending);
+    state.pending = 0;
+    planner.setAttribute('data-seed', String(seed()));
+    errorOutput.textContent = describeError(error());
+    state.comparison = W.createComparison(seed(), error());
+    renderModel();
+    render();
+  }
+  function step() {
+    if (!state.comparison || state.pending) prepare();
+    if (finished()) return false;
+    state.k += 1;
+    state.comparison.open.step();
+    state.comparison.closed.step();
+    render();
+    return true;
+  }
+  function stop() {
+    state.running = false;
+    if (state.frame) cancelAnimationFrame(state.frame);
+    state.frame = 0;
+  }
+  function tick(now) {
+    state.frame = 0;
+    if (!state.running) return;
+    if (now - state.last >= STEP_MS) {
+      state.last = now;
+      step();
+      if (finished()) { stop(); controls(); return; }
+    }
+    state.frame = requestAnimationFrame(tick);
+  }
+  function controls() {
+    var done = finished();
+    stepButton.disabled = done || state.running;
+    runButton.hidden = reduced.matches;
+    runButton.disabled = reduced.matches || done;
+    runButton.textContent = state.running ? 'Pause' : 'Run';
+    runButton.setAttribute('aria-pressed', state.running ? 'true' : 'false');
+    mode.textContent = reduced.matches ? 'Step mode (reduced motion)' : state.running ? 'Running, about 8 steps per second' : 'Paused';
+  }
+
+  // ---- Panel 2 ----
+  var orbit = cfg.orbit, baseline = W.simulateOrbits(0).orbits.map(function (o) { return o.points; });
+  var fits = baseline.map(function (trajectory) {
+    var samples = [];
+    orbit.times.forEach(function (t, i) { if (t <= orbit.trainEnd) samples.push({ t: t, x: trajectory[i][0], y: trajectory[i][1] }); });
+    return W.fitOrbit(samples);
+  });
+  var predicted = fits.map(function (fit) { return W.predictOrbit(fit, orbit.times).points; });
+  var sizes = baseline.map(function (trajectory) {
+    return Math.max.apply(null, [0, 1].map(function (j) {
+      var values = trajectory.map(function (p) { return p[j]; });
+      return Math.max.apply(null, values) - Math.min.apply(null, values);
+    }));
+  });
+  function renderOrbits() {
+    var mass = Number(massInput.value), truth = W.simulateOrbits(mass).orbits.map(function (o) { return o.points; });
+    var trueLines = document.querySelectorAll('#kepler [data-kepler-true]'), fitLines = document.querySelectorAll('#kepler [data-kepler-predicted]');
+    var errors = truth.map(function (trajectory, j) {
+      trueLines[j].setAttribute('points', points(trajectory));
+      fitLines[j].setAttribute('points', points(predicted[j]));
+      var worst = 0;
+      trajectory.forEach(function (p, i) {
+        if (orbit.times[i] > orbit.trainEnd) worst = Math.max(worst, Math.hypot(p[0] - predicted[j][i][0], p[1] - predicted[j][i][1]));
+      });
+      return worst / sizes[j];
+    });
+    var worst = Math.max(errors[0], errors[1]), pct = function (v) { return (100 * v).toFixed(1) + '%'; };
+    var verdict = worst < 0.02 ? 'holds' : worst <= 0.1 ? 'drifting' : 'broken';
+    var words = { holds: 'The frozen fit still predicts both orbits.', drifting: 'The fit is drifting away from the true orbits.',
+      broken: 'The frozen fit no longer predicts the orbits: the physics changed and the fit never saw it.' };
+    var readout = q('[data-kepler-error]');
+    readout.textContent = 'Worst held-out error: ' + pct(worst) + ' of orbit size (inner ' + pct(errors[0]) + ', outer ' + pct(errors[1]) + '). ' + words[verdict];
+    readout.setAttribute('data-verdict', verdict);
+    document.querySelectorAll('[data-kepler-added]').forEach(function (el) { el.toggleAttribute('hidden', !(mass > 0)); });
+    massOutput.textContent = mass.toFixed(3) + (mass > 0 ? ': ' + (100 * mass).toFixed(1) + '% of the central mass, at (' + orbit.addedPosition.join(', ') + ')' : ': no added mass');
+    q('[data-kepler-periods]').textContent = fits[0].period.toFixed(2) + ' and ' + fits[1].period.toFixed(2);
+  }
+
+  seedInput.addEventListener('input', restart);
+  seedInput.addEventListener('change', restart);
+  errorInput.addEventListener('input', restart);
+  errorInput.addEventListener('change', restart);
+  massInput.addEventListener('input', function () { renderOrbits(); restart(); });
+  massInput.addEventListener('change', function () { renderOrbits(); restart(); });
+  massReset.addEventListener('click', function () { massInput.value = massInput.defaultValue; renderOrbits(); restart(); });
+  stepButton.addEventListener('click', function () { stop(); step(); });
+  runButton.addEventListener('click', function () {
+    if (state.running) { stop(); controls(); return; }
+    if (reduced.matches || finished()) return;
+    state.running = true;
+    state.last = -Infinity;
+    controls();
+    state.frame = requestAnimationFrame(tick);
+  });
+  resetButton.addEventListener('click', function () {
+    massInput.value = massInput.defaultValue;
+    renderOrbits();
+    restart();
+  });
+  reduced.addEventListener('change', function () {
+    if (reduced.matches) stop();
+    controls();
+  });
+
+  [seedInput, errorInput, stepButton, runButton, resetButton, massInput, massReset].forEach(function (el) { el.disabled = false; });
+  renderOrbits();
+  prepare();
+})();
+</script>
+</body>
+</html>

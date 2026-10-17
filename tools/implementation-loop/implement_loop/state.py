@@ -96,6 +96,31 @@ class RunStore:
             self.state.setdefault(section, {})[key] = value
             self.save()
 
+    def budget(self, n: int) -> dict:
+        """An issue's spending, kept apart from its state so that no stale copy of the state can
+        overwrite a charge (ADR 0012): answered calls, failed attempts (timeouts and crashes), a
+        bonus a revival or retry granted, and attempts started but never reported (a killed run)."""
+        with self._lock:
+            b = self.state.setdefault("budgets", {}).get(str(n))
+            if b is None:
+                raw = self.state["issues"].get(str(n)) or {}
+                b = {"calls": raw.get("calls", 0), "infra": raw.get("infra", 0),
+                     "bonus": raw.get("ceiling_bonus", 0), "pending": 0}
+            return dict(b)
+
+    def change_budget(self, n: int, **delta) -> dict:
+        """Atomically add each `delta` to the issue's budget (`set_<field>` sets it instead)."""
+        with self._lock:
+            b = self.budget(n)
+            for key, value in delta.items():
+                if key.startswith("set_"):
+                    b[key[4:]] = value
+                else:
+                    b[key] = b.get(key, 0) + value
+            self.state.setdefault("budgets", {})[str(n)] = b
+            self.save()
+            return dict(b)
+
     def known(self) -> list[int]:
         return sorted(int(k) for k in self.state["issues"])
 

@@ -1,12 +1,19 @@
-"""What the engine asks of agents, and a scripted fake for tests.
+"""What the engine asks of agents (ADR 0012), and a scripted fake for tests.
 
-Real implementations (headless `claude -p` and `codex exec`, one fresh process per call) come
-in the next step. Every call names the vendor that must answer, so the engine, not the agent,
-decides who proposes, who writes the checks, who implements and who reviews.
+Two vendors, two keys. The **builder** (the operator's vendor) plans an issue, writes the code,
+its tests, the registrations and the commands that prove each item. The **examiner** (the other
+vendor) triages the plan, examines the result on the exact head, writes independent probes,
+approves or refuses the builder's typed requests, and certifies the head that may land. A fresh
+**arbiter** call from the examiner's vendor settles disputes. The engine (plain code) owns git,
+the verifier, the gates and every merge.
+
+Every call names the vendor that must answer. A `meter` (set by the engine) is told before and
+after every attempt, so the engine can charge calls to the issue's ceilings.
 """
 
 from __future__ import annotations
 
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -14,72 +21,146 @@ from typing import Protocol
 from .model import CheckSpec, Finding, Issue, IssueSpec
 
 
+class AgentStopped(Exception):
+    """The run was asked to stop while an agent was running."""
+
+
+class AgentFailure(Exception):
+    """An agent call failed after its retries. `kind` is "outage" (the vendor could not reach its
+    service), "timeout" or "crash" (it ran and produced nothing usable)."""
+
+    def __init__(self, message: str, kind: str = "crash", vendor: str = ""):
+        super().__init__(message)
+        self.kind, self.vendor = kind, vendor
+
+
+class CeilingReached(Exception):
+    """A call was refused before it started: the issue's (or the run's) call ceiling is spent."""
+
+    def __init__(self, message: str, scope: str = "issue"):
+        super().__init__(message)
+        self.scope = scope
+
+
 @dataclass
-class DesignRequest:
+class IssueRequest:
     issue: Issue
     spec: IssueSpec
     context: str
-    lens: str = ""
     feedback: list[str] = field(default_factory=list)
+    facts: dict = field(default_factory=dict)   # host lacks, invariants, branch notes, the plan's decisions
 
 
 @dataclass
-class Proposal:
-    author: str                       # anonymized label shown to other agents, e.g. "A"
-    decisions: dict[str, str]         # decision id -> choice
-    checks: list[CheckSpec]           # how each ledger item will be proven
-    files: list[str]                  # paths the implementation will touch
-    check_files: list[str]            # where the acceptance checks will live
-    open_questions: list[str] = field(default_factory=list)
+class ItemPlan:
+    id: str
+    reading: str
+    quote: str
+    proof: str                        # test | command | review | owner | deferred
+    capability: str | None = None     # owner: the capability the host lacks
+    agent_part: str | None = None     # owner: what agents still build and prove
+    depends_on: int | None = None     # deferred: the open issue it needs
+    depends_quote: str | None = None  # deferred: words of that issue's title or body
+
+
+@dataclass
+class PlanResult:
+    items: list[ItemPlan]
+    zones: list[str]
+    decisions: list[dict]
+    notes: str = ""
 
 
 @dataclass
 class Objection:
+    kind: str                          # misreading | classification | dependency | scenario
     text: str
-    blocking: bool
+    item: str | None = None
+    quote: str | None = None
+    proof: str | None = None           # classification: the proof kind it argues for
+    capability: str | None = None
+    depends_on: int | None = None
+    depends_quote: str | None = None
 
 
 @dataclass
-class Design:
-    decisions: dict[str, str]
-    checks: list[CheckSpec]
-    files: list[str]
-    check_files: list[str]
-    notes: str = ""
-    # Every reading the judge chose, with its reason: shown in the PR and the run report (ADR 0011).
-    decision_log: list[dict] = field(default_factory=list)
+class Request:
+    kind: str     # paths | protected_change | command_change | test_change | reclassify | depends | dispute
+    detail: str
+    paths: list[str] = field(default_factory=list)
+    item: str | None = None
+    finding: str | None = None
+    capability: str | None = None
+    depends_on: int | None = None
+    depends_quote: str | None = None
+    command: dict | None = None        # command_change: the new command for `item`
+    id: str = ""
 
 
 @dataclass
-class ImplementResult:
-    status: str                       # "done" | "impossible" | "check_defect"
+class BuildResult:
+    status: str                        # done | blocked
     note: str = ""
-    defect_file: str | None = None    # check_defect: the locked check that is wrong
-    defect_reproduction: str | None = None
+    tests: list[str] = field(default_factory=list)
+    commands: list[CheckSpec] = field(default_factory=list)
+    dispositions: dict[str, str] = field(default_factory=dict)
+    decisions: list[dict] = field(default_factory=list)
+    requests: list[Request] = field(default_factory=list)
 
 
 @dataclass
-class ReviewResult:
+class Probe:
+    file: str
+    criterion: str
+    command: str
+    cwd: str = "."
+    content: str = ""
+
+
+@dataclass
+class Decision:
+    request: str
+    approve: bool
+    reason: str
+    dispositions: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class ExamResult:
+    verdicts: list[dict]               # {item, verdict: met | unmet, quote, note}
     findings: list[Finding]
-    coverage: dict[str, bool] = field(default_factory=dict)   # criterion id -> judged met
+    probes: list[Probe]
+    decisions: list[Decision]
+    certify: bool
+    summary: str = ""
+
+
+@dataclass
+class Ruling:
+    upheld: bool                       # the disputed claim stands (the finding blocks, the refusal holds)
+    reason: str
+
+
+class Meter(Protocol):
+    def before(self, issue: int | None, role: str, vendor: str) -> None: ...
+    def after(self, issue: int | None, role: str, vendor: str, outcome: str) -> None: ...
 
 
 class Agents(Protocol):
     operator: str
     other: str
+    meter: Meter | None
 
     def explore(self, vendor: str, question: str, briefing: str) -> str: ...
-    def propose(self, vendor: str, req: DesignRequest, author: str) -> Proposal: ...
-    def audit(self, vendor: str, req: DesignRequest, proposals: list[Proposal]) -> list[Objection]: ...
-    def critique(self, vendor: str, req: DesignRequest, proposals: list[Proposal], objections: list[Objection]) -> list[Objection]: ...
-    def judge(self, vendor: str, req: DesignRequest, proposals: list[Proposal], objections: list[Objection]) -> Design: ...
-    def write_checks(self, vendor: str, req: DesignRequest, design: Design, worktree: Path,
-                     feedback: list[str] | None = None) -> None: ...
-    def implement(self, vendor: str, req: DesignRequest, design: Design, worktree: Path, feedback: list[str]) -> ImplementResult: ...
-    def review(self, vendor: str, role: str, req: DesignRequest, design: Design, worktree: Path,
-               base_sha: str, head_sha: str, evidence: list[dict]) -> ReviewResult | None: ...
-    def verify_finding(self, vendor: str, req: DesignRequest, worktree: Path, finding: Finding) -> bool | None:
-        """True: reproduced. False: tried and could not reproduce. None: could not verify."""
+    def plan(self, vendor: str, req: IssueRequest, worktree: Path | None) -> PlanResult: ...
+    def triage(self, vendor: str, req: IssueRequest, plan: dict) -> list[Objection]: ...
+    def build(self, vendor: str, req: IssueRequest, plan: dict, worktree: Path, feedback: list[str]) -> BuildResult: ...
+    def resolve_locked(self, vendor: str, req: IssueRequest, worktree: Path, files: list[str], feedback: list[str]) -> None:
+        """Resolve main's conflict markers in locked tests (never the builder's vendor)."""
+    def examine(self, vendor: str, req: IssueRequest, plan: dict, worktree: Path, base_sha: str, head_sha: str,
+                evidence: list[dict], memory: list[dict], requests: list[dict], since: str | None) -> ExamResult: ...
+    def decide(self, vendor: str, req: IssueRequest, worktree: Path, requests: list[dict]) -> list[Decision]: ...
+    def arbitrate(self, vendor: str, req: IssueRequest, dispute: dict, worktree: Path | None = None) -> Ruling: ...
 
 
 # --------------------------------------------------------------------------- fake
@@ -88,153 +169,252 @@ class Agents(Protocol):
 class Script:
     """How the fake agents behave for one issue."""
     files: dict[str, str]                         # implementation: path -> correct content
-    check_file: str = ""                          # defaults to checks/issue_<n>.sh
-    wrong_attempts: int = 0                       # first N implementations write wrong content
-    impossible: bool = False                      # every implementation reports the task impossible
-    impossible_once: bool = False                 # only the first does; a redesign fixes it
-    defective_check: bool = False                 # the first checks expect the wrong content
-    tamper: bool = False                          # first implementation also edits the locked check
-    review_defects: int = 0                       # cross reviewer reports a reproducible defect N times
-    reviewer_fails: int = 0                       # cross reviewer returns nothing N times
-    disagree: bool = False                        # the two proposals differ
-    criterion_dispute: bool = False               # the audit finds the issue ambiguous
-    manual_items: tuple[str, ...] = ()            # ledger ids that only a person can prove
-    commits: bool = False                         # the implementer commits its work (it should not)
-    tags: bool = False                            # the implementer creates a git tag (it should not)
-    unverifiable: bool = False                    # the finding verifier cannot reach a verdict
-    artifact_items: tuple[str, ...] = ()          # ledger ids proven by reviewer judgement
+    test_file: str = ""                           # defaults to checks/issue_<n>.sh
+    wrong_attempts: int = 0                       # first N builds write wrong content
+    owner_items: tuple[str, ...] = ()             # items needing a capability the host lacks
+    bad_owner_items: tuple[str, ...] = ()         # items claimed as owner for a capability the host has
+    review_items: tuple[str, ...] = ()            # items proven by the examiner's verdict
+    unmet_review: int = 0                         # the first N examinations judge review items unmet
+    findings: int = 0                             # the first N examinations report a blocking, reproduced defect
+    unquoted_findings: int = 0                    # ... a reproduced defect tied to no item (a follow-up)
+    probe: str = "pass"                           # the examiner's probe: pass | unconditional | none
+    blocked_once: bool = False                    # the first build needs a path outside its zones
+    extra_path: str = ""                          # ... this one
+    tamper: bool = False                          # a build after locking edits the locked test
+    deferred: tuple[tuple[str, int], ...] = ()    # (item, issue) the plan defers
+    lines: dict[str, str] = field(default_factory=dict)   # shared list file -> the line this issue adds
+    conflict_tamper: bool = False                 # resolving a conflict, also edits the locked test
+    commits: bool = False                         # the builder commits its work (it should not)
+    tags: bool = False
+    branches: bool = False
+    outages: int = 0                              # the first N examinations fail with an outage
+    crashes: int = 0                              # the first N builds time out
+    no_certify: int = 0                           # the first N examinations withhold the certificate
+    impossible: bool = False                      # every build answers blocked, with no typed request
+    advisory_findings: int = 0                    # the first N examinations report a finding with no reproduction
+    test_change: bool = False                     # the second build amends its (locked) test, with a request
+
+
+MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+
+
+def resolve_union(text: str) -> str:
+    """Resolve conflict markers by keeping both sides, each line once."""
+    out, inside = [], False
+    for line in text.splitlines():
+        if line.startswith(MARKERS):
+            inside = not line.startswith(">>>>>>>")
+            continue
+        if not (inside and line in out):
+            out.append(line)
+    return "\n".join(out) + "\n" if out else ""
+
+
+def merging(worktree: Path) -> bool:
+    return subprocess.run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd=worktree,
+                          capture_output=True).returncode == 0
 
 
 class FakeAgents:
-    """Deterministic agents. The checks are shell scripts comparing file contents, so the
+    """Deterministic agents. Tests and probes are shell scripts comparing file contents, so the
     engine's real git, verify and landing code runs end to end without any model."""
 
     def __init__(self, scripts: dict[int, Script], operator: str = "claude", other: str = "codex"):
         self.scripts = scripts
         self.operator, self.other = operator, other
+        self.meter: Meter | None = None
         self.calls: list[tuple] = []
-        self._implemented: dict[int, int] = {}
-        self._reviewed: dict[int, int] = {}
-        self._review_failures: dict[int, int] = {}
-        self._checks_written: dict[int, int] = {}
+        self._built: dict[int, int] = {}
+        self._examined: dict[int, int] = {}
+        self._outages: dict[int, int] = {}
+        self._crashes: dict[int, int] = {}
 
-    def _s(self, req: DesignRequest) -> Script:
+    # ------------------------------------------------------------------ helpers
+    def _s(self, req: IssueRequest) -> Script:
         return self.scripts[req.issue.number]
 
-    def _check_file(self, n: int) -> str:
-        return self.scripts[n].check_file or f"checks/issue_{n}.sh"
+    def test_file(self, n: int) -> str:
+        return self.scripts[n].test_file or f"checks/issue_{n}.sh"
 
+    def probe_file(self, n: int) -> str:
+        return f"checks/probe_{n}.sh"
+
+    def _metered(self, issue, role, vendor, fn, fail: str | None = None):
+        if self.meter:
+            self.meter.before(issue, role, vendor)
+        if fail:
+            if self.meter:
+                self.meter.after(issue, role, vendor, fail)
+            raise AgentFailure(f"{vendor} {role}: {fail}", kind=fail, vendor=vendor)
+        result = fn()
+        if self.meter:
+            self.meter.after(issue, role, vendor, "answered")
+        return result
+
+    def _test_script(self, n: int) -> str:
+        s = self.scripts[n]
+        lines = ["#!/usr/bin/env bash", "set -euo pipefail", f"# acceptance test for issue {n}"]
+        for path, content in sorted(s.files.items()):
+            lines.append(f'test "$(cat {path})" = "{content}"')
+        for path, line in sorted(s.lines.items()):
+            lines.append(f"grep -qxF '{line}' {path}")
+        return "\n".join(lines) + "\n"
+
+    # ------------------------------------------------------------------ roles
     def explore(self, vendor, question, briefing):
         self.calls.append(("explore", vendor, question, briefing))
-        return f"[{vendor}] {question}: nothing surprising."
+        return self._metered(None, "explore", vendor, lambda: f"[{vendor}] {question}: nothing surprising.")
 
-    def propose(self, vendor, req, author):
+    def plan(self, vendor, req, worktree):
         n = req.issue.number
         s = self._s(req)
-        self.calls.append(("propose", vendor, n))
-        checks = []
+        self.calls.append(("plan", vendor, n))
+        items = []
+        deferred = dict(s.deferred)
         for item in req.spec.ledger:
-            if item.id in s.manual_items:
-                checks.append(CheckSpec(criterion=item.id, kind="manual", description=item.text))
-            elif item.id in s.artifact_items:
-                checks.append(CheckSpec(criterion=item.id, kind="artifact", description=item.text))
+            words = " ".join(item.text.split()[:4])
+            if item.id in s.owner_items:
+                items.append(ItemPlan(item.id, "needs real hardware", words, "owner",
+                                      capability="hardware:laptop", agent_part="time it on this host"))
+            elif item.id in s.bad_owner_items:
+                items.append(ItemPlan(item.id, "claimed as owner", words, "owner", capability="network:internet",
+                                      agent_part="none"))
+            elif item.id in deferred:
+                items.append(ItemPlan(item.id, "needs another issue", words, "deferred",
+                                      depends_on=deferred[item.id], depends_quote="Prerequisite widget"))
+            elif item.id in s.review_items:
+                items.append(ItemPlan(item.id, "judged by the examiner", words, "review"))
             else:
-                checks.append(CheckSpec(criterion=item.id, kind="command", command=f"bash {self._check_file(n)}"))
-        choice = "variant-b" if (s.disagree and author == "B") else "variant-a"
-        return Proposal(author=author, decisions={"approach": choice}, checks=checks,
-                        files=sorted(s.files), check_files=[self._check_file(n)])
+                items.append(ItemPlan(item.id, "proven by the test", words, "test"))
+        zones = sorted(set(s.files) | set(s.lines) | {self.test_file(n)} | ({f"edge_{n}.txt"} if s.findings else set()))
+        result = PlanResult(items=items, zones=zones,
+                            decisions=[{"id": "approach", "choice": "the simplest variant", "rationale": "fake"}])
+        return self._metered(n, "plan", vendor, lambda: result)
 
-    def audit(self, vendor, req, proposals):
-        self.calls.append(("audit", vendor, req.issue.number))
-        s = self._s(req)
-        if s.criterion_dispute:
-            return [Objection("the criterion itself is ambiguous: read it as the stricter case", blocking=True)]
-        return []
+    def triage(self, vendor, req, plan):
+        self.calls.append(("triage", vendor, req.issue.number))
+        return self._metered(req.issue.number, "triage", vendor,
+                             lambda: [Objection("misreading", "an unquoted wish for more provenance", item="D1")])
 
-    def critique(self, vendor, req, proposals, objections):
-        self.calls.append(("critique", vendor, req.issue.number, len(objections)))
-        return [Objection("variant-b ignores the size limit", blocking=False)]
-
-    def judge(self, vendor, req, proposals, objections):
-        self.calls.append(("judge", vendor, req.issue.number))
-        p = proposals[0]
-        log = [{"id": k, "choice": v, "rationale": "the simpler variant"} for k, v in p.decisions.items()]
-        log += [{"id": f"reading-{i}", "choice": o.text, "rationale": "decided by the judge"}
-                for i, o in enumerate(objections) if o.blocking]
-        return Design(decisions=dict(p.decisions), checks=p.checks, files=p.files, check_files=p.check_files,
-                      notes="fake design", decision_log=log)
-
-    def write_checks(self, vendor, req, design, worktree, feedback=None):
+    def build(self, vendor, req, plan, worktree, feedback):
         n = req.issue.number
         s = self._s(req)
-        k = self._checks_written.get(n, 0)
-        self._checks_written[n] = k + 1
-        self.calls.append(("write_checks", vendor, n, tuple(feedback or ())))
-        lines = ["#!/usr/bin/env bash", "set -euo pipefail", f"# acceptance check for issue {n}"]
-        for path, content in sorted(s.files.items()):
-            expected = "a-wrong-expectation" if (s.defective_check and k == 0) else content
-            lines.append(f'test "$(cat {path})" = "{expected}"')
-        target = worktree / self._check_file(n)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("\n".join(lines) + "\n")
+        k = self._built.get(n, 0)
+        self.calls.append(("build", vendor, n, tuple(feedback)))
+        crashes = self._crashes.get(n, 0)
+        if crashes < s.crashes:
+            self._crashes[n] = crashes + 1
+            return self._metered(n, "build", vendor, None, fail="timeout")
+        self._built[n] = k + 1
 
-    def implement(self, vendor, req, design, worktree, feedback):
-        n = req.issue.number
-        s = self._s(req)
-        k = self._implemented.get(n, 0)
-        self._implemented[n] = k + 1
-        self.calls.append(("implement", vendor, n, tuple(feedback)))
-        if s.impossible or (s.impossible_once and k == 0):
-            return ImplementResult("impossible", "the criteria contradict each other")
-        if s.defective_check and k == 0:
+        def run():
+            if s.impossible:
+                return BuildResult("blocked", "the criteria contradict each other")
+            resolving = merging(worktree)
+            for path, line in s.lines.items():
+                target = worktree / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                text = resolve_union(target.read_text()) if target.exists() else ""
+                if line not in text.splitlines():
+                    text += line + "\n"
+                target.write_text(text)
             for path, content in s.files.items():
                 target = worktree / path
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(content + "\n")
-            return ImplementResult("check_defect", "the check expects a value the issue never asks for",
-                                   defect_file=self._check_file(n), defect_reproduction=f"bash {self._check_file(n)}")
-        for path, content in s.files.items():
-            target = worktree / path
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text((content if k >= s.wrong_attempts else "wrong") + "\n")
-        if s.tamper and k == 0:
-            (worktree / self._check_file(n)).write_text("#!/usr/bin/env bash\nexit 0\n")
-        if s.tamper and k == 1:
-            # second attempt restores the check, as an honest implementer would after feedback
-            self.write_checks(vendor, req, design, worktree)
-        if s.commits:
-            import subprocess
-            subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
-            subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
-        if s.tags and k == 0:
-            import subprocess
-            subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
-        return ImplementResult("done")
+                target.write_text((content if k >= s.wrong_attempts else "wrong") + "\n")
+            test = worktree / self.test_file(n)
+            if not test.exists() or not any("locked" in f for f in feedback):
+                test.parent.mkdir(parents=True, exist_ok=True)
+                test.write_text(self._test_script(n))
+            if any("edge" in f for f in feedback):   # a blocking finding asked for the edge case
+                (worktree / f"edge_{n}.txt").write_text("handled\n")
+            if s.tamper and k >= 1:
+                test.write_text("#!/usr/bin/env bash\nexit 0\n")
+            if s.conflict_tamper and resolving:
+                test.write_text("#!/usr/bin/env bash\nexit 0\n")
+            requests = []
+            if s.test_change and k == 1:
+                test.write_text(self._test_script(n) + "# amended through an approved request\n")
+                requests.append(Request("test_change", "the locked test misses a comment the item needs",
+                                        paths=[self.test_file(n)]))
+            if s.commits:
+                subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
+                subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
+            if s.tags and k == 0:
+                subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
+            if s.branches and k == 0:
+                subprocess.run(["git", "branch", f"agent-branch-{n}"], cwd=worktree, check=True)
+            if s.blocked_once and k == 0:
+                return BuildResult("blocked", "the registry lives outside my zones",
+                                   requests=[Request("paths", "register the suite", paths=[s.extra_path])])
+            if s.extra_path and (worktree / s.extra_path).parent.exists() and k >= 1 and s.blocked_once:
+                (worktree / s.extra_path).write_text(f"suite {n}\n")
+            commands = [CheckSpec(criterion=i["id"], command=f"bash {self.test_file(n)}")
+                        for i in plan["items"] if i["proof"] in ("test", "command")]
+            return BuildResult("done", "built", tests=[self.test_file(n)], commands=commands, requests=requests)
+        return self._metered(n, "build", vendor, run)
 
-    def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):
+    def resolve_locked(self, vendor, req, worktree, files, feedback):
+        n = req.issue.number
+        self.calls.append(("resolve_locked", vendor, n, tuple(files)))
+
+        def run():
+            for f in files:
+                p = worktree / f
+                if p.is_file():
+                    p.write_text(resolve_union(p.read_text()))
+        return self._metered(n, "resolve_locked", vendor, run)
+
+    def examine(self, vendor, req, plan, worktree, base_sha, head_sha, evidence, memory, requests, since):
         n = req.issue.number
         s = self._s(req)
-        self.calls.append(("review", vendor, role, n))
-        if role == "cross":
-            fails = self._review_failures.get(n, 0)
-            if fails < s.reviewer_fails:
-                self._review_failures[n] = fails + 1
-                return None
-            k = self._reviewed.get(n, 0)
-            self._reviewed[n] = k + 1
-            if k < s.review_defects:
-                return ReviewResult([Finding(id=f"F{n}-{k}", reviewer=role, priority=1, confidence=0.9,
-                                             title="edge case breaks the criterion", file=sorted(s.files)[0], line=1,
-                                             reproduction="run the check with an empty input",
-                                             criterion="A1", claims_acceptance_failure=True)])
-        coverage = {i: True for i in s.artifact_items}
-        advisory = [Finding(id=f"N{n}", reviewer=role, priority=3, confidence=0.4, title="naming nit")]
-        return ReviewResult(advisory, coverage)
+        self.calls.append(("examine", vendor, n, since is not None))
+        outages = self._outages.get(n, 0)
+        if outages < s.outages:
+            self._outages[n] = outages + 1
+            return self._metered(n, "examine", vendor, None, fail="outage")
+        k = self._examined.get(n, 0)
+        self._examined[n] = k + 1
 
-    def verify_finding(self, vendor, req, worktree, finding):
-        self.calls.append(("verify_finding", vendor, req.issue.number, finding.id))
-        if self._s(req).unverifiable:
-            return None
-        if finding.reviewer == "implementer":   # a claimed check defect: reproduced when the check is wrong
-            return "a-wrong-expectation" in (worktree / (finding.file or "")).read_text()
-        return finding.claims_acceptance_failure
+        def run():
+            item = req.spec.ledger[0]
+            quote = " ".join(item.text.split()[:4])
+            findings, probes = [], []
+            if k < s.findings:
+                findings.append(Finding(id=f"F{n}-{k}", title="an edge case breaks the item", item=item.id, quote=quote,
+                                        observed="edge_{n}.txt is missing", expected="the edge case is handled",
+                                        reproduction=f"test -f edge_{n}.txt"))
+            if k < s.unquoted_findings:
+                findings.append(Finding(id=f"U{n}-{k}", title="a nicer error message", observed="terse",
+                                        expected="friendlier", reproduction=f"test -f friendlier_{n}.txt"))
+            if k < s.advisory_findings:
+                findings.append(Finding(id=f"A{n}-{k}", title="the edge case may break the item", item=item.id,
+                                        quote=quote, observed="unclear", expected="the edge case is handled"))
+            if s.probe != "none" and since is None:
+                body = ("#!/usr/bin/env bash\nexit 1\n" if s.probe == "unconditional"
+                        else "#!/usr/bin/env bash\nset -e\n" + "".join(f"test -s {p}\n" for p in sorted(s.files)))
+                tested = [i["id"] for i in plan["items"] if i["proof"] == "test"] or [item.id]
+                for k2, crit in enumerate(tested):   # one independent probe per behavioural item
+                    f = self.probe_file(n) if k2 == 0 else f"checks/probe_{n}_{crit}.sh"
+                    probes.append(Probe(f, crit, f"bash {f}", content=body))
+            verdicts = []
+            judged = [p["id"] for p in plan["items"] if p["proof"] == "review"
+                      or (p["proof"] == "owner" and (p.get("agent_part") or "none") != "none")]
+            for i in judged:
+                text = next(li.text for li in req.spec.ledger if li.id == i)
+                verdict = "unmet" if k < s.unmet_review else "met"
+                verdicts.append({"item": i, "verdict": verdict, "quote": " ".join(text.split()[:4]), "note": "fake"})
+            decisions = [Decision(r["id"], True, "the path is the suite registry") for r in requests]
+            return ExamResult(verdicts=verdicts, findings=findings, probes=probes, decisions=decisions,
+                              certify=k >= s.no_certify, summary="fake examination")
+        return self._metered(n, "examine", vendor, run)
+
+    def decide(self, vendor, req, worktree, requests):
+        n = req.issue.number
+        self.calls.append(("decide", vendor, n, tuple(r["id"] for r in requests)))
+        return self._metered(n, "decide", vendor, lambda: [Decision(r["id"], True, "fine") for r in requests])
+
+    def arbitrate(self, vendor, req, dispute, worktree=None):
+        n = req.issue.number
+        self.calls.append(("arbitrate", vendor, n, dispute.get("kind")))
+        return self._metered(n, "arbitrate", vendor, lambda: Ruling(True, "the item as written requires it"))

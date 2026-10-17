@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "demo": "strawberry",
+    "step": "ask",
+    "cli": "codex",
+    "cli_version": "codex-cli 0.162.1",
+    "model": "gpt-6-luna",
+    "effort": "low",
+    "date": "2026-10-11",
+    "command": [
+      "codex",
+      "exec",
+      "--sandbox",
+      "read-only",
+      "-m",
+      "gpt-6-luna",
+      "-c",
+      "model_reasoning_effort=\"low\"",
+      "--disable",
+      "shell_tool",
+      "--disable",
+      "unified_exec",
+      "--skip-git-repo-check",
+      "--ephemeral",
+      "-o",
+      "<last-message-file>",
+      "<prompt>"
+    ],
+    "prompt": "How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.",
+    "model_reported": [
+      "gpt-6-luna"
+    ],
+    "model_evidence": [
+      "model: gpt-6-luna"
+    ]
+  },
+  "word": "strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor",
+  "truth": 146,
+  "answers": [
+    "138",
+    "146",
+    "128",
+    "114",
+    "133"
+  ],
+  "classes": [
+    "incorrect",
+    "correct",
+    "incorrect",
+    "incorrect",
+    "incorrect"
+  ],
+  "tools_used": [
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "raw": [
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n138\ntokens used\n10,573\n",
+      "last_message": "138"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n146\ntokens used\n10,573\n",
+      "last_message": "146"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n128\ntokens used\n12,621\n",
+      "last_message": "128"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n114\ntokens used\n333\n",
+      "last_message": "114"
+    },
+    {
+      "transcript": "Reading additional input from stdin...\nOpenAI Codex v0.162.1\n--------\nworkdir: .\nmodel: gpt-6-luna\nprovider: openai\napproval: never\nsandbox: read-only\nreasoning effort: low\nreasoning summaries: none\n--------\nuser\nHow many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.\ncodex\n133\ntokens used\n333\n",
+      "last_message": "133"
+    }
+  ]
+}

@@ -49,6 +49,19 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
+`npm --prefix setup test` runs `tools/html-pages/tests/run-all.mjs`, which lists that directory
+and passes every `*.test.mjs` file in it to a single `node --test` (Node 22 or newer, the version
+CI uses). A new suite is collected by adding the file; there is no list to register it in. Extra
+arguments go to `node --test` as options, for example
+`npm --prefix setup test -- --test-reporter=tap`. To run one suite and reject skipped or empty
+results, use `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`.
+
+The tiny-lm suite also needs a C compiler on `PATH` as `cc` (OS-level; for example
+`sudo apt-get install gcc` on Debian or Ubuntu, which GitHub's Ubuntu runners already have). It
+compiles llama2.c's `run.c`, vendored at a pinned commit in
+`sessions/01-fundamentals/cursus/labs/tiny-lm/reference/`, as the reference for the page's
+logits. `node setup/doctor.mjs` reports the compiler and fails without it.
+
 Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI runs this
 same setup and test sequence on Linux, the only platform teaching pages need (ADR 0010).
 
@@ -99,12 +112,47 @@ into uv's cache, with nothing installed globally:
 uv run --no-project --with shellcheck-py==0.10.0.1 shellcheck sessions/01-fundamentals/exercises/check-setup.sh
 ```
 
+## Session test suites in CI
+
+The required CI check runs the pytest suite of every session that has a `tests/` folder
+(`.github/workflows/session-tests.yml`), on Linux, on every pull request. Each session runs in its
+own pinned environment: `astral-sh/setup-uv` installs the uv version in the session's `mise.toml`,
+then, from the session folder and with that file's Python version,
+
+```sh
+uv run --locked pytest -q -m "not live"
+```
+
+installs the packages in its `uv.lock` and runs the same suite as the README's `uv run pytest`.
+The run fails if it collects nothing or skips anything. A test that needs what CI lacks (a
+logged-in `claude` or `codex`, network access to a vendor API, credentials, a real laptop,
+Windows or macOS) gets `@pytest.mark.live`, with the marker registered under `markers` in that
+session's `[tool.pytest.ini_options]`, so CI deselects it; it never skips itself. No test needs
+the marker yet, so no session registers it. Files that are not named `test_*.py`, such as
+`tests/fixture_replay_checks.py`, are not collected, in CI or locally.
+
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
 `/html-page`, `/ship`, `/implement` and `/turn-in` through `.claude/skills/`, and `$html-page`,
 `$ship`, `$implement` and `$turn-in` through `.agents/skills/`. No separate skill download or MCP
 registration is needed.
+
+### Instructors: the Session 1 Act III agent demos
+
+[`sessions/01-fundamentals/cursus/demos/agent/`](../sessions/01-fundamentals/cursus/demos/agent/README.md)
+(Linux only) drives both CLIs headless and needs nothing installed beyond the session setup above:
+
+- **The context-bomb MCP server** is `context_bomb.py`, a standard-library script in that folder.
+  It is passed per invocation only (`claude --strict-mcp-config --mcp-config <file>`,
+  `codex exec -c mcp_servers.context_bomb.…`) and never registered with `claude mcp add` or
+  `codex mcp add`. No global agent configuration changes.
+- **To record**: Claude Code and Codex installed and logged in (`claude` then /login,
+  `codex login`), and `tmux` for the Codex `/status` capture. The recordings were made with
+  Claude Code 2.1.301 and codex-cli 0.162.1.
+- **To reset offline**: the session's uv cache warmed once by the session setup (`uv sync`). The
+  reset exports P00 to `<tempdir>/cursus-s1-agent/` and runs `uv sync --locked --offline` there.
+- **To replay**: nothing; the replays start no CLI and open no socket.
 
 ## Students: turning in homework
 
@@ -247,7 +295,9 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | shellcheck for the pre-work check script | `uv run --no-project --with shellcheck-py==0.10.0.1` fetches the pinned shellcheck binary into uv's per-user cache |
 | Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
+| uv, Python and packages for the session test suites in CI | `astral-sh/setup-uv` installs the uv version pinned in each session's `mise.toml` on the CI runner; `uv run --locked` uses that file's Python version (the runner's, or one uv fetches into its cache) and installs the session's `uv.lock` packages into the session's `.venv/` |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
+| Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
 When adding another repository-wide tool, put its installer, manifests/lockfiles and diagnostic

@@ -38,9 +38,8 @@ uv run pytest
 The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
 PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell once
 from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that
-directory on `PATH`, or set `CURSUS_PWSH`). The whole suite takes about 15 minutes, 12 of them in
-four scenarios that wait out the check's 180 s agent timeout; add `-k "not smoke_timeout"` for a
-quick run. `tests/prework_live_agents.py` is not collected by
+directory on `PATH`, or set `CURSUS_PWSH`). The agent-timeout scenarios shorten the check's
+180 s default to 5 s through `CHECK_SETUP_SMOKE_TIMEOUT`. `tests/prework_live_agents.py` is not collected by
 `uv run pytest`: run it by hand with `uv run python tests/prework_live_agents.py` to repeat the
 live proof that the check passes with only Claude Code and with only Codex. It needs both agents
 installed and logged in, and costs one short prompt to each.
@@ -48,7 +47,42 @@ installed and logged in, and costs one short prompt to each.
 `uv sync` installs only the runtime dependencies (`pytest`, `highspy`, `numpy`) into this
 session's `.venv/`, at the versions pinned in `uv.lock`. The `fixtures` dependency group
 (`torch`, `transformers`) is for building the files in `cursus/fixtures/` only. Students never
-need it; instructors who rebuild fixtures opt in with `uv sync --group fixtures`.
+need it, and `uv sync` never installs torch. Instructors who rebuild fixtures opt in per command
+with `uv run --group fixtures` (see [Regenerating fixtures](#regenerating-fixtures)).
+
+## Regenerating fixtures
+
+The Act I labs read real model traces from `cursus/fixtures/`: `next_token.json` (GPT-2 small,
+top-20 next-token logits for 20 prompts), `attention.json` (every GPT-2 attention layer and
+head on one coreference sentence) and `base_vs_instruct.json` (greedy completions from
+SmolLM2-135M base and instruct). They are committed, so nobody needs to rebuild them to teach.
+To rebuild them (instructors only, Linux), run from this directory:
+
+```sh
+uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
+```
+
+- The first run needs network. On Linux x86_64 the locked torch wheel pulls large CUDA
+  packages, and the models download to `~/.cache/huggingface`. The build itself runs on CPU
+  and takes under a minute.
+- Model revisions and the export date are pinned in `REVISIONS` and `EXPORT_DATE` at the top of
+  the script. Bump them together to move to newer models, then commit the new JSON.
+- The output is byte-identical across runs (CPU float32, one thread, greedy decoding, logits
+  rounded to 3 decimals, attention quantized to 0–255). After a rebuild with unchanged pins,
+  `git status` must be clean. This holds on Linux x86_64 with the locked libraries; a different
+  CPU or BLAS could in theory flip a value that sits on a rounding boundary.
+- To check that the committed JSON is real output from the pinned models (offline, after one
+  build has filled the cache):
+  `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
+  The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
+- `cursus/labs/attention.html` embeds `attention.json` verbatim in its
+  `<script id="attention-data">` block, so it opens over `file://` without a fetch. After a
+  rebuild that changes `attention.json`, paste the new file contents into that block and set
+  its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
+  plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
+  the repository root, `node tools/html-pages/tests/run-suite.mjs
+  tools/html-pages/tests/attention.test.mjs`, and re-review the page
+  (`cursus/labs/attention/review.md` records the reviewed page hash).
 
 ## Opening pages
 
@@ -86,6 +120,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
+| `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/00-prework.html` | Pre-work page: install steps for git, gh, uv, mise and Claude Code or Codex on macOS, Linux, WSL and Windows, login troubleshooting, the setup check and the pre-reading |

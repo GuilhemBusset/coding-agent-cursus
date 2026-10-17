@@ -23,54 +23,54 @@ NUM = {"type": "number"}
 INT = {"type": "integer"}
 NINT = {"type": ["integer", "null"]}
 
-CHECK = obj(
-    criterion=STR,
-    kind={"type": "string", "enum": ["command", "artifact", "manual"]},
-    command=NSTR,
-    cwd=STR,
-    description=STR,
-)
 DECISION = obj(id=STR, choice=STR, rationale=STR)
-
 EXPLORE = obj(notes=STR)
-PROPOSAL = obj(
-    decisions=arr(DECISION),
-    checks=arr(CHECK),
-    files=arr(STR),
-    check_files=arr(STR),
-    open_questions=arr(STR),
+SMOKE = obj(ok=BOOL)
+
+PROOF = {"type": "string", "enum": ["test", "command", "review", "owner", "deferred"]}
+ITEM_PLAN = obj(id=STR, reading=STR, quote=STR, proof=PROOF, capability=NSTR, agent_part=NSTR,
+                depends_on=NINT, depends_quote=NSTR)
+PLAN = obj(items=arr(ITEM_PLAN), zones=arr(STR), decisions=arr(DECISION), notes=STR)
+TRIAGE = obj(objections=arr(obj(
+    kind={"type": "string", "enum": ["misreading", "classification", "dependency", "scenario"]},
+    text=STR, item=NSTR, quote=NSTR, proof={"type": ["string", "null"]}, capability=NSTR,
+    depends_on=NINT, depends_quote=NSTR,
+)))
+COMMAND = obj(criterion=STR, command=STR, cwd=STR, timeout_s=NINT)
+REQUEST = obj(
+    kind={"type": "string", "enum": ["paths", "protected_change", "command_change", "test_change", "reclassify",
+                                     "depends", "dispute"]},
+    detail=STR, paths=arr(STR), item=NSTR, finding=NSTR, capability=NSTR, depends_on=NINT, depends_quote=NSTR,
+    command=NSTR, cwd=NSTR, timeout_s=NINT,
 )
-OBJECTIONS = obj(objections=arr(obj(text=STR, blocking=BOOL)))
-DESIGN = obj(
-    decisions=arr(DECISION),
-    checks=arr(CHECK),
-    files=arr(STR),
-    check_files=arr(STR),
-    notes=STR,
+BUILD = obj(
+    status={"type": "string", "enum": ["done", "blocked"]}, note=STR, tests=arr(STR), commands=arr(COMMAND),
+    dispositions=arr(obj(test=STR, disposition=STR)), decisions=arr(DECISION), requests=arr(REQUEST),
 )
-CHECKS_WRITTEN = obj(files_written=arr(STR), note=STR)
-IMPLEMENTED = obj(status={"type": "string", "enum": ["done", "impossible", "check_defect"]}, note=STR,
-                  defect_file=NSTR, defect_reproduction=NSTR)
-REVIEW = obj(
-    findings=arr(obj(
-        id=STR, priority=INT, confidence=NUM, title=STR, file=NSTR, line=NINT,
-        reproduction=NSTR, criterion=NSTR, claims_acceptance_failure=BOOL,
-    )),
-    coverage=arr(obj(criterion=STR, met=BOOL)),
+RESOLVED = obj(files=arr(STR), note=STR)
+FINDING = obj(title=STR, item=NSTR, quote=NSTR, invariant=NSTR, observed=STR, expected=STR, reproduction=NSTR,
+              cwd=STR, probe=NSTR, file=NSTR, line=NINT, severity=INT)
+EXAMINE = obj(
+    verdicts=arr(obj(item=STR, verdict={"type": "string", "enum": ["met", "unmet"]}, quote=STR, note=STR)),
+    findings=arr(FINDING),
+    probes=arr(obj(file=STR, criterion=STR, command=STR, cwd=STR, content=STR)),
+    certify=BOOL,
     summary=STR,
 )
-VERDICT = obj(reproduced=BOOL, evidence=STR)
+DECIDE = obj(decisions=arr(obj(request=STR, approve=BOOL, reason=STR,
+                               dispositions=arr(obj(test=STR, disposition=STR)))))
+ARBITRATE = obj(upheld=BOOL, reason=STR)
 
 BY_ROLE = {
     "explore": EXPLORE,
-    "propose": PROPOSAL,
-    "audit": OBJECTIONS,
-    "critique": OBJECTIONS,
-    "judge": DESIGN,
-    "write_checks": CHECKS_WRITTEN,
-    "implement": IMPLEMENTED,
-    "review": REVIEW,
-    "verify_finding": VERDICT,
+    "smoke": SMOKE,
+    "plan": PLAN,
+    "triage": TRIAGE,
+    "build": BUILD,
+    "resolve_locked": RESOLVED,
+    "examine": EXAMINE,
+    "decide": DECIDE,
+    "arbitrate": ARBITRATE,
 }
 
 
