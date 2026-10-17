@@ -321,7 +321,7 @@ class Finding06CommandCwd(FixCase):
         st = self.store.issue(2)
         change = [r for r in st.requests if r["kind"] == "command_change"]
         self.assertEqual(len(change), 1)
-        self.assertEqual((change[0]["item"], change[0]["command"]["cwd"], change[0]["status"]), ("D1", "docs", "refused"))
+        self.assertEqual((change[0]["item"], change[0]["commands"][0]["cwd"], change[0]["status"]), ("D1", "docs", "refused"))
         self.assertIn(change[0]["id"], [i for c in agents.calls if c[0] == "decide" for i in c[3]])
         d1 = [c for c in st.commands if c["criterion"] == "D1" and c.get("author") == "builder"]
         self.assertEqual([c["cwd"] for c in d1], ["."], "the locked command kept its directory")
@@ -823,6 +823,52 @@ class Finding12ManifestFromEmpty(FixCase):
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertTrue([e for e in self.events("tests_locked", 2) if e.get("late") and path in e["locked"]])
         self.assertIn(f"{path}::test_late", self.store.issue(2).manifest.get("*", []))
+
+
+@unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
+class Fault90SeveralCommandsPerItem(FixCase):
+    """#41 (engine 1.0.0) gave four commands for one item; only the last was kept, so the tests
+    only the first selected never ran and every round failed the same way (no_progress)."""
+    path = "tests/test_several_2.py"
+
+    def builder(self, later=""):
+        def hook(result, req, worktree, k):
+            (worktree / "tests").mkdir(exist_ok=True)
+            (worktree / self.path).write_text("def test_only_the_first_selects():\n"
+                                              "    assert open('docs/a.txt').read().strip() == 'alpha'\n")
+            result.tests = result.tests + [self.path]
+            bash = next(c.command for c in result.commands if c.criterion == "A1")
+            result.commands = [c for c in result.commands if c.criterion != "A1"] + [
+                CheckSpec("A1", command=f"{sys.executable} -m pytest -q -p no:cacheprovider {self.path}"),
+                CheckSpec("A1", command=bash + (later if k >= 1 else ""))]
+            return result
+        return hook
+
+    def a1(self):
+        return [c["command"] for c in self.store.issue(2).commands if c["criterion"] == "A1" and c.get("author") == "builder"]
+
+    def test_fault_90_every_command_for_an_item_is_kept_and_run(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine(agents=Agents(self.scripts, plan=with_zone(self.path), build=self.builder()))
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        self.assertEqual(len(self.a1()), 2)
+        self.assertFalse([p for e in self.events("verified", 2) for p in e["problems"] if "no command selects" in p])
+
+    def test_fault_90_a_changed_list_for_a_locked_item_is_one_request_applied_whole(self):
+        self.add_work(2, "docs/a.txt", "alpha", findings=1)
+        self.epic(2)
+        agents = Agents(self.scripts, plan=with_zone(self.path), build=self.builder(later=" && true"),
+                        decide=lambda requests: [Decision(r["id"], True, "same proof") for r in requests])
+        self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE, self.events("round_failed", 2))
+        change = [r for r in self.store.issue(2).requests if r["kind"] == "command_change"]
+        self.assertEqual([(r["item"], len(r["commands"]), r["status"]) for r in change], [("A1", 2, "approved")])
+        self.assertEqual(len(self.a1()), 2)
+        self.assertTrue(self.a1()[1].endswith(" && true"))
+
+    def test_fault_90_the_engine_version_moved_past_the_faulted_one(self):
+        self.assertNotEqual(VERSION, "1.0.0")
 
 
 class FindingNew1OwnerFindings(unittest.TestCase):
