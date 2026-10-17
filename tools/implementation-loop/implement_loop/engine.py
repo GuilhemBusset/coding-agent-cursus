@@ -1025,21 +1025,28 @@ class Engine:
         if refused:
             self.store.event("test_paths_refused", issue=st.number, paths=refused[:8])
         st.tests = sorted(set(st.tests) | {t for t in result.tests if t and inside(t)})
-        current = {c["criterion"]: c for c in st.commands if c.get("author") == "builder"}
+        current: dict[str, list[dict]] = {}
+        for c in st.commands:
+            if c.get("author") == "builder":
+                current.setdefault(c["criterion"], []).append(c)
         probes = [c for c in st.commands if c.get("author") == "examiner"]
+        given: dict[str, list[dict]] = {}   # an item may need several commands; each one is kept
         for c in result.commands:
             if c.criterion not in agent or not c.command or not inside(c.cwd or "."):
                 continue
-            entry = asdict(c) | {"author": "builder",
-                                 "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)}
-            if st.examined_sha and c.criterion in current and (
-                    current[c.criterion]["command"], current[c.criterion].get("cwd", ".")) != (c.command, c.cwd or "."):
+            given.setdefault(c.criterion, []).append(asdict(c) | {
+                "author": "builder", "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)})
+
+        def shape(entries: list[dict]) -> list[tuple[str, str]]:
+            return sorted((e["command"], e.get("cwd") or ".") for e in entries)
+        for item, entries in given.items():
+            if st.examined_sha and item in current and shape(current[item]) != shape(entries):
                 st.requests.append({"id": f"R{st.number}-{len(st.requests) + 1}", "kind": "command_change",
-                                    "item": c.criterion, "command": entry, "status": "pending",
-                                    "detail": f"change the locked command for {c.criterion}"})
+                                    "item": item, "commands": entries, "status": "pending",
+                                    "detail": f"change the locked commands for {item}"})
                 continue
-            current[c.criterion] = entry
-        st.commands = list(current.values()) + probes
+            current[item] = entries
+        st.commands = [e for entries in current.values() for e in entries] + probes
         for test_id, why in (result.dispositions or {}).items():
             st.dispositions.setdefault(test_id, why)
         for d in result.decisions or []:
@@ -1149,9 +1156,9 @@ class Engine:
                 st.grants.append({"path": p.rstrip("/"), "source": f"approved {r['id']}",
                                   "protected": kind == "protected_change" or is_protected(p)})
             self._declare(n, st)
-        elif kind == "command_change" and r.get("command"):
+        elif kind == "command_change" and (r.get("commands") or r.get("command")):
             st.commands = [c for c in st.commands if not (c["criterion"] == r["item"] and c.get("author") == "builder")]
-            st.commands.append(r["command"])
+            st.commands.extend(r.get("commands") or [r["command"]])
         elif kind == "reclassify":
             st.plan["items"] = [{**i, "proof": "owner", "capability": r.get("capability"),
                                  "agent_part": r.get("detail")} if i["id"] == r["item"] else i for i in st.plan["items"]]
