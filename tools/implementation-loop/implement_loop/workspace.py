@@ -607,7 +607,7 @@ class Workspace:
         return self.git("symbolic-ref", "-q", "HEAD", cwd=path, check=False) or None
 
     def changed_files(self, path: Path, since: str) -> list[str]:
-        committed = self.git("diff", "--name-only", f"{since}..HEAD", cwd=path).splitlines()
+        committed = self.git("diff", "--name-only", "-z", f"{since}..HEAD", cwd=path, strip=False).split("\0")
         return sorted(set(f for f in committed + self.uncommitted(path) if f))
 
     def has_commit(self, path: Path, sha: str) -> bool:

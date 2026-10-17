@@ -190,6 +190,9 @@ class Script:
     outages: int = 0                              # the first N examinations fail with an outage
     crashes: int = 0                              # the first N builds time out
     no_certify: int = 0                           # the first N examinations withhold the certificate
+    impossible: bool = False                      # every build answers blocked, with no typed request
+    advisory_findings: int = 0                    # the first N examinations report a finding with no reproduction
+    test_change: bool = False                     # the second build amends its (locked) test, with a request
 
 
 MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
@@ -259,7 +262,7 @@ class FakeAgents:
 
     # ------------------------------------------------------------------ roles
     def explore(self, vendor, question, briefing):
-        self.calls.append(("explore", vendor, question))
+        self.calls.append(("explore", vendor, question, briefing))
         return self._metered(None, "explore", vendor, lambda: f"[{vendor}] {question}: nothing surprising.")
 
     def plan(self, vendor, req, worktree):
@@ -305,6 +308,8 @@ class FakeAgents:
         self._built[n] = k + 1
 
         def run():
+            if s.impossible:
+                return BuildResult("blocked", "the criteria contradict each other")
             resolving = merging(worktree)
             for path, line in s.lines.items():
                 target = worktree / path
@@ -327,6 +332,11 @@ class FakeAgents:
                 test.write_text("#!/usr/bin/env bash\nexit 0\n")
             if s.conflict_tamper and resolving:
                 test.write_text("#!/usr/bin/env bash\nexit 0\n")
+            requests = []
+            if s.test_change and k == 1:
+                test.write_text(self._test_script(n) + "# amended through an approved request\n")
+                requests.append(Request("test_change", "the locked test misses a comment the item needs",
+                                        paths=[self.test_file(n)]))
             if s.commits:
                 subprocess.run(["git", "add", "-A"], cwd=worktree, check=True)
                 subprocess.run(["git", "commit", "-qm", "agent commit"], cwd=worktree, check=True)
@@ -334,7 +344,6 @@ class FakeAgents:
                 subprocess.run(["git", "tag", f"agent-probe-{n}"], cwd=worktree, check=True)
             if s.branches and k == 0:
                 subprocess.run(["git", "branch", f"agent-branch-{n}"], cwd=worktree, check=True)
-            requests = []
             if s.blocked_once and k == 0:
                 return BuildResult("blocked", "the registry lives outside my zones",
                                    requests=[Request("paths", "register the suite", paths=[s.extra_path])])
@@ -378,6 +387,9 @@ class FakeAgents:
             if k < s.unquoted_findings:
                 findings.append(Finding(id=f"U{n}-{k}", title="a nicer error message", observed="terse",
                                         expected="friendlier", reproduction=f"test -f friendlier_{n}.txt"))
+            if k < s.advisory_findings:
+                findings.append(Finding(id=f"A{n}-{k}", title="the edge case may break the item", item=item.id,
+                                        quote=quote, observed="unclear", expected="the edge case is handled"))
             if s.probe != "none" and since is None:
                 body = ("#!/usr/bin/env bash\nexit 1\n" if s.probe == "unconditional"
                         else "#!/usr/bin/env bash\nset -e\n" + "".join(f"test -s {p}\n" for p in sorted(s.files)))

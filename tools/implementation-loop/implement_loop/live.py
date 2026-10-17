@@ -256,7 +256,13 @@ class LiveAgents:
                                     if last_error and "schema" in last_error else "")
             stem.with_suffix(".prompt.md").write_text(full_prompt)
             started = time.monotonic()
-            code, out, err = self._spawn(self._command(vendor, role, cwd, schema, out_file), full_prompt, cwd, s.timeout_s)
+            try:
+                cmd = self._command(vendor, role, cwd, schema, out_file)
+            except AgentFailure as e:   # refused before it ran: charged like a crash, so it cannot spin
+                if self.meter:
+                    self.meter.after(issue, role, vendor, e.kind)
+                raise
+            code, out, err = self._spawn(cmd, full_prompt, cwd, s.timeout_s)
             value, meta = self._parse(vendor, out, out_file)
             if vendor == "claude":
                 out_file.write_text(out)

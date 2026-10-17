@@ -450,13 +450,15 @@ class Engine:
             if not self._claim_issue(n):
                 continue
             if ph == Phase.PENDING:
-                if scheduler.prerequisites_met(self.plan, phases, n):
-                    if self.store.issue(n).plan:
-                        self._set_phase(n, Phase.PLANNED)
-                    else:
-                        self._set_phase(n, Phase.PLAN)
-                        running[n] = pool.submit(self._step_plan, n)
-            elif ph == Phase.PLANNED:
+                if not scheduler.prerequisites_met(self.plan, phases, n):
+                    continue
+                if not self.store.issue(n).plan:
+                    self._set_phase(n, Phase.PLAN)
+                    running[n] = pool.submit(self._step_plan, n)
+                    continue
+                self._set_phase(n, Phase.PLANNED)   # already planned: it may start building in this pass
+                ph = Phase.PLANNED
+            if ph == Phase.PLANNED:
                 if scheduler.can_start_writing(self.plan, n, writers, self.caps.max_parallel_writers):
                     writers.append(n)
                     self._set_phase(n, Phase.BUILD)
@@ -556,6 +558,7 @@ class Engine:
         st.worktree = st.pr = st.head_sha = st.base_sha = None
         st.verified_sha = st.examined_sha = st.certified_sha = None
         st.locked, st.manifest, st.tests, st.probes = {}, {}, [], []
+        st.commands = [c for c in st.commands if c.get("author") != "examiner"]   # their probes went with the branch
         st.findings = [f for f in st.findings if f.get("status") == "follow_up"]
         st.human_tasks, st.reverted = [], []
         st.feedback = list(feedback)
@@ -986,7 +989,8 @@ class Engine:
             entry["id"] = f"R{n}-{len(st.requests) + 1}"
             entry["status"] = "pending"
             if r.kind == "test_change":
-                entry["content"] = {p: proposals.get(p) for p in (r.paths or list(proposals))}
+                # only locked tests the builder edited (None: deleted); a path it did not edit is no proposal
+                entry["content"] = {p: proposals[p] for p in (r.paths or list(proposals)) if p in proposals}
             st.requests.append(entry)
             added.append(entry)
         unrequested = [p for p in proposals if not any(p in (q.get("content") or {}) for q in added)]
@@ -1362,7 +1366,9 @@ class Engine:
             return self._set_phase(n, Phase.VERIFY)
         since = st.examined_sha
         memory = [f for f in st.findings if f.get("status") in ("open", "closed", "follow_up")]
-        res = self.agents.examine(self.other, self._req(n), st.plan, wt, st.base_sha, head, st.evidence, memory, [], since)
+        with self.ws.disposable(wt) as scratch:   # whatever the examiner changes is discarded with its copy
+            res = self.agents.examine(self.other, self._req(n), st.plan, scratch, st.base_sha, head, st.evidence,
+                                      memory, [], since)
         st = self.store.issue(n)
         item_text = self._item_text(n)
         rnd = len({f.get("round") for f in st.findings}) + 1
@@ -1690,24 +1696,35 @@ class Engine:
         self._sync(n)
 
     def _revert(self, n: int, feedback: list[str]) -> None:
+        """Revert what this issue merged since it broke `main`: the breaking round and its
+        fix-forward rounds (one round, after an earlier revert). `main` is reverted even past the
+        revert cap; past it, the issue fails instead of being delivered once more."""
         st = self.store.issue(n)
-        merge_sha = None
-        pr = self._safe(self.gh.find_pr, st.branch) if st.branch else None
-        if pr:
-            merge_sha = pr.get("merge_commit_sha")
-        if not merge_sha or st.reverts >= self.caps.reverts:
+        base = self.plan.specs[n].branch or f"loop/issue-{n}"
+        first = st.round if st.reverts else max(st.round - st.fix_forwards, 1)
+        merged = []
+        for r in range(st.round, first - 1, -1):   # newest first
+            pr = self._safe(self.gh.find_pr, base if r == 1 else f"{base}-r{r}") or {}
+            if (pr.get("merged") or pr.get("merged_at")) and pr.get("merge_commit_sha"):
+                merged.append(pr)
+        if not merged:
             return self._fail(n, "main_broken", "main fails after the merge and the fix-forward; the revert could not be "
                                                 "made: " + "; ".join(feedback)[:500])
+        if st.worktree:   # the revert's worktree takes the issue worktree's place, as the next round does
+            self.ws.remove(Path(st.worktree))
+            st.worktree = None
         st.reverts += 1
+        self.store.put(st)
         branch = f"{st.branch}-revert"
         wt = self.ws.issue_worktree(n, branch)
         self.ws.fetch()
         self.ws.git("reset", "--hard", "--quiet", self.ws.base_ref(), cwd=wt)
-        self.ws.git("revert", "--no-edit", merge_sha, cwd=wt)
+        self.ws.git("revert", "--no-edit", *[pr["merge_commit_sha"] for pr in merged], cwd=wt)
         self.ws.push(wt)
         head = self.ws.head(wt)
+        prs = ", ".join(f"#{pr['number']}" for pr in merged)
         title = f"Revert #{n}: it broke main"
-        body = (f"The implement loop reverts PR #{st.pr} for #{n}: after its merge, `main` fails and one fix-forward "
+        body = (f"The implement loop reverts PR {prs} for #{n}: after its merge, `main` fails and one fix-forward "
                 f"did not repair it.\n\n" + "\n".join(f"- {f}" for f in feedback)[:3000])
         rpr = self.gh.create_pr(branch, self.cfg.base_branch, title, body)
         conclusion, _ = self._wait_required(head)
@@ -1717,8 +1734,11 @@ class Engine:
                                                 f"({conclusion})")
         self.gh.merge_pr(rpr["number"], head)
         self.ws.remove(wt)
-        self.store.event("reverted", issue=n, pr=rpr["number"], of=st.pr)
+        self.store.event("reverted", issue=n, pr=rpr["number"], of=[pr["number"] for pr in merged])
         st = self.store.issue(n)
+        if st.reverts > self.caps.reverts:
+            return self._fail(n, "main_broken", f"its delivery broke main again and was reverted in PR #{rpr['number']}: "
+                                                + "; ".join(feedback)[:500])
         self._new_round(st, feedback + [f"Your earlier delivery was reverted in PR #{rpr['number']} because it broke "
                                         f"main; deliver it again without breaking it."], owner_edit=False)
         st.phase = Phase.PLANNED if st.plan else Phase.PENDING
