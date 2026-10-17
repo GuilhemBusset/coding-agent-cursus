@@ -922,7 +922,16 @@ class Engine:
             self.store.event("checkpoint_before_update", issue=n, sha=sha)
         if not st.base_sha:
             self._set_phase(n, Phase.BUILD, base_sha=self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt))
-        sync = self.ws.update(wt)
+        try:
+            sync = self.ws.update(wt)
+        except GitError:
+            # main moved between the fetch above and update's own, and git refused to merge over
+            # the uncommitted work: checkpoint it after all and merge again
+            if not self.ws.uncommitted(wt):
+                raise
+            sha = self._commit_work(n, wt, f"Checkpoint #{n} before merging main")
+            self.store.event("checkpoint_before_update", issue=n, sha=sha, retried=True)
+            sync = self.ws.update(wt)
         try:
             self._build_round(n, wt, sync)
         finally:
