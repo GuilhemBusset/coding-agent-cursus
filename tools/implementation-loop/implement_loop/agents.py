@@ -393,9 +393,14 @@ class FakeAgents:
             if s.probe != "none" and since is None:
                 body = ("#!/usr/bin/env bash\nexit 1\n" if s.probe == "unconditional"
                         else "#!/usr/bin/env bash\nset -e\n" + "".join(f"test -s {p}\n" for p in sorted(s.files)))
-                probes.append(Probe(self.probe_file(n), item.id, f"bash {self.probe_file(n)}", content=body))
+                tested = [i["id"] for i in plan["items"] if i["proof"] == "test"] or [item.id]
+                for k2, crit in enumerate(tested):   # one independent probe per behavioural item
+                    f = self.probe_file(n) if k2 == 0 else f"checks/probe_{n}_{crit}.sh"
+                    probes.append(Probe(f, crit, f"bash {f}", content=body))
             verdicts = []
-            for i in [p["id"] for p in plan["items"] if p["proof"] == "review"]:
+            judged = [p["id"] for p in plan["items"] if p["proof"] == "review"
+                      or (p["proof"] == "owner" and (p.get("agent_part") or "none") != "none")]
+            for i in judged:
                 text = next(li.text for li in req.spec.ledger if li.id == i)
                 verdict = "unmet" if k < s.unmet_review else "met"
                 verdicts.append({"item": i, "verdict": verdict, "quote": " ".join(text.split()[:4]), "note": "fake"})

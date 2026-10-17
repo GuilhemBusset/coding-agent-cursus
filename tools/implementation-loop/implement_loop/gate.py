@@ -149,7 +149,7 @@ def classify(f: Finding, item_text: dict[str, str], invariants, reproduced: bool
     witness = bool((f.observed or "").strip()) and bool((f.expected or "").strip())
     tied_item = bool(f.item) and f.item in item_text and quote_ok(item_text[f.item], f.quote)
     tied_invariant = invariant_ok(f.invariant, invariants)
-    if f.item in owner_items and not tied_invariant:
+    if f.item in owner_items and not tied_invariant and reproduced is not True:
         f.status, f.blocking, f.reason = "advisory", False, "it concerns an owner part, which agents do not prove"
         return f
     if f.reproduction and UNCONDITIONAL_REPRO.match(f.reproduction):

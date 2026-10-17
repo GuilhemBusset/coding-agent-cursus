@@ -18,6 +18,8 @@ Each engine run is a fresh process, so it imports the engine as it is on disk af
 from __future__ import annotations
 
 import json
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -78,7 +80,7 @@ class Supervisor:
                 self.sleep(delay)
                 continue
             for fingerprint, number in self._unrepaired_faults(state):
-                if runs >= self.max_runs:
+                if runs >= self.max_runs or self._expired(started):
                     break
                 self.log(f"supervise #{self.root}: repair run on #{number} (fault {fingerprint})")
                 code = self._run(["run", str(number), "--operator", self.operator, "--yes", "--repair"])
@@ -86,12 +88,17 @@ class Supervisor:
                 state.setdefault("repairs", {})[fingerprint] = {"issue": number, "exit": code, "at": self.clock()}
                 self._save(state)
                 self.log(f"supervise #{self.root}: {self._pull()}")
+            if runs >= self.max_runs:
+                return self._finish(state, False, f"stopped after {runs} runs (the bound is {self.max_runs})", runs)
+            if self._expired(started):
+                return self._finish(state, False, f"stopped after {self.max_hours} hours", runs)
             before = self._snapshot(RunStore.for_root(self.repo_root, self.root))
+            self._deadline = started + self.max_hours * 3600
             code = self._run(["run", str(self.root), "--operator", self.operator, "--yes"])
             runs += 1
             store = RunStore.for_root(self.repo_root, self.root)
             after = self._snapshot(store)
-            if self._all_settled(store):
+            if self._all_settled(store) and not self._unrepaired_faults(state):
                 return self._finish(state, True, "every issue is done, delivered or failed for good", runs)
             if code not in (0, 3):
                 self.log(f"supervise #{self.root}: the run exited {code}; relaunching after a pause")
@@ -99,9 +106,12 @@ class Supervisor:
             delay = BACKOFF_S[min(quiet, len(BACKOFF_S) - 1)] if quiet else BACKOFF_S[0]
             self.sleep(delay)
 
+    def _expired(self, started: float) -> bool:
+        return self.clock() - started >= self.max_hours * 3600
+
     # ------------------------------------------------------------------ observations
     def _snapshot(self, store: RunStore) -> str:
-        return json.dumps({n: (store.issue(n).phase.value, store.issue(n).calls) for n in store.known()}, sort_keys=True)
+        return json.dumps({n: (store.issue(n).phase.value, store.budget(n)["calls"]) for n in store.known()}, sort_keys=True)
 
     def _outages(self, store: RunStore) -> list[str]:
         vendors = set()
@@ -121,7 +131,8 @@ class Supervisor:
             st = store.issue(n)
             if st.phase == Phase.DONE:
                 continue
-            if st.phase == Phase.DELIVERED and not any(o.get("kind") == "deferred" for o in st.obligations):
+            if st.phase == Phase.DELIVERED and not any(o.get("kind") == "deferred" and not o.get("unresolved")
+                                                       for o in st.obligations):
                 continue
             if st.phase == Phase.FAILED and ((st.fail or {}).get("resumed") or (st.fail or {}).get("version") == VERSION):
                 continue   # failed for good on this engine version; a new version revives it once
@@ -141,8 +152,21 @@ class Supervisor:
 
     # ------------------------------------------------------------------ side effects
     def _run_engine(self, args: list[str]) -> int:
+        """One engine run, within the supervision's deadline: past it the run is asked to stop at
+        its next safe point, and killed if it does not within ten minutes."""
         cmd = [sys.executable, str(self.repo_root / "tools" / "implementation-loop" / "implement.py"), *args]
-        return subprocess.run(cmd, cwd=self.repo_root).returncode
+        proc = subprocess.Popen(cmd, cwd=self.repo_root, start_new_session=True)
+        remaining = max(getattr(self, "_deadline", self.clock() + self.max_hours * 3600) - self.clock(), 1)
+        try:
+            return proc.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            root = args[1] if len(args) > 1 else str(self.root)
+            RunStore.for_root(self.repo_root, int(root)).dir.joinpath("STOP").write_text("supervision deadline\n")
+            try:
+                return proc.wait(timeout=600)
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGTERM)
+                return proc.wait()
 
     def _vendor_reachable(self, vendor: str) -> bool | None:
         from .environment import vendor_reachable

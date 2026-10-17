@@ -378,6 +378,23 @@ def _notes(cases: dict | None, output: str) -> list[str]:
     return notes + stopped
 
 
+CREDENTIAL_VARS = ("GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "SSH_AUTH_SOCK")
+
+
+def scrubbed_env(env: dict[str, str], work_dir: Path) -> dict[str, str]:
+    """Check commands are written by agents: they run with no GitHub credentials, exactly like
+    the agents themselves (live.agent_env), so evidence the engine publishes cannot carry them."""
+    env = {k: v for k, v in env.items() if k not in CREDENTIAL_VARS}
+    no_gh = work_dir / "no-gh"
+    no_gh.mkdir(parents=True, exist_ok=True)
+    env["GH_CONFIG_DIR"] = str(no_gh)
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GIT_CONFIG_COUNT"] = "1"
+    env["GIT_CONFIG_KEY_0"] = "credential.helper"
+    env["GIT_CONFIG_VALUE_0"] = ""
+    return env
+
+
 def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, default_timeout: int = 900,
               extra_env: dict[str, str] | None = None) -> tuple[Evidence, dict | None]:
     """Run one check command. Returns its evidence, and what its pytest processes reported:
@@ -398,7 +415,7 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
     report_dir = (work_dir / f"pytest-{re.sub(r'[^A-Za-z0-9._-]', '_', spec.criterion)}-{head_sha[:12]}").resolve()
     shutil.rmtree(report_dir, ignore_errors=True)
     report_dir.mkdir(parents=True)
-    env = dict(os.environ) | dict(extra_env or {})
+    env = scrubbed_env(dict(os.environ) | dict(extra_env or {}), work_dir)
     env.setdefault("PYTHONDONTWRITEBYTECODE", "1")   # never write caches into the tree being judged
     env.pop("LOOP_PYTEST_PID", None)   # a verification is never nested in an outer one's pytest
     env["LOOP_REPORT_DIR"] = str(report_dir)

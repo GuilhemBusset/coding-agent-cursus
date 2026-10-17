@@ -151,42 +151,53 @@ class Engine:
         st = self.store.issue(n)
         zones = (st.plan or {}).get("zones") or spec.declared_paths
         infra = any(z.startswith(INFRA_PREFIXES) for z in zones) or "loop:infra" in issue.labels
-        return ceiling(issue.size, infra) + st.ceiling_bonus
+        return ceiling(issue.size, infra) + self.store.budget(n)["bonus"]
 
     def _run_ceiling(self) -> int:
         return int(sum(ceiling(self.plan.issues[n].size, False) for n in self.plan.work)
                    * self.caps.run_ceiling_factor) + 8   # + the explorers
 
     def before(self, issue: int | None, role: str, vendor: str) -> None:
-        """Refuse a call the issue's or the run's ceiling no longer covers."""
+        """Refuse a call the issue's or the run's ceiling no longer covers; journal the attempt
+        before it starts, so a run killed during the call charges it when it resumes."""
         with self._meter_lock:
             if self.run_calls >= self._run_ceiling():
                 raise CeilingReached(f"the run's ceiling of {self._run_ceiling()} calls is spent", scope="run")
             if issue is None or issue not in self.plan.issues:
                 return
-            st = self.store.issue(issue)
-            if st.calls >= self._ceiling(issue):
+            b = self.store.budget(issue)
+            if b["calls"] >= self._ceiling(issue):
                 raise CeilingReached(f"#{issue}'s ceiling of {self._ceiling(issue)} calls is spent")
-            if st.infra >= self.caps.infra_budget:
+            if b["infra"] >= self.caps.infra_budget:
                 raise CeilingReached(f"#{issue}'s infrastructure budget of {self.caps.infra_budget} failed attempts is spent")
+            self.store.change_budget(issue, pending=1)
 
     def after(self, issue: int | None, role: str, vendor: str, outcome: str) -> None:
         """Charge an attempt: an answer to the work ceiling, a timeout or crash to the
-        infrastructure budget; an outage is charged to neither (the issue waits for it)."""
+        infrastructure budget; an outage to neither (the issue waits for it)."""
         with self._meter_lock:
             if outcome == "answered":
                 self.run_calls += 1
             if issue is None or issue not in self.plan.issues:
                 return
-            st = self.store.issue(issue)
+            b = self.store.budget(issue)
+            delta = {"set_pending": max(b.get("pending", 0) - 1, 0)}
             if outcome == "answered":
-                st.calls += 1
+                delta["calls"] = 1
             elif outcome in ("timeout", "crash"):
-                st.infra += 1
+                delta["infra"] = 1
                 self._charged.add(issue)
-            self.store.put(st)
+            b = self.store.change_budget(issue, **delta)
             self.store.event("agent_attempt", issue=issue, role=role, vendor=vendor, outcome=outcome,
-                             calls=st.calls, infra=st.infra)
+                             calls=b["calls"], infra=b["infra"])
+
+    def _settle_interrupted(self, n: int) -> None:
+        """Attempts journaled but never reported (the engine was killed mid-call) are charged as
+        failed attempts when the run resumes."""
+        pending = self.store.budget(n).get("pending", 0)
+        if pending:
+            self.store.change_budget(n, infra=pending, set_pending=0)
+            self.store.event("interrupted_attempts_charged", issue=n, count=pending)
 
     # ------------------------------------------------------------------ setup
     def _ensure_labels(self) -> None:
@@ -197,6 +208,7 @@ class Engine:
 
     def _reconcile(self) -> None:
         for n in list(self.plan.work):
+            self._settle_interrupted(n)
             st = self.store.issue(n)
             spec = self.plan.specs[n]
             if st.wait and st.wait.get("kind") == "legacy":
@@ -224,6 +236,8 @@ class Engine:
                 st.phase = Phase.PENDING
             st.body_hash = spec.body_hash
             st.branch = st.branch or spec.branch or f"loop/issue-{n}"
+            if st.extra_deps:
+                self._restore_deps(n, st)
             self._declare(n, st)
             self.store.put(st)
 
@@ -313,9 +327,9 @@ class Engine:
         f = st.fail or {}
         if f.get("version") == VERSION or f.get("resumed"):
             return
-        st.ceiling_bonus += st.calls
-        st.infra = st.unproductive = 0
-        st.replans = 0
+        b = self.store.budget(st.number)
+        self.store.change_budget(st.number, bonus=b["calls"] - b["bonus"] if b["calls"] > b["bonus"] else 0, set_infra=0)
+        st.unproductive = st.replans = 0
         st.fail = {**f, "resumed": True}
         st.phase = Phase.BUILD if st.plan and st.worktree else Phase.PENDING
         st.feedback = [f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
@@ -330,7 +344,8 @@ class Engine:
             notes.append("Decisions so far, to keep where they still fit: " + json.dumps(st.decisions)[:1500])
         st.plan = None
         st.feedback = notes
-        st.calls = st.infra = st.unproductive = st.replans = st.ceiling_bonus = 0
+        self.store.change_budget(st.number, set_calls=0, set_infra=0, set_bonus=0, set_pending=0)
+        st.unproductive = st.replans = 0
         st.fix_forwards = st.reverts = st.merge_refusals = 0
         st.signature = ""
         st.certified_sha = st.verified_sha = None
@@ -394,12 +409,10 @@ class Engine:
                 return
             # a timeout or crash: charged here too (a failure before the meter started is not
             # charged by it), so retrying the step always ends within the infrastructure budget
-            st = self.store.issue(n)
             if n not in self._charged:
-                st.infra += 1
-                self.store.put(st)
+                self.store.change_budget(n, infra=1)
             self._charged.discard(n)
-            if st.infra >= self.caps.infra_budget:
+            if self.store.budget(n)["infra"] >= self.caps.infra_budget:
                 self._fail(n, "ceiling", f"#{n}'s infrastructure budget of {self.caps.infra_budget} failed attempts "
                                          f"is spent: {str(exc)[:300]}")
         elif isinstance(exc, GitHubUnavailable):
@@ -496,6 +509,20 @@ class Engine:
     def _review_items(self, st: IssueState) -> set[str]:
         return {i["id"] for i in self._items(st) if i["proof"] == "review"}
 
+    def _behavioural_items(self, st: IssueState) -> set[str]:
+        """Items proven by a durable test: each gets at least one independent probe."""
+        return {i["id"] for i in self._items(st) if i["proof"] == "test"}
+
+    def _agent_part_items(self, st: IssueState) -> set[str]:
+        """Owner items whose agent part must still be proven (by a command or a verdict)."""
+        return {i["id"] for i in self._items(st) if i["proof"] == "owner"
+                and (i.get("agent_part") or "none").strip().lower() not in ("", "none")}
+
+    def _verdict_items(self, st: IssueState) -> set[str]:
+        """Items the examiner must judge: review items, and owner items' agent parts no command proves."""
+        commanded = {c["criterion"] for c in st.commands if c.get("author") == "builder"}
+        return self._review_items(st) | (self._agent_part_items(st) - commanded)
+
     def _specs(self, st: IssueState) -> list[CheckSpec]:
         fields = CheckSpec.__dataclass_fields__
         return [CheckSpec(**{k: v for k, v in c.items() if k in fields}) for c in st.commands]
@@ -504,6 +531,8 @@ class Engine:
         st = self.store.issue(n)
         previous = st.phase
         st.phase = phase
+        b = self.store.budget(n)   # a mirror for reports; the budget section is the source of truth
+        st.calls, st.infra, st.ceiling_bonus = b["calls"], b["infra"], b["bonus"]
         for k, v in changes.items():
             setattr(st, k, v)
         self.store.put(st)
@@ -734,6 +763,7 @@ class Engine:
         objections = [asdict(o) for o in self.agents.triage(self.other, self._req(n), plan)]
         kept = [o for o in objections if gate.keep_objection(o, item_text, self._lookup_issue)]
         st = self.store.issue(n)
+        st.plan = plan   # one canonical plan from here on: dependency handling edits st.plan in place
         feedback = []
         infra = any(z.startswith(INFRA_PREFIXES) for z in plan["zones"])
         for o in kept:
@@ -768,15 +798,15 @@ class Engine:
         # (never the safety surface in a fault-repair run).
         # Earlier plans' zones stay granted, with their provenance: a replan never takes away a path
         # the branch was allowed to change (the redesign that did so parked #42 and #78).
-        kept = [{**g, "source": "earlier plan"} if g.get("source") == "plan" else g for g in st.grants]
-        st.grants = kept + [{"path": z, "source": "plan", "protected": is_protected(z)} for z in plan["zones"]
-                            if not (self.repair and is_safety_surface(z))
-                            and not any(g["path"] == z for g in kept)]
+        earlier = [{**g, "source": "earlier plan"} if g.get("source") == "plan" else g for g in st.grants]
+        st.grants = earlier + [{"path": z, "source": "plan", "protected": is_protected(z)} for z in plan["zones"]
+                               if not (self.repair and is_safety_surface(z))
+                               and not any(g["path"] == z for g in earlier)]
         if any(is_protected(z) for z in plan["zones"]):
             self._decide(st, {"id": "protected-zones", "choice": "the plan's protected zones are approved at triage: "
                               + ", ".join(z for z in plan["zones"] if is_protected(z)),
                               "rationale": f"{self.other} saw them in the plan and raised no objection"})
-        st.plan = plan
+        plan = st.plan
         st.feedback = feedback
         self.store.put(st)
         self._declare(n, st)
@@ -804,6 +834,7 @@ class Engine:
             if m in self.plan.work:
                 graph.topological_order(set(self.plan.work), edges)
                 self.plan.deps[n] = edges[n]
+                self._wait_for(st, item, m)
                 self._decide(st, {"id": f"depends-{item}", "choice": f"{item} waits for #{m}, in this run",
                                   "rationale": f"it needs #{m}: \"{quote}\""})
                 self.store.event("dependency_added", issue=n, on=m, item=item, admitted=False)
@@ -817,6 +848,7 @@ class Engine:
                 self.plan.work.insert(0, m)
                 self.plan.deps[n] = edges[n]
                 self.plan.deps.setdefault(m, set())
+                self._wait_for(st, item, m)
                 self._decide(st, {"id": f"depends-{item}", "choice": f"#{m} joined the run; {item} waits for it",
                                   "rationale": f"it needs #{m}: \"{quote}\" (the launch allowed prerequisites from the epic)"})
                 self.store.event("prerequisite_added", issue=n, on=m, item=item)
@@ -830,6 +862,28 @@ class Engine:
         self._decide(st, {"id": f"depends-{item}", "choice": f"{item} is deferred to #{m}",
                           "rationale": f"it needs #{m} (\"{quote}\"), which this run does not build"})
         self.store.event("dependency_deferred", issue=n, on=m, item=item)
+
+    def _wait_for(self, st: IssueState, item: str, m: int) -> None:
+        """An item waiting on a prerequisite in the run: the edge is kept across runs, and the
+        item is proven (by the examiner's review, unless a replan says otherwise) once it lands."""
+        st.extra_deps = sorted(set(st.extra_deps) | {m})
+        if st.plan:
+            st.plan["items"] = [{**i, "proof": "review" if i["proof"] == "deferred" else i["proof"],
+                                 "depends_on": m} if i["id"] == item else i for i in st.plan["items"]]
+
+    def _restore_deps(self, n: int, st: IssueState) -> None:
+        """Prerequisites found in earlier runs: back into the graph (admitted again when the launch
+        allows it); one no longer reachable becomes a deferred obligation."""
+        for m in list(st.extra_deps):
+            if m in self.plan.work:
+                self.plan.deps.setdefault(n, set()).add(m)
+                continue
+            other = self._lookup_issue(m)
+            if other is None or other.state != "open":
+                st.extra_deps = [x for x in st.extra_deps if x != m]
+                continue
+            item = next((i["id"] for i in self._items(st) if i.get("depends_on") == m), "")
+            self._depend(n, st, item, m, "")
 
     # ------------------------------------------------------------------ build
     def _step_build(self, n: int) -> None:
@@ -936,6 +990,10 @@ class Engine:
         if requests:
             self._decide_requests(n, wt)
             st = self.store.issue(n)
+            if not scheduler.prerequisites_met(self.plan, self._phases(), n):
+                self.store.event("waits_for_prerequisite", issue=n, on=sorted(self.plan.deps.get(n, ())))
+                return self._set_phase(n, Phase.PENDING, feedback=self._request_feedback(
+                    [r for r in st.requests if r["id"] in {q["id"] for q in requests}]))
         if result.status != "done":
             decided = [r for r in st.requests if r["id"] in {q["id"] for q in requests}]
             if any(r["status"] in ("approved", "ruled_for") for r in decided):
@@ -957,7 +1015,8 @@ class Engine:
                 continue
             entry = asdict(c) | {"author": "builder",
                                  "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)}
-            if st.examined_sha and c.criterion in current and current[c.criterion]["command"] != c.command:
+            if st.examined_sha and c.criterion in current and (
+                    current[c.criterion]["command"], current[c.criterion].get("cwd", ".")) != (c.command, c.cwd or "."):
                 st.requests.append({"id": f"R{st.number}-{len(st.requests) + 1}", "kind": "command_change",
                                     "item": c.criterion, "command": entry, "status": "pending",
                                     "detail": f"change the locked command for {c.criterion}"})
@@ -1104,6 +1163,9 @@ class Engine:
                     st.locked[p] = verify.digest(wt / p)
             self.store.event("locked_tests_changed", issue=n, request=r["id"], sha=sha, files=sorted(content))
         st.dispositions.update(dispositions or {})
+        if kind in ("test_change", "command_change") and dispositions and st.manifest:
+            retired = {verify.base_id(i) for i in dispositions}
+            st.manifest = {k: [i for i in v if verify.base_id(i) not in retired] for k, v in st.manifest.items()}
         self._decide(st, {"id": r["id"], "choice": f"{kind}: {r.get('detail', '')[:200]}",
                           "rationale": f"approved by {self.other}: {r.get('reason', '')[:300]}"})
 
@@ -1264,7 +1326,7 @@ class Engine:
         locked_tests = sorted(set(st.tests) | set(st.probes))
         ok, evidence, vproblems, ran = verify.verify(wt, self._specs(st), head, self.store.issue_dir(n), st.locked,
                                                      locked_tests, st.manifest or None, self.caps.check_timeout_s,
-                                                     extra_env=self.check_env)
+                                                     extra_env=self.check_env, check_tamper=bool(st.examined_sha))
         problems += vproblems
         selected = {"*": sorted(set(ran) | {t for v in (st.manifest or {}).values() for t in v})}
         unselected = verify.unselected(wt, [t for t in locked_tests if (wt / t).is_file() and t.endswith(".py")],
@@ -1277,11 +1339,15 @@ class Engine:
         still = [f for f in st.findings if f.get("status") == "open"]
         base = self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt)
         changed = self.ws.changed_files(wt, base)
-        problems += gate.zone_problems(changed, st.grants, locked_tests, self.repair)
+        problems += gate.zone_problems(changed, st.grants, st.probes, self.repair)
         problems += [f"open finding {f['id']} still reproduces: {f['title']}" for f in still]
         self.store.event("verified", issue=n, head=head, ok=ok and not problems, problems=problems, closed=closed)
         st.evidence, st.base_sha = evidence, base
         st.last_ran = {"*": sorted(ran)} if ok else st.last_ran
+        if ok and st.examined_sha and st.manifest:
+            # the manifest only grows: a locked test that ran once must keep running
+            grown = {i for i in ran if i.split("::")[0] in st.locked}
+            st.manifest = {"*": sorted(set(st.manifest.get("*", [])) | grown)}
         self.store.put(st)
         if not problems:
             nxt = Phase.LAND if head == st.certified_sha else Phase.EXAMINE
@@ -1367,8 +1433,8 @@ class Engine:
         since = st.examined_sha
         memory = [f for f in st.findings if f.get("status") in ("open", "closed", "follow_up")]
         with self.ws.disposable(wt) as scratch:   # whatever the examiner changes is discarded with its copy
-            res = self.agents.examine(self.other, self._req(n), st.plan, scratch, st.base_sha, head, st.evidence,
-                                      memory, [], since)
+            res = self.agents.examine(self.other, self._req(n, st.exam_feedback), st.plan, scratch, st.base_sha, head,
+                                      st.evidence, memory, [], since)
         st = self.store.issue(n)
         item_text = self._item_text(n)
         rnd = len({f.get("round") for f in st.findings}) + 1
@@ -1392,12 +1458,15 @@ class Engine:
                 reproduced = self._reproduces(wt, f.reproduction, f.cwd or ".", None)
             new.append(gate.classify(f, item_text, self.invariants, reproduced, self._agent_items(st),
                                      self._owner_items(st)))
-        accepted, unmet, missing = gate.review_verdicts(res.verdicts, item_text, self._review_items(st))
+        accepted, unmet, missing = gate.review_verdicts(res.verdicts, item_text, self._verdict_items(st))
         for i, v in accepted.items():
             st.verdicts[i] = {**v, "head": head}
         st.findings += [asdict(f) for f in new]
-        adopt = [p for p in res.probes if probe_results.get(p.file) is True
-                 or any(f.blocking and f.probe == p.file for f in new)]
+        # A follow-up examination adopts only probes that reproduce a blocking finding, or that cover
+        # an item still without one, so certification converges.
+        covered = {c["criterion"] for c in st.commands if c.get("author") == "examiner"}
+        adopt = [p for p in res.probes if any(f.blocking and f.probe == p.file for f in new)
+                 or (probe_results.get(p.file) is True and (since is None or p.criterion not in covered))]
         first = st.examined_sha is None
         st.examined_sha = head
         self.store.put(st)
@@ -1412,19 +1481,63 @@ class Engine:
         problems = []
         if unmet:
             problems += [f"{i} judged unmet by the examiner" for i in unmet]
-        if missing:
-            problems.append(f"no verdict on the review items {missing}; the next examination must give one")
         if blocking:
             problems += [f"blocking finding {f.id}: {f.title}" for f in blocking]
-        if not res.certify and not problems:
+        if not res.certify and not problems and not missing:
             problems.append(f"the examiner withheld its certificate: {res.summary[:400]}")
         if problems:
             bundled = [f for f in new if f.status == "follow_up"]
             if bundled:
                 problems += [f"also worth fixing (not blocking): {f.title}" for f in bundled]
-            return self._round_failed(n, problems, [f.id for f in blocking], unmet + missing)
-        # certified: the certificate covers the examined head plus the examiner's own adopted probes
-        self._set_phase(n, Phase.VERIFY, certified_sha=new_head, feedback=[])
+            self._set_phase(n, Phase.EXAMINE, exam_feedback=[], exam_retries=0)
+            return self._round_failed(n, problems, [f.id for f in blocking], unmet)
+        # What the examiner still owes (a verdict, an independent probe) is asked of it again, at
+        # most twice; it is not the builder's failure.
+        st = self.store.issue(n)
+        covered = {c["criterion"] for c in st.commands if c.get("author") == "examiner"}
+        unprobed = sorted(self._behavioural_items(st) - covered)
+        owed = ([f"give a verdict on {', '.join(missing)}"] if missing else []) + (
+            [f"write an independent probe for {', '.join(unprobed)}"] if unprobed else [])
+        if owed and st.exam_retries < 2:
+            self.store.event("examination_incomplete", issue=n, missing=missing, unprobed=unprobed, retry=st.exam_retries + 1)
+            return self._set_phase(n, Phase.VERIFY, exam_feedback=[f"Your previous examination is incomplete: {'; '.join(owed)}."],
+                                   exam_retries=st.exam_retries + 1)
+        if owed:
+            st = self.store.issue(n)
+            self._decide(st, {"id": "examination-gaps", "choice": "; ".join(owed) + " was asked twice without an answer",
+                              "rationale": "the builder's verified tests stand as the evidence; recorded, not blocking"})
+            self.store.put(st)
+            if missing:
+                return self._round_failed(n, [f"no verdict on {', '.join(missing)} after two requests"], [], missing)
+        if new_head != head:
+            # adopting probes made a new head: it is verified, then certified by a delta examination
+            return self._set_phase(n, Phase.VERIFY, feedback=[], exam_feedback=[], exam_retries=0)
+        self._set_phase(n, Phase.VERIFY, certified_sha=head, feedback=[], exam_feedback=[], exam_retries=0)
+
+    @staticmethod
+    def _command_tests(wt: Path, commands: list[dict]) -> set[str]:
+        """Test files the builder's commands name (a script under tests/ or checks/, test_*.py,
+        *.test.mjs...): they lock with the tests, so a command cannot keep running an editable file."""
+        import shlex
+        out = set()
+        for c in commands:
+            if c.get("author") != "builder":
+                continue
+            try:
+                tokens = shlex.split(c.get("command") or "")
+            except ValueError:
+                continue
+            for tok in tokens:
+                rel = Path(c.get("cwd") or ".") / tok.split("::")[0]
+                path = (wt / rel).resolve()
+                if not path.is_file() or not path.is_relative_to(wt.resolve()):
+                    continue
+                rel_s = str(path.relative_to(wt.resolve()))
+                name = path.name
+                if (name.startswith("test_") or name.endswith(("_test.py", ".test.mjs", ".test.js", ".test.ts"))
+                        or any(part in ("tests", "checks") for part in Path(rel_s).parts[:-1])):
+                    out.add(rel_s)
+        return out
 
     def _probe_problem(self, p) -> str | None:
         if not p.file or not p.command or not p.content:
@@ -1449,6 +1562,10 @@ class Engine:
             target = wt / p.file
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(p.content)
+        if first:   # whatever the commands actually ran locks too, listed by the builder or not
+            ran_files = {i.split("::")[0] for ids in st.last_ran.values() for i in ids}
+            st.tests = sorted(set(st.tests) | {f for f in ran_files | self._command_tests(wt, st.commands)
+                                               if (wt / f).is_file()})
         files = sorted(set(st.tests) | {p.file for p in probes})
         existing = [t for t in st.tests if (wt / t).is_file()] if first else []
         if not probes and not existing:
@@ -1618,8 +1735,9 @@ class Engine:
         issue = self.gh.get_issue(n)
         if issue_parser.body_hash(issue.get("body") or "") != st.body_hash:
             return self._owner_round(n, edited)
-        owed = self._owner_items(st)
-        unproven = [i.id for i in issue_parser.ledger(issue.get("body") or "") if i.id not in proven and i.id not in owed]
+        owed = self._owner_items(st)                 # never ticked by the loop
+        exempt = owed - self._agent_part_items(st)   # an owner item's agent part must still be proven
+        unproven = [i.id for i in issue_parser.ledger(issue.get("body") or "") if i.id not in proven and i.id not in exempt]
         if unproven:
             return self._fix_forward(n, [f"ledger items without evidence on main: {unproven}"])
         ticked = issue_parser.tick(issue.get("body") or "", {cid: link for cid in proven if cid not in owed})
@@ -1713,28 +1831,56 @@ class Engine:
         if st.worktree:   # the revert's worktree takes the issue worktree's place, as the next round does
             self.ws.remove(Path(st.worktree))
             st.worktree = None
-        st.reverts += 1
-        self.store.put(st)
-        branch = f"{st.branch}-revert"
-        wt = self.ws.issue_worktree(n, branch)
-        self.ws.fetch()
-        self.ws.git("reset", "--hard", "--quiet", self.ws.base_ref(), cwd=wt)
-        self.ws.git("revert", "--no-edit", *[pr["merge_commit_sha"] for pr in merged], cwd=wt)
-        self.ws.push(wt)
-        head = self.ws.head(wt)
-        prs = ", ".join(f"#{pr['number']}" for pr in merged)
-        title = f"Revert #{n}: it broke main"
-        body = (f"The implement loop reverts PR {prs} for #{n}: after its merge, `main` fails and one fix-forward "
-                f"did not repair it.\n\n" + "\n".join(f"- {f}" for f in feedback)[:3000])
-        rpr = self.gh.create_pr(branch, self.cfg.base_branch, title, body)
-        conclusion, _ = self._wait_required(head)
-        if conclusion != "success":
-            self.ws.remove(wt)
-            return self._fail(n, "main_broken", f"the revert PR #{rpr['number']} did not pass the required check "
-                                                f"({conclusion})")
-        self.gh.merge_pr(rpr["number"], head)
-        self.ws.remove(wt)
-        self.store.event("reverted", issue=n, pr=rpr["number"], of=[pr["number"] for pr in merged])
+        # A revert lands through the same gates as any change: the merge queue, the trusted
+        # verifier (every earlier issue's checks on the reverted tree), the other vendor's
+        # certificate for the exact head, and the required check on it.
+        waited = 0
+        while not self.claims.acquire(MERGE_QUEUE, self.owner):
+            if waited >= self.caps.queue_wait_s:
+                return self._wait(n, WAIT_MERGE_QUEUE, "the revert waits for the merge queue", resume=Phase.MERGED)
+            self.sleep(self.caps.queue_poll_s)
+            waited += max(self.caps.queue_poll_s, 1)
+        wt = None
+        try:
+            st.reverts += 1
+            self.store.put(st)
+            branch = f"{st.branch}-revert"
+            wt = self.ws.issue_worktree(n, branch)
+            self.ws.fetch()
+            main_sha = self.ws.git("rev-parse", self.ws.base_ref(), cwd=wt)
+            self.ws.git("reset", "--hard", "--quiet", main_sha, cwd=wt)
+            self.ws.git("revert", "--no-edit", *[pr["merge_commit_sha"] for pr in merged], cwd=wt)
+            head = self.ws.head(wt)
+            regressions = self._regressions(n, wt, head)
+            if regressions:
+                return self._fail(n, "main_broken", "reverting it still leaves earlier issues' checks failing: "
+                                                    + "; ".join(regressions)[:500])
+            with self.ws.disposable(wt) as scratch:
+                exam = self.agents.examine(self.other, self._req(n, [
+                    f"Certify a revert: the loop reverts this issue's merged change because main fails after it and a "
+                    f"fix-forward did not repair it. Check that `{main_sha[:12]}..{head[:12]}` only undoes that "
+                    f"change and leaves main working."]), {"items": [], "zones": []}, scratch, main_sha, head, [], [], [],
+                    None)
+            if not exam.certify:
+                return self._fail(n, "main_broken", f"the other vendor did not certify the revert: {exam.summary[:400]}")
+            self.ws.push(wt)
+            if self.ws.head(wt) != head:
+                return self._fail(n, "main_broken", "main moved while the revert was being certified")
+            prs = ", ".join(f"#{pr['number']}" for pr in merged)
+            body = (f"The implement loop reverts PR {prs} for #{n}: after its merge, `main` fails and one fix-forward "
+                    f"did not repair it. Verified (earlier issues' checks) and certified by {self.other} on this exact "
+                    f"head.\n\n" + "\n".join(f"- {f}" for f in feedback)[:3000])
+            rpr = self.gh.create_pr(branch, self.cfg.base_branch, f"Revert #{n}: it broke main", body)
+            conclusion, _ = self._wait_required(head)
+            if conclusion != "success":
+                return self._fail(n, "main_broken", f"the revert PR #{rpr['number']} did not pass the required check "
+                                                    f"({conclusion})")
+            self.gh.merge_pr(rpr["number"], head)
+            self.store.event("reverted", issue=n, pr=rpr["number"], of=[pr["number"] for pr in merged])
+        finally:
+            if wt is not None:
+                self.ws.remove(wt)
+            self.claims.release(MERGE_QUEUE, self.owner)
         st = self.store.issue(n)
         if st.reverts > self.caps.reverts:
             return self._fail(n, "main_broken", f"its delivery broke main again and was reverted in PR #{rpr['number']}: "
@@ -1771,8 +1917,14 @@ class Engine:
             st = self.store.issue(n)
             if st.phase != Phase.DELIVERED:
                 continue
-            landed = [o for o in st.obligations if o.get("kind") == "deferred"
-                      and ((self._safe(self.gh.get_issue, o.get("issue")) or {}).get("state") == "closed")]
+            landed = [o for o in st.obligations if o.get("kind") == "deferred" and self._delivered(o.get("issue"))]
+            for o in st.obligations:
+                if o.get("kind") == "deferred" and not o.get("unresolved") and o not in landed:
+                    data = self._safe(self.gh.get_issue, o.get("issue")) or {}
+                    if data.get("state") == "closed":   # closed without delivering: reported, never reopened
+                        o["unresolved"] = True
+                        self.store.put(st)
+                        self.store.event("deferred_unresolved", issue=n, item=o["item"], on=o.get("issue"))
             if landed:
                 st.obligations = [o for o in st.obligations if o not in landed]
                 st.plan = {**(st.plan or {}), "items": [
@@ -1794,6 +1946,19 @@ class Engine:
                 self.store.event("owner_evidence_complete", issue=n)
                 self._set_phase(n, Phase.DONE, human_tasks=[])
                 self._close_trackers(n)
+
+    def _delivered(self, m: int | None) -> bool:
+        """Has issue `m` landed? Delivered or done in this run, or on GitHub closed as completed or
+        labelled delivered. A closure as not planned is not a delivery."""
+        if not m:
+            return False
+        if m in self.plan.work and self.store.issue(m).phase in SATISFIES_DEPENDENTS:
+            return True
+        data = self._safe(self.gh.get_issue, m) or {}
+        labels = {l["name"] if isinstance(l, dict) else l for l in data.get("labels", [])}
+        if data.get("state") == "closed":
+            return (data.get("state_reason") or "completed") == "completed"
+        return "loop:delivered" in labels
 
     def _mark_blocked(self) -> None:
         """Issues still pending behind a prerequisite that waits or failed wait with it, so the

@@ -212,6 +212,9 @@ class IssueState:
     merge_refusals: int = 0
     ci_rerun_heads: list[str] = field(default_factory=list)
     followup: int | None = None          # the follow-up issue filed for non-blocking findings
+    extra_deps: list[int] = field(default_factory=list)      # prerequisites found mid-run, kept across runs
+    exam_feedback: list[str] = field(default_factory=list)   # what the next examination must supply
+    exam_retries: int = 0                # examinations re-asked for missing verdicts or probes
     # Waiting and failure.
     wait: dict | None = None             # {kind, resume, detail, since, vendor?, version?, env?}
     fail: dict | None = None             # {cause, detail, version, resumed}

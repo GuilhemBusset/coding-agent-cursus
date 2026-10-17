@@ -64,7 +64,8 @@ def cmd_status(args) -> int:
             extra = f" · {st.fail.get('cause')}: {st.fail.get('detail', '')}"
         owner = f" · obligations: {len(st.obligations)}" if st.obligations else ""
         opened = sum(1 for f in st.findings if f.get("status") == "open")
-        print(f"#{n:<5} {st.phase.value:<10} calls {st.calls} · failed attempts {st.infra} · open findings {opened}"
+        b = store.budget(n)
+        print(f"#{n:<5} {st.phase.value:<10} calls {b['calls']} · failed attempts {b['infra']} · open findings {opened}"
               + (f" · PR #{st.pr}" if st.pr else "") + owner + extra)
     calls = store.dir / "agents.jsonl"
     if calls.exists():
@@ -95,8 +96,9 @@ def cmd_retry(args) -> int:
     for n in targets:
         st = store.issue(n)
         if st.phase == Phase.FAILED:
-            st.ceiling_bonus += st.calls
-            st.infra = st.unproductive = st.replans = 0
+            b = store.budget(n)
+            store.change_budget(n, bonus=max(b["calls"] - b["bonus"], 0), set_infra=0)
+            st.unproductive = st.replans = 0
             st.signature = ""
             print(f"#{n} gets a fresh ceiling on the next run (it failed: {(st.fail or {}).get('cause')})")
             st.fail = None
