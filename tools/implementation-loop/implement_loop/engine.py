@@ -535,6 +535,12 @@ class Engine:
         fields = CheckSpec.__dataclass_fields__
         return [CheckSpec(**{k: v for k, v in c.items() if k in fields}) for c in st.commands]
 
+    @staticmethod
+    def _item_commands(st: IssueState, item: str) -> list[dict]:
+        """The builder's commands an item runs now: what a `command_change` changes."""
+        return [{"command": c["command"], "cwd": c.get("cwd") or "."} for c in st.commands
+                if c.get("criterion") == item and c.get("author") == "builder"]
+
     def _set_phase(self, n: int, phase: Phase, **changes) -> IssueState:
         st = self.store.issue(n)
         previous = st.phase
@@ -1053,6 +1059,7 @@ class Engine:
             if st.examined_sha and item in current and shape(current[item]) != shape(entries):
                 st.requests.append({"id": f"R{st.number}-{len(st.requests) + 1}", "kind": "command_change",
                                     "item": item, "commands": entries, "status": "pending",
+                                    "replaces": self._item_commands(st, item),
                                     "detail": f"change the locked commands for {item}"})
                 continue
             current[item] = entries
@@ -1084,6 +1091,16 @@ class Engine:
             if r.kind == "test_change":
                 # only locked tests the builder edited (None: deleted); a path it did not edit is no proposal
                 entry["content"] = {p: proposals[p] for p in (r.paths or list(proposals)) if p in proposals}
+            if r.kind == "command_change":
+                # one typed command is added to the item's commands, never put in place of all of them
+                # (#37 lost its checker tests that way); the decider sees what the item runs now
+                entry["replaces"] = self._item_commands(st, r.item or "")
+                if r.command and r.command.get("command"):
+                    c = r.command
+                    entry["command"] = c | {"criterion": r.item, "author": "builder",
+                                            "description": c.get("description") or f"{r.item}: {r.detail[:120]}",
+                                            "timeout_s": min(c.get("timeout_s") or self.caps.check_timeout_s,
+                                                             self.caps.max_check_timeout_s)}
             st.requests.append(entry)
             added.append(entry)
         unrequested = [p for p in proposals if not any(p in (q.get("content") or {}) for q in added)]
@@ -1166,9 +1183,14 @@ class Engine:
                 st.grants.append({"path": p.rstrip("/"), "source": f"approved {r['id']}",
                                   "protected": kind == "protected_change" or is_protected(p)})
             self._declare(n, st)
-        elif kind == "command_change" and (r.get("commands") or r.get("command")):
+        elif kind == "command_change" and r.get("commands"):   # the item's whole new list
             st.commands = [c for c in st.commands if not (c["criterion"] == r["item"] and c.get("author") == "builder")]
-            st.commands.extend(r.get("commands") or [r["command"]])
+            st.commands.extend(r["commands"])
+        elif kind == "command_change" and (r.get("command") or {}).get("command"):   # one more command
+            c = r["command"]
+            if (c["command"], c.get("cwd") or ".") not in {(x["command"], x.get("cwd") or ".")
+                                                          for x in self._item_commands(st, r["item"])}:
+                st.commands.append(c)
         elif kind == "reclassify":
             st.plan["items"] = [{**i, "proof": "owner", "capability": r.get("capability"),
                                  "agent_part": r.get("detail")} if i["id"] == r["item"] else i for i in st.plan["items"]]
