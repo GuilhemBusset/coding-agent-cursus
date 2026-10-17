@@ -189,7 +189,7 @@ class LandConflictTests(unittest.TestCase):
         return result
 
     def install_peer_hook(self, agents, *, move_again=False):
-        seen = []
+        seen, moved = [], []
 
         def during_examination(req, wt, head):
             if req.issue.number != 3:
@@ -199,7 +199,9 @@ class LandConflictTests(unittest.TestCase):
                 self.peer = self.make_engine(root=10)
                 self.peer.run()
                 self.assertEqual(self.peer.store.issue(2).phase, Phase.DONE)
-            elif len(seen) == 2 and move_again:
+            elif move_again and not moved and land_conflicts(self.events()):
+                # main moves again once the conflict is repaired, before #3 lands
+                moved.append(True)
                 self.seed_main({"docs/later-main.txt": "another main change\n"})
 
         agents.on_examine = during_examination
