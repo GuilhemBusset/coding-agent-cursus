@@ -379,8 +379,8 @@ uv run pytest exercises/homework-p01/p01_contract.py</code></pre>
         <div class="callout good">
           <h3>What a good answer looks like</h3>
           <ul>
-            <li><strong>Best:</strong> the checker’s first line is <code>PASS</code>, and the summary shows status <code>optimal</code>, the recomputed objective, the known optimum and a gap of 0.</li>
-            <li><strong>Still a good answer:</strong> a time limit stopped the solve at a feasible incumbent (status <code>feasible</code>), and every feasibility contract passes. Only <code>optimality</code> fails, and your notes give the gap. Under the grading rule, this beats any infeasible plan, whatever its cost.</li>
+            <li><strong>Best:</strong> <code>solution.json</code> has status <code>optimal</code>, the checker’s first line is <code>PASS</code>, and its summary gives the recomputed objective with its breakdown, the known optimum and a gap of 0.</li>
+            <li><strong>Still a good answer:</strong> a time limit stopped the solve at a feasible incumbent (status <code>feasible</code> in <code>solution.json</code>), and every feasibility contract passes. Only <code>optimality</code> fails, and your notes give the gap. Under the grading rule, this beats any infeasible plan, whatever its cost.</li>
             <li><code>p01_model.py</code> is your agent’s model with the stub’s API, and running it produces the <code>solution.json</code> you turn in. You have not edited the file by hand.</li>
             <li>You ran the contract suite, and <code>data/</code>, <code>p01_checker.py</code> and <code>p01_contract.py</code> are unchanged.</li>
             <li>Your notes give the checker verdict and one or two contracts that failed on the way, with what the agent changed to fix them.</li>
