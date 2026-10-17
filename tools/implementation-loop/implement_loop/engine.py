@@ -1618,6 +1618,7 @@ class Engine:
         manifest lock, pass or fail; adopted probes lock with them (failing ones included, so a
         blocking finding stays open until its probe passes)."""
         st = self.store.issue(n)
+        probes = [p for p in probes if self._inside(wt, p.file)]   # never follow a symlink out of the worktree
         for p in probes:
             target = wt / p.file
             target.parent.mkdir(parents=True, exist_ok=True)
