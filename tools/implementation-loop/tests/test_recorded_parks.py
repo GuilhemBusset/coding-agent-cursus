@@ -21,6 +21,12 @@ class Builder(FakeAgents):
         self.python_test = python_test
         self.ignore = ignore_feedback_rounds
 
+    def plan(self, vendor, req, worktree):
+        result = super().plan(vendor, req, worktree)
+        if self.python_test and req.issue.number == self.python_test["issue"]:   # its test is in its zones
+            result.zones = sorted(set(result.zones) | {self.python_test["file"]})
+        return result
+
     def build(self, vendor, req, plan, worktree, feedback):
         n = req.issue.number
         k = self._built.get(n, 0)
@@ -97,3 +103,19 @@ class RecordedParks(EngineCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ProbePathTests(EngineCase):
+    def test_a_probe_cannot_write_outside_its_disposable_copy(self):
+        """A returned probe whose path escapes (`..`, absolute, or through a symlink) is refused
+        before anything is written."""
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine()
+        victim = self.repo.tmp / "victim.txt"
+        victim.write_text("locked\n")
+        wt = self.repo.work
+        for path in ("../victim.txt", str(victim), ""):
+            self.assertIsNone(self.engine._reproduces(wt, "true", ".", (path, "overwritten\n")))
+        self.assertEqual(victim.read_text(), "locked\n")
+        self.assertTrue(self.events("probe_path_refused"))

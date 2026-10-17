@@ -1411,9 +1411,15 @@ class Engine:
         when it fails (the finding holds), False when it passes, None when it cannot run."""
         if not command:
             return None
+        if probe and not self._inside(Path("/nonexistent-root"), probe[0]):
+            self.store.event("probe_path_refused", path=str(probe[0])[:200])
+            return None
         with self.ws.disposable(wt) as scratch:
             if probe:
                 target = scratch / probe[0]
+                if not self._inside(scratch, probe[0]):   # a symlink pointing out of the copy
+                    self.store.event("probe_path_refused", path=str(probe[0])[:200])
+                    return None
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(probe[1])
             spec = CheckSpec(criterion="repro", command=command, cwd=cwd)
@@ -1422,6 +1428,17 @@ class Engine:
         if ev.exit_code is None and "timed out" not in (ev.output_tail or ""):
             return None
         return not ev.passed
+
+    @staticmethod
+    def _inside(root: Path, rel: str) -> bool:
+        """A probe path is repo-relative and stays inside `root` once resolved (symlinks included)."""
+        p = Path(rel)
+        if not rel or p.is_absolute() or ".." in p.parts:
+            return False
+        try:
+            return (root / p).resolve().is_relative_to(root.resolve())
+        except (OSError, RuntimeError):
+            return False
 
     def _round_failed(self, n: int, problems: list[str], open_ids: list[str] | None = None,
                       unmet: list[str] | None = None) -> None:
@@ -1906,7 +1923,8 @@ class Engine:
                     None)
             serious = []
             for f in exam.findings:   # the same rule as any examination: reproduced, witnessed, tied to an invariant
-                probe = next((p for p in exam.probes if f.probe and p.file == f.probe), None)
+                probe = next((p for p in exam.probes if f.probe and p.file == f.probe and not self._probe_problem(p)),
+                             None)
                 reproduced = (self._reproduces(wt, probe.command, probe.cwd, (probe.file, probe.content)) if probe
                               else self._reproduces(wt, f.reproduction, f.cwd or ".", None))
                 if gate.classify(f, {}, self.invariants, reproduced, set(), set()).blocking:
