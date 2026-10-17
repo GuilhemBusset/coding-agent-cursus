@@ -143,15 +143,21 @@ UNCONDITIONAL_REPRO = re.compile(r"^\s*(false|exit\s+[1-9]\d*|/bin/false)\s*;?\s
 
 
 def classify(f: Finding, item_text: dict[str, str], invariants, reproduced: bool | None,
-             agent_items: set[str], owner_items: set[str]) -> Finding:
+             agent_items: set[str], owner_items: set[str], agent_parts: dict[str, str] | None = None) -> Finding:
     """Decide whether a finding blocks. `reproduced`: True when its reproduction fails on the
-    exact head, False when it passes, None when it could not be run."""
+    exact head, False when it passes, None when it could not be run. On an owner item only the
+    agent part can block: the finding must quote the plan's agent part, never the item's own
+    text, since the owner's real-world evidence is an obligation, not a defect."""
     witness = bool((f.observed or "").strip()) and bool((f.expected or "").strip())
-    tied_item = bool(f.item) and f.item in item_text and quote_ok(item_text[f.item], f.quote)
     tied_invariant = invariant_ok(f.invariant, invariants)
-    if f.item in owner_items and not tied_invariant and reproduced is not True:
-        f.status, f.blocking, f.reason = "advisory", False, "it concerns an owner part, which agents do not prove"
-        return f
+    if f.item in owner_items:
+        part = (agent_parts or {}).get(f.item) or ""
+        tied_item = bool(part) and quote_ok(part, f.quote)
+        if not tied_item and not tied_invariant:
+            f.status, f.blocking, f.reason = "advisory", False, "it concerns the owner's evidence, which is an obligation"
+            return f
+    else:
+        tied_item = bool(f.item) and f.item in item_text and quote_ok(item_text[f.item], f.quote)
     if f.reproduction and UNCONDITIONAL_REPRO.match(f.reproduction):
         f.status, f.blocking, f.reason = "rejected", False, "its reproduction fails unconditionally"
         return f

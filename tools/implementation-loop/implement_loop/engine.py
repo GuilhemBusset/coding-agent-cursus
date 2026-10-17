@@ -389,7 +389,13 @@ class Engine:
                         self._expire_polls()
                         continue
                     return stopped
-                wait(list(running.values()), return_when=FIRST_COMPLETED)
+                wait(list(running.values()), timeout=30, return_when=FIRST_COMPLETED)
+                if self.store.stop_requested() and not stopped:
+                    self.store.event("stop_requested")
+                    stopped = True
+                    terminate = getattr(self.agents, "terminate_all", None)
+                    if terminate:
+                        terminate()   # a long agent call is stopped now, not when it ends
 
     def _finished(self, n: int, exc: BaseException | None) -> None:
         if exc is None:
@@ -1164,8 +1170,10 @@ class Engine:
             self.store.event("locked_tests_changed", issue=n, request=r["id"], sha=sha, files=sorted(content))
         st.dispositions.update(dispositions or {})
         if kind in ("test_change", "command_change") and dispositions and st.manifest:
-            retired = {verify.base_id(i) for i in dispositions}
-            st.manifest = {k: [i for i in v if verify.base_id(i) not in retired] for k, v in st.manifest.items()}
+            # exact node ids; a disposition naming the function itself retires all its cases
+            def retired(i: str) -> bool:
+                return i in dispositions or (verify.base_id(i) in dispositions and verify.base_id(i) != i)
+            st.manifest = {k: [i for i in v if not retired(i)] for k, v in st.manifest.items()}
         self._decide(st, {"id": r["id"], "choice": f"{kind}: {r.get('detail', '')[:200]}",
                           "rationale": f"approved by {self.other}: {r.get('reason', '')[:300]}"})
 
@@ -1344,11 +1352,23 @@ class Engine:
         self.store.event("verified", issue=n, head=head, ok=ok and not problems, problems=problems, closed=closed)
         st.evidence, st.base_sha = evidence, base
         st.last_ran = {"*": sorted(ran)} if ok else st.last_ran
-        if ok and st.examined_sha and st.manifest:
+        if ok and st.examined_sha:
             # the manifest only grows: a locked test that ran once must keep running
             grown = {i for i in ran if i.split("::")[0] in st.locked}
-            st.manifest = {"*": sorted(set(st.manifest.get("*", [])) | grown)}
+            if grown - set((st.manifest or {}).get("*", [])):
+                st.manifest = {"*": sorted(set((st.manifest or {}).get("*", [])) | grown)}
         self.store.put(st)
+        if not problems and st.examined_sha:
+            ran_files = {i.split("::")[0] for i in ran} | self._command_tests(wt, st.commands)
+            unlocked = sorted(f for f in ran_files if f not in st.locked and (wt / f).is_file())
+            if unlocked:   # a test file first run now locks now; the new head is verified again
+                self.ws.commit_all(wt, f"Lock newly run tests for #{n}", "acceptance-checks", n, locks=unlocked)
+                st = self.store.issue(n)
+                st.tests = sorted(set(st.tests) | set(unlocked))
+                st.locked = {**st.locked, **verify.lock(wt, unlocked, sorted({c.get("cwd", ".") for c in st.commands}))}
+                self.store.put(st)
+                self.store.event("tests_locked", issue=n, locked=unlocked, late=True)
+                return self._set_phase(n, Phase.VERIFY)
         if not problems:
             nxt = Phase.LAND if head == st.certified_sha else Phase.EXAMINE
             return self._set_phase(n, nxt, verified_sha=head, head_sha=head)
@@ -1457,7 +1477,7 @@ class Engine:
             else:
                 reproduced = self._reproduces(wt, f.reproduction, f.cwd or ".", None)
             new.append(gate.classify(f, item_text, self.invariants, reproduced, self._agent_items(st),
-                                     self._owner_items(st)))
+                                     self._owner_items(st), {i["id"]: i.get("agent_part") or "" for i in self._items(st)}))
         accepted, unmet, missing = gate.review_verdicts(res.verdicts, item_text, self._verdict_items(st))
         for i, v in accepted.items():
             st.verdicts[i] = {**v, "head": head}
@@ -1503,12 +1523,21 @@ class Engine:
             return self._set_phase(n, Phase.VERIFY, exam_feedback=[f"Your previous examination is incomplete: {'; '.join(owed)}."],
                                    exam_retries=st.exam_retries + 1)
         if owed:
-            st = self.store.issue(n)
-            self._decide(st, {"id": "examination-gaps", "choice": "; ".join(owed) + " was asked twice without an answer",
-                              "rationale": "the builder's verified tests stand as the evidence; recorded, not blocking"})
-            self.store.put(st)
             if missing:
                 return self._round_failed(n, [f"no verdict on {', '.join(missing)} after two requests"], [], missing)
+            # No independent probe after two requests: a second key decides whether the builder's
+            # locked tests prove those items as written. If not, the builder strengthens them.
+            ruling = self.agents.arbitrate(self.other, self._req(n), {
+                "kind": "probe_waiver", "items": {i: self._item_text(n).get(i) for i in unprobed},
+                "tests": sorted(st.tests), "commands": [c for c in st.commands if c.get("criterion") in unprobed],
+                "question": "Do these locked tests, run by these commands, prove each item as written?"})
+            st = self.store.issue(n)
+            if not ruling.upheld:
+                return self._round_failed(n, [f"no independent probe could be written for {', '.join(unprobed)}, and the "
+                                              f"arbiter judges your tests do not prove them as written: {ruling.reason}"])
+            self._decide(st, {"id": "probe-waiver", "choice": f"{', '.join(unprobed)}: proven by the builder's locked tests",
+                              "rationale": f"no independent probe after two requests; the arbiter ruled: {ruling.reason}"})
+            self.store.put(st)
         if new_head != head:
             # adopting probes made a new head: it is verified, then certified by a delta examination
             return self._set_phase(n, Phase.VERIFY, feedback=[], exam_feedback=[], exam_retries=0)
@@ -1861,8 +1890,11 @@ class Engine:
                     f"fix-forward did not repair it. Check that `{main_sha[:12]}..{head[:12]}` only undoes that "
                     f"change and leaves main working."]), {"items": [], "zones": []}, scratch, main_sha, head, [], [], [],
                     None)
-            if not exam.certify:
-                return self._fail(n, "main_broken", f"the other vendor did not certify the revert: {exam.summary[:400]}")
+            serious = [f for f in exam.findings if gate.invariant_ok(f.invariant, self.invariants)
+                       or self._reproduces(wt, f.reproduction, f.cwd or ".", None) is True]
+            if not exam.certify or serious:
+                why = exam.summary[:300] if not exam.certify else "; ".join(f.title for f in serious)[:300]
+                return self._fail(n, "main_broken", f"the other vendor did not certify the revert: {why}")
             self.ws.push(wt)
             if self.ws.head(wt) != head:
                 return self._fail(n, "main_broken", "main moved while the revert was being certified")

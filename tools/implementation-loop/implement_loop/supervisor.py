@@ -63,6 +63,7 @@ class Supervisor:
     def supervise(self) -> Outcome:
         state = self._load()
         started = self.clock()
+        self._deadline = started + self.max_hours * 3600   # one deadline for repair and root runs alike
         runs, quiet = 0, 0
         while True:
             if runs >= self.max_runs:
@@ -93,7 +94,6 @@ class Supervisor:
             if self._expired(started):
                 return self._finish(state, False, f"stopped after {self.max_hours} hours", runs)
             before = self._snapshot(RunStore.for_root(self.repo_root, self.root))
-            self._deadline = started + self.max_hours * 3600
             code = self._run(["run", str(self.root), "--operator", self.operator, "--yes"])
             runs += 1
             store = RunStore.for_root(self.repo_root, self.root)
@@ -161,12 +161,34 @@ class Supervisor:
             return proc.wait(timeout=remaining)
         except subprocess.TimeoutExpired:
             root = args[1] if len(args) > 1 else str(self.root)
-            RunStore.for_root(self.repo_root, int(root)).dir.joinpath("STOP").write_text("supervision deadline\n")
-            try:
-                return proc.wait(timeout=600)
-            except subprocess.TimeoutExpired:
-                os.killpg(proc.pid, signal.SIGTERM)
-                return proc.wait()
+            run_dir = RunStore.for_root(self.repo_root, int(root)).dir
+            run_dir.joinpath("STOP").write_text("supervision deadline\n")
+            for sig, grace in ((None, 120), (signal.SIGTERM, 60), (signal.SIGKILL, 30)):
+                if sig is not None:
+                    self._signal_group(proc.pid, sig)
+                    self._reap_agents(run_dir, sig)
+                try:
+                    return proc.wait(timeout=grace)
+                except subprocess.TimeoutExpired:
+                    continue
+            self._reap_agents(run_dir, signal.SIGKILL)
+            return -9
+
+    @staticmethod
+    def _signal_group(pid: int, sig) -> None:
+        try:
+            os.killpg(pid, sig)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    def _reap_agents(self, run_dir: Path, sig) -> None:
+        """Agents run in their own sessions: signal each recorded process group too."""
+        try:
+            pids = [int(x) for x in (run_dir / "agents.pids").read_text().split() if x.strip()]
+        except (OSError, ValueError):
+            pids = []
+        for pid in pids:
+            self._signal_group(pid, sig)
 
     def _vendor_reachable(self, vendor: str) -> bool | None:
         from .environment import vendor_reachable

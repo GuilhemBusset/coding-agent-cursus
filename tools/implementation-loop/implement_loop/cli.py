@@ -264,6 +264,12 @@ def cmd_run(args) -> int:
     policy["repair"] = bool(getattr(args, "repair", False))
     engine = Engine(plan, store, gh, ws, agents, Config(repo=slug), repo_root=root, log=log, environment=env,
                     invoked_at=invoked_at, policy=policy)
+    import signal as _signal
+
+    def _terminate(signum, frame):   # the supervisor's deadline: stop agents, then let the run save and exit
+        (store.dir / "STOP").write_text("terminated\n")
+        agents.terminate_all()
+    _signal.signal(_signal.SIGTERM, _terminate)
     summary = engine.run()
     log("finished: " + json.dumps(summary, default=str))
     return 0 if not (summary["waiting"] or summary["failed"]) else 3

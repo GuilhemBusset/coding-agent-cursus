@@ -135,6 +135,14 @@ class LiveAgents:
         self.meter = None   # set by the engine: told before and after every attempt
 
     # ---------------------------------------------------------------- process control
+    def _write_pids(self) -> None:
+        """The process groups of running agents, for a supervisor that must reap them if this
+        engine is killed (agents run in their own sessions)."""
+        try:
+            (self.calls_dir.parent / "agents.pids").write_text("\n".join(str(p.pid) for p in self._active))
+        except OSError:
+            pass
+
     def terminate_all(self) -> None:
         """Stop every running agent (its whole process group)."""
         self._stopped = True
@@ -153,6 +161,7 @@ class LiveAgents:
                                 text=True, start_new_session=True, env=agent_env(self.no_gh_dir, self.extra_env))
         with self._lock:
             self._active.add(proc)
+            self._write_pids()
         try:
             out, err = proc.communicate(prompt, timeout=timeout)
             code = proc.returncode
@@ -163,6 +172,7 @@ class LiveAgents:
         finally:
             with self._lock:
                 self._active.discard(proc)
+                self._write_pids()
         if self._stopped:
             raise AgentStopped("run stopped")
         return code, out or "", err or ""
