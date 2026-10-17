@@ -1167,10 +1167,7 @@ class Engine:
                 if target.is_symlink() or text is None:
                     target.unlink(missing_ok=True)   # replace a link itself, never write through it
                 if text is not None:
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    tmp = target.with_name(f".{target.name}.loop-new")
-                    tmp.write_text(text)
-                    os.replace(tmp, target)
+                    self._replace_file(target, text)
             removed = [p for p, t in content.items() if t is None]
             sha = self.ws.commit_all(wt, f"Change locked tests for #{n} (approved {r['id']})", "acceptance-checks", n,
                                      unlocks=removed or None,
@@ -1446,10 +1443,24 @@ class Engine:
         return not ev.passed
 
     @staticmethod
+    def _replace_file(target: Path, text: str) -> None:
+        """Write a file the engine owns by replacing its directory entry with a freshly created one:
+        never through a symlink or a hard link an agent left at that path."""
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=".loop-")
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(text)
+            os.replace(tmp, target)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
+
+    @staticmethod
     def _inside(root: Path, rel: str) -> bool:
         """A probe path is repo-relative and stays inside `root` once resolved (symlinks included)."""
         p = Path(rel)
-        if not rel or p.is_absolute() or ".." in p.parts:
+        if not rel or p.is_absolute() or ".." in p.parts or ".git" in p.parts:
             return False
         try:
             return (root / p).resolve().is_relative_to(root.resolve())
@@ -1618,8 +1629,10 @@ class Engine:
     def _probe_problem(self, p) -> str | None:
         if not p.file or not p.command or not p.content:
             return "a probe needs a file, its content and the command that runs it"
-        if Path(p.file).is_absolute() or ".." in Path(p.file).parts:
-            return "a probe file must be a repo-relative path"
+        if Path(p.file).is_absolute() or ".." in Path(p.file).parts or ".git" in Path(p.file).parts:
+            return "a probe file must be a repo-relative path outside .git"
+        if Path(p.cwd or ".").is_absolute() or ".." in Path(p.cwd or ".").parts:
+            return "a probe's directory must be inside the repository"
         if is_protected(p.file) or (self.repair and is_safety_surface(p.file)):
             return "a probe may not be written on a protected path"
         with tempfile.TemporaryDirectory() as tmp:
@@ -1636,9 +1649,7 @@ class Engine:
         st = self.store.issue(n)
         probes = [p for p in probes if self._inside(wt, p.file)]   # never follow a symlink out of the worktree
         for p in probes:
-            target = wt / p.file
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(p.content)
+            self._replace_file(wt / p.file, p.content)
         if first:   # whatever the commands actually ran locks too, listed by the builder or not
             ran_files = {i.split("::")[0] for ids in st.last_ran.values() for i in ids}
             st.tests = sorted(set(st.tests) | {f for f in ran_files | self._command_tests(wt, st.commands)

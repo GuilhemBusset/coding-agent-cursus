@@ -147,6 +147,12 @@ three accepted one design. The findings:
 - A wrong decision of the builder or arbiter can reach `main`; it is published in the PR's
   Decisions section, bounded by the issue text and the safety invariants, and revertible.
 - Reproduced findings no item requires no longer block; they are kept in follow-up issues.
+- The engine guards against agent mistakes: checks, probes and reproductions run in throwaway
+  copies on private git directories; agent-supplied paths and directories that leave the tree,
+  name `.git`, or go through a link are refused; files the engine writes for an agent replace
+  their directory entry instead of writing through it. These are not a sandbox: an agent runs as
+  the user, so one determined to do harm can act on the user's files directly. Strong isolation
+  still needs a container (ADR 0011, alternative 4).
 - The repository change that goes with it: Node test suites are discovered by glob instead of two
   hand-kept registries, and the session pytest suites run in the `required` CI.
 

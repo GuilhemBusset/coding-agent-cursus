@@ -426,7 +426,14 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
     timeout = spec.timeout_s or default_timeout
     start = time.monotonic()
     notes: list[str] = []
-    if not cwd.is_dir():
+    try:   # an agent-written directory may not lead out of the tree under judgement
+        outside = not cwd.resolve().is_relative_to(root.resolve()) or ".git" in Path(spec.cwd).parts
+    except (OSError, RuntimeError):
+        outside = True
+    if outside:
+        code, output = None, f"check directory leaves the tree under judgement: {spec.cwd}"
+        notes.append(output)
+    elif not cwd.is_dir():
         code, output = None, f"check directory does not exist: {spec.cwd}"
         notes.append(output)
     else:

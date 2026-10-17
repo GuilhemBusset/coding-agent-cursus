@@ -160,3 +160,42 @@ class IsolationOfChecks(EngineCase):
         refused = [p for e in self.events("test_paths_refused", 2) for p in e["paths"]]
         self.assertIn("checks/escape.sh", refused)
         self.assertNotIn("checks/escape.sh", self.store.issue(2).tests)
+
+
+class FileHardeningTests(unittest.TestCase):
+    def test_replace_file_never_writes_through_a_link(self):
+        import os
+        import tempfile
+        from implement_loop.engine import Engine
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            victim = d / "victim.txt"
+            victim.write_text("keep\n")
+            (d / "wt").mkdir()
+            os.symlink(victim, d / "wt" / "sym.sh")
+            os.link(victim, d / "wt" / "hard.sh")
+            Engine._replace_file(d / "wt" / "sym.sh", "new\n")
+            Engine._replace_file(d / "wt" / "hard.sh", "new\n")
+            self.assertEqual(victim.read_text(), "keep\n")
+            self.assertEqual((d / "wt" / "sym.sh").read_text(), "new\n")
+            self.assertFalse((d / "wt" / "sym.sh").is_symlink())
+
+    def test_git_metadata_and_escapes_are_never_inside(self):
+        import tempfile
+        from implement_loop.engine import Engine
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for rel in (".git", "a/.git/config", "../x", "/etc/passwd", ""):
+                self.assertFalse(Engine._inside(root, rel), rel)
+            self.assertTrue(Engine._inside(root, "checks/probe.sh"))
+
+    def test_a_check_directory_outside_the_tree_is_refused(self):
+        import tempfile
+        from implement_loop import verify
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "tree"
+            root.mkdir()
+            spec = CheckSpec(criterion="A1", command="true", cwd="..")
+            ev, _ = verify.run_check(root, spec, "0" * 40, Path(d) / "work")
+            self.assertFalse(ev.passed)
+            self.assertIn("leaves the tree", ev.note or ev.output_tail)
