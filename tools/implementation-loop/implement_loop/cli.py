@@ -1,4 +1,4 @@
-"""Command line: `implement doctor | plan | run | status | stop | retry | record-fixture`."""
+"""Command line: `implement doctor | plan | run | status | stop | retry | supervise | record-fixture`."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from . import VERSION, environment, report
-from .config import Config
+from .config import Config, load_policy
 from .github import GhCli, RecordingGitHub
 from .graph import CycleError, build_plan
 from .state import RunStore
@@ -57,9 +57,14 @@ def cmd_status(args) -> int:
         return 0
     for n in issues:
         st = store.issue(n)
-        extra = f" · {st.park_kind}: {st.reason}" if st.reason else ""
-        owner = f" · owner: {len(st.human_tasks)} item(s)" if st.human_tasks else ""
-        print(f"#{n:<5} {st.phase.value:<12} attempts {st.attempts} · fix rounds {st.fix_rounds}"
+        extra = ""
+        if st.wait:
+            extra = f" · {st.wait.get('kind')}: {st.wait.get('detail', '')}"
+        if st.fail:
+            extra = f" · {st.fail.get('cause')}: {st.fail.get('detail', '')}"
+        owner = f" · obligations: {len(st.obligations)}" if st.obligations else ""
+        opened = sum(1 for f in st.findings if f.get("status") == "open")
+        print(f"#{n:<5} {st.phase.value:<10} calls {st.calls} · failed attempts {st.infra} · open findings {opened}"
               + (f" · PR #{st.pr}" if st.pr else "") + owner + extra)
     calls = store.dir / "agents.jsonl"
     if calls.exists():
@@ -81,20 +86,29 @@ def cmd_stop(args) -> int:
 
 
 def cmd_retry(args) -> int:
-    """Let parked issues try again on the next run, with a fresh set of recovery steps."""
+    """Give failed issues a fresh ceiling, and waiting ones an immediate resume, on the next run."""
     from .model import Phase
     store = RunStore.for_root(repo_root(), args.issue)
     if (store.dir / "lock").exists():
         sys.exit(f"implement: the run for #{args.issue} is active; retry after it finishes")
-    targets = args.items or [n for n in store.known() if store.issue(n).phase == Phase.PARKED]
+    targets = args.items or [n for n in store.known() if store.issue(n).phase in (Phase.FAILED, Phase.WAITING)]
     for n in targets:
         st = store.issue(n)
-        if st.phase != Phase.PARKED:
-            print(f"#{n} is {st.phase.value}, not parked; nothing to do")
+        if st.phase == Phase.FAILED:
+            st.ceiling_bonus += st.calls
+            st.infra = st.unproductive = st.replans = 0
+            st.signature = ""
+            print(f"#{n} gets a fresh ceiling on the next run (it failed: {(st.fail or {}).get('cause')})")
+            st.fail = None
+            st.phase = Phase.BUILD if st.plan and st.worktree else Phase.PENDING
+        elif st.phase == Phase.WAITING:
+            print(f"#{n} resumes on the next run (it was waiting: {(st.wait or {}).get('kind')})")
+            st.phase = Phase((st.wait or {}).get("resume") or "pending")
+            st.wait = None
+        else:
+            print(f"#{n} is {st.phase.value}; nothing to do")
             continue
-        st.retry = True
         store.put(st)
-        print(f"#{n} will be retried on the next run (was parked: {st.park_kind})")
     return 0
 
 
@@ -243,11 +257,14 @@ def cmd_run(args) -> int:
     ws = Workspace(root, args.issue, root / "scripts" / "ship.sh")
     agents = LiveAgents(operator, store.dir, ws, extra_env=env["check_env"])
     log(f"run for #{args.issue}: operator {operator}, reviewer {agents.other}, {len(plan.work)} work item(s)")
+    policy = load_policy(root / "tools" / "implementation-loop" / "loop.toml")
+    policy["lacks"] = environment.host_lacks(policy["lacks"])
+    policy["repair"] = bool(getattr(args, "repair", False))
     engine = Engine(plan, store, gh, ws, agents, Config(repo=slug), repo_root=root, log=log, environment=env,
-                    invoked_at=invoked_at)
+                    invoked_at=invoked_at, policy=policy)
     summary = engine.run()
     log("finished: " + json.dumps(summary, default=str))
-    return 0 if not summary["parked"] else 3
+    return 0 if not (summary["waiting"] or summary["failed"]) else 3
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -273,10 +290,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--operator", choices=["claude", "codex"], help="the agent driving this run (the other one reviews)")
     p.add_argument("--yes", action="store_true", help="the user confirmed that this run merges its own PRs")
     p.add_argument("--fresh", action="store_true", help="archive the previous run state and start over")
+    p.add_argument("--repair", action="store_true", help="a fault-repair run: the safety surface is off limits")
     p.set_defaults(func=cmd_run)
-    p = sub.add_parser("retry", help="let parked issues of a run try again on its next run")
+    p = sub.add_parser("retry", help="give failed issues a fresh ceiling and resume waiting ones, on the next run")
     p.add_argument("issue", type=int, help="the run's root issue")
-    p.add_argument("items", type=int, nargs="*", help="parked issues to retry (default: all of them)")
+    p.add_argument("items", type=int, nargs="*", help="issues to retry (default: every failed or waiting one)")
     p.set_defaults(func=cmd_retry)
     p = sub.add_parser("record-fixture", help="record GitHub reads for offline tests")
     p.add_argument("issue", type=int)

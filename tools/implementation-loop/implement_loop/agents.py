@@ -278,12 +278,12 @@ class FakeAgents:
                                       agent_part="none"))
             elif item.id in deferred:
                 items.append(ItemPlan(item.id, "needs another issue", words, "deferred",
-                                      depends_on=deferred[item.id], depends_quote="Prerequisite"))
+                                      depends_on=deferred[item.id], depends_quote="Prerequisite widget"))
             elif item.id in s.review_items:
                 items.append(ItemPlan(item.id, "judged by the examiner", words, "review"))
             else:
                 items.append(ItemPlan(item.id, "proven by the test", words, "test"))
-        zones = sorted(set(s.files) | set(s.lines) | {self.test_file(n)})
+        zones = sorted(set(s.files) | set(s.lines) | {self.test_file(n)} | ({f"edge_{n}.txt"} if s.findings else set()))
         result = PlanResult(items=items, zones=zones,
                             decisions=[{"id": "approach", "choice": "the simplest variant", "rationale": "fake"}])
         return self._metered(n, "plan", vendor, lambda: result)
@@ -291,7 +291,7 @@ class FakeAgents:
     def triage(self, vendor, req, plan):
         self.calls.append(("triage", vendor, req.issue.number))
         return self._metered(req.issue.number, "triage", vendor,
-                             lambda: [Objection("scenario", "an unquoted wish for more provenance")])
+                             lambda: [Objection("misreading", "an unquoted wish for more provenance", item="D1")])
 
     def build(self, vendor, req, plan, worktree, feedback):
         n = req.issue.number
@@ -377,13 +377,13 @@ class FakeAgents:
                                         reproduction=f"test -f edge_{n}.txt"))
             if k < s.unquoted_findings:
                 findings.append(Finding(id=f"U{n}-{k}", title="a nicer error message", observed="terse",
-                                        expected="friendlier", reproduction="false"))
+                                        expected="friendlier", reproduction=f"test -f friendlier_{n}.txt"))
             if s.probe != "none" and since is None:
                 body = ("#!/usr/bin/env bash\nexit 1\n" if s.probe == "unconditional"
                         else "#!/usr/bin/env bash\nset -e\n" + "".join(f"test -s {p}\n" for p in sorted(s.files)))
                 probes.append(Probe(self.probe_file(n), item.id, f"bash {self.probe_file(n)}", content=body))
             verdicts = []
-            for i in s.review_items:
+            for i in [p["id"] for p in plan["items"] if p["proof"] == "review"]:
                 text = next(li.text for li in req.spec.ledger if li.id == i)
                 verdict = "unmet" if k < s.unmet_review else "met"
                 verdicts.append({"item": i, "verdict": verdict, "quote": " ".join(text.split()[:4]), "note": "fake"})

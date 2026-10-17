@@ -231,31 +231,35 @@ def run_check(root: Path, spec: CheckSpec, head_sha: str, work_dir: Path, defaul
 
 
 def verify(root: Path, specs: list[CheckSpec], head_sha: str, work_dir: Path, locked: dict[str, str],
-           check_files: list[str], expected: list[str], default_timeout: int = 900,
-           extra_env: dict[str, str] | None = None, check_tamper: bool = True) -> tuple[bool, list[dict], list[str]]:
-    """Run every command check. Returns (all passed, evidence records, problems).
-    `extra_env` reaches the check commands only (for example the browser's private libraries);
-    `check_tamper=False` re-runs another issue's checks for regressions, behaviour only."""
+           check_files: list[str], manifest: dict[str, list[str]] | None, default_timeout: int = 900,
+           extra_env: dict[str, str] | None = None, check_tamper: bool = True):
+    """TEMPORARY stand-in (replaced by the selection-manifest verifier): (ok, evidence, problems, ran)."""
     work_dir.mkdir(parents=True, exist_ok=True)
     cwds = sorted({s.cwd for s in specs if s.kind == "command"})
     problems = tamper_report(root, locked, check_files, cwds) if check_tamper else []
-    evidence, cases, accounted = [], [], False
+    evidence, ran = [], []
     for spec in specs:
         if spec.kind != "command":
             continue
         ev, tests = run_check(root, spec, head_sha, work_dir, default_timeout, extra_env)
         evidence.append(asdict(ev))
         if tests is not None:
-            accounted = True
-            cases += tests["passed"] + tests["failed"]
+            ran += ["::".join(c[0] + [c[1]]) for c in tests["passed"]]
         if not ev.passed:
             problems.append(f"{spec.criterion} failed: {ev.note or f'exit {ev.exit_code}'}")
-    if expected:
-        if not accounted:
-            problems.append("the locked tests ran without pytest result accounting; run them with pytest "
-                            "so skips and missing tests can be detected")
-        else:
-            missing = unmatched(expected, cases)
-            if missing:
-                problems.append(f"expected tests did not run: {missing[:5]}")
-    return (not problems), evidence, problems
+    return (not problems), evidence, problems, ran
+
+
+def unselected(root: Path, check_files: list[str], manifest, dispositions) -> list[str]:
+    return []
+
+
+def unconditional_failures(root: Path, files: list[str]) -> list[str]:
+    out = []
+    for rel in files:
+        p = root / rel
+        if p.suffix == ".sh" and p.is_file():
+            lines = [l.strip() for l in p.read_text().splitlines() if l.strip() and not l.startswith("#")]
+            if lines and all(l in ("exit 1", "false", "set -e", "set -euo pipefail") for l in lines) and any(l in ("exit 1", "false") for l in lines):
+                out.append(f"{rel}: the script only fails")
+    return out

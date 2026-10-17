@@ -85,6 +85,15 @@ class Config:
     label_prefix: str = "loop:"
 
 
+def load_policy(path) -> dict:
+    """The host's lacks and the safety invariants from loop.toml (part of the safety surface)."""
+    import tomllib
+    from pathlib import Path
+    data = tomllib.loads(Path(path).read_text()) if Path(path).exists() else {}
+    return {"lacks": list((data.get("host") or {}).get("lacks") or []),
+            "invariants": list((data.get("invariants") or {}).get("names") or [])}
+
+
 def ceiling(size: str, infra: bool) -> int:
     base = CEILINGS.get(size, CEILINGS["M"])
     return int(base * INFRA_FACTOR) if infra else base

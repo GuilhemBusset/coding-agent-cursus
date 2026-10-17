@@ -130,6 +130,8 @@ class Engine:
             try:
                 self._context()
                 stopped = self._loop()
+                if not stopped:
+                    self._mark_blocked()
             except CeilingReached as e:   # the run's own ceiling, reached while gathering context
                 self.store.event("run_ceiling", error=str(e))
             finally:
@@ -384,7 +386,7 @@ class Engine:
                 self._fail(n, "ceiling", str(exc))
         elif isinstance(exc, AgentFailure) or type(exc).__name__ == "AgentFailure":
             kind = getattr(exc, "kind", "crash")
-            self.store.event("agent_unavailable", issue=n, kind=kind, error=str(exc)[:500])
+            self.store.event("agent_unavailable", issue=n, failure=kind, error=str(exc)[:500])
             if kind == "outage":
                 self._wait(n, WAIT_OUTAGE, str(exc)[:300], vendor=getattr(exc, "vendor", ""))
             # a timeout or crash is charged to the infrastructure budget; the step is retried
@@ -507,7 +509,7 @@ class Engine:
         if kind == WAIT_ENGINE:
             st.wait["version"] = VERSION
         self.store.put(st)
-        self.store.event("waiting", issue=n, kind=kind, detail=detail[:600], resume=resume_phase.value)
+        self.store.event("waiting", issue=n, wait=kind, detail=detail[:600], resume=resume_phase.value)
         self.log(f"#{n} waiting ({kind}): {detail[:200]}")
         self._set_phase(n, Phase.WAITING)
 
@@ -889,7 +891,7 @@ class Engine:
         proposals = self._locked_edits(st, wt, restore)
         requests = self._new_requests(n, st, result.requests, proposals)
         subject = (f"Merge main and build #{n}" if files and not unresolved else f"Build #{n}")
-        sha = self._commit_work(n, wt, f"{subject} (round {len([e for e in st.requests]) + st.calls})", expected, restore)
+        sha = self._commit_work(n, wt, subject, expected, restore)
         if files and not unresolved:
             self._relock(n, wt, expected, sources)
         st = self.store.issue(n)
@@ -1214,10 +1216,13 @@ class Engine:
         wt = Path(st.worktree)
         head = self.ws.head(wt)
         problems: list[str] = []
-        if st.reverted:
-            problems.append(f"your edits to the locked tests {st.reverted} were reverted; make them pass unchanged, or "
-                            f"propose the change with a `test_change` request")
+        notes: list[str] = []
+        if st.reverted:   # already undone: a note for the builder, not a failure of the round
+            notes.append(f"Your edits to the locked tests {st.reverted} were reverted. Leave them unchanged, or "
+                         f"propose a change with a `test_change` request.")
+            self.store.event("reverted_edits_noted", issue=n, files=st.reverted)
             st.reverted = []
+            st.feedback = list(st.feedback) + notes
             self.store.put(st)
         if not st.commands and self._agent_items(st) - self._review_items(st):
             problems.append("no commands prove the test/command items; return one command per item")
@@ -1245,6 +1250,7 @@ class Engine:
         if not problems:
             nxt = Phase.LAND if head == st.certified_sha else Phase.EXAMINE
             return self._set_phase(n, nxt, verified_sha=head, head_sha=head)
+        problems = notes + problems
         env = environment_problem(evidence)
         if env:
             return self._wait(n, WAIT_ENVIRONMENT, f"the host cannot run this issue's checks: {env}", resume=Phase.VERIFY)
@@ -1721,6 +1727,18 @@ class Engine:
                 self._set_phase(n, Phase.DONE, human_tasks=[])
                 self._close_trackers(n)
 
+    def _mark_blocked(self) -> None:
+        """Issues still pending behind a prerequisite that waits or failed wait with it, so the
+        report says why; they resume when it is delivered."""
+        phases = self._phases()
+        for n in self.plan.work:
+            if phases[n] != Phase.PENDING:
+                continue
+            stuck = [d for d in sorted(self.plan.deps.get(n, ())) if phases.get(d) in (Phase.WAITING, Phase.FAILED)]
+            if stuck:
+                self._wait(n, "prerequisite", f"waits for #{stuck[0]}, which is {phases[stuck[0]].value}",
+                           resume=Phase.PENDING)
+
     def _close_trackers(self, n: int) -> None:
         parent = self.plan.parent.get(n)
         while parent is not None:
@@ -1748,8 +1766,7 @@ class Engine:
                 "failed": {n: f"[{(self.store.issue(n).fail or {}).get('cause')}] {(self.store.issue(n).fail or {}).get('detail')}"
                            for n, ph in phases.items() if ph == Phase.FAILED},
                 "owner_obligations": {n: self.store.issue(n).human_tasks for n, ph in phases.items()
-                                      if ph == Phase.DELIVERED},
-                "added": [m for m in self.plan.work if any(e.get("kind") == "prerequisite_added" for e in [])]}
+                                      if ph == Phase.DELIVERED}}
 
     def _post_run_summary(self) -> None:
         states = {n: self.store.issue(n) for n in self.plan.work}
