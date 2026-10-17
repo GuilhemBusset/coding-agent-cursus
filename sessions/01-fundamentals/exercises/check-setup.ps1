@@ -114,10 +114,17 @@ if ($null -eq $uv) {
 }
 
 # uv's own messages (for example a first-time Python download) go to stderr and are
-# not shown; the checker prints everything it reports on stdout.
-& $uv run --no-project --python 3.12 python $checker 2>$null
+# not shown; the checker prints everything it reports on stdout. Its exit status is
+# passed on only if it printed its summary block: Python that fails to start can also
+# exit 1, and then this script reports instead.
+$reported = $false
+& $uv run --no-project --python 3.12 python $checker 2>$null | ForEach-Object {
+    $text = [string]$_
+    Write-Line $text
+    if ($text.TrimEnd() -eq '----- END SETUP SUMMARY -----') { $reported = $true }
+}
 $status = $LASTEXITCODE
-if ($status -eq 0 -or $status -eq 1) {
+if ($reported -and ($status -eq 0 -or $status -eq 1)) {
     exit $status
 }
 Write-Fallback "checker: FAIL could not start the checker through uv (exit $status); run 'uv run --no-project --python 3.12 python --version' to see why"

@@ -88,8 +88,17 @@ All on the WSL2 host described below, 2026-10-10.
 - git 2.53.0, uv 0.11.28, Python 3.12.13 (uv-managed), PowerShell 7.6.6 (`bash setup/pwsh.sh`).
 - Claude Code 2.1.302, Codex CLI 0.162.1 (`codex exec --skip-git-repo-check --output-last-message` used by the smoke test).
 - Script hashes (SHA-256): `check_setup.py` dd9e44d52105a696613f5579249bb25abe6809d6bff95cdc8a1af3887cb10e98,
-  `check-setup.sh` 63f19d05f4f0aae349a87f85dfcb4e1711cd0466bed24fed5f8afc6480bcd348,
-  `check-setup.ps1` 67df3101828e2253931a904c57373ae6ef666eda4395c01025c517d55dff0ce7.
+  `check-setup.sh` 34751e3dc317c83bfc811211de3075ddbe42712a96c5413dbc22edf7b851c4e7,
+  `check-setup.ps1` e9d5ff997e502be53389da0fceeb556fe91a857f9c38995d4e96d5f8db7e45ab.
+
+### Wrapper fallback
+
+Each wrapper streams the checker's output and passes its exit status through only if the
+`----- END SETUP SUMMARY -----` line appeared. Otherwise it prints its own presence-only report
+and summary block and exits 1. That covers uv missing, uv exiting with another code, and Python
+that fails to start and exits 1 (for example a stale `PYTHONHOME`). The examiner's probe
+`python3 tests/probe_prework_examiner.py Probe.test_D2_bootstrap_exit_one_summary` (from the repo
+root) checks the last case with real uv through both entry points.
 
 ### Fixture runs on WSL2
 

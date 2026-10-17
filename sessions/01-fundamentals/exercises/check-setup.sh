@@ -80,10 +80,22 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 # uv's own messages (for example a first-time Python download) go to stderr and are
-# not shown; the checker prints everything it reports on stdout.
-uv run --no-project --python 3.12 python "$here/check_setup.py" 2>/dev/null
-status=$?
-case $status in
-  0 | 1) exit "$status" ;;
-esac
+# not shown; the checker prints everything it reports on stdout. Its exit status is
+# passed on only if it printed its summary block: Python that fails to start can also
+# exit 1, and then this script reports instead.
+uv run --no-project --python 3.12 python "$here/check_setup.py" 2>/dev/null | {
+  reported=1
+  while IFS= read -r line || [ -n "$line" ]; do
+    printf '%s\n' "$line"
+    if [ "${line%$'\r'}" = "----- END SETUP SUMMARY -----" ]; then reported=0; fi
+  done
+  exit "$reported"
+}
+statuses=("${PIPESTATUS[@]}")
+status=${statuses[0]}
+if [ "${statuses[1]}" -eq 0 ]; then
+  case $status in
+    0 | 1) exit "$status" ;;
+  esac
+fi
 fallback "checker: FAIL could not start the checker through uv (exit $status); run 'uv run --no-project --python 3.12 python --version' to see why"
