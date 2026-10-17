@@ -187,9 +187,9 @@ def cmd_doctor(args) -> int:
         from .workspace import Workspace
         scratch = runs_dir(root) / "smoke"
         agents = LiveAgents("claude", scratch, Workspace(root, 0, root / "scripts" / "ship.sh"))
-        for vendor in ("claude", "codex"):
+        for vendor in environment.VENDORS:
             try:
-                agents.call(vendor, "explore", root, 'Do not use any tool. Return {"notes": "ok"}.')
+                environment.smoke_call(agents, vendor, root)
                 print(f"PASS  smoke {vendor:<9} a structured call worked")
             except Exception as e:  # noqa: BLE001 - report any failure of the live call
                 print(f"FAIL  smoke {vendor:<9} {e}")
