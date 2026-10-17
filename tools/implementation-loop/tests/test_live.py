@@ -346,6 +346,70 @@ class LoopGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("tests/test_b.py was locked", result.stdout)
 
+    # Loop-Locks: lock files already on the branch, which the acceptance-checks commit leaves unchanged
+
+    def trailers(self, phase, **paths):
+        """An empty commit carrying `phase` and one Loop-Locks / Loop-Unlocks line per path."""
+        lines = [f"Loop-Phase: {phase}"]
+        for key, name in (("locks", "Loop-Locks"), ("unlocks", "Loop-Unlocks")):
+            lines += [f"{name}: {p}" for p in paths.get(key, ())]
+        git("commit", "-q", "--allow-empty", "-m", "lock\n\n" + "\n".join(lines), cwd=self.wt)
+        return git("rev-parse", "HEAD", cwd=self.wt)
+
+    def head(self):
+        return git("rev-parse", "HEAD", cwd=self.wt)
+
+    def test_a_file_locked_by_trailer_then_changed_by_an_implementation_commit_fails(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "implementation")   # the builder wrote it
+        locker = self.trailers("acceptance-checks", locks=["tests/test_a.py"])
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        result = self.guard()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(f"::error file=tests/test_a.py::tests/test_a.py was locked by acceptance-checks commit "
+                      f"{locker[:7]} but changed by {self.head()[:7]}", result.stdout)
+        self.assertEqual(result.stdout.count("::error"), 1, "the commit before the lock is not judged")
+
+    def test_a_file_locked_by_trailer_may_change_in_a_later_acceptance_checks_commit(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "implementation")
+        self.trailers("acceptance-checks", locks=["tests/test_a.py"])
+        self.commit("tests/test_a.py", "def test_a(): assert 1\n", "acceptance-checks")
+        self.commit("src/a.py", "x = 1\n", "implementation")
+        self.assertEqual(self.guard().returncode, 0)
+
+    def test_a_file_locked_by_trailer_and_released_by_loop_unlocks_may_change(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "implementation")
+        self.trailers("acceptance-checks", locks=["tests/test_a.py"])
+        self.trailers("acceptance-checks", unlocks=["tests/test_a.py"])
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        self.assertEqual(self.guard().returncode, 0)
+
+    def test_several_loop_locks_trailers_lock_each_path(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "implementation")
+        self.commit("tests/test_b.py", "def test_b(): pass\n", "implementation")
+        self.trailers("acceptance-checks", locks=["tests/test_a.py", "tests/test_b.py"])
+        self.commit("tests/test_b.py", "def test_b(): assert True\n", "implementation")
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        result = self.guard()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("tests/test_a.py was locked", result.stdout)
+        self.assertIn("tests/test_b.py was locked", result.stdout)
+
+    def test_a_file_both_written_and_named_in_loop_locks_is_reported_once(self):
+        (self.wt / "tests").mkdir()
+        (self.wt / "tests" / "test_a.py").write_text("def test_a(): pass\n")
+        git("add", "-A", cwd=self.wt)
+        git("commit", "-q", "-m", "checks\n\nLoop-Phase: acceptance-checks\nLoop-Locks: tests/test_a.py", cwd=self.wt)
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        result = self.guard()
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout.count("::error"), 1)
+
+    def test_loop_locks_on_a_commit_that_is_not_acceptance_checks_locks_nothing(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "implementation")
+        self.trailers("implementation", locks=["tests/test_a.py"])
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        self.assertEqual(self.guard().returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
