@@ -28,6 +28,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import posixpath
 import re
 import tempfile
 import threading
@@ -1443,11 +1444,10 @@ class Engine:
         if not problems:
             nxt = Phase.LAND if head == st.certified_sha else Phase.EXAMINE
             return self._set_phase(n, nxt, verified_sha=head, head_sha=head)
-        problems = notes + problems
         env = environment_problem(evidence)
         if env:
             return self._wait(n, WAIT_ENVIRONMENT, f"the host cannot run this issue's checks: {env}", resume=Phase.VERIFY)
-        self._round_failed(n, problems, [f["id"] for f in still])
+        self._round_failed(n, problems, [f["id"] for f in still], notes=notes)
 
     def _close_findings(self, n: int, st: IssueState, wt: Path, evidence: list[dict]) -> list[str]:
         """An open finding closes only when its reproduction passes on the new head (a probe-based
@@ -1460,7 +1460,7 @@ class Engine:
                 continue
             if f.get("probe"):
                 cmd = next((c["command"] for c in st.commands if c.get("author") == "examiner"
-                            and f["probe"] in (c.get("command") or "")), None)
+                            and _names_probe(c, f["probe"])), None)
                 if cmd and cmd in passed_probe:
                     f["status"], f["reason"] = "closed", "its probe passes"
                     closed.append(f["id"])
@@ -1523,14 +1523,16 @@ class Engine:
             return False
 
     def _round_failed(self, n: int, problems: list[str], open_ids: list[str] | None = None,
-                      unmet: list[str] | None = None) -> None:
+                      unmet: list[str] | None = None, notes: list[str] | None = None) -> None:
         """The progress rule: a round is productive when what fails changes. Two unproductive
-        rounds bring a replan on the branch, two more end the issue `failed`."""
+        rounds bring a replan on the branch, two more end the issue `failed`. Notes reach the
+        builder but are not failures, so they stay out of the signature."""
         st = self.store.issue(n)
         sig = gate.signature(problems, open_ids or [], unmet or [])
         st.unproductive = st.unproductive + 1 if sig == st.signature else 0
         st.signature = sig
         self.store.put(st)
+        problems = list(notes or []) + problems
         self.store.event("round_failed", issue=n, unproductive=st.unproductive, problems=problems[:8])
         if st.unproductive >= self.caps.unproductive_fail:
             return self._fail(n, "no_progress", "the same failure repeated after a replan: " + "; ".join(problems)[:600])
@@ -2183,6 +2185,19 @@ def criterion_item(criterion: str | None, items: set[str]) -> str | None:
         return criterion
     m = CRITERION_LEAD.match(criterion or "")
     return m.group(1) if m and m.group(1) in items else None
+
+
+def _names_probe(command: dict, probe: str) -> bool:
+    """Whether an examiner's command runs a probe file: one of its path words, resolved from the
+    command's cwd, is the probe (`tests/x.py` run in `sessions/01/` names `sessions/01/tests/x.py`;
+    `archive/tests/x.py` there does not)."""
+    cwd = command.get("cwd") or "."
+    target = posixpath.normpath(probe)
+    for word in re.findall(r"[^\s'\"=;&|()<>]+", command.get("command") or ""):
+        path = word.split("::", 1)[0]
+        if path and posixpath.normpath(posixpath.join(cwd, path)) == target:
+            return True
+    return False
 
 
 def environment_problem(evidence: list[dict]) -> str | None:
