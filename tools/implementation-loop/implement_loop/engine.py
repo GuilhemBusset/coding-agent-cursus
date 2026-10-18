@@ -335,9 +335,24 @@ class Engine:
         st.unproductive = st.replans = 0
         st.fail = {**f, "resumed": True}
         st.phase = Phase.BUILD if st.plan and st.worktree else Phase.PENDING
+        # heals a state saved before the fix (#50): the deletions it approved are in its requests
+        deleted = {p for r in st.requests if r.get("kind") == "test_change" and r.get("status") == "approved"
+                   for p, text in (r.get("content") or {}).items() if text is None}
+        self._retire_probe_commands(st.number, st, sorted(deleted - set(st.probes)))
         st.feedback = [f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
                        f"A new engine version gives it one more try."]
         self.store.event("revived", issue=st.number, cause=f.get("cause"), phase=st.phase.value)
+
+    def _retire_probe_commands(self, n: int, st: IssueState, deleted: list[str]) -> None:
+        """An examiner's command for a probe an approved change deleted goes with it. Only the
+        examiner's own commands are kept beside the builder's, so nobody else could retire it
+        (#50 spent its ceiling on that exit 4); a command naming no deleted probe always stays."""
+        stale = [c for c in st.commands if c.get("author") == "examiner"
+                 and any(_names_probe(c, p) for p in deleted)]
+        if stale:
+            st.commands = [c for c in st.commands if c not in stale]
+            self.store.event("probe_commands_retired", issue=n,
+                             commands=[f"{c.get('criterion')}: {c['command'][:160]}" for c in stale])
 
     def _owner_edit(self, st: IssueState) -> None:
         """The owner edited the issue: new evidence. Plan again on the branch, with the previous
@@ -1228,6 +1243,7 @@ class Engine:
                     st.probes = [t for t in st.probes if t != p]
                 elif p in st.locked:
                     st.locked[p] = verify.digest(wt / p)
+            self._retire_probe_commands(n, st, removed)
             self.store.event("locked_tests_changed", issue=n, request=r["id"], sha=sha, files=sorted(content))
         st.dispositions.update(dispositions or {})
         if kind in ("test_change", "command_change") and dispositions and st.manifest:
