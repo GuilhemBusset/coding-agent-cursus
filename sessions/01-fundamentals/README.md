@@ -125,6 +125,8 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
 | `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
+| `cursus/sources.html` | The session bibliography, grouped by act, with the date each source was last read |
+| `cursus/sources/fact-check.md` | The fact-check log: every dated claim, its primary source and what the pass of 2026-10-18 did with it |
 | `exercises/` | Offline work: pre-work before the session and home exercises after it |
 | `exercises/00-prework.html` | Pre-work page: install steps for git, gh, uv, mise and Claude Code or Codex on macOS, Linux, WSL and Windows, login troubleshooting, the setup check and the pre-reading |
 | `exercises/check-setup.sh`, `exercises/check-setup.ps1`, `exercises/check_setup.py` | The students' setup check: Bash and PowerShell wrappers around one stdlib Python core, run through uv. PASS or FAIL per tool, network, `gh` login, a push to a temporary `setup-check/<handle>` branch, an agent smoke test, then a summary block to paste |

@@ -76,7 +76,8 @@ What each run does, so nobody wonders whether the agent "cheated":
 - Any run that called a tool, or where Claude Code still offered tools, is marked `(used tools)`
   in the table and `pure_reasoning: false` in `results.json`.
 
-The settings are documented here (checked 2026-10-11):
+The settings are documented here (checked 2026-10-11, rechecked 2026-10-18; the Codex reference
+now lists `max` and `ultra` among the possible levels, and the prices below are unchanged):
 
 - Claude effort parameter: https://platform.claude.com/docs/en/build-with-claude/effort. The levels
   are `low`, `medium`, `high`, `xhigh` and `max`. Opus 5.5 defaults to `medium`.

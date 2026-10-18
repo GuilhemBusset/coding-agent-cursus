@@ -1,7 +1,10 @@
 # Act I deck: review evidence
 
 Agent review by the implementer, 2026-10-16. Reviewed file: `../01-sampler.html`,
-76,582 bytes, sha256 `e887145f716a7f7455c2c2966cbd098a9f3ce97e735892685fc1e37cd1909508`.
+76,648 bytes, sha256 `403d703a0a367d5c33a285972a228b3a064a5670817054b985c728e1398b730a`.
+Re-reviewed 2026-10-18 after the fact-check pass (#50, `sources/fact-check.md`): only the
+`reproducibility` slide's cite line changed (as-of 2026-10-18, CLI versions named); check-page PASS,
+and its desktop and laptop screenshots of that slide were inspected again.
 It quotes `../fixtures/base_vs_instruct.json` (sha256
 `964560825d740725d21d21fcdd431c92485262b28cf6b2a32fd12155a7aed105`) and reads numbers from
 `../fixtures/next_token.json` (sha256
