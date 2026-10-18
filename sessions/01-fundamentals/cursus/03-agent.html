@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="en" data-page-kind="deck" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Act III · Agent = model + harness</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <style>/* Page-specific layout for the Act III deck; uses the shared tokens. */
+.cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem var(--space); align-items: start; }
+.cols.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols > * { min-width: 0; }
+@media (max-width: 799px) { .cols, .cols.even { grid-template-columns: minmax(0, 1fr); } }
+.tight { padding-left: 1.25rem; }
+.tight li + li { margin-top: .35rem; }
+.cols > .callout { margin-block: 0; }
+.cite { color: var(--muted); font-size: .8125rem; line-height: 1.45; margin: .5rem 0 0; padding-top: .4rem; border-top: 1px solid var(--rule); }
+.cite cite { font-style: normal; color: var(--secondary); }
+.drive { border-left: 3px solid var(--accent); background: var(--paper); padding: .45rem 1rem; margin: .6rem 0 0; }
+.hedge { border-left-color: var(--amber); }
+.hedge .label { color: var(--amber); }
+.contested { display: inline-block; margin-right: .5rem; padding: 0 .4rem; border: 1px solid var(--amber); color: var(--amber); font: 600 .75rem/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.qualify { color: var(--secondary); }
+.agenda { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
+.agenda > li, .legs > li { margin: 0; padding: .6rem .9rem; border: 1px solid var(--rule); background: var(--paper); }
+.agenda strong, .legs strong { display: block; font-size: 1.1rem; line-height: 1.3; }
+.agenda span:not(.label), .legs span:not(.label) { color: var(--secondary); }
+.legs { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.legs.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 799px) { .legs, .legs.four { grid-template-columns: minmax(0, 1fr); } }
+.compact { font-size: .9375rem; line-height: 1.45; }
+.compact th, .compact td { padding: .4rem .6rem; }
+.compact td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.compact caption { padding-bottom: .4rem; }
+@media (max-width: 599px) { .table-wrap > .compact { min-width: 34rem; } }
+.quote { margin: 0 0 .75rem; padding-left: 1rem; border-left: 3px solid var(--amber); }
+.reveal { padding-block: .25rem; margin-block: .5rem 0; }
+.reveal summary { font-weight: 600; }
+.asof { display: inline-block; margin-left: .5rem; padding: 0 .4rem; border: 1px solid var(--rule); color: var(--secondary); font: 600 .75rem/1.5 var(--mono); letter-spacing: .06em; }
+.turns { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; gap: .35rem; }
+.turns li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .75rem; align-items: center; margin: 0; }
+.turns .bar { display: flex; flex-wrap: wrap; gap: .25rem; min-width: 0; }
+.turns .bar span { padding: .15rem .45rem; border: 1px solid var(--rule); background: var(--paper); font: .8125rem/1.4 var(--mono); }
+.turns .bar .new { border-color: var(--accent); color: var(--accent); }
+.ladder { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; align-items: end; }
+.ladder > li { margin: 0; padding: .5rem .7rem; border: 1px solid var(--rule); border-top: 3px solid var(--accent); background: var(--paper); }
+.ladder > li:nth-child(1) { min-height: 6rem; } .ladder > li:nth-child(2) { min-height: 7rem; } .ladder > li:nth-child(3) { min-height: 8rem; }
+.ladder > li:nth-child(4) { min-height: 9rem; } .ladder > li:nth-child(5) { min-height: 10rem; }
+.ladder strong { display: block; font-size: 1.05rem; line-height: 1.3; }
+.ladder span:not(.label) { color: var(--secondary); font-size: .9375rem; }
+@media (max-width: 799px) { .ladder { grid-template-columns: minmax(0, 1fr); } .ladder > li { min-height: 0 !important; } }
+.chart { margin: 0 0 .5rem; }
+.chart svg { display: block; width: 100%; max-width: 46rem; height: auto; }
+@media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) { [data-deck-paged] .chart svg { max-width: 34rem; } }
+.chart figcaption { color: var(--secondary); font-size: .9375rem; margin-bottom: .25rem; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; }
+.chart .grid.warn { stroke: var(--amber); stroke-dasharray: 5 4; }
+.chart .tick { fill: var(--muted); font: 13px var(--mono); }
+.chart .warn-text { fill: var(--amber); }
+.chart .ci { stroke: var(--secondary); stroke-width: 1.5; opacity: .7; }
+.chart .pt { fill: var(--accent); stroke: var(--paper); stroke-width: 1.5; }
+.chart .leader { stroke: var(--ink); stroke-width: 1; }
+.chart .pt-label { fill: var(--ink); font: 600 14px var(--sans); }
+.notes { margin: .5rem 0 0; padding: 0; border: 0; }
+.notes summary { color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.notes > :not(summary) { color: var(--secondary); font-size: .9375rem; line-height: 1.5; }
+.notes > p { margin-bottom: .5rem; }
+.notes .recipe { margin-bottom: .5rem; }
+.notes .recipe div { display: flex; flex-wrap: wrap; gap: 0 .5rem; }
+.notes .recipe dt { font-weight: 600; color: var(--ink); }
+.notes .recipe dt::after { content: ":"; }
+.notes .recipe dd { flex: 1 1 12rem; }
+@media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
+  [data-deck-paged] [data-slide] { font-size: .98rem; line-height: 1.5; }
+}
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .masthead .lede { display: none; }
+  [data-deck-paged] [data-slide] { position: relative; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.5rem, 2.5vw, 2.25rem); margin-bottom: .6rem; }
+  [data-deck-paged] [data-slide] p, [data-deck-paged] [data-slide] ul, [data-deck-paged] [data-slide] ol { margin-bottom: .6rem; }
+  [data-deck-paged] [data-slide] .table-wrap { margin-bottom: .5rem; }
+  [data-deck-paged] [data-slide] .process-figure { margin-block: .25rem .5rem; }
+  [data-deck-paged] [data-slide] .process-figure figcaption { margin-bottom: .25rem; }
+  [data-deck-paged] [data-slide] .process { gap: .75rem; margin-bottom: .25rem; }
+  [data-deck-paged] [data-slide] .process > li { flex-basis: 9rem; padding-block: .5rem; gap: .25rem; }
+  [data-deck-paged] [data-slide] .process strong { font-size: clamp(1.1rem, 1.7vw, 1.4rem); }
+  [data-deck-paged] [data-slide] .process > li > span:last-child:not(.label) { font-size: .9375rem; }
+  /* Presenting: once the bets are in, the recorded results replace the predict prompt. */
+  [data-deck-paged] [data-slide]:has(> .reveal[open]) > .cols { display: none; }
+  /* Presenting: the collapsed notes sit in the top corner; opened, they overlay the slide. */
+  [data-deck-paged] [data-slide] > .notes { position: absolute; top: .5rem; right: 1rem; z-index: 2; margin: 0; max-width: min(40rem, calc(100% - 2rem)); }
+  [data-deck-paged] [data-slide] > .notes[open] { max-height: calc(100% - 1rem); overflow: auto; padding: 0 1rem .75rem; background: var(--sheet); border: 1px solid var(--rule); }
+}
+@media print {
+  .notes { border-top: 1px solid var(--rule); padding-top: .5rem; }
+}
+</style>
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to slides</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Act III · 40 minutes</p>
+      <h1 id="deck-title">Act III · Agent = model + harness</h1>
+      <p class="lede">The model is a pure function of its context. Everything else, the loop, the tools, the memory, the brakes, is the harness.</p>
+    </header>
+    <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
+      <section id="title" data-slide tabindex="-1" aria-labelledby="title-title">
+        <p class="eyebrow">Act III · Agent = model + harness</p>
+        <h2 id="title-title">If you’re not the model, you’re the harness.</h2>
+        <ol class="agenda" aria-label="The four parts of Act III">
+          <li><span class="label">Part 1</span><strong>A pure function</strong><span>Context in, distribution out, no memory</span></li>
+          <li><span class="label">Part 2</span><strong>The agent loop</strong><span>Gather, act, verify; when to stop</span></li>
+          <li><span class="label">Part 3</span><strong>The harness, piece by piece</strong><span>Instructions, skills, MCP, subagents, hooks, permissions, modes</span></li>
+          <li><span class="label">Part 4</span><strong>The 2026 landscape</strong><span>Ladder, models, time horizons, benchmarks</span></li>
+        </ol>
+        <p class="qualify">Two live demos, each in Claude Code and then in Codex: the point is the harness, not the brand. Every concept slide ends with a <strong>Driving</strong> line.</p>
+        <details class="notes" data-minutes="0.5"><summary>Speaker notes · 0.5 min</summary>
+          <p>Second anchor of the day. Act I and II were about the model: a sampler, and what more tokens buy. Now: what turns that sampler into something that edits your repo and runs your solver.</p>
+          <p>Say the definition once and leave it on the board: agent = model + harness. Everything that is not the weights is harness, including you.</p>
+        </details>
+      </section>
+
+      <section id="pure-function" data-slide tabindex="-1" aria-labelledby="pure-function-title">
+        <p class="eyebrow">01 · The second anchor</p>
+        <h2 id="pure-function-title">The model is a pure function of its context.</h2>
+        <figure class="process-figure">
+          <figcaption>One call to the model</figcaption>
+          <ol class="process">
+            <li><span class="label">Input</span><strong>The context</strong><span>Every token of this call, nothing else</span></li>
+            <li><span class="label">The function</span><strong>Fixed weights</strong><span>Nothing written back between calls</span></li>
+            <li><span class="label">Output</span><strong>A next-token distribution</strong><span>Sampled, token by token (Act I)</span></li>
+          </ol>
+        </figure>
+        <p>No memory between calls. What the model “knows” for this call is in the window right now: that is all “in-context” means. The randomness you saw in Act I is in the sampling, not in a hidden state.</p>
+        <p class="cite">Source: Anthropic, <cite>How Claude Code uses prompt caching</cite>, “The model doesn’t remember anything between requests”, <a href="https://code.claude.com/docs/en/prompt-caching">code.claude.com</a>, read 2026-10-18.</p>
+        <p class="drive"><strong>Driving:</strong> if the agent needs to know it, it has to be in the context: in the prompt, in a file it reads, or in an instruction file.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>The most important idea of the day. Write f(context) → p(next token) on the board. Same weights, same context, same distribution; different answers come from sampling.</p>
+          <p>Ask: then where does the chat’s memory live? Not in the model. Let them guess “the harness” before the next slide.</p>
+        </details>
+      </section>
+
+      <section id="resend" data-slide tabindex="-1" aria-labelledby="resend-title">
+        <p class="eyebrow">02 · The conversation is an illusion</p>
+        <h2 id="resend-title">The harness re-sends the whole transcript, every turn.</h2>
+        <ol class="turns" aria-label="What each call sends">
+          <li><span class="label">Call 1</span><span class="bar"><span>system + tools</span><span>instructions</span><span class="new">your prompt</span></span></li>
+          <li><span class="label">Call 2</span><span class="bar"><span>system + tools</span><span>instructions</span><span>your prompt</span><span>tool call</span><span class="new">tool result</span></span></li>
+          <li><span class="label">Call 3</span><span class="bar"><span>system + tools</span><span>instructions</span><span>your prompt</span><span>tool call</span><span>tool result</span><span>reply</span><span class="new">your next message</span></span></li>
+        </ol>
+        <p>New content is appended at the end; most of each request is identical to the one before. Measured in a recording: Claude Code’s 26 calls on one task sent 15,654 tokens on the first call and 373,202 on the last, every call carrying everything before it.</p>
+        <p class="cite">Sources: Anthropic, <cite>How Claude Code uses prompt caching</cite>, §How the cache is organized, <a href="https://code.claude.com/docs/en/prompt-caching">code.claude.com</a>, read 2026-10-18. Recording <code>context-bomb-claude</code>, Claude Code 2.1.301, 2026-10-16, <a href="labs/agent-loop.html#run=context-bomb-claude">replay</a>.</p>
+        <p class="drive"><strong>Driving:</strong> every old turn is still being paid for and still competing for attention. Start a fresh session per task.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>Walk down the three bars. The highlighted cell is the only new thing; everything to its left is re-sent. This is how a stateless function holds a conversation.</p>
+          <p>The numbers are per-call input as Claude Code reported it in the recorded context-bomb task (fixtures/runs). Input here includes cached input; the next slides split the two.</p>
+        </details>
+      </section>
+
+      <section id="context-window" data-slide tabindex="-1" aria-labelledby="context-window-title">
+        <p class="eyebrow">03 · A finite buffer</p>
+        <h2 id="context-window-title">The context window is a budget that fills.</h2>
+        <div class="cols">
+          <ul class="tight">
+            <li><strong>Spent before you type:</strong> system prompt, tool definitions, instruction files, skill descriptions. In the bomb recordings, Claude Code’s <code>/context</code> read 13k tokens in use before the question; Codex’s <code>/status</code> read 13.8K used of 828K.</li>
+            <li><strong>When it fills,</strong> the harness compacts: it replaces the conversation with a summary. <code>/compact</code> does it by hand in both CLIs.</li>
+            <li><strong>What survives:</strong> Claude Code re-reads the project-root CLAUDE.md after compacting. An instruction given only in the chat can be lost.</li>
+          </ul>
+          <div class="callout">
+            <p class="label">Lab · the budget</p>
+            <p>Open <a href="labs/context.html#budget-title">Context lab · The context budget</a> and fill it: read a log, add an MCP server, then compact or clear. Illustrative numbers.</p>
+          </div>
+        </div>
+        <p class="cite">Sources: Anthropic, <cite>Manage Claude’s memory</cite>, <a href="https://code.claude.com/docs/en/memory">code.claude.com</a>; OpenAI, <cite>Slash commands in Codex CLI</cite> (<code>/compact</code>, <code>/status</code>), <a href="https://learn.chatgpt.com/docs/developer-commands?surface=cli">learn.chatgpt.com</a>; both read 2026-10-18. Captures: <code>cursus/demos/agent/recorded/</code>, 2026-10-16.</p>
+        <p class="drive"><strong>Driving:</strong> read <code>/context</code> (Claude Code) or <code>/status</code> (Codex) before a long task. Put rules that must last in an instruction file, not in the chat.</p>
+        <details class="notes" data-minutes="1.5"><summary>Speaker notes · 1.5 min</summary>
+          <p>Current models have 1M-token windows (landscape part), but the size is not the point: the window is shared by everything the harness loads, and quality degrades as it fills with noise.</p>
+          <p>Compaction is lossy by design. The fix for “it forgot my rule” is to move the rule into AGENTS.md or CLAUDE.md, which the harness reloads.</p>
+        </details>
+      </section>
+
+      <section id="cost-growth" data-slide tabindex="-1" aria-labelledby="cost-growth-title">
+        <p class="eyebrow">04 · Cost grows with the transcript · Lab</p>
+        <h2 id="cost-growth-title">Why message 30 costs more than message 1.</h2>
+        <div class="cols">
+          <div>
+            <p>Two messages of the same length cost different amounts, because each call re-reads everything before it. Total input grows roughly with the square of the number of turns.</p>
+            <ul class="tight">
+              <li><strong>Recorded, Claude Code:</strong> 26 calls; the largest context was 373,202 tokens, but 4,889,658 input tokens were sent in total.</li>
+              <li><strong>Recorded, Codex, same task:</strong> 2,982,361 input tokens in total.</li>
+            </ul>
+          </div>
+          <div class="callout">
+            <p class="label">Lab · predict first</p>
+            <p>Open <a href="labs/context.html#cost-title">Context lab · What it costs over thirty turns</a>. Lock in its predict question, then move the turn slider and compare the curves with and without caching. Illustrative constants.</p>
+          </div>
+        </div>
+        <p class="cite">Source: recordings <code>context-bomb-claude</code> (<code>claude-opus-5-5</code>) and <code>context-bomb-codex</code> (<code>gpt-6-astra</code>), medium effort, 2026-10-16, totals as each CLI reported them; <a href="labs/agent-loop.html#run=context-bomb-claude">replay with the token meter</a>.</p>
+        <p class="drive"><strong>Driving:</strong> long sessions get slower and dearer per message. Finish a task, then clear or start fresh rather than piling the next one on.</p>
+        <details class="notes" data-minutes="4"><summary>Speaker notes · 4 min</summary>
+          <p>1 min, the slide. With a prefix P and u new tokens per turn, turn t sends about P + t·u, so n turns send about n·P + u·n²/2. The recorded run is the real thing: 24 large logs read one by one.</p>
+          <p>3 min, lab. Students open panel 2 of the context lab on their laptops, lock in the predict answer, then reveal. Move the turn slider, switch the plot between cost and tokens, and compare the two curves: with caching the bill falls while the tokens sent stay the same. That is the bridge to the next slide.</p>
+        </details>
+      </section>
+
+      <section id="kv-cache" data-slide tabindex="-1" aria-labelledby="kv-cache-title">
+        <p class="eyebrow">05 · The KV cache</p>
+        <h2 id="kv-cache-title">The KV cache is memoization of a prefix already processed.</h2>
+        <div class="cols">
+          <ul class="tight">
+            <li><strong>Inside a call,</strong> attention keeps each processed token’s keys and values, so later tokens do not recompute them.</li>
+            <li><strong>Across calls,</strong> prompt caching keeps that work for a prefix: the next request is matched against it, and only what changed is fully processed.</li>
+            <li><strong>Exact match:</strong> change anything early (the model, the system prompt, an instruction file) and everything after it is recomputed.</li>
+          </ul>
+          <div class="table-wrap" role="region" tabindex="0" aria-label="Cached input prices">
+            <table class="compact">
+              <caption>List price per million input tokens</caption>
+              <thead><tr><th scope="col">Model</th><th scope="col">Input</th><th scope="col">Cache hit</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><code>claude-opus-5-5</code></th><td class="num">$4</td><td class="num">$0.20</td></tr>
+                <tr><th scope="row"><code>gpt-6-astra</code></th><td class="num">$10</td><td class="num">$1</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p>In the recorded Claude Code run above, 4,497,201 of the 4,889,658 input tokens (92%) were cache reads.</p>
+        <p class="cite">Sources, read 2026-10-18: Anthropic, <cite>How Claude Code uses prompt caching</cite>, <a href="https://code.claude.com/docs/en/prompt-caching">code.claude.com</a>; Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>; OpenAI, <cite>GPT-6 Astra</cite>, <a href="https://developers.openai.com/api/docs/models/gpt-6-astra">developers.openai.com</a>. Prices change; recheck before quoting.</p>
+        <p class="drive"><strong>Driving:</strong> pick the model and effort at the start, and do not edit instruction files mid-task: each change throws the memo away.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>For this audience: memoization keyed on the exact prefix. A function call you already evaluated is looked up, not recomputed. Billing makes it visible: a cache hit costs 5% of base input on Opus 5.5 and 10% on GPT-6 Astra.</p>
+          <p>Estimate, not a bill: at Opus 5.5 list prices the recorded run’s 4.89M input tokens would cost about $19.56 uncached; with 4.50M as cache hits ($0.90) and the remaining 0.39M at most at the 5-minute write rate ($1.96), about $2.86. The normalized run does not split cache writes from fresh input, hence “at most”.</p>
+          <p>Claude Code’s doc says a CLAUDE.md edit does not apply mid-session for exactly this reason.</p>
+        </details>
+      </section>
+
+      <section id="agent-loop" data-slide tabindex="-1" aria-labelledby="agent-loop-title">
+        <p class="eyebrow">06 · The outer loop</p>
+        <h2 id="agent-loop-title">An agent runs tools in a loop: gather, act, verify.</h2>
+        <figure class="process-figure">
+          <figcaption>One turn of the agent loop, run by the harness</figcaption>
+          <ol class="process">
+            <li><span class="label">Gather</span><strong>Read, search, run</strong><span>Files, logs, the failing test</span></li>
+            <li><span class="label">Act</span><strong>Edit, call a tool</strong><span>One change at a time</span></li>
+            <li><span class="label">Verify</span><strong>Run the check</strong><span>Tests, the solver, the diff</span></li>
+            <li><span class="label">Repeat</span><strong>Or stop</strong><span>The result goes back into the context</span></li>
+          </ol>
+        </figure>
+        <p><strong>ReAct</strong> interleaves reasoning traces with actions: the reasoning tracks and updates the plan, the actions fetch information from outside. Not Act II’s token loop: here each turn acts on real tools and is corrected by real output.</p>
+        <p class="cite">Sources: Shunyu Yao et al., <cite>ReAct: Synergizing Reasoning and Acting in Language Models</cite>, <a href="https://arxiv.org/abs/2210.03629">arXiv 2210.03629</a>, v1 2022-10-06, abstract. Simon Willison, <cite>What is agentic engineering?</cite>, “Agents run tools in a loop to achieve a goal”, <a href="https://simonwillison.net/guides/agentic-engineering-patterns/what-is-agentic-engineering/">simonwillison.net</a>, updated 2026-03-15.</p>
+        <p class="drive"><strong>Driving:</strong> the loop is only as good as its verify step. Give the agent one fast command that says pass or fail.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>The shape is old: perceive, plan, act, observe (Russell and Norvig). ReAct is its LLM form. The harness calls the model, executes the tool calls it asks for, appends the results and calls it again.</p>
+          <p>Contrast with Act II: a chatbot’s reply is also many forward passes, but nothing outside the model checks it. Here reality answers back every turn. The replay widget shows the gather, act and verify lane for any recording.</p>
+        </details>
+      </section>
+
+      <section id="loop-demo" data-slide tabindex="-1" aria-labelledby="loop-demo-title">
+        <p class="eyebrow">07 · Demo · 4 minutes</p>
+        <h2 id="loop-demo-title">One loop on P00, in Claude Code, then in Codex.</h2>
+        <div class="cols">
+          <div>
+            <p><strong>Predict:</strong> the tests are red and HiGHS says “optimal”. How many tool calls before a green run, and will both harnesses take the same path?</p>
+            <p>Task: the <code>flipped-sense</code> P00 export, same prompt for both. Claude Code with <code>claude-opus-5-5</code>, Codex with <code>gpt-6-astra</code>, medium effort.</p>
+          </div>
+          <div class="callout">
+            <p class="label">Runbook</p>
+            <p><a href="demos/agent/loop.md">P00 loop runbook</a>, from <code>cursus/demos/agent/</code>: <code>uv run agent_demo.py run loop --via claude</code>, then <code>--via codex</code>. Reset: <code>uv run agent_demo.py reset loop</code>.</p>
+            <p>Fallback, no network: <a href="labs/agent-loop.html#run=loop-claude-run1">replay Claude Code</a> · <a href="labs/agent-loop.html#run=loop-codex-run1">replay Codex</a>.</p>
+          </div>
+        </div>
+        <details class="reveal"><summary>Recorded runs, 2026-10-16 (reveal after the bets)</summary>
+          <div class="table-wrap" role="region" tabindex="0" aria-label="Recorded loop demo results">
+            <table class="compact">
+              <thead><tr><th scope="col">Harness</th><th scope="col">Path</th><th scope="col">Tool calls</th><th scope="col">Tokens</th><th scope="col">Script’s own pytest</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Claude Code</th><td>Read README, Read model, pytest red, Edit, pytest green</td><td class="num">5</td><td class="num">80,956</td><td>30 passed, only <code>p00_model.py</code> changed</td></tr>
+                <tr><th scope="row">Codex</th><td>cat README, cat model, pytest red, apply_patch, pytest green, rg to cite the line</td><td class="num">6</td><td class="num">49,808</td><td>30 passed, only <code>p00_model.py</code> changed</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Both named the objective contract and <code>p00_model.py:66</code>: <code>kMaximize</code> back to <code>kMinimize</code>. Run 1 of each; run 2 took the same path.</p>
+        </details>
+        <p class="cite">Source: <cite>The agent loop on P00</cite>, <code>cursus/demos/agent/loop.md</code>, Recorded runs, 2026-10-16, Claude Code 2.1.301 and codex-cli 0.162.1.</p>
+        <details class="notes" data-minutes="4"><summary>Speaker notes · 4 min</summary>
+          <p>Follow the runbook timing. 0:00 show the export: pytest red, HiGHS optimal at 1085. 0:45 take the bets. 1:15 Claude Code live. 2:00 Codex live. 2:45 debrief: same loop (read, run, observe, edit, run), different tools (Read and Edit versus shell and apply_patch).</p>
+          <p>Green is not the proof: the script runs the contract suite itself after the agent stops and lists changed files. Ask what a hard-coded 485 would have passed.</p>
+          <p>If anything fails (login, network, a refused model): open the replay links on the slide and step through. If a live run takes another path, say so: the loop is the same even when the path is not.</p>
+        </details>
+      </section>
+
+      <section id="stop-conditions" data-slide tabindex="-1" aria-labelledby="stop-conditions-title">
+        <p class="eyebrow">08 · When to stop</p>
+        <h2 id="stop-conditions-title">Stop conditions are harness, and they fail two ways.</h2>
+        <div class="cols even">
+          <div>
+            <p class="label">The runaway loop</p>
+            <p>It never converges: the same failing command again, edit and revert, one more search. Every turn re-sends the transcript, so the bill climbs. <span class="qualify">Illustrative pattern.</span></p>
+            <p><strong>Brakes:</strong> <code>claude -p --max-turns</code> and <code>--max-budget-usd</code>; in any CLI, you interrupt.</p>
+          </div>
+          <div>
+            <p class="label">Premature victory</p>
+            <p>“All tests pass” while they are red, or green because a test was weakened. <span class="qualify">Illustrative pattern; Act V shows real cases.</span></p>
+            <p><strong>Brakes:</strong> a <code>Stop</code> hook (both CLIs) that runs the tests; you read the test run and the diff, not the summary.</p>
+          </div>
+        </div>
+        <p><strong>Recorded, a good stop:</strong> a budget test asks for cost ≤ 400 when the proven optimum is 485. Both agents changed nothing and reported the conflict (<a href="labs/agent-loop.html#run=impossible-claude">Claude Code</a>, <a href="labs/agent-loop.html#run=impossible-codex">Codex</a>).</p>
+        <p class="cite">Sources, read 2026-10-18: Anthropic, <cite>CLI reference</cite>, <a href="https://code.claude.com/docs/en/cli-reference">code.claude.com</a>; Anthropic, <cite>Hooks reference</cite>, <a href="https://code.claude.com/docs/en/hooks">code.claude.com</a>; OpenAI, <cite>Hooks</cite>, <a href="https://learn.chatgpt.com/docs/hooks">learn.chatgpt.com</a>. Recordings <code>impossible-*</code>, 2026-10-16.</p>
+        <p class="drive"><strong>Driving:</strong> decide before the run what “done” means and what makes it stop. The agent’s “done” is a claim; the check is the evidence.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>The model proposes to stop by answering without a tool call; the harness decides whether that ends the run. Caps, hooks and you are all harness.</p>
+          <p>The impossible task is unedited: the prompt neither invites nor forbids a hack. Both cited the contract that pins 485; Claude Code also derived a lower bound of 445 for any plan. Both stopped with pytest still red. One recording is a case, not a rate; Act V is about the runs that do not stop this well.</p>
+        </details>
+      </section>
+
+      <section id="instructions" data-slide tabindex="-1" aria-labelledby="instructions-title">
+        <p class="eyebrow">09 · Harness · Instruction files</p>
+        <h2 id="instructions-title">AGENTS.md and CLAUDE.md: a README for the agent, loaded every session.</h2>
+        <div class="cols">
+          <ul class="tight">
+            <li><strong>AGENTS.md</strong> is an open format: setup commands, how to run the tests, conventions. Codex reads every AGENTS.md from the project root down to the working folder, joined in that order, up to 32 KiB by default.</li>
+            <li><strong>CLAUDE.md</strong> is Claude Code’s file, read at the start of every session. Claude Code can also read a repository’s AGENTS.md in its place. This course repo’s CLAUDE.md is one line: <code>@AGENTS.md</code>.</li>
+            <li>The files sit in the prefix of every call: they cost tokens each turn and steer every step.</li>
+          </ul>
+          <div class="callout">
+            <p class="label">Governance</p>
+            <p>AGENTS.md, contributed by OpenAI, is a founding project of the Agentic AI Foundation under the Linux Foundation (next slide).</p>
+          </div>
+        </div>
+        <p class="cite">Sources, read 2026-10-18: <cite>AGENTS.md</cite>, <a href="https://agents.md/">agents.md</a>; OpenAI, <cite>Custom instructions with AGENTS.md</cite>, <a href="https://learn.chatgpt.com/docs/agent-configuration/agents-md">learn.chatgpt.com</a>; Anthropic, <cite>Manage Claude’s memory</cite>, §AGENTS.md, <a href="https://code.claude.com/docs/en/memory">code.claude.com</a>.</p>
+        <p class="drive"><strong>Driving:</strong> keep instruction files lean: how to build, how to test, what never to touch. Every line is paid for on every call.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>One file both agents read is the ADR 0002 answer to “students have Claude Code or Codex, not both”: write AGENTS.md, and make CLAUDE.md import it.</p>
+          <p>Lean matters twice: the file is re-sent each call (cost), and a long file dilutes the rules that matter (attention). Put the test command first.</p>
+        </details>
+      </section>
+
+      <section id="skills-mcp" data-slide tabindex="-1" aria-labelledby="skills-mcp-title">
+        <p class="eyebrow">10 · Harness · Skills and MCP</p>
+        <h2 id="skills-mcp-title">Skills load know-how on demand; MCP plugs in tools.</h2>
+        <div class="cols even">
+          <div>
+            <p class="label">Skills · open Agent Skills standard</p>
+            <p>A skill is a folder with a <code>SKILL.md</code> (name, description, instructions) plus optional scripts and references. At startup the agent loads only names and descriptions; the full instructions load when a task matches.</p>
+            <p>Originally developed by Anthropic, released as an open standard. Claude Code and Codex skills both follow it.</p>
+          </div>
+          <div>
+            <p class="label">MCP · Model Context Protocol</p>
+            <p>A protocol for connecting agents to servers that expose tools and data. Each server’s instructions and tool definitions take room in the context.</p>
+            <p>On 2025-12-09 Anthropic donated MCP to the Agentic AI Foundation, a directed fund under the Linux Foundation co-founded by Anthropic, Block and OpenAI. Founding projects: MCP, goose and AGENTS.md.</p>
+          </div>
+        </div>
+        <p class="cite">Sources: <cite>Agent Skills</cite>, <a href="https://agentskills.io/">agentskills.io</a>, read 2026-10-18; Anthropic, <cite>Skills</cite>, <a href="https://code.claude.com/docs/en/skills">code.claude.com</a>; OpenAI, <cite>Build skills</cite>, <a href="https://learn.chatgpt.com/docs/build-skills">learn.chatgpt.com</a>; David Soria Parra, <cite>MCP joins the Agentic AI Foundation</cite>, <a href="https://blog.modelcontextprotocol.io/posts/2025-12-09-mcp-joins-agentic-ai-foundation/">blog.modelcontextprotocol.io</a>, 2025-12-09.</p>
+        <p class="drive"><strong>Driving:</strong> turn a procedure you repeat into a skill; add an MCP server only when you need its tools, and check what it costs with <code>/context</code> or <code>/mcp</code>.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>Skills are progressive disclosure: a one-line description is always in context, the body only when used. That is why many skills are cheap and many verbose MCP servers are not.</p>
+          <p>The foundation matters for longevity: MCP and AGENTS.md now have vendor-neutral governance, and the MCP maintainers keep the technical direction. Bridge: what does a noisy server cost? The next demo.</p>
+        </details>
+      </section>
+
+      <section id="bomb-demo" data-slide tabindex="-1" aria-labelledby="bomb-demo-title">
+        <p class="eyebrow">11 · Demo · 5 minutes</p>
+        <h2 id="bomb-demo-title">The context bomb: one noisy MCP server, one-word answer.</h2>
+        <div class="cols">
+          <div>
+            <p><strong>Predict:</strong> the server carries about 82,000 characters of useless instructions and tool descriptions. How many extra tokens does <code>Reply with exactly: OK</code> cost with it on? None, a few thousand, about 20,000, more?</p>
+            <p>Claude Code with <code>claude-haiku-5-5</code>, Codex with <code>gpt-6-luna</code>, low effort. The server is passed per call, never registered.</p>
+          </div>
+          <div class="callout">
+            <p class="label">Runbook</p>
+            <p><a href="demos/agent/context-bomb.md">Context bomb runbook</a>, from <code>cursus/demos/agent/</code>: <code>uv run agent_demo.py run bomb --via claude</code>, then <code>--via codex</code>. Reset: <code>uv run agent_demo.py reset bomb</code>.</p>
+            <p>Fallback: <a href="labs/agent-loop.html#run=bomb-claude-run1-without">without</a> · <a href="labs/agent-loop.html#run=bomb-claude-run1-with">with</a> · <a href="labs/agent-loop.html#run=bomb-claude-run1-with-tool-search-off">tool search off</a> · <a href="labs/agent-loop.html#run=bomb-codex-run1-with">Codex with</a>.</p>
+          </div>
+        </div>
+        <details class="reveal"><summary>Recorded runs, 2026-10-16 (reveal after the bets)</summary>
+          <div class="table-wrap" role="region" tabindex="0" aria-label="Recorded context bomb results">
+            <table class="compact">
+              <thead><tr><th scope="col">Harness</th><th scope="col">Arm</th><th scope="col">Total tokens</th><th scope="col">Δ vs without</th><th scope="col">Context in use</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Claude Code</th><td>without</td><td class="num">17,233</td><td class="num">+0</td><td><code>/context</code> 13k</td></tr>
+                <tr><th scope="row">Claude Code</th><td>with (tool search on, default)</td><td class="num">18,909</td><td class="num">+1,676</td><td>14.6k, bomb tools deferred</td></tr>
+                <tr><th scope="row">Claude Code</th><td>with, tool search off</td><td class="num">40,377</td><td class="num">+23,144</td><td>36.5k</td></tr>
+                <tr><th scope="row">Codex</th><td>without / with</td><td class="num">13,502</td><td class="num">+0</td><td><code>/status</code> 13.8K / 828K</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Every answer was exactly <code>OK</code>. Tool search keeps the bomb out of the window; switched off, “OK” costs more than twice as much.</p>
+        </details>
+        <p class="cite">Source: <cite>The context bomb</cite>, <code>cursus/demos/agent/context-bomb.md</code>, recorded 2026-10-16 with Claude Code 2.1.301 and codex-cli 0.162.1.</p>
+        <details class="notes" data-minutes="5"><summary>Speaker notes · 5 min</summary>
+          <p>Runbook timing. 0:00 what a server adds to every call, take the bets. 0:45 Claude Code: <code>/context</code> before, the three OK calls, <code>/context</code> after. 2:15 read the token table. 3:15 Codex: same calls, <code>/status</code> and <code>/mcp</code>. 4:15 debrief.</p>
+          <p>Be honest about the finding: the narrative’s “the agent forgets an earlier instruction” did not happen here. With tool search on, the bomb no longer floods the window on these CLI versions; in the recorded context-bomb task (24 logs read in full) both agents still kept the opening rule. Say it as talk track, not as a result.</p>
+          <p>Tool search off: by <code>/context</code>’s estimates about 9.6k of the extra is the bomb (8k tool descriptions, 1.6k instructions) and the rest is Claude Code’s own tools, which tool search had also been deferring. The arms measure the setting, not only the server. Codex 0.162.1 always defers MCP tools and has no switch.</p>
+          <p>Fallback: the replay links on the slide; the run 2 arms are in the same page’s selector. Terminal: <code>uv run agent_demo.py replay bomb --via claude</code>.</p>
+        </details>
+      </section>
+
+      <section id="subagents-hooks" data-slide tabindex="-1" aria-labelledby="subagents-hooks-title">
+        <p class="eyebrow">12 · Harness · Subagents and hooks</p>
+        <h2 id="subagents-hooks-title">Subagents get their own window; hooks run code you trust.</h2>
+        <div class="cols even">
+          <div>
+            <p class="label">Subagents</p>
+            <p>A subagent starts with a fresh, separate context window, does the side task (exploring, searching, reading logs) and returns only a summary. Your main window stays for requirements and decisions.</p>
+            <p>Claude Code delegates to subagents by description; Codex spawns them in parallel and collects their results.</p>
+          </div>
+          <div>
+            <p class="label">Hooks</p>
+            <p>Scripts the harness runs at fixed points of the loop: session start, before and after a tool call, when the agent stops. A <code>PreToolUse</code> hook can block a call.</p>
+            <p>Instructions ask; hooks enforce. Same idea as this repo’s git hooks, which block commits on <code>main</code> for any agent.</p>
+          </div>
+        </div>
+        <p class="cite">Sources, read 2026-10-18: Anthropic, <cite>Subagents</cite>, <a href="https://code.claude.com/docs/en/sub-agents">code.claude.com</a>; OpenAI, <cite>Subagents</cite>, <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents">learn.chatgpt.com</a>; Anthropic, <cite>Hooks reference</cite>, <a href="https://code.claude.com/docs/en/hooks">code.claude.com</a>; OpenAI, <cite>Hooks</cite>, <a href="https://learn.chatgpt.com/docs/hooks">learn.chatgpt.com</a>.</p>
+        <p class="drive"><strong>Driving:</strong> send exploration to a subagent; turn any rule you cannot afford to be ignored into a hook or a check.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>Hold onto the subagent point: independent work such as a search, a plot or reading a long log does not need to share your window. Only the summary comes back. It costs tokens of its own, so it is a context tool, not a free lunch.</p>
+          <p>Hooks are deterministic: they run whether or not the model remembers. AGENTS.md here describes the same split: no per-agent guard layer, but git hooks and a server-side ruleset every agent hits.</p>
+        </details>
+      </section>
+
+      <section id="permissions-modes" data-slide tabindex="-1" aria-labelledby="permissions-modes-title">
+        <p class="eyebrow">13 · Harness · Permissions, plan mode, headless</p>
+        <h2 id="permissions-modes-title">What the agent may do, and when it must ask.</h2>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Permissions, plan mode and headless mode in both CLIs">
+          <table class="compact">
+            <thead><tr><th scope="col">Primitive</th><th scope="col">Claude Code</th><th scope="col">Codex</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Permissions</th><td>Allow and deny rules; modes from ask-first to auto</td><td>Approval policy: when to stop and ask</td></tr>
+              <tr><th scope="row">Sandboxing</th><td>Sandbox limits the files and hosts shell commands reach</td><td><code>read-only</code>, <code>workspace-write</code>, <code>danger-full-access</code>; network off by default</td></tr>
+              <tr><th scope="row">Plan mode</th><td><kbd>Shift</kbd>+<kbd>Tab</kbd> or <code>/plan</code>: no edits until you approve</td><td><code>/plan</code>: propose a plan before implementing</td></tr>
+              <tr><th scope="row">Headless</th><td><code>claude -p "…"</code></td><td><code>codex exec "…"</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="cite">Docs read 2026-10-18. Claude Code: <a href="https://code.claude.com/docs/en/permission-modes">permission modes</a>, <a href="https://code.claude.com/docs/en/sandboxing">sandboxing</a>, <a href="https://code.claude.com/docs/en/headless">headless</a>. Codex: <a href="https://learn.chatgpt.com/docs/agent-approvals-security">approvals and security</a>, <a href="https://learn.chatgpt.com/docs/sandboxing">sandbox</a>, <a href="https://learn.chatgpt.com/docs/non-interactive-mode">non-interactive mode</a>.</p>
+        <p class="drive"><strong>Driving:</strong> grant the least the task needs. Plan first when a change is hard to undo; go headless only once you can verify the result without watching.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>Read across the rows: same four ideas, different spellings. Both demos ran headless with narrow rights: Claude Code with <code>acceptEdits</code> and only <code>uv run pytest</code> allowed, Codex in <code>workspace-write</code> with no approvals. The runbooks have the exact command lines.</p>
+          <p>Plan mode is the cheapest verification there is: you check the plan before any file changes. The plan-first demo (<code>cursus/demos/agent/plan-first.md</code>) has recorded plan-then-build and straight-to-code runs side by side if a student asks.</p>
+          <p>Headless is where autonomy jumps: no one watches each step. That is the one discipline again: autonomy never past your ability to verify.</p>
+        </details>
+      </section>
+
+      <section id="ladder" data-slide data-landscape tabindex="-1" aria-labelledby="ladder-title">
+        <p class="eyebrow">14 · The 2026 landscape <span class="asof">As of 2026-10-18</span></p>
+        <h2 id="ladder-title">The paradigm ladder: each rung hands over more of the loop.</h2>
+        <ol class="ladder" aria-label="Paradigm ladder, from least to most autonomous">
+          <li><span class="label">1</span><strong>Autocomplete</strong><span>Finishes the line you type</span></li>
+          <li><span class="label">2</span><strong>Chat</strong><span>Answers and snippets you paste</span></li>
+          <li><span class="label">3</span><strong>Agentic CLI</strong><span>Reads, runs and edits in your repo: Claude Code, Codex</span></li>
+          <li><span class="label">4</span><strong>Background and cloud agents</strong><span>A task runs in a cloud sandbox and comes back as a branch or PR</span></li>
+          <li><span class="label">5</span><strong>Fleets</strong><span>Many agents in parallel, coordinated, reviewed as a batch</span></li>
+        </ol>
+        <p>Each rung up, you review fewer steps and more results. The verification has to climb with it.</p>
+        <p class="cite">Product pages, read 2026-10-18: Anthropic, <cite>Use Claude Code in the cloud</cite>, <a href="https://code.claude.com/docs/en/claude-code-on-the-web">code.claude.com</a>, and <cite>Run agents in parallel</cite>, <a href="https://code.claude.com/docs/en/agents">code.claude.com</a>; OpenAI, <cite>Codex Cloud</cite>, <a href="https://learn.chatgpt.com/docs/cloud">learn.chatgpt.com</a>, and <cite>Subagents</cite>, <a href="https://learn.chatgpt.com/docs/agent-configuration/subagents">learn.chatgpt.com</a>. The ladder is this course’s framing.</p>
+        <p class="drive"><strong>Driving:</strong> climb one rung only when you can check its output at that rung’s speed.</p>
+        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
+          <p>Today we live on rung 3. Rungs 4 and 5 exist in both vendors’ products as of this date: cloud sessions that return pull requests, and parallel agents (Claude Code agent teams and projects, Codex subagents and its Ultra mode).</p>
+          <p>The ladder is a teaching framing, not a vendor taxonomy.</p>
+        </details>
+      </section>
+
+      <section id="models" data-slide data-landscape tabindex="-1" aria-labelledby="models-title">
+        <p class="eyebrow">15 · The 2026 landscape <span class="asof">As of 2026-10-18</span></p>
+        <h2 id="models-title">1M-token windows and effort dials are now standard.</h2>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Current flagship models">
+          <table class="compact">
+            <thead><tr><th scope="col">Vendor · model</th><th scope="col">API id</th><th scope="col">Context window</th><th scope="col">Effort dial</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Anthropic · Claude Opus 5.5</th><td><code>claude-opus-5-5</code></td><td class="num">1M</td><td><code>effort</code>, default medium</td></tr>
+              <tr><th scope="row">Anthropic · Claude Fable 5.1</th><td><code>claude-fable-5-1</code></td><td class="num">1M</td><td><code>effort</code>, default high</td></tr>
+              <tr><th scope="row">OpenAI · GPT-6 Astra</th><td><code>gpt-6-astra</code></td><td class="num">1,050,000</td><td><code>reasoning.effort</code>: low, medium, high, xhigh, max</td></tr>
+              <tr><th scope="row">Google · Gemini 4 Argon</th><td><code>gemini-4-argon</code></td><td class="num">1,048,576</td><td>thinking: low, medium, high</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="qualify">Sizes as each vendor states them. GPT-6 Astra takes at most 922,000 input tokens; Gemini counts input and output together.</p>
+        <p class="cite">Vendor documentation, read 2026-10-18: Anthropic, <cite>Models overview</cite>, <a href="https://platform.claude.com/docs/en/about-claude/models/overview">platform.claude.com</a>; OpenAI, <cite>GPT-6 Astra</cite>, <a href="https://developers.openai.com/api/docs/models/gpt-6-astra">developers.openai.com</a>; Google, <cite>Gemini 4 Argon</cite>, <a href="https://ai.google.dev/gemini-api/docs/models/gemini-4-argon">ai.google.dev</a>.</p>
+        <p class="drive"><strong>Driving:</strong> a 1M window is room, not a reason to fill it. Size the model and the effort to the task, as in Act II.</p>
+        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
+          <p>Read the column headers, not the brand names: every flagship now has a window near a million tokens and a dial for how much it thinks. The demos used <code>claude-opus-5-5</code> and <code>gpt-6-astra</code> at medium.</p>
+          <p>This table dates fastest of anything in the session; the fact-check pass rechecks it the week before.</p>
+        </details>
+      </section>
+
+      <section id="time-horizons" data-slide data-landscape tabindex="-1" aria-labelledby="time-horizons-title">
+        <p class="eyebrow">16 · The 2026 landscape <span class="asof">As of 2026-10-18</span></p>
+        <h2 id="time-horizons-title">METR’s time horizon: the trend line to watch.</h2>
+        <figure class="chart">
+          <figcaption id="th-caption">Frontier models’ 50% time horizon by release date, log scale, with confidence intervals. METR measurements, not illustrative.</figcaption>
+          <svg viewBox="0 0 640 220" role="img" aria-labelledby="th-caption th-summary">
+            <line class="grid" x1="60" y1="192.0" x2="624" y2="192.0"/><text class="tick" x="54" y="196.0" text-anchor="end">2 min</text>
+            <line class="grid" x1="60" y1="151.1" x2="624" y2="151.1"/><text class="tick" x="54" y="155.1" text-anchor="end">10 min</text>
+            <line class="grid" x1="60" y1="105.7" x2="624" y2="105.7"/><text class="tick" x="54" y="109.7" text-anchor="end">1 h</text>
+            <line class="grid" x1="60" y1="70.5" x2="624" y2="70.5"/><text class="tick" x="54" y="74.5" text-anchor="end">4 h</text>
+            <line class="grid warn" x1="60" y1="35.3" x2="624" y2="35.3"/><text class="tick" x="54" y="39.3" text-anchor="end">16 h</text>
+            <line class="grid" x1="60.0" y1="12" x2="60.0" y2="192"/><text class="tick" x="60.0" y="210" text-anchor="middle">2023</text>
+            <line class="grid" x1="221.2" y1="12" x2="221.2" y2="192"/><text class="tick" x="221.2" y="210" text-anchor="middle">2024</text>
+            <line class="grid" x1="382.9" y1="12" x2="382.9" y2="192"/><text class="tick" x="382.9" y="210" text-anchor="middle">2025</text>
+            <line class="grid" x1="544.1" y1="12" x2="544.1" y2="192"/><text class="tick" x="544.1" y="210" text-anchor="middle">2026</text>
+            <text class="tick warn-text" x="64" y="29.3">above 16 h: unreliable on this suite</text>
+            <line class="ci" x1="91.8" y1="192.0" x2="91.8" y2="156.8"/><circle class="pt" cx="91.8" cy="174.5" r="4.5"><title>GPT-4, 2023-03-14: 4 min</title></circle>
+            <line class="ci" x1="279.9" y1="174.4" x2="279.9" y2="144.7"/><circle class="pt" cx="279.9" cy="160.2" r="4.5"><title>GPT-4o, 2024-05-13: 7 min</title></circle>
+            <line class="ci" x1="296.7" y1="166.4" x2="296.7" y2="130.7"/><circle class="pt" cx="296.7" cy="147.8" r="4.5"><title>Claude 3.5 Sonnet, 2024-06-20: 11 min</title></circle>
+            <line class="ci" x1="333.8" y1="147.1" x2="333.8" y2="120.5"/><circle class="pt" cx="333.8" cy="133.1" r="4.5"><title>o1-preview, 2024-09-12: 20 min</title></circle>
+            <line class="ci" x1="370.9" y1="132.1" x2="370.9" y2="103.6"/><circle class="pt" cx="370.9" cy="116.7" r="4.5"><title>o1, 2024-12-05: 39 min</title></circle>
+            <line class="ci" x1="406.7" y1="120.8" x2="406.7" y2="91.6"/><circle class="pt" cx="406.7" cy="105.5" r="4.5"><title>Claude 3.7 Sonnet, 2025-02-24: 60 min</title></circle>
+            <line class="ci" x1="429.2" y1="100.1" x2="429.2" y2="76.3"/><circle class="pt" cx="429.2" cy="88.1" r="4.5"><title>o3, 2025-04-16: 120 min</title></circle>
+            <line class="ci" x1="479.1" y1="89.7" x2="479.1" y2="57.1"/><circle class="pt" cx="479.1" cy="74.7" r="4.5"><title>GPT-5, 2025-08-07: 203 min</title></circle>
+            <line class="ci" x1="527.3" y1="80.5" x2="527.3" y2="46.2"/><circle class="pt" cx="527.3" cy="65.4" r="4.5"><title>Claude Opus 4.5, 2025-11-24: 293 min</title></circle>
+            <line class="ci" x1="534.8" y1="75.3" x2="534.8" y2="39.4"/><circle class="pt" cx="534.8" cy="60.7" r="4.5"><title>GPT-5.2, 2025-12-11: 352 min</title></circle>
+            <line class="ci" x1="559.5" y1="63.4" x2="559.5" y2="12.0"/><circle class="pt" cx="559.5" cy="42.6" r="4.5"><title>Claude Opus 4.6, 2026-02-05: 719 min</title></circle>
+            <line class="ci" x1="586.5" y1="51.4" x2="586.5" y2="12.0"/><circle class="pt" cx="586.5" cy="33.1" r="4.5"><title>Claude Mythos Preview (early), 2026-04-07: 1045 min</title></circle>
+            <text class="pt-label" x="99.8" y="190.5" text-anchor="start">GPT-4 · 4 min</text>
+            <line class="leader" x1="546" y1="19" x2="581" y2="31"/><text class="pt-label" x="542" y="23.1" text-anchor="end">Mythos Preview · 17 h</text>
+          </svg>
+        </figure>
+        <p id="th-summary">Task length, in skilled-human time, that an agent finishes half the time: GPT-4 about 4 minutes, Claude Mythos Preview (early) about 17 hours. Doubling time: about 7 months since 2019, 131 days since 2023.</p>
+        <p class="cite">Sources: METR, <cite>Time Horizon 1.1</cite>, <a href="https://metr.org/blog/2026-1-29-time-horizon-1-1/">metr.org</a>, 2026-01-29; METR, <cite>Time horizons</cite> data, <a href="https://metr.org/time-horizons/">metr.org</a>, last updated 2026-09-08, no longer maintained.</p>
+        <p class="drive"><strong>Driving:</strong> the tasks agents finish grow fast, and so must your checks. Plan the verification for the task length you delegate.</p>
+        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
+          <p>Definition: fit success against human task length per model; the 50% horizon is where the fitted curve crosses 50%. It measures task difficulty, not how long the agent runs.</p>
+          <p>Caveats to say aloud: 50% reliability, not 99%; tasks are self-contained, well-specified software, ML and security tasks, cleaner than real work; METR calls measurements above 16 hours unreliable on this suite, and the two newest points have very wide intervals. Since 2024 the TH1.1 doubling time is 89 days. The page stopped being updated on 2026-09-08, so newer models are not on it.</p>
+          <p>Why this and not a leaderboard: an independent lab, one method, one trend. The next slide shows why vendor tables need care.</p>
+        </details>
+      </section>
+
+      <section id="benchmarks" data-slide data-landscape tabindex="-1" aria-labelledby="benchmarks-title">
+        <p class="eyebrow">17 · The 2026 landscape <span class="asof">As of 2026-10-18</span></p>
+        <h2 id="benchmarks-title">Vendor numbers and standardized numbers differ in kind.</h2>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Terminal-Bench 4.0, vendor-reported and leaderboard">
+          <table class="compact">
+            <caption>Terminal-Bench 4.0, resolution rate</caption>
+            <thead><tr><th scope="col">Model</th><th scope="col">Vendor launch post</th><th scope="col">Public leaderboard (harness, effort)</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Claude Opus 5.5</th><td>66.4% ± 2.6 (xhigh, Anthropic’s setup)</td><td>64.8% ± 3.1 (Claude Code, max)</td></tr>
+              <tr><th scope="row">GPT-6 Astra</th><td>57.9% (high, “as reported by OpenAI”)</td><td>57.9% ± 3.0 (Codex, high); 58.2% ± 2.8 (max)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="tight">
+          <li><strong>Vendor table:</strong> each model at its best setting, run or picked by the vendor. Anthropic itself: “benchmark margins have become a less reliable guide to real-world differences.”</li>
+          <li><strong>Leaderboard:</strong> a named harness and effort, repeated trials, error bars. Here the two agree within them.</li>
+        </ul>
+        <p class="cite">Sources: Anthropic, <cite>Claude Opus 5.5</cite>, <a href="https://www.anthropic.com/news/claude-opus-5-5">anthropic.com</a>, 2026-09-22, table and footnote 1; <cite>Terminal-Bench 4.0 leaderboard</cite>, <a href="https://www.tbench.ai/leaderboard">tbench.ai</a>, read 2026-10-18.</p>
+        <p class="drive"><strong>Driving:</strong> a few points between models is inside the noise. Read the footnotes (harness, effort, trials), then test on your own task.</p>
+        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
+          <p>The honest reading of today’s numbers: on Terminal-Bench 4.0 the vendor figures sit close to the standardized ones, and Anthropic reproduces the leaderboard’s number for its previous model. The gap to watch is between models: 66.4 versus 64.8 is noise at ±3.</p>
+          <p>Vendor tables mix settings (xhigh for one model, high for another, scores “as reported” by a competitor) and pick each model’s best. A standardized run fixes the harness, effort and trials. Neither tells you how it does on P00.</p>
+        </details>
+      </section>
+
+      <section id="vibe-vs-agentic" data-slide data-landscape tabindex="-1" aria-labelledby="vibe-vs-agentic-title">
+        <p class="eyebrow">18 · The 2026 landscape <span class="asof">As of 2026-10-18</span></p>
+        <h2 id="vibe-vs-agentic-title">Vibe coding or agentic engineering: the difference is review.</h2>
+        <div class="cols even">
+          <div>
+            <p class="label">Vibe coding · February 2025</p>
+            <blockquote class="quote"><p>“fully give in to the vibes, embrace exponentials, and forget that the code even exists”</p></blockquote>
+            <p>Andrej Karpathy’s coinage: accept all, don’t read the diffs. Fine for a throwaway prototype.</p>
+          </div>
+          <div>
+            <p class="label">Agentic engineering</p>
+            <p>Developing software with coding agents while you still own the result: give them tools, specify the problem at the right level of detail, then verify and iterate until you are confident it works.</p>
+            <p>By early 2026 the name for professional work with agents, used by Karpathy and Willison among others.</p>
+          </div>
+        </div>
+        <p class="cite">Sources: Andrej Karpathy, <a href="https://twitter.com/karpathy/status/1886192184808149383">post on X</a>, 2025-02-02, quoted in Simon Willison, <cite>Not all AI-assisted programming is vibe coding</cite>, <a href="https://simonwillison.net/2025/Mar/19/vibe-coding/">simonwillison.net</a>, 2025-03-19; Simon Willison, <cite>What is agentic engineering?</cite>, <a href="https://simonwillison.net/guides/agentic-engineering-patterns/what-is-agentic-engineering/">simonwillison.net</a>, updated 2026-03-15, and <cite>GLM-5: From Vibe Coding to Agentic Engineering</cite>, <a href="https://simonwillison.net/2026/Feb/11/glm-5/">simonwillison.net</a>, 2026-02-11.</p>
+        <p class="drive"><strong>Driving:</strong> the same agent can do either. What makes it engineering is what you check before you accept.</p>
+        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
+          <p>Back to the one discipline: never raise autonomy past your ability to verify the solution, not just the code. Vibe coding is autonomy with no verification; that is a choice you can make for a prototype, never for a model that ships a number to a planner.</p>
+          <p>Willison noted on 2026-02-11 that “agentic engineering” was showing up in several places, most notably from Karpathy and Addy Osmani. The vibe-coding quote is Karpathy’s original post as Willison reproduces it.</p>
+        </details>
+      </section>
+
+      <section id="wrap" data-slide tabindex="-1" aria-labelledby="wrap-title">
+        <p class="eyebrow">Act III · Take away</p>
+        <h2 id="wrap-title">Four habits for driving through a harness.</h2>
+        <ul class="legs four" aria-label="Four habits from Act III">
+          <li><span class="label">Fresh</span><strong>One session per task</strong><span>Old turns cost money and attention.</span></li>
+          <li><span class="label">Lean</span><strong>Short instruction files</strong><span>Re-sent on every call.</span></li>
+          <li><span class="label">Delegate</span><strong>Exploration to subagents</strong><span>Their windows, not yours.</span></li>
+          <li><span class="label">Look</span><strong>Read the budget</strong><span><code>/context</code> in Claude Code, <code>/status</code> in Codex.</span></li>
+        </ul>
+        <p>Both pages stay open for you: <a href="labs/context.html">Context lab</a> and <a href="labs/agent-loop.html">Agent-loop replay</a>.</p>
+        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
+          <p>One habit per part. Bridge to the break and Act IV: next you drive the loop yourself on P00, and the evidence is what you can check, not what the agent says.</p>
+        </details>
+      </section>
+
+      <nav data-deck-nav hidden aria-label="Slide navigation">
+        <button type="button" data-prev>Previous</button>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 20</span>
+        <button type="button" data-next>Next</button>
+        <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
+      </nav>
+    </main>
+    <footer>Recorded numbers come from the dated Act III recordings. Landscape facts carry an as-of date and a source; illustrative cases and lab simulations are labelled.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+</body>
+</html>
