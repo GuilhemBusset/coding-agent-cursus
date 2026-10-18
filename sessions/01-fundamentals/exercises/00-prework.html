@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en" data-page-kind="page" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pre-work: set up your machine</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+  <style>/* Page-specific: install cards, cautions and the platform status list. */
+.tool { margin-top: 2.5rem; }
+.install { background: var(--sheet); border-top: 2px solid var(--rule); padding: 1rem 1.25rem; margin-block: 0 1.25rem; }
+.install > :last-child { margin-bottom: 0; }
+.install .label { margin-bottom: .5rem; }
+.install pre { background: var(--paper); }
+.install .source { margin-top: 0; }
+.caution { border-left-color: var(--amber); }
+.status-list { list-style: none; padding: 0; }
+.status-list > li { border-bottom: 1px solid var(--rule); padding-block: .75rem; margin: 0; }
+.status { display: inline-block; min-width: 6.5rem; font: 600 .8125rem/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+[data-status="untested"] .status { color: var(--amber); }
+[data-status="tested"] .status { color: var(--accent); }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Pre-work · before the session</p>
+      <h1>Pre-work: set up your machine</h1>
+      <p class="lede">Installing and logging in is where a hands-on session loses its first hour. Do it a few days before Session 1: install the tools, log in to your agent, run the setup check, and paste its summary into your instructor's form. Then do the reading.</p>
+    </header>
+    <main id="content" class="prose" tabindex="-1">
+      <section aria-labelledby="overview-title">
+        <h2 id="overview-title">What you need</h2>
+        <p>You need <strong>one</strong> coding agent: Claude Code or Codex. Both are fine, and neither is required on top of the other. Everything in the course works with either one.</p>
+        <ol>
+          <li><a href="#install">Install the tools</a>: git, the GitHub CLI (<code>gh</code>), uv, mise, and your agent. About 30 to 45 minutes.</li>
+          <li><a href="#login">Log in</a> to GitHub and to your agent.</li>
+          <li><a href="#check">Run the setup check</a> and paste its summary block into the form your instructor gives you.</li>
+          <li><a href="#reading">Do the reading</a>: about 2 to 3 hours, video and course included.</li>
+        </ol>
+        <div class="callout">
+          <h3>Which terminal?</h3>
+          <ul>
+            <li><strong>macOS:</strong> Terminal (or any terminal you like).</li>
+            <li><strong>Linux:</strong> your usual shell.</li>
+            <li><strong>WSL:</strong> the terminal of your WSL 2 distribution, for example Ubuntu. Install WSL 2 itself with <a href="https://learn.microsoft.com/windows/wsl/install">Microsoft's WSL guide</a>. If you choose WSL, install every tool inside WSL and keep your course clone there.</li>
+            <li><strong>Windows:</strong> PowerShell for the install commands (no need to run it as administrator). Installing Git for Windows also gives you <strong>Git Bash</strong>: use Git Bash for every <code>bash …</code> command in the course. After each install, open a <em>new</em> terminal window, not just a new tab, so that your <code>PATH</code> includes the new tool.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="install" aria-labelledby="install-title">
+        <h2 id="install-title">Install the tools</h2>
+        <p>Each block names its platforms, gives the commands from the tool's official documentation, and links to that page. “Checked” is the date we last read that page; it does not mean every command was run on every platform (see <a href="#platforms">Platforms</a>). If a command fails, follow the linked page, which is kept up to date by the tool's authors.</p>
+
+        <div class="tool">
+          <h3>git</h3>
+          <div class="install" data-install data-tool="git" data-platform="macos">
+            <p class="label">macOS</p>
+            <p>Apple's command line developer tools include git:</p>
+            <pre tabindex="0" aria-label="Install git on macOS with the developer tools"><code>xcode-select --install</code></pre>
+            <p>Or, with Homebrew:</p>
+            <pre tabindex="0" aria-label="Install git on macOS with Homebrew"><code>brew install git</code></pre>
+            <p class="source"><a href="https://git-scm.com/install/mac">Git: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="git" data-platform="linux wsl">
+            <p class="label">Linux and WSL</p>
+            <p>Debian, Ubuntu, and the default Ubuntu in WSL:</p>
+            <pre tabindex="0" aria-label="Install git on Debian or Ubuntu"><code>sudo apt-get install git</code></pre>
+            <p>Fedora:</p>
+            <pre tabindex="0" aria-label="Install git on Fedora"><code>sudo dnf install git</code></pre>
+            <p class="source"><a href="https://git-scm.com/install/linux">Git: install on Linux</a> (other distributions too) · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="git" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <pre tabindex="0" aria-label="Install Git for Windows with winget"><code>winget install --id Git.Git -e --source winget</code></pre>
+            <p>This installs Git for Windows, which includes Git Bash. The same page also offers a downloadable installer.</p>
+            <p class="source"><a href="https://git-scm.com/install/windows">Git: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <p>Then, on every platform, tell git who you are. The check verifies that both are set:</p>
+          <pre tabindex="0" aria-label="Set your git identity"><code>git config --global user.name "Your Name"
+git config --global user.email "you@example.com"</code></pre>
+        </div>
+
+        <div class="tool">
+          <h3>GitHub CLI (<code>gh</code>)</h3>
+          <div class="install" data-install data-tool="gh" data-platform="macos">
+            <p class="label">macOS</p>
+            <pre tabindex="0" aria-label="Install gh on macOS with Homebrew"><code>brew install gh</code></pre>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_macos.md#homebrew">GitHub CLI: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="gh" data-platform="linux wsl">
+            <p class="label">Linux and WSL</p>
+            <p>Debian, Ubuntu, and the default Ubuntu in WSL. This adds GitHub's own package repository, then installs <code>gh</code> from it. Paste it as one command:</p>
+            <pre tabindex="0" aria-label="Install gh on Debian or Ubuntu"><code>(type -p wget &gt;/dev/null || (sudo apt update &amp;&amp; sudo apt install wget -y)) \
+  &amp;&amp; sudo mkdir -p -m 755 /etc/apt/keyrings \
+  &amp;&amp; out=$(mktemp) &amp;&amp; wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+  &amp;&amp; cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg &gt; /dev/null \
+  &amp;&amp; sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+  &amp;&amp; sudo mkdir -p -m 755 /etc/apt/sources.list.d \
+  &amp;&amp; echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list &gt; /dev/null \
+  &amp;&amp; sudo apt update \
+  &amp;&amp; sudo apt install gh -y</code></pre>
+            <p>Fedora (DNF5):</p>
+            <pre tabindex="0" aria-label="Install gh on Fedora"><code>sudo dnf install dnf5-plugins
+sudo dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+sudo dnf install gh</code></pre>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian">GitHub CLI: install on Debian and Ubuntu</a>, <a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#dnf5">on Fedora</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="gh" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <pre tabindex="0" aria-label="Install gh on Windows with winget"><code>winget install --id GitHub.cli --source winget</code></pre>
+            <p>The installer changes your <code>PATH</code>: open a new Windows Terminal window, not just a new tab.</p>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_windows.md#winget">GitHub CLI: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+        </div>
+
+        <div class="tool">
+          <h3>uv</h3>
+          <div class="install" data-install data-tool="uv" data-platform="macos linux wsl">
+            <p class="label">macOS, Linux and WSL</p>
+            <pre tabindex="0" aria-label="Install uv on macOS, Linux or WSL"><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
+            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="uv" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <pre tabindex="0" aria-label="Install uv on Windows"><code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></pre>
+            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+        </div>
+
+        <div class="tool">
+          <h3>mise</h3>
+          <p>mise installs the Python and uv versions the session pins. You do not need to activate it in your shell for this course.</p>
+          <div class="install" data-install data-tool="mise" data-platform="macos linux wsl">
+            <p class="label">macOS, Linux and WSL</p>
+            <pre tabindex="0" aria-label="Install mise on macOS, Linux or WSL"><code>curl -fsSL https://mise.run | sh</code></pre>
+            <p>It installs <code>mise</code> in <code>~/.local/bin</code>. If a new terminal still cannot find it, add <code>~/.local/bin</code> to your <code>PATH</code>. On macOS you can use Homebrew instead:</p>
+            <pre tabindex="0" aria-label="Install mise on macOS with Homebrew"><code>brew install mise</code></pre>
+            <p class="source"><a href="https://mise.jdx.dev/getting-started.html">mise: getting started</a>, <a href="https://mise.jdx.dev/installing-mise.html#homebrew">installing with Homebrew</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="mise" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <pre tabindex="0" aria-label="Install mise on Windows with winget"><code>winget install jdx.mise</code></pre>
+            <p class="source"><a href="https://mise.jdx.dev/installing-mise.html#windows-winget">mise: installing on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+        </div>
+
+        <div class="tool">
+          <h3>Your agent: Claude Code</h3>
+          <p>Skip this if you use Codex. Claude Code needs a Claude Pro, Max, Team or Enterprise plan, or a Claude Console account. Use the native installer:</p>
+          <div class="install" data-install data-tool="claude" data-platform="macos linux wsl">
+            <p class="label">macOS, Linux and WSL</p>
+            <pre tabindex="0" aria-label="Install Claude Code on macOS, Linux or WSL"><code>curl -fsSL https://claude.ai/install.sh | bash</code></pre>
+            <p>In WSL, run it inside the WSL terminal, not in PowerShell.</p>
+            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="claude" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <pre tabindex="0" aria-label="Install Claude Code on Windows"><code>irm https://claude.ai/install.ps1 | iex</code></pre>
+            <p>Claude Code uses Git Bash, from Git for Windows, for its shell commands.</p>
+            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <p>Open a new terminal and run <code>claude --version</code>: it should print a version number.</p>
+        </div>
+
+        <div class="tool">
+          <h3>Your agent: Codex</h3>
+          <p>Skip this if you use Claude Code. Codex needs a ChatGPT plan that includes Codex, or an OpenAI API key.</p>
+          <div class="install" data-install data-tool="codex" data-platform="macos linux wsl">
+            <p class="label">macOS, Linux and WSL</p>
+            <p>The standalone installer:</p>
+            <pre tabindex="0" aria-label="Install Codex on macOS, Linux or WSL"><code>curl -fsSL https://chatgpt.com/codex/install.sh | sh</code></pre>
+            <p>Or, on macOS with Homebrew:</p>
+            <pre tabindex="0" aria-label="Install Codex on macOS with Homebrew"><code>brew install --cask codex</code></pre>
+            <p>Or, if you already use Node.js and npm:</p>
+            <pre tabindex="0" aria-label="Install Codex with npm"><code>npm install -g @openai/codex</code></pre>
+            <div class="callout caution">
+              <p><strong>Type <code>@openai/codex</code> exactly.</strong> <code>npm i -g codex</code> installs an unrelated package that happens to be called <code>codex</code>, not OpenAI's CLI.</p>
+            </div>
+            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <div class="install" data-install data-tool="codex" data-platform="windows">
+            <p class="label">Windows (PowerShell)</p>
+            <p>The standalone installer, from a new PowerShell window:</p>
+            <pre tabindex="0" aria-label="Install Codex on Windows"><code>powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"</code></pre>
+            <p>Or, if you already use Node.js and npm:</p>
+            <pre tabindex="0" aria-label="Install Codex on Windows with npm"><code>npm install -g @openai/codex</code></pre>
+            <div class="callout caution">
+              <p><strong>Type <code>@openai/codex</code> exactly.</strong> <code>npm i -g codex</code> installs an unrelated package that happens to be called <code>codex</code>, not OpenAI's CLI.</p>
+            </div>
+            <p>Codex runs natively in PowerShell with its own Windows sandbox; see <a href="https://developers.openai.com/codex/windows">Codex on Windows</a>.</p>
+            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a>, <a href="https://github.com/openai/codex">the Codex README</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+          </div>
+          <p>Open a new terminal and run <code>codex --version</code>: it should print a version number.</p>
+        </div>
+      </section>
+
+      <section id="login" aria-labelledby="login-title">
+        <h2 id="login-title">Log in</h2>
+        <h3>GitHub</h3>
+        <pre tabindex="0" aria-label="Log in to GitHub"><code>gh auth login</code></pre>
+        <p>Choose GitHub.com, then HTTPS, answer yes to “Authenticate Git with your GitHub credentials”, and log in with a web browser. gh prints a one-time code and a URL: copy the code, then open the URL.</p>
+        <h3>Your agent</h3>
+        <div class="grid">
+          <div>
+            <p class="label">Claude Code</p>
+            <p>Run <code>claude</code> and follow the browser prompts. Inside Claude Code, <code>/login</code> starts again and <code>/status</code> shows which account or key is in use.</p>
+          </div>
+          <div>
+            <p class="label">Codex</p>
+            <p>Run <code>codex</code> and choose <strong>Sign in with ChatGPT</strong>, or run <code>codex login</code>.</p>
+          </div>
+        </div>
+        <h3>Login troubleshooting</h3>
+        <p><strong>No browser opens, or it opens on the wrong machine.</strong> The login command always prints a URL. Copy it by hand and paste it into a browser where you are signed in. In Claude Code, press <kbd>c</kbd> to copy the login URL. To copy from a terminal yourself, select the text, then use <kbd>Cmd</kbd>+<kbd>C</kbd> on macOS or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> in Linux, WSL and Windows Terminal. A long URL may wrap across several lines: copy all of it, with no spaces or line breaks.</p>
+        <p><strong>The browser shows a code instead of returning to the terminal.</strong> This is common in WSL 2. Paste that code into the terminal at the <code>Paste code here if prompted</code> prompt (Claude Code). For Codex, use device code login instead: turn on device code login in your ChatGPT security settings, then run the command below, open the link it prints by hand and enter the one-time code.</p>
+        <pre tabindex="0" aria-label="Codex device code login"><code>codex login --device-auth</code></pre>
+        <p><strong>Claude Code uses an old API key instead of your subscription.</strong> If <code>ANTHROPIC_API_KEY</code> is set, Claude Code uses it once you approve it, and always in non-interactive mode (<code>claude -p</code>, which the setup check uses). A stale or expired key then fails even though your subscription is fine. The setup check tells you when the variable is set, without showing its value. Remove it:</p>
+        <div class="grid">
+          <div>
+            <p class="label">bash or zsh (macOS, Linux, WSL, Git Bash)</p>
+            <pre tabindex="0" aria-label="Remove ANTHROPIC_API_KEY in bash or zsh"><code>unset ANTHROPIC_API_KEY
+grep -n ANTHROPIC_API_KEY ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile</code></pre>
+            <p>The first line removes it from this terminal. The second shows where your shell config files (rc files such as <code>~/.bashrc</code> or <code>~/.zshrc</code>) set it: delete that line, then open a new terminal.</p>
+          </div>
+          <div>
+            <p class="label">PowerShell (Windows)</p>
+            <pre tabindex="0" aria-label="Remove ANTHROPIC_API_KEY in PowerShell"><code>Remove-Item Env:ANTHROPIC_API_KEY
+[Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", $null, "User")</code></pre>
+            <p>The first line removes it from this window. The second removes it from your Windows user environment variables, where it survives restarts (also under Settings, “Edit environment variables for your account”). Then open a new terminal.</p>
+          </div>
+        </div>
+        <p>Then run <code>claude</code> again and check <code>/status</code>.</p>
+        <p class="source">Sources: <a href="https://code.claude.com/docs/en/authentication">Claude Code authentication</a>, <a href="https://developers.openai.com/codex/auth">Codex authentication</a>, checked <time datetime="2026-10-10">2026-10-10</time>.</p>
+      </section>
+
+      <section id="check" aria-labelledby="check-title">
+        <h2 id="check-title">Run the setup check</h2>
+        <h3>1. Clone the course and set up Session 1</h3>
+        <pre tabindex="0" aria-label="Clone the course repository"><code>gh repo clone GuilhemBusset/coding-agent-cursus
+cd coding-agent-cursus
+bash setup/session-01-fundamentals.sh</code></pre>
+        <p>On Windows, run these in Git Bash. The last line uses mise to set up the Python and uv versions Session 1 pins, then its Python packages.</p>
+        <h3>2. Run the check</h3>
+        <p>From the root of your clone. In bash or zsh (macOS, Linux, WSL) or in Git Bash on Windows:</p>
+        <pre tabindex="0" aria-label="Run the setup check in bash"><code>bash sessions/01-fundamentals/exercises/check-setup.sh</code></pre>
+        <p>Or in Windows PowerShell:</p>
+        <pre tabindex="0" aria-label="Run the setup check in PowerShell"><code>powershell -NoProfile -ExecutionPolicy Bypass -File .\sessions\01-fundamentals\exercises\check-setup.ps1</code></pre>
+        <p>Both run the same checks, from <code>check_setup.py</code> in the same folder, through uv. The first run may download Python 3.12, and the agent smoke test can take a minute or two.</p>
+        <h3>3. Read the result</h3>
+        <p>Each line reads <code>&lt;check&gt;: PASS</code>, <code>&lt;check&gt;: FAIL</code> with a hint, or <code>&lt;agent&gt;: not installed (fine)</code> for the agent you do not use. The script exits non-zero if any line is FAIL.</p>
+        <div class="table-wrap" role="region" aria-label="What the setup check verifies" tabindex="0">
+          <table>
+            <caption>What each check verifies</caption>
+            <thead><tr><th scope="col">Check</th><th scope="col">PASS means</th></tr></thead>
+            <tbody>
+              <tr><td><code>git</code>, <code>gh</code>, <code>uv</code>, <code>mise</code></td><td>Found, at or above the minimum version: git 2.23, gh 2.0, uv 0.5, mise 2024.1.0.</td></tr>
+              <tr><td><code>git-identity</code></td><td><code>user.name</code> and <code>user.email</code> are set. Their values are not printed.</td></tr>
+              <tr><td><code>network &lt;host&gt;</code></td><td>The host answered an HTTPS request within 10 seconds: github.com, api.github.com and pypi.org, plus api.anthropic.com or api.openai.com for your agent.</td></tr>
+              <tr><td><code>gh-auth</code></td><td><code>gh auth status</code> succeeds. Its output, which can include your token, is never printed.</td></tr>
+              <tr><td><code>push</code></td><td>You can push a branch for <code>/turn-in</code> (see below).</td></tr>
+              <tr><td><code>claude</code>, <code>codex</code></td><td>The agent is installed and prints a version. The one you do not use reads <code>not installed (fine)</code>.</td></tr>
+              <tr><td><code>claude-smoke</code>, <code>codex-smoke</code></td><td>Asked to “Reply with exactly: OK”, the agent replied exactly <code>OK</code>, so it is installed and logged in.</td></tr>
+              <tr><td><code>agent</code></td><td>At least one of Claude Code and Codex is installed. FAIL only if neither is.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <h3>The push check uses a temporary branch</h3>
+          <p>To prove that <code>/turn-in</code> will work, the check pushes an empty commit to a temporary branch <code>setup-check/&lt;your GitHub handle&gt;</code>, checks that it arrived, then deletes it if it still holds that test commit. If you cannot push to the course repository, it uses your fork instead, exactly as turn-in does, and creates the fork with gh if you do not have one yet. It never touches your own branches, commits, staged changes or files. If the branch is left behind, a <code>note:</code> line says why and when it is safe to remove it.</p>
+        </div>
+        <h3>4. Paste the summary</h3>
+        <p>The check ends with a block between <code>----- BEGIN SETUP SUMMARY -----</code> and <code>----- END SETUP SUMMARY -----</code>. Copy the whole block, both marker lines included, and paste it into the form your instructor gives you. It contains no secrets: no token, key or remote URL. Here is an illustrative block (yours will differ):</p>
+        <pre tabindex="0" aria-label="Illustrative summary block"><code>----- BEGIN SETUP SUMMARY -----
+date: 2026-10-10 (UTC)
+os: Linux (WSL)
+kernel: 6.18.33.2-microsoft-standard-WSL2
+python: 3.12.13
+script: check_setup.py sha256 &lt;hash&gt;
+github: your-handle
+git: PASS 2.53.0 (&gt;= 2.23.0)
+git-identity: PASS user.name and user.email are set
+gh: PASS 2.65.1 (&gt;= 2.0.0)
+uv: PASS 0.11.28 (&gt;= 0.5.0)
+mise: PASS 2026.7.0 (&gt;= 2024.1.0)
+network github.com: PASS reachable (HTTP 200)
+network api.github.com: PASS reachable (HTTP 200)
+network pypi.org: PASS reachable (HTTP 200)
+network api.anthropic.com: PASS reachable (HTTP 404)
+gh-auth: PASS logged in to GitHub
+push: PASS to your-handle/coding-agent-cursus (your fork; turn-in will use it)
+claude: PASS 2.1.296
+claude-smoke: PASS replied OK
+codex: not installed (fine)
+agent: PASS Claude Code
+result: PASS
+----- END SETUP SUMMARY -----</code></pre>
+        <p>If you can push to the course repository itself, the <code>push</code> line ends with <code>(course repo)</code> instead. Any HTTP status, even 404, counts as reachable: the check only needs an answer.</p>
+        <h3>If a line is FAIL</h3>
+        <ul>
+          <li><strong>A tool:</strong> install or update it (<a href="#install">Install the tools</a>), open a new terminal, rerun.</li>
+          <li><strong>network:</strong> try another network. On a campus or company network, ask whether HTTPS goes through a proxy, and set <code>HTTPS_PROXY</code> if so.</li>
+          <li><strong>gh-auth:</strong> run <code>gh auth login</code>.</li>
+          <li><strong>push:</strong> run <code>gh auth setup-git</code> if your clone uses HTTPS, or check your SSH key if it uses SSH, then rerun. The FAIL line says which repository it tried.</li>
+          <li><strong>claude-smoke or codex-smoke:</strong> see <a href="#login">Login troubleshooting</a>.</li>
+          <li><strong>uv or checker</strong> (the check could not start): install uv, open a new terminal and rerun. Even then the block lists which tools were found; paste it anyway.</li>
+        </ul>
+        <p>Still stuck? Paste the block into the form anyway and tell your instructor which line fails: that is what the block is for.</p>
+      </section>
+
+      <section id="reading" aria-labelledby="reading-title">
+        <h2 id="reading-title">Pre-reading</h2>
+        <p>Watch or read these before the session. Lengths are approximate; “as of” is the date the link and its contents were checked.</p>
+        <ol>
+          <li>
+            <p><strong>3Blue1Brown, <a href="https://www.youtube.com/watch?v=LPZh9BOjkQs">Large Language Models explained briefly</a></strong>, the whole video, about 8 minutes. What a language model computes: a probability for every possible next word, sampled one word at a time. Session 1 builds on that idea. As of <time datetime="2026-10-10">2026-10-10</time>.</p>
+          </li>
+          <li>
+            <p><strong>Andrej Karpathy, <a href="https://www.youtube.com/watch?v=EWvNQjAaOHw">How I use LLMs</a></strong>, the full video is 2 h 11 min. Watch these four chapters, about 38 minutes in total, for how a chat works under the hood, what thinking models change, and how tools extend a model. As of <time datetime="2026-10-10">2026-10-10</time>.</p>
+            <ul>
+              <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=174s">ChatGPT interaction under the hood</a> (2:54, about 10 minutes): tokens and the context window.</li>
+              <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=1374s">Thinking models and when to use them</a> (22:54, about 8 minutes).</li>
+              <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=1860s">Tool use: internet search</a> (31:00, about 11 minutes).</li>
+              <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=4442s">Cursor: Composer, writing code</a> (1:14:02, about 8 minutes): an agent editing code.</li>
+            </ul>
+          </li>
+          <li>
+            <p><strong>Pick the one for your agent.</strong> A free course from your agent's maker, from installation to daily workflow. Both need a free sign-up on the course site.</p>
+            <ul>
+              <li>Claude Code: Anthropic Academy, <a href="https://anthropic.skilljar.com/claude-code-101">Claude Code 101</a>. Its lesson estimates add up to about 2 hours; at least do the lessons up to “Context management”. As of <time datetime="2026-10-10">2026-10-10</time>.</li>
+              <li>Codex: OpenAI Academy, <a href="https://academy.openai.com/public/courses/get-started-with-codex-jkhsq">Get Started with Codex</a>, the first course of its Codex track, about 80 minutes. As of <time datetime="2026-10-10">2026-10-10</time>.</li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+
+      <section id="platforms" aria-labelledby="platforms-title">
+        <h2 id="platforms-title">Platforms</h2>
+        <p>“Tested” means both scripts were run on that platform, with Claude Code alone and with Codex alone, and passed. The <a href="../prework-verification.md">verification record</a> says exactly what each run covered.</p>
+        <ul class="status-list">
+          <li data-status="untested" data-platform="linux"><span class="status">Untested</span> <strong>Native Linux.</strong> No run on a native Linux kernel is recorded yet.</li>
+          <li data-status="tested" data-platform="wsl"><span class="status">Tested</span> <strong>WSL 2 (Ubuntu).</strong> Both scripts were run on WSL 2 with the real git, uv, Claude Code and Codex, one agent at a time, and passed. GitHub, its login and the network were local stand-ins in those runs, so a real login or push problem would not have shown up there.</li>
+          <li data-status="untested" data-platform="macos"><span class="status">Untested</span> <strong>macOS.</strong> No run recorded.</li>
+          <li data-status="untested" data-platform="windows-powershell"><span class="status">Untested</span> <strong>Windows PowerShell 5.1</strong> (<code>check-setup.ps1</code>). It is written for 5.1 and checked with a parser, but has not run on Windows.</li>
+          <li data-status="untested" data-platform="windows-git-bash"><span class="status">Untested</span> <strong>Windows Git Bash</strong> (<code>check-setup.sh</code>). No run recorded.</li>
+        </ul>
+        <p>On an untested platform, the commands above come straight from each tool's official page, but our scripts may still have a bug there. If the check misbehaves, tell your instructor and include the summary block.</p>
+      </section>
+    </main>
+    <footer>Session 1 · Pre-work. Install, log in, run the check, paste the summary, then read.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+</body>
+</html>
