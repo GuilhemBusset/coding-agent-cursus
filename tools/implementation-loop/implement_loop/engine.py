@@ -28,6 +28,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import posixpath
 import re
 import tempfile
 import threading
@@ -88,6 +89,7 @@ ENVIRONMENT_FAILURE = re.compile(
     r"|No module named pytest|\b(uv|node|npx|npm|python3): (command )?not found", re.IGNORECASE)
 CI_NO_VERDICT = (None, "missing", "pending", "stale", "cancelled", "startup_failure")
 CONFLICT_MARKER = re.compile(r"^(<{7}|>{7})( |$)", re.MULTILINE)
+CRITERION_LEAD = re.compile(r"\s*([A-Za-z]+\d+)\b")
 
 
 class Engine:
@@ -534,6 +536,12 @@ class Engine:
         fields = CheckSpec.__dataclass_fields__
         return [CheckSpec(**{k: v for k, v in c.items() if k in fields}) for c in st.commands]
 
+    @staticmethod
+    def _item_commands(st: IssueState, item: str) -> list[dict]:
+        """The builder's commands an item runs now: what a `command_change` changes."""
+        return [{"command": c["command"], "cwd": c.get("cwd") or "."} for c in st.commands
+                if c.get("criterion") == item and c.get("author") == "builder"]
+
     def _set_phase(self, n: int, phase: Phase, **changes) -> IssueState:
         st = self.store.issue(n)
         previous = st.phase
@@ -596,7 +604,7 @@ class Engine:
         st.locked, st.manifest, st.tests, st.probes = {}, {}, [], []
         st.commands = [c for c in st.commands if c.get("author") != "examiner"]   # their probes went with the branch
         st.findings = [f for f in st.findings if f.get("status") == "follow_up"]
-        st.human_tasks, st.reverted = [], []
+        st.human_tasks, st.reverted, st.dropped = [], [], []
         st.feedback = list(feedback)
         if owner_edit:
             self._owner_edit(st)
@@ -915,7 +923,16 @@ class Engine:
             self.store.event("checkpoint_before_update", issue=n, sha=sha)
         if not st.base_sha:
             self._set_phase(n, Phase.BUILD, base_sha=self.ws.git("merge-base", "HEAD", self.ws.base_ref(), cwd=wt))
-        sync = self.ws.update(wt)
+        try:
+            sync = self.ws.update(wt)
+        except GitError:
+            # main moved between the fetch above and update's own, and git refused to merge over
+            # the uncommitted work: checkpoint it after all and merge again
+            if not self.ws.uncommitted(wt):
+                raise
+            sha = self._commit_work(n, wt, f"Checkpoint #{n} before merging main")
+            self.store.event("checkpoint_before_update", issue=n, sha=sha, retried=True)
+            sync = self.ws.update(wt)
         try:
             self._build_round(n, wt, sync)
         finally:
@@ -1025,21 +1042,38 @@ class Engine:
         if refused:
             self.store.event("test_paths_refused", issue=st.number, paths=refused[:8])
         st.tests = sorted(set(st.tests) | {t for t in result.tests if t and inside(t)})
-        current = {c["criterion"]: c for c in st.commands if c.get("author") == "builder"}
+        current: dict[str, list[dict]] = {}
+        for c in st.commands:
+            if c.get("author") == "builder":
+                current.setdefault(c["criterion"], []).append(c)
         probes = [c for c in st.commands if c.get("author") == "examiner"]
+        given: dict[str, list[dict]] = {}   # an item may need several commands; each one is kept
+        dropped = []
         for c in result.commands:
-            if c.criterion not in agent or not c.command or not inside(c.cwd or "."):
+            item = criterion_item(c.criterion, agent)
+            why = ("its criterion names no plan item" if item is None else "it is empty" if not c.command
+                   else "its cwd is outside the worktree" if not inside(c.cwd or ".") else None)
+            if why:   # said to the builder, never dropped in silence (#24 lost every probe command this way)
+                dropped.append(f"`{(c.command or '')[:120]}` (criterion {(c.criterion or '')[:80]!r}): {why}")
                 continue
-            entry = asdict(c) | {"author": "builder",
-                                 "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)}
-            if st.examined_sha and c.criterion in current and (
-                    current[c.criterion]["command"], current[c.criterion].get("cwd", ".")) != (c.command, c.cwd or "."):
+            given.setdefault(item, []).append(asdict(c) | {
+                "criterion": item, "description": c.description or c.criterion,
+                "author": "builder", "timeout_s": min(c.timeout_s or self.caps.check_timeout_s, self.caps.max_check_timeout_s)})
+        if dropped:
+            self.store.event("commands_dropped", issue=st.number, commands=dropped[:8])
+        st.dropped = dropped
+
+        def shape(entries: list[dict]) -> list[tuple[str, str]]:
+            return sorted((e["command"], e.get("cwd") or ".") for e in entries)
+        for item, entries in given.items():
+            if st.examined_sha and item in current and shape(current[item]) != shape(entries):
                 st.requests.append({"id": f"R{st.number}-{len(st.requests) + 1}", "kind": "command_change",
-                                    "item": c.criterion, "command": entry, "status": "pending",
-                                    "detail": f"change the locked command for {c.criterion}"})
+                                    "item": item, "commands": entries, "status": "pending",
+                                    "replaces": self._item_commands(st, item),
+                                    "detail": f"change the locked commands for {item}"})
                 continue
-            current[c.criterion] = entry
-        st.commands = list(current.values()) + probes
+            current[item] = entries
+        st.commands = [e for entries in current.values() for e in entries] + probes
         for test_id, why in (result.dispositions or {}).items():
             st.dispositions.setdefault(test_id, why)
         for d in result.decisions or []:
@@ -1067,6 +1101,16 @@ class Engine:
             if r.kind == "test_change":
                 # only locked tests the builder edited (None: deleted); a path it did not edit is no proposal
                 entry["content"] = {p: proposals[p] for p in (r.paths or list(proposals)) if p in proposals}
+            if r.kind == "command_change":
+                # one typed command is added to the item's commands, never put in place of all of them
+                # (#37 lost its checker tests that way); the decider sees what the item runs now
+                entry["replaces"] = self._item_commands(st, r.item or "")
+                if r.command and r.command.get("command"):
+                    c = r.command
+                    entry["command"] = c | {"criterion": r.item, "author": "builder",
+                                            "description": c.get("description") or f"{r.item}: {r.detail[:120]}",
+                                            "timeout_s": min(c.get("timeout_s") or self.caps.check_timeout_s,
+                                                             self.caps.max_check_timeout_s)}
             st.requests.append(entry)
             added.append(entry)
         unrequested = [p for p in proposals if not any(p in (q.get("content") or {}) for q in added)]
@@ -1149,9 +1193,14 @@ class Engine:
                 st.grants.append({"path": p.rstrip("/"), "source": f"approved {r['id']}",
                                   "protected": kind == "protected_change" or is_protected(p)})
             self._declare(n, st)
-        elif kind == "command_change" and r.get("command"):
+        elif kind == "command_change" and r.get("commands"):   # the item's whole new list
             st.commands = [c for c in st.commands if not (c["criterion"] == r["item"] and c.get("author") == "builder")]
-            st.commands.append(r["command"])
+            st.commands.extend(r["commands"])
+        elif kind == "command_change" and (r.get("command") or {}).get("command"):   # one more command
+            c = r["command"]
+            if (c["command"], c.get("cwd") or ".") not in {(x["command"], x.get("cwd") or ".")
+                                                          for x in self._item_commands(st, r["item"])}:
+                st.commands.append(c)
         elif kind == "reclassify":
             st.plan["items"] = [{**i, "proof": "owner", "capability": r.get("capability"),
                                  "agent_part": r.get("detail")} if i["id"] == r["item"] else i for i in st.plan["items"]]
@@ -1339,6 +1388,13 @@ class Engine:
                          f"propose a change with a `test_change` request.")
             self.store.event("reverted_edits_noted", issue=n, files=st.reverted)
             st.reverted = []
+        if st.dropped:
+            items = sorted(self._agent_items(st) | {i["id"] for i in self._items(st) if i["proof"] == "owner"})
+            notes.append(f"These commands were not kept, so they did not run: {st.dropped[:6]}. A command's "
+                         f"`criterion` is exactly one plan item id ({', '.join(items)}); a command that "
+                         f"proves several items names the first of them.")
+            st.dropped = []
+        if notes:
             st.feedback = list(st.feedback) + notes
             self.store.put(st)
         if not st.commands and self._agent_items(st) - self._review_items(st):
@@ -1388,11 +1444,10 @@ class Engine:
         if not problems:
             nxt = Phase.LAND if head == st.certified_sha else Phase.EXAMINE
             return self._set_phase(n, nxt, verified_sha=head, head_sha=head)
-        problems = notes + problems
         env = environment_problem(evidence)
         if env:
             return self._wait(n, WAIT_ENVIRONMENT, f"the host cannot run this issue's checks: {env}", resume=Phase.VERIFY)
-        self._round_failed(n, problems, [f["id"] for f in still])
+        self._round_failed(n, problems, [f["id"] for f in still], notes=notes)
 
     def _close_findings(self, n: int, st: IssueState, wt: Path, evidence: list[dict]) -> list[str]:
         """An open finding closes only when its reproduction passes on the new head (a probe-based
@@ -1405,7 +1460,7 @@ class Engine:
                 continue
             if f.get("probe"):
                 cmd = next((c["command"] for c in st.commands if c.get("author") == "examiner"
-                            and f["probe"] in (c.get("command") or "")), None)
+                            and _names_probe(c, f["probe"])), None)
                 if cmd and cmd in passed_probe:
                     f["status"], f["reason"] = "closed", "its probe passes"
                     closed.append(f["id"])
@@ -1468,14 +1523,16 @@ class Engine:
             return False
 
     def _round_failed(self, n: int, problems: list[str], open_ids: list[str] | None = None,
-                      unmet: list[str] | None = None) -> None:
+                      unmet: list[str] | None = None, notes: list[str] | None = None) -> None:
         """The progress rule: a round is productive when what fails changes. Two unproductive
-        rounds bring a replan on the branch, two more end the issue `failed`."""
+        rounds bring a replan on the branch, two more end the issue `failed`. Notes reach the
+        builder but are not failures, so they stay out of the signature."""
         st = self.store.issue(n)
         sig = gate.signature(problems, open_ids or [], unmet or [])
         st.unproductive = st.unproductive + 1 if sig == st.signature else 0
         st.signature = sig
         self.store.put(st)
+        problems = list(notes or []) + problems
         self.store.event("round_failed", issue=n, unproductive=st.unproductive, problems=problems[:8])
         if st.unproductive >= self.caps.unproductive_fail:
             return self._fail(n, "no_progress", "the same failure repeated after a replan: " + "; ".join(problems)[:600])
@@ -2119,6 +2176,28 @@ def conflict_feedback(files: list[str], locked: list[str]) -> str:
         text += (f" The conflicts in the locked tests {', '.join(locked)} were resolved by the other vendor; do not "
                  f"edit them.")
     return text + " Do not run git merge, commit or abort: the engine concludes the merge."
+
+
+def criterion_item(criterion: str | None, items: set[str]) -> str | None:
+    """The plan item a command proves: its criterion, or the item id it leads with ("D2, D3: the
+    probes" proves D2). None when it names no item."""
+    if criterion in items:
+        return criterion
+    m = CRITERION_LEAD.match(criterion or "")
+    return m.group(1) if m and m.group(1) in items else None
+
+
+def _names_probe(command: dict, probe: str) -> bool:
+    """Whether an examiner's command runs a probe file: one of its path words, resolved from the
+    command's cwd, is the probe (`tests/x.py` run in `sessions/01/` names `sessions/01/tests/x.py`;
+    `archive/tests/x.py` there does not)."""
+    cwd = command.get("cwd") or "."
+    target = posixpath.normpath(probe)
+    for word in re.findall(r"[^\s'\"=;&|()<>]+", command.get("command") or ""):
+        path = word.split("::", 1)[0]
+        if path and posixpath.normpath(posixpath.join(cwd, path)) == target:
+            return True
+    return False
 
 
 def environment_problem(evidence: list[dict]) -> str | None:

@@ -1,0 +1,239 @@
+{
+  "demo": "bomb",
+  "cli": "claude",
+  "run": 2,
+  "cli_version": "2.1.301 (Claude Code)",
+  "model": "claude-haiku-5-5",
+  "model_source": "reported",
+  "reported_models": [
+    "claude-haiku-5-5"
+  ],
+  "effort": "low",
+  "started_at": "2026-10-16T19:45:02Z",
+  "ended_at": "2026-10-16T19:45:11Z",
+  "host": "Linux (instructor machine), CLI logged in with its own account",
+  "context_method": "claude -p /context (print mode; the slash command's result text). The after capture holds two: CLI defaults, then ENABLE_TOOL_SEARCH=false",
+  "captures": {
+    "context-before": {
+      "command": [
+        "claude",
+        "-p",
+        "/context",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "exit_code": 0
+    },
+    "context-after": {
+      "command": [
+        "claude",
+        "-p",
+        "/context",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<work>/bomb/mcp.json",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "exit_code": 0
+    },
+    "context-after-tool-search-off": {
+      "command": [
+        "claude",
+        "-p",
+        "/context",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<work>/bomb/mcp.json",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "exit_code": 0,
+      "env": {
+        "ENABLE_TOOL_SEARCH": "false"
+      }
+    }
+  },
+  "cwd": "<work>/bomb",
+  "prompt": "Reply with exactly: OK",
+  "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+  "pre_state": {
+    "file_hashes": {
+      "mcp.json": "9bce6cdf02acc470bf0d94d881755dd246a6d77c5da1695ff593c5c0d69ab631"
+    }
+  },
+  "exit_codes": {
+    "context-before": 0,
+    "without": 0,
+    "with": 0,
+    "with-tool-search-off": 0,
+    "context-after": 0,
+    "context-after-tool-search-off": 0
+  },
+  "arms": {
+    "without": {
+      "command": [
+        "claude",
+        "-p",
+        "<prompt>",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+      "started_at": "2026-10-16T19:45:03Z",
+      "ended_at": "2026-10-16T19:45:04Z",
+      "exit_code": 0,
+      "usage": {
+        "input": 2,
+        "output": 4,
+        "cache_read": 17227,
+        "cache_write": 0,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "total": 17233
+      },
+      "tool_calls": 0,
+      "dropped_stdout_lines": 0,
+      "init": {
+        "tools": 24,
+        "tool_search_tool": true,
+        "bomb_tools": [],
+        "mcp_servers": []
+      },
+      "answer": "OK"
+    },
+    "with": {
+      "command": [
+        "claude",
+        "-p",
+        "<prompt>",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<work>/bomb/mcp.json",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+      "started_at": "2026-10-16T19:45:04Z",
+      "ended_at": "2026-10-16T19:45:06Z",
+      "exit_code": 0,
+      "usage": {
+        "input": 2,
+        "output": 4,
+        "cache_read": 18903,
+        "cache_write": 0,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "total": 18909
+      },
+      "tool_calls": 0,
+      "dropped_stdout_lines": 0,
+      "init": {
+        "tools": 29,
+        "tool_search_tool": true,
+        "bomb_tools": [
+          "mcp__context_bomb__bomb_filler_01",
+          "mcp__context_bomb__bomb_filler_02",
+          "mcp__context_bomb__bomb_filler_03",
+          "mcp__context_bomb__bomb_filler_04",
+          "mcp__context_bomb__bomb_status"
+        ],
+        "mcp_servers": [
+          {
+            "name": "context_bomb",
+            "status": "connected",
+            "source": "dynamic"
+          }
+        ]
+      },
+      "answer": "OK"
+    },
+    "with-tool-search-off": {
+      "command": [
+        "claude",
+        "-p",
+        "<prompt>",
+        "--model",
+        "claude-haiku-5-5",
+        "--effort",
+        "low",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<work>/bomb/mcp.json",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose"
+      ],
+      "prompt_sha256": "d8adb66f9915732364edb6bad6a36db633ed580ae32a4edfa75d17ae3c1801e2",
+      "started_at": "2026-10-16T19:45:06Z",
+      "ended_at": "2026-10-16T19:45:08Z",
+      "exit_code": 0,
+      "usage": {
+        "input": 2,
+        "output": 4,
+        "cache_read": 40371,
+        "cache_write": 0,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "total": 40377
+      },
+      "tool_calls": 0,
+      "dropped_stdout_lines": 0,
+      "env": {
+        "ENABLE_TOOL_SEARCH": "false"
+      },
+      "init": {
+        "tools": 28,
+        "tool_search_tool": false,
+        "bomb_tools": [
+          "mcp__context_bomb__bomb_filler_01",
+          "mcp__context_bomb__bomb_filler_02",
+          "mcp__context_bomb__bomb_filler_03",
+          "mcp__context_bomb__bomb_filler_04",
+          "mcp__context_bomb__bomb_status"
+        ],
+        "mcp_servers": [
+          {
+            "name": "context_bomb",
+            "status": "connected",
+            "source": "dynamic"
+          }
+        ]
+      },
+      "answer": "OK"
+    }
+  }
+}

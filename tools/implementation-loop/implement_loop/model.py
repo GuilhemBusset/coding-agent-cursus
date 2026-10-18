@@ -198,6 +198,7 @@ class IssueState:
     evidence: list[dict] = field(default_factory=list)
     last_ran: dict[str, list[str]] = field(default_factory=dict)  # criterion -> passed test ids, last verify
     reverted: list[str] = field(default_factory=list)        # locked files the builder edited, reverted
+    dropped: list[str] = field(default_factory=list)         # builder commands not kept, and why
     conflict_paths: list[str] = field(default_factory=list)
     conflict_pending: bool = False
     # Budgets (ADR 0012): persistent across runs; only an owner's edit resets them.

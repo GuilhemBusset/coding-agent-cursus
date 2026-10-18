@@ -1,0 +1,37 @@
+$ codex -m gpt-6-luna -c model_reasoning_effort="low" --sandbox read-only -c approval_policy="never" -c mcp_servers.context_bomb.command="<session>/.venv/bin/python3" -c mcp_servers.context_bomb.args=["<session>/cursus/demos/agent/context_bomb.py"] -c mcp_servers.context_bomb.required=true   # in tmux, then: Reply with exactly: OK · /status · /mcp
+# captured 2026-10-16T19:41:40Z with codex-cli 0.162.1
+
+  >_ OpenAI Codex (v0.162.1)
+     <work>/bomb
+  To get started, describe a task or try one of these commands:
+  /init - create an AGENTS.md file with instructions for Codex
+  /status - show current session configuration
+  /permissions - choose what Codex is allowed to do
+  /model - choose what model and reasoning effort to use
+  /review - review any changes and find issues
+› Reply with exactly: OK
+• OK
+  Worked for 2s • 21:41
+/status
+  >_ OpenAI Codex (v0.162.1)
+  Visit https://chatgpt.com/settings/usage for up-to-date
+  information on rate limits and credits
+  Model:               GPT-6-Luna (reasoning low, summaries auto)
+  Model provider:      openai
+  Directory:           <work>/bomb
+  Permissions:         Read Only (never)
+  Agents.md:           <none>
+  Account:             <account> (Pro 100)
+  Collaboration mode:  Default
+  Session:             <session_id>
+  Context window:      100% left (13.8K used / 828K)
+  Weekly limit:        [██████████████████░░] 92% left (resets 08:19 on 22 Oct)
+/mcp
+🔌  MCP Tools
+  • codex_apps: connected (197 tools)
+  • codex_worktrees: connected (3 tools)
+  • context_bomb: connected (5 tools)
+  Use /mcp verbose for tools and resources.
+› Ask Codex to do anything
+  GPT-6-Luna low · <work>/bomb · GPT-6-Luna · low · Context 100% left
+  ? for shortcuts                                                                                                                                                              ⚠ 1 warning · f2 to view
