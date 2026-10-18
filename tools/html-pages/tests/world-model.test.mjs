@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, openPage, eventually } from './component-helpers.mjs';
+import { repoRoot, openPage, eventually, assertCollected } from './component-helpers.mjs';
 
 /* Issue 32: numerical interchange conventions for the agreed WorldModel API.
  * These fill gaps in the design's return shapes, not application-private hooks.
@@ -378,12 +378,7 @@ test('D1: offline self-contained lab, public API and both CI registrations', asy
   for (const method of ['rng', 'trueStep', 'fitDynamics', 'perturb', 'cemPlan', 'runOpenLoop', 'runClosedLoop', 'simulateOrbits', 'fitOrbit', 'predictOrbit']) {
     assert.equal(await page.evaluate(method => typeof WorldModel[method], method), 'function', `WorldModel.${method}`);
   }
-  assert.ok(suites.includes('world-model'), 'register world-model in component-helpers suites');
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  const argv = pkg.scripts.test.trim().split(/\s+/);
-  assert.deepEqual(argv.slice(0, 2), ['node', '--test']);
-  assert.equal(argv.filter(arg => path.resolve(repoRoot, 'setup', arg) === path.join(repoRoot, 'tools/html-pages/tests/world-model.test.mjs')).length, 1,
-    'exactly one unfiltered suite registration');
+  await assertCollected('world-model');
   for (const id of ['planner', 'kepler']) {
     const callout = page.locator(`#${id} .callout[data-illustrative]`);
     assert.equal(await callout.count(), 1); assert.equal(await callout.isVisible(), true);

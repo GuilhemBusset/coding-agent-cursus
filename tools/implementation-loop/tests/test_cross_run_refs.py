@@ -103,14 +103,15 @@ class RefOwnershipTests(LoopCase):
     def test_a_branch_and_a_tag_an_agent_creates_are_deleted(self):
         run = self.run_fixture(tags=True, branches=True)
         observed = []
-        review = run.agents.review
+        examine = run.agents.examine
 
-        def observe_cleanup(vendor, role, req, design, worktree, *args, **kwargs):
-            self.assert_registered_gitfile(worktree)
-            observed.append(worktree)
-            return review(vendor, role, req, design, worktree, *args, **kwargs)
+        def observe_cleanup(vendor, req, plan, worktree, *args, **kwargs):
+            issue_worktree = Path(run.store.issue(run.n).worktree)
+            self.assert_registered_gitfile(issue_worktree)
+            observed.append(issue_worktree)
+            return examine(vendor, req, plan, worktree, *args, **kwargs)
 
-        run.agents.review = observe_cleanup
+        run.agents.examine = observe_cleanup
         run.engine.run()
         self.assert_done(run)
         self.assertTrue(observed, "the config must be inspected before the worktree is removed")
@@ -133,10 +134,10 @@ class RefOwnershipTests(LoopCase):
             git("update-ref", ref, base, cwd=self.repo.work)
         created = ["refs/heads/worker/scratch-seven", "refs/tags/worker/scratch-seven"]
         human_created = ["refs/heads/person/during-call", "refs/tags/person/during-call"]
-        implement = run.agents.implement
+        build = run.agents.build
         observations = []
 
-        def manipulate(vendor, req, design, worktree, feedback):
+        def manipulate(vendor, req, plan, worktree, feedback):
             # No env marker or wrapper: these are ordinary Git subprocesses in each cwd.
             for ref in human_created:
                 git("update-ref", ref, second, cwd=self.repo.work)
@@ -157,16 +158,16 @@ class RefOwnershipTests(LoopCase):
             for ref in created:
                 self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
             observations.append(True)
-            return implement(vendor, req, design, worktree, feedback)
+            return build(vendor, req, plan, worktree, feedback)
 
-        run.agents.implement = manipulate
-        review = run.agents.review
+        run.agents.build = manipulate
+        examine = run.agents.examine
 
-        def inspect(vendor, role, req, design, worktree, *args, **kwargs):
-            self.assert_registered_gitfile(worktree)
-            return review(vendor, role, req, design, worktree, *args, **kwargs)
+        def inspect(vendor, req, plan, worktree, *args, **kwargs):
+            self.assert_registered_gitfile(Path(run.store.issue(run.n).worktree))
+            return examine(vendor, req, plan, worktree, *args, **kwargs)
 
-        run.agents.review = inspect
+        run.agents.examine = inspect
         run.engine.run()
         self.assert_done(run)
         self.assertEqual(len(observations), 1)
@@ -181,28 +182,35 @@ class RefOwnershipTests(LoopCase):
         discarded = {ref for e in self.events(run, "agent_ref_changes_discarded") for ref in e["refs"]}
         self.assertEqual(discarded, {moved, deleted, raced})
 
-    def test_check_author_refs_are_also_attributed_and_person_refs_survive(self):
-        run = self.run_fixture(n=19)
-        write_checks = run.agents.write_checks
-        agent_refs = ["refs/heads/check-author/topic", "refs/tags/check-author/probe"]
-        person_refs = ["refs/heads/person/check-window", "refs/tags/person/check-window"]
+    def test_other_vendor_refs_never_reach_the_shared_repository_and_person_refs_survive(self):
+        # The other vendor decides the builder's requests in a disposable copy of its head.
+        run = self.run_fixture(n=19, blocked_once=True, extra_path="docs/registry.txt")
+        decide = run.agents.decide
+        agent_refs = ["refs/heads/request-decider/topic", "refs/tags/request-decider/probe"]
+        person_refs = ["refs/heads/person/decision-window", "refs/tags/person/decision-window"]
         oid = git("rev-parse", "HEAD", cwd=self.repo.work)
+        observed = []
 
-        def write(vendor, req, design, worktree, feedback=None):
+        def decide_with_refs(vendor, req, worktree, requests):
+            self.assertNotEqual(worktree, Path(run.store.issue(run.n).worktree))
             for ref in agent_refs:
                 git("update-ref", ref, oid, cwd=worktree)
             for ref in person_refs:
                 git("update-ref", ref, oid, cwd=self.repo.work)
-            return write_checks(vendor, req, design, worktree, feedback)
+            for ref in agent_refs:
+                self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
+            observed.append(vendor)
+            return decide(vendor, req, worktree, requests)
 
-        run.agents.write_checks = write
+        run.agents.decide = decide_with_refs
         run.engine.run()
         self.assert_done(run)
+        self.assertEqual(observed, [run.agents.other])
         for ref in person_refs:
             self.assertEqual(git("rev-parse", ref, cwd=self.repo.work), oid)
         for ref in agent_refs:
             self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", ref).returncode, 0)
-        self.assertEqual([e["refs"] for e in self.events(run, "agent_refs_deleted")], [agent_refs])
+        self.assertEqual(self.events(run, "agent_refs_deleted"), [], "nothing reached the shared repository")
 
 
 class ConcurrentRunsTests(LoopCase):
@@ -218,32 +226,34 @@ class ConcurrentRunsTests(LoopCase):
             self.assertTrue(event.wait(WAIT), f"timed out waiting for {description}")
 
         def refs(run):
-            return [f"refs/heads/agent-during-checks-{run.n}", f"refs/tags/agent-during-checks-{run.n}"]
+            return [f"refs/heads/agent-during-build-{run.n}", f"refs/tags/agent-during-build-{run.n}"]
 
-        def block_checks(run, inside, release):
-            original = run.agents.write_checks
+        def block_build(run, inside, release):
+            original = run.agents.build
 
-            def call(vendor, req, design, worktree, feedback=None):
-                result = original(vendor, req, design, worktree, feedback)
-                for ref in refs(run):
-                    git("update-ref", ref, git("rev-parse", "HEAD", cwd=worktree), cwd=worktree)
-                git("add", "checks", cwd=worktree)
-                inside.set()
-                wait(release, f"release run {run.root}'s check author")
+            def call(vendor, req, plan, worktree, feedback):
+                result = original(vendor, req, plan, worktree, feedback)
+                if not inside.is_set():
+                    for ref in refs(run):
+                        git("update-ref", ref, git("rev-parse", "HEAD", cwd=worktree), cwd=worktree)
+                    git("add", "checks", cwd=worktree)
+                    inside.set()
+                    wait(release, f"release run {run.root}'s builder")
                 return result
 
-            run.agents.write_checks = call
+            run.agents.build = call
 
-        block_checks(a, a_inside, release_a)
-        block_checks(b, b_inside, release_b)
-        implement_a = a.agents.implement
+        block_build(a, a_inside, release_a)
+        block_build(b, b_inside, release_b)
+        examine_a = a.agents.examine
 
         def hold_a_after_absorb(*args, **kwargs):
-            a_absorbed.set()
-            wait(b_done, "run B to land before run A")
-            return implement_a(*args, **kwargs)
+            if not a_absorbed.is_set():
+                a_absorbed.set()
+                wait(b_done, "run B to land before run A")
+            return examine_a(*args, **kwargs)
 
-        a.agents.implement = hold_a_after_absorb
+        a.agents.examine = hold_a_after_absorb
 
         def start(run, finished=None):
             def target():
@@ -278,7 +288,7 @@ class ConcurrentRunsTests(LoopCase):
             before_checks = (b_path / "checks/issue_34.sh").read_bytes()
             before_refs = {r: git("rev-parse", r, cwd=b_path) for r in refs(b)}
             release_a.set()
-            wait(a_absorbed, "run A to finish absorbing its check author")
+            wait(a_absorbed, "run A to finish absorbing its builder")
             self.assertEqual(git("rev-parse", ref, cwd=self.repo.work), before_oid)
             self.assertEqual(snapshot(b_path), before_tree)
             self.assertEqual(b_index.read_bytes(), before_index)
@@ -384,22 +394,23 @@ class ConcurrentRunsTests(LoopCase):
 
 
 class MissingBranchRecoveryTests(LoopCase):
-    def prepared_resume(self, *, checks=False, dirty=False, candidate=None, anchor_field=None):
+    def prepared_resume(self, *, no_worktree=False, dirty=False, candidate=None, anchor_field=None):
         files = {"docs/task.txt": "implemented task", "docs/recovered.txt": "newer committed work",
                  "docs/untracked.txt": "untracked work"}
-        run = self.run_fixture(files=files)
-        step = run.engine._step_checks
+        # The first build writes wrong content, so the work committed after it is new.
+        run = self.run_fixture(files=files, wrong_attempts=1)
+        step = run.engine._step_build
 
-        def stop_after_checks(n):
+        def stop_after_build(n):
             step(n)
             (run.store.dir / "STOP").write_text("stop at a safe phase boundary\n")
 
-        with mock.patch.object(run.engine, "_step_checks", stop_after_checks):
+        with mock.patch.object(run.engine, "_step_build", stop_after_build):
             run.engine.run()
         st = run.store.issue(run.n)
-        self.assertEqual(st.phase, Phase.IMPLEMENT)
+        self.assertEqual(st.phase, Phase.VERIFY)
         wt = Path(st.worktree)
-        recorded = st.checks_sha
+        recorded = st.head_sha
         (wt / "docs").mkdir(exist_ok=True)
         (wt / "docs/recovered.txt").write_text("newer committed work\n")
         git("add", "docs/recovered.txt", cwd=wt)
@@ -417,14 +428,14 @@ class MissingBranchRecoveryTests(LoopCase):
             bad = self.commit_object("parentless entry newer than the recoverable work")
             git("update-ref", "HEAD", bad, cwd=wt)
         elif candidate == "behind-anchor":
-            # This shares main's history, but lacks the checks commit recorded in state.
+            # This shares main's history, but lacks the build commit recorded in state.
             bad = self.commit_object("sibling entry that lacks the engine anchor", st.base_sha)
             git("update-ref", "HEAD", bad, cwd=wt)
         elif candidate == "behind-later-anchor":
-            # The latest entry descends from checks_sha, but a later recorded engine sha
+            # The latest entry descends from the recorded build, but a later recorded engine sha
             # proves additional work must survive. Check each such field independently.
             setattr(st, anchor_field, latest)
-            bad = self.commit_object("sibling after checks but before a later anchor", recorded)
+            bad = self.commit_object("sibling after the build but before a later anchor", recorded)
             git("update-ref", "HEAD", bad, cwd=wt)
         ref = git("symbolic-ref", "HEAD", cwd=wt)
         git("update-ref", "-d", ref, cwd=self.repo.work)
@@ -435,11 +446,12 @@ class MissingBranchRecoveryTests(LoopCase):
             if not log.is_absolute():
                 log = wt / log
             log.write_text("")
-        st.phase, st.park_kind, st.parked_version = Phase.PARKED, "engine_error", "0.3.0"
-        st.resume_phase = "checks" if checks else "implement"
-        st.retry, st.reason = False, "historical cross-run ref deletion"
-        if checks:
-            st.worktree = None  # #34 crashed before _step_checks persisted this field.
+        # As #34 left it: an engine fault (another run deleted the branch), filed by an older engine.
+        st.phase = Phase.WAITING
+        st.wait = {"kind": "engine", "resume": "build", "detail": "historical cross-run ref deletion",
+                   "since": 0, "version": "0.3.0"}
+        if no_worktree:
+            st.worktree = None  # #34 crashed before the worktree path was persisted.
         run.store.put(st)
         run.after = max(e["seq"] for e in self.events(run))
         run.wt, run.ref, run.latest = wt, ref, latest
@@ -460,31 +472,33 @@ class MissingBranchRecoveryTests(LoopCase):
         self.assertLess(event["seq"], min(e["seq"] for e in later_phases))
         self.assertEqual(self.events(run, "branch_restore_failed", run.after), [])
         self.assertEqual(git_result(self.repo.work, "merge-base", "--is-ancestor", run.latest,
-                                    run.store.issue(run.n).reviewed_sha).returncode, 0)
+                                    run.store.issue(run.n).certified_sha).returncode, 0)
         self.assertEqual(self.repo.main_file("docs/recovered.txt"), "newer committed work")
+        self.assertEqual(self.events(run, "new_round", run.after), [], "the restored branch keeps its work")
 
     def test_resume_restores_a_missing_branch_with_its_latest_commit(self):
         run = self.prepared_resume(dirty=True)
-        implement = run.agents.implement
+        build = run.agents.build
         observed = []
 
-        def inspect(vendor, req, design, worktree, feedback):
-            self.assertEqual(git("rev-parse", "HEAD", cwd=worktree), run.latest)
-            self.assertEqual(snapshot(worktree), run.tree_snapshot,
-                             "recreating a ref must preserve staged and unstaged changes")
-            for path, content in run.file_snapshot.items():
-                self.assertEqual((worktree / path).read_bytes(), content)
-            self.assertTrue(self.events(run, "branch_restored", run.after))
+        def inspect(vendor, req, plan, worktree, feedback):
+            if not observed:
+                self.assertEqual(git("rev-parse", "HEAD", cwd=worktree), run.latest)
+                self.assertEqual(snapshot(worktree), run.tree_snapshot,
+                                 "recreating a ref must preserve staged and unstaged changes")
+                for path, content in run.file_snapshot.items():
+                    self.assertEqual((worktree / path).read_bytes(), content)
+                self.assertTrue(self.events(run, "branch_restored", run.after))
             observed.append(True)
-            return implement(vendor, req, design, worktree, feedback)
+            return build(vendor, req, plan, worktree, feedback)
 
-        run.agents.implement = inspect
+        run.agents.build = inspect
         run.engine.run()
         self.assertEqual(observed, [True])
         self.assert_recovered(run)
 
-    def test_checks_resume_finds_the_worktree_when_state_has_no_worktree_path(self):
-        run = self.prepared_resume(checks=True)
+    def test_build_resume_finds_the_worktree_when_state_has_no_worktree_path(self):
+        run = self.prepared_resume(no_worktree=True)
         self.assertIsNone(run.store.issue(run.n).worktree)
         run.engine.run()
         self.assert_recovered(run)
@@ -500,7 +514,7 @@ class MissingBranchRecoveryTests(LoopCase):
         self.assert_recovered(run)
 
     def test_all_recorded_commit_anchors_constrain_recovery(self):
-        for field in ("head_sha", "verified_sha", "reviewed_sha"):
+        for field in ("head_sha", "verified_sha", "examined_sha", "certified_sha"):
             with self.subTest(anchor=field):
                 # A fresh repository keeps each resumed issue and its reflog independent.
                 previous_repo = self.repo
@@ -521,46 +535,58 @@ class MissingBranchRecoveryTests(LoopCase):
         run.engine.run()
         self.assert_recovered(run)
 
-    def test_no_usable_reflog_parks_without_guessing_or_resetting(self):
+    def test_no_usable_reflog_starts_a_new_round_without_guessing(self):
+        # Without evidence the branch is never recreated from a guess: the issue is delivered
+        # again from main on a new branch (ADR 0012: no park), and the run carries on.
         run = self.prepared_resume(dirty=True, candidate="none")
-        before = snapshot(run.wt)
-        git_file = (run.wt / ".git").read_bytes()
         run.engine.run()
-        self.assertEqual(run.store.issue(run.n).phase, Phase.PARKED)
         self.assertEqual(self.events(run, "step_crashed", run.after), [])
         self.assertEqual(self.events(run, "branch_restored", run.after), [])
         failed = self.events(run, "branch_restore_failed", run.after)
         self.assertEqual(len(failed), 1)
         self.assertEqual(failed[0]["issue"], run.n)
-        self.assertIn(run.ref.removeprefix("refs/heads/"), run.store.issue(run.n).reason)
         self.assertNotEqual(git_result(self.repo.work, "rev-parse", "--verify", run.ref).returncode, 0)
-        self.assertEqual(snapshot(run.wt), before)
-        self.assertEqual((run.wt / ".git").read_bytes(), git_file)
-        for path, content in run.file_snapshot.items():
-            self.assertEqual((run.wt / path).read_bytes(), content)
-        self.assertEqual(self.events(run, "implemented", run.after), [])
+        rounds = self.events(run, "new_round", run.after)
+        self.assertEqual(len(rounds), 1)
+        self.assertIn(run.ref.removeprefix("refs/heads/"), rounds[0]["reason"])
+        st = run.store.issue(run.n)
+        self.assertEqual((st.round, st.branch), (2, "feat/issue-2-r2"))
+        self.assert_done(run, after=run.after)
 
 
 class VersionTests(LoopCase):
     def test_version_is_newer_than_the_release_that_parked_this_fault(self):
         self.assertGreater(tuple(int(p) for p in implement_loop.VERSION.split(".")), (0, 3, 0))
 
-    def test_old_version_engine_error_resumes_without_retry_or_requirements_changes(self):
+    def test_old_version_engine_fault_resumes_without_requirements_changes(self):
         run = self.run_fixture(n=23, root=23)
         run.engine._reconcile()
         st = run.store.issue(run.n)
         body_hash = st.body_hash
-        st.phase, st.park_kind, st.parked_version = Phase.PARKED, "engine_error", "0.3.0"
-        st.resume_phase, st.retry, st.reason = "design", False, "historical ref fault"
+        st.phase = Phase.WAITING
+        st.wait = {"kind": "engine", "resume": "plan", "detail": "historical ref fault", "since": 0, "version": "0.3.0"}
         run.store.put(st)
         run.engine = self.new_engine(run)
         run.engine.run()
         self.assert_done(run)
         resumed = self.events(run, "resumed")
         self.assertEqual(len(resumed), 1)
-        self.assertEqual((resumed[0]["phase"], resumed[0]["retry"]), ("design", False))
+        self.assertEqual((resumed[0]["phase"], resumed[0]["wait"]), ("plan", "engine"))
         self.assertEqual(run.store.issue(run.n).body_hash, body_hash)
         self.assertEqual(self.events(run, "requirements_changed"), [])
+
+    def test_an_engine_fault_on_this_version_waits_for_the_next_one(self):
+        run = self.run_fixture(n=23, root=23)
+        run.engine._reconcile()
+        st = run.store.issue(run.n)
+        st.phase = Phase.WAITING
+        st.wait = {"kind": "engine", "resume": "plan", "detail": "a fault", "since": 0, "version": implement_loop.VERSION}
+        run.store.put(st)
+        run.engine = self.new_engine(run)
+        run.engine.run()
+        self.assertEqual(run.store.issue(run.n).phase, Phase.WAITING)
+        self.assertEqual(self.events(run, "resumed"), [])
+        self.assertFalse([c for c in run.agents.calls if c[0] != "explore"], "no agent works on it")
 
 
 if __name__ == "__main__":

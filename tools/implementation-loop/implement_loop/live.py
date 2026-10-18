@@ -1,10 +1,14 @@
 """Live agents: one fresh headless Claude Code (`claude -p`) or Codex (`codex exec`) process per
 call, with per-role permissions, schema-validated answers, retries, and a full call record.
 
-Read-only roles (explore, propose, audit, critique, judge, review) get read-only tools (Claude)
-or the read-only sandbox (Codex). Writing roles (write_checks, implement) may edit their worktree
-and run commands, but cannot commit, push or call `gh`. Finding verification runs in a disposable
-worktree that is deleted afterwards. Every prompt and answer is kept under the run directory.
+Read-only roles (explore, plan, triage, arbitrate) get read-only tools (Claude) or the read-only
+sandbox (Codex). Working roles (build, resolve_locked, examine, decide) may edit their worktree,
+use the network and run anything the checks run, with the same access for both vendors (Codex
+runs without its sandbox, like Claude Code; ADR 0012): a sandbox limit is an engine problem, not
+an owner obligation. Both keep ADR 0008's trust limit: same user, no GitHub credentials, a
+private git directory per call. The examiner and the request decider work in a disposable copy
+of the head that is deleted afterwards. Every prompt and answer is kept under the run directory,
+and every attempt is reported to the engine's meter.
 """
 
 from __future__ import annotations
@@ -12,6 +16,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -21,20 +26,25 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import schemas
-from .agents import Design, DesignRequest, ImplementResult, Objection, Proposal, ReviewResult
+from .agents import (AgentFailure, AgentStopped, BuildResult, Decision, ExamResult, IssueRequest, ItemPlan, Objection,
+                     PlanResult, Probe, Request, Ruling)
 from .model import CheckSpec, Finding
 
 PROMPTS = Path(__file__).resolve().parent.parent / "prompts"
 CONFIG_FILE = Path(__file__).resolve().parent.parent / "loop.toml"
 DIFF_LIMIT = 60_000
+# What a vendor CLI prints when it could not reach its service: an outage, not the agent's fault.
+OUTAGE = re.compile(r"rate.?limit|\b429\b|overloaded|\b52[09]\b|\b50[234]\b|service unavailable|internal server error"
+                    r"|connection (refused|reset|error)|could not resolve|getaddrinfo|ECONNRESET|ETIMEDOUT|ENOTFOUND"
+                    r"|network (is )?unreachable|stream disconnected|temporarily unavailable|api error: 5\d\d",
+                    re.IGNORECASE)
 
 
-class AgentFailure(RuntimeError):
-    pass
-
-
-class AgentStopped(RuntimeError):
-    """The run was stopped while this agent worked; the step keeps its phase and resumes later."""
+def classify_failure(code: int | None, stderr: str) -> str:
+    """outage | timeout | crash, for an attempt that produced no usable answer."""
+    if OUTAGE.search(stderr or ""):
+        return "outage"
+    return "timeout" if code is None else "crash"
 
 
 @dataclass
@@ -47,18 +57,15 @@ class RoleSettings:
 
 DEFAULT_ROLES = {
     "explore": RoleSettings(effort="low", timeout_s=900, claude_model="sonnet"),
-    "propose": RoleSettings(timeout_s=1800),
-    "audit": RoleSettings(timeout_s=1200),
-    "critique": RoleSettings(timeout_s=1200),
-    "judge": RoleSettings(timeout_s=1800),
-    "write_checks": RoleSettings(timeout_s=2400),
-    "implement": RoleSettings(timeout_s=5400),
-    "review": RoleSettings(timeout_s=2400),
-    "verify_finding": RoleSettings(timeout_s=1800),
+    "plan": RoleSettings(timeout_s=1800),
+    "triage": RoleSettings(timeout_s=1200),
+    "build": RoleSettings(timeout_s=5400),
+    "resolve_locked": RoleSettings(timeout_s=1800),
+    "examine": RoleSettings(timeout_s=3600),
+    "decide": RoleSettings(timeout_s=1800),
+    "arbitrate": RoleSettings(timeout_s=1200),
 }
-READ_ONLY = {"explore", "propose", "audit", "critique", "judge", "review"}
-# Writers that may need the network (installing or locking dependencies, fetching references).
-NETWORK_ROLES = {"implement", "verify_finding"}
+READ_ONLY = {"explore", "plan", "triage", "arbitrate"}
 CLAUDE_READ_TOOLS = "Read,Glob,Grep"
 CLAUDE_WRITE_TOOLS = "Read,Glob,Grep,Edit,Write,Bash"
 # Convenience only: Claude Code matches these as command prefixes, so `git add x && git commit`
@@ -66,18 +73,6 @@ CLAUDE_WRITE_TOOLS = "Read,Glob,Grep,Edit,Write,Bash"
 # absorbs any commit an agent makes and verifies the exact head it merges.
 CLAUDE_DENY = ["Bash(git commit *)", "Bash(git push *)", "Bash(git reset *)", "Bash(git rebase *)",
                "Bash(git checkout *)", "Bash(git switch *)", "Bash(git merge *)", "Bash(gh *)"]
-ROLE_FOCUS = {
-    "cross": "You are from a different vendor than the implementer. Look for anything that makes the result "
-             "wrong while the checks are green: misread requirements, weak or special-cased checks, broken "
-             "edge cases, files the design did not ask for.",
-    "acceptance": "Check every ledger item against the evidence and the diff. Is each item actually met, not "
-                  "just its check green? Is anything the issue asks for missing?",
-    "visual": "Look at the rendered screenshots the page checker wrote under artifacts/html-pages/ and at the "
-              "HTML. Does the page follow tools/html-pages/GUIDE.md, read clearly, and work at desktop and "
-              "mobile widths? Are interactive controls usable from the keyboard?",
-}
-
-
 CREDENTIAL_VARS = ("GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "SSH_AUTH_SOCK")
 
 
@@ -137,12 +132,21 @@ class LiveAgents:
         self._lock = threading.Lock()
         self._active: set[subprocess.Popen] = set()
         self._stopped = False
+        self.meter = None   # set by the engine: told before and after every attempt
 
     # ---------------------------------------------------------------- process control
+    def _write_pids(self) -> None:
+        """The process groups of running agents, for a supervisor that must reap them if this
+        engine is killed (agents run in their own sessions)."""
+        try:
+            (self.calls_dir.parent / "agents.pids").write_text("\n".join(str(p.pid) for p in self._active))
+        except OSError:
+            pass
+
     def terminate_all(self) -> None:
         """Stop every running agent (its whole process group)."""
-        self._stopped = True
         with self._lock:
+            self._stopped = True
             procs = list(self._active)
         for proc in procs:
             try:
@@ -157,6 +161,13 @@ class LiveAgents:
                                 text=True, start_new_session=True, env=agent_env(self.no_gh_dir, self.extra_env))
         with self._lock:
             self._active.add(proc)
+            self._write_pids()
+            stopped_meanwhile = self._stopped
+        if stopped_meanwhile:   # a stop that arrived between the check above and the registration
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
         try:
             out, err = proc.communicate(prompt, timeout=timeout)
             code = proc.returncode
@@ -167,6 +178,7 @@ class LiveAgents:
         finally:
             with self._lock:
                 self._active.discard(proc)
+                self._write_pids()
         if self._stopped:
             raise AgentStopped("run stopped")
         return code, out or "", err or ""
@@ -209,9 +221,7 @@ class LiveAgents:
                "--output-schema", str(schema_file), "-o", str(out_file),
                "-c", 'approval_policy="never"', "-c", f'model_reasoning_effort="{s.effort}"',
                *self._codex_mcp_off(cwd),
-               "--sandbox", "workspace-write" if write else "read-only"]
-        if role in NETWORK_ROLES:
-            cmd += ["-c", "sandbox_workspace_write.network_access=true"]
+               "--sandbox", "danger-full-access" if write else "read-only"]
         if s.codex_model:
             cmd += ["-m", s.codex_model]
         return cmd + ["-"]
@@ -246,10 +256,15 @@ class LiveAgents:
             return None, meta
 
     def call(self, vendor: str, role: str, cwd: Path, prompt: str, issue: int | None = None) -> dict:
+        """One structured answer. Every attempt is metered: an answer (valid or not) is charged
+        to the issue's ceiling, a timeout or crash to its infrastructure budget; an outage to
+        neither. After the retries, `AgentFailure` says which kind of failure it was."""
         schema = schemas.BY_ROLE[role]
         s = self.roles[role]
-        last_error = ""
+        last_error, kind = "", "crash"
         for attempt in range(self.retries + 1):
+            if self.meter:
+                self.meter.before(issue, role, vendor)
             seq = next(self._seq)
             stem = self.calls_dir / (f"{seq:04d}-{role}-{vendor}" + (f"-{issue}" if issue else ""))
             out_file = stem.with_suffix(".out.json")
@@ -257,124 +272,125 @@ class LiveAgents:
                                     if last_error and "schema" in last_error else "")
             stem.with_suffix(".prompt.md").write_text(full_prompt)
             started = time.monotonic()
-            code, out, err = self._spawn(self._command(vendor, role, cwd, schema, out_file), full_prompt, cwd, s.timeout_s)
+            try:
+                cmd = self._command(vendor, role, cwd, schema, out_file)
+            except AgentFailure as e:   # refused before it ran: charged like a crash, so it cannot spin
+                if self.meter:
+                    self.meter.after(issue, role, vendor, e.kind)
+                raise
+            code, out, err = self._spawn(cmd, full_prompt, cwd, s.timeout_s)
             value, meta = self._parse(vendor, out, out_file)
             if vendor == "claude":
                 out_file.write_text(out)
             problems = schemas.validate(value, schema) if value is not None else ["no structured answer"]
+            outcome = "answered" if code == 0 else classify_failure(code, err)
             record = {"seq": seq, "role": role, "vendor": vendor, "issue": issue, "attempt": attempt + 1,
                       "exit": code, "seconds": round(time.monotonic() - started, 1), "ok": code == 0 and not problems,
-                      "problems": problems[:5], "stderr_tail": err[-400:], **meta}
+                      "outcome": outcome, "problems": problems[:5], "stderr_tail": err[-400:], **meta}
             with self._lock, self.log_path.open("a") as f:
                 f.write(json.dumps(record, default=str) + "\n")
+            if self.meter:
+                self.meter.after(issue, role, vendor, outcome)
             if code == 0 and not problems:
                 return value
             if code == 0:
-                last_error = "it did not match the schema: " + "; ".join(problems[:3])
+                last_error, kind = "it did not match the schema: " + "; ".join(problems[:3]), "crash"
             else:
-                last_error = f"{vendor} exited {code}: {err.strip()[-300:]}"
+                last_error, kind = f"{vendor} exited {code}: {err.strip()[-300:]}", outcome
                 if attempt < self.retries:
                     self.sleep(self.backoff[min(attempt, len(self.backoff) - 1)])
-        raise AgentFailure(f"{vendor} {role} failed after {self.retries + 1} attempts: {last_error}")
+        raise AgentFailure(f"{vendor} {role} failed after {self.retries + 1} attempts: {last_error}", kind=kind,
+                           vendor=vendor)
 
     # ---------------------------------------------------------------- prompt pieces
     @staticmethod
-    def _issue_vars(req: DesignRequest, role: str) -> dict:
+    def _issue_vars(req: IssueRequest, role: str) -> dict:
         ledger = "\n".join(f"- {i.id} ({i.section}): {i.text}" for i in req.spec.ledger)
         feedback = ("Feedback you must address:\n" + "\n".join(f"- {f}" for f in req.feedback)) if req.feedback else ""
+        facts = req.facts or {}
         return {"role": role, "number": req.issue.number, "title": req.issue.title, "body": req.issue.body,
                 "ledger": ledger or "(no checkboxes)", "context": req.context or "(none)",
-                "ledger_ids": ", ".join(i.id for i in req.spec.ledger), "feedback": feedback, "lens": req.lens}
-
-    @staticmethod
-    def _proposal_text(proposals: list[Proposal]) -> str:
-        return "\n\n".join(f"Proposal {p.author}:\n" + json.dumps(_proposal_json(p), indent=1) for p in proposals)
+                "ledger_ids": ", ".join(i.id for i in req.spec.ledger), "feedback": feedback,
+                "lacks": ", ".join(facts.get("lacks") or []) or "(nothing)",
+                "invariants": "\n".join(f"- {i}" for i in facts.get("invariants") or []),
+                "decisions": json.dumps(facts.get("decisions") or [], indent=1)[:4000],
+                "repair": "yes" if facts.get("repair") else "no"}
 
     def _root(self) -> Path:
         return self.ws.coord_path()
+
+    def _diff(self, worktree: Path, base: str, head: str) -> str:
+        diff = subprocess.run(["git", "diff", f"{base}..{head}"], cwd=worktree, capture_output=True, text=True).stdout
+        if len(diff) > DIFF_LIMIT:
+            diff = diff[:DIFF_LIMIT] + f"\n[diff truncated at {DIFF_LIMIT} characters; read the files directly]"
+        return diff or "(empty)"
 
     # ---------------------------------------------------------------- the Agents interface
     def explore(self, vendor, question, briefing):
         prompt = render("explore", question=question, briefing=briefing)
         return self.call(vendor, "explore", self._root(), prompt)["notes"]
 
-    def propose(self, vendor, req, author):
-        prompt = render("propose", author=author, **self._issue_vars(req, "proposer"))
-        value = self.call(vendor, "propose", self._root(), prompt, req.issue.number)
-        return Proposal(author=author, decisions={d["id"]: d["choice"] for d in value["decisions"]},
-                        checks=[CheckSpec(**c) for c in value["checks"]], files=value["files"],
-                        check_files=value["check_files"], open_questions=value["open_questions"])
+    def plan(self, vendor, req, worktree):
+        where = ("Your branch already has work on it (your working directory): read it and plan from where it is."
+                 if worktree else "There is no branch yet; you are reading `main`.")
+        prompt = render("plan", branch_note=where, **self._issue_vars(req, "builder (planning)"))
+        v = self.call(vendor, "plan", worktree or self._root(), prompt, req.issue.number)
+        return PlanResult(items=[ItemPlan(**i) for i in v["items"]], zones=v["zones"], decisions=v["decisions"],
+                          notes=v["notes"])
 
-    def _objections(self, vendor, role, req, proposals, extra: str = "") -> list[Objection]:
-        prompt = render(role, proposals=self._proposal_text(proposals), objections=extra or "(none)",
-                        **self._issue_vars(req, "criteria auditor" if role == "audit" else "critic"))
-        value = self.call(vendor, role, self._root(), prompt, req.issue.number)
-        return [Objection(**o) for o in value["objections"]]
+    def triage(self, vendor, req, plan):
+        prompt = render("triage", plan=json.dumps(plan, indent=1), **self._issue_vars(req, "examiner (triage)"))
+        v = self.call(vendor, "triage", self._root(), prompt, req.issue.number)
+        return [Objection(**o) for o in v["objections"]]
 
-    def audit(self, vendor, req, proposals):
-        return self._objections(vendor, "audit", req, proposals)
+    def build(self, vendor, req, plan, worktree, feedback):
+        req = IssueRequest(issue=req.issue, spec=req.spec, context=req.context, feedback=feedback, facts=req.facts)
+        prompt = render("build", plan=json.dumps(plan, indent=1), **self._issue_vars(req, "builder"))
+        v = self.call(vendor, "build", worktree, prompt, req.issue.number)
+        requests = []
+        for r in v["requests"]:
+            command = ({"criterion": r.get("item") or "", "command": r["command"], "cwd": r.get("cwd") or ".",
+                        "timeout_s": r.get("timeout_s"), "author": "builder"} if r.get("command") else None)
+            requests.append(Request(kind=r["kind"], detail=r["detail"], paths=r["paths"], item=r["item"],
+                                    finding=r["finding"], capability=r["capability"], depends_on=r["depends_on"],
+                                    depends_quote=r["depends_quote"], command=command))
+        return BuildResult(status=v["status"], note=v["note"], tests=v["tests"],
+                           commands=[CheckSpec(criterion=c["criterion"], command=c["command"], cwd=c["cwd"],
+                                               timeout_s=c["timeout_s"]) for c in v["commands"]],
+                           dispositions={d["test"]: d["disposition"] for d in v["dispositions"]},
+                           decisions=v["decisions"], requests=requests)
 
-    def critique(self, vendor, req, proposals, objections):
-        earlier = json.dumps([asdict(o) for o in objections], indent=1) if objections else ""
-        return self._objections(vendor, "critique", req, proposals, earlier)
+    def resolve_locked(self, vendor, req, worktree, files, feedback):
+        req = IssueRequest(issue=req.issue, spec=req.spec, context=req.context, feedback=feedback, facts=req.facts)
+        prompt = render("resolve_locked", files=", ".join(f"`{f}`" for f in files),
+                        **self._issue_vars(req, "conflict resolver for locked tests"))
+        self.call(vendor, "resolve_locked", worktree, prompt, req.issue.number)
 
-    def judge(self, vendor, req, proposals, objections):
-        prompt = render("judge", proposals=self._proposal_text(proposals),
-                        objections=json.dumps([asdict(o) for o in objections], indent=1) or "[]",
-                        **self._issue_vars(req, "judge"))
-        v = self.call(vendor, "judge", self._root(), prompt, req.issue.number)
-        return Design(decisions={d["id"]: d["choice"] for d in v["decisions"]}, checks=[CheckSpec(**c) for c in v["checks"]],
-                      files=v["files"], check_files=v["check_files"], notes=v["notes"], decision_log=v["decisions"])
-
-    def write_checks(self, vendor, req, design, worktree, feedback=None):
-        req = DesignRequest(issue=req.issue, spec=req.spec, context=req.context, lens=req.lens, feedback=feedback or [])
-        prompt = render("write_checks", design=json.dumps(_design_json(design), indent=1),
-                        check_files=", ".join(f"`{p}`" for p in design.check_files), **self._issue_vars(req, "check author"))
-        self.call(vendor, "write_checks", worktree, prompt, req.issue.number)
-
-    def implement(self, vendor, req, design, worktree, feedback):
-        commands = "\n".join(f"  - `{c.command}` (from `{c.cwd}`)" for c in design.checks if c.kind == "command" and c.command)
-        req = DesignRequest(issue=req.issue, spec=req.spec, context=req.context, lens=req.lens, feedback=feedback)
-        prompt = render("implement", design=json.dumps(_design_json(design), indent=1),
-                        files=", ".join(f"`{p}`" for p in design.files), check_files=", ".join(f"`{p}`" for p in design.check_files),
-                        commands=commands or "  (none)", **self._issue_vars(req, "implementer"))
-        v = self.call(vendor, "implement", worktree, prompt, req.issue.number)
-        return ImplementResult(status=v["status"], note=v["note"], defect_file=v["defect_file"],
-                               defect_reproduction=v["defect_reproduction"])
-
-    def review(self, vendor, role, req, design, worktree, base_sha, head_sha, evidence):
-        diff = subprocess.run(["git", "diff", f"{base_sha}..{head_sha}"], cwd=worktree, capture_output=True, text=True).stdout
-        if len(diff) > DIFF_LIMIT:
-            diff = diff[:DIFF_LIMIT] + f"\n[diff truncated at {DIFF_LIMIT} characters; read the files directly]"
+    def examine(self, vendor, req, plan, worktree, base_sha, head_sha, evidence, memory, requests, since):
         compact = [{k: e.get(k) for k in ("criterion", "kind", "command", "passed", "exit_code", "note", "tests")} |
                    {"output_tail": (e.get("output_tail") or "")[-800:]} for e in evidence]
-        artifact_ids = ", ".join(c.criterion for c in design.checks if c.kind == "artifact") or "(none)"
-        prompt = render("review", review_role=role, role_focus=ROLE_FOCUS[role], design=json.dumps(_design_json(design), indent=1),
-                        base=base_sha[:12], head=head_sha[:12], diff=diff or "(empty)", evidence=json.dumps(compact, indent=1),
-                        artifact_ids=artifact_ids, **self._issue_vars(req, f"{role} reviewer"))
-        try:
-            v = self.call(vendor, "review", worktree, prompt, req.issue.number)
-        except AgentFailure:
-            return None
-        findings = [Finding(reviewer=role, **f) for f in v["findings"]]
-        return ReviewResult(findings=findings, coverage={c["criterion"]: c["met"] for c in v["coverage"]})
-
-    def verify_finding(self, vendor, req, worktree, finding):
+        scope = (f"This is a follow-up examination. You examined `{since[:12]}` before; the change since then is "
+                 f"below. Check the open findings and the delta; certify the new head if it still holds."
+                 if since else "This is the first examination: examine the whole change.")
+        diff = self._diff(worktree, since or base_sha, head_sha)
         with self.ws.disposable(worktree) as scratch:
-            prompt = render("verify_finding", finding=json.dumps(asdict(finding), indent=1),
-                            **self._issue_vars(req, "finding verifier"))
-            try:
-                v = self.call(vendor, "verify_finding", scratch, prompt, req.issue.number)
-            except AgentFailure:
-                return None  # no verdict is not a "not reproduced"
-        return bool(v["reproduced"])
+            prompt = render("examine", plan=json.dumps(plan, indent=1), base=(since or base_sha)[:12], head=head_sha[:12],
+                            scope=scope, diff=diff, evidence=json.dumps(compact, indent=1),
+                            memory=json.dumps(memory, indent=1)[:12000] if memory else "(none)",
+                            **self._issue_vars(req, "examiner"))
+            v = self.call(vendor, "examine", scratch, prompt, req.issue.number)
+        findings = [Finding(id="", **f) for f in v["findings"]]
+        return ExamResult(verdicts=v["verdicts"], findings=findings, probes=[Probe(**p) for p in v["probes"]],
+                          decisions=[], certify=v["certify"], summary=v["summary"])
 
+    def decide(self, vendor, req, worktree, requests):
+        prompt = render("decide", requests=json.dumps(requests, indent=1)[:20000],
+                        **self._issue_vars(req, "examiner (deciding requests)"))
+        v = self.call(vendor, "decide", worktree, prompt, req.issue.number)
+        return [Decision(request=d["request"], approve=d["approve"], reason=d["reason"],
+                         dispositions={x["test"]: x["disposition"] for x in d["dispositions"]}) for d in v["decisions"]]
 
-def _proposal_json(p: Proposal) -> dict:
-    return {"decisions": p.decisions, "files": p.files, "check_files": p.check_files,
-            "checks": [asdict(c) for c in p.checks], "open_questions": p.open_questions}
-
-
-def _design_json(d: Design) -> dict:
-    return {"decisions": d.decisions, "files": d.files, "check_files": d.check_files,
-            "checks": [asdict(c) for c in d.checks], "notes": d.notes}
+    def arbitrate(self, vendor, req, dispute, worktree=None):
+        prompt = render("arbitrate", dispute=json.dumps(dispute, indent=1)[:20000], **self._issue_vars(req, "arbiter"))
+        v = self.call(vendor, "arbitrate", worktree or self._root(), prompt, req.issue.number)
+        return Ruling(upheld=v["upheld"], reason=v["reason"])

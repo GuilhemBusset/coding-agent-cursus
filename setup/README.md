@@ -49,6 +49,13 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
+`npm --prefix setup test` runs `tools/html-pages/tests/run-all.mjs`, which lists that directory
+and passes every `*.test.mjs` file in it to a single `node --test` (Node 22 or newer, the version
+CI uses). A new suite is collected by adding the file; there is no list to register it in. Extra
+arguments go to `node --test` as options, for example
+`npm --prefix setup test -- --test-reporter=tap`. To run one suite and reject skipped or empty
+results, use `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`.
+
 The tiny-lm suite also needs a C compiler on `PATH` as `cc` (OS-level; for example
 `sudo apt-get install gcc` on Debian or Ubuntu, which GitHub's Ubuntu runners already have). It
 compiles llama2.c's `run.c`, vendored at a pinned commit in
@@ -74,12 +81,78 @@ and `mise exec -- uv sync --locked` (the runtime dependencies from its `uv.lock`
 install the build-only `fixtures` group. Repeating it is safe. The session's own
 [README](../sessions/01-fundamentals/README.md) covers running and validating it.
 
+### Session 1: PowerShell and shellcheck for the pre-work tests
+
+The pre-work setup check that students run (`sessions/01-fundamentals/exercises/check-setup.sh`
+and `check-setup.ps1`) is tested through both entry points, so the session's test suite needs
+PowerShell 7. On Linux:
+
+```sh
+bash setup/pwsh.sh
+```
+
+- **What:** PowerShell 7.6.6, the official `powershell-7.6.6-linux-x64.tar.gz` (or `-arm64`)
+  from <https://github.com/PowerShell/PowerShell/releases/tag/v7.6.6>, checked against the
+  pinned SHA-256 (`ddbc4a2d113bbd46d283cfedcbcd117a70caefd7673f41f2b4e0000badf103bc` for x64,
+  `924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729` for arm64, from the
+  release's `hashes.sha256`, checked 2026-10-10). A mismatch installs nothing.
+- **Where:** unpacked into `~/.local/share/coding-agent-cursus/pwsh/7.6.6/`, linked as
+  `~/.local/bin/pwsh`. No sudo, package manager or shell profile change. A PowerShell 7 or newer
+  already on `PATH` is left alone. The tests look for `CURSUS_PWSH`, then `pwsh` or `powershell`
+  on `PATH`, then `~/.local/bin/pwsh`.
+- **Needs:** `curl`, `tar`, `sha256sum` or `shasum`, and the ICU library (`libicu`, from your
+  distribution's packages). Without ICU, PowerShell does not start; install the package, or run
+  it with `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`.
+- **Remove:** `rm -rf ~/.local/share/coding-agent-cursus/pwsh ~/.local/bin/pwsh`.
+
+The Bash wrapper must also pass shellcheck, pinned through PyPI's `shellcheck-py` and fetched
+into uv's cache, with nothing installed globally:
+
+```sh
+uv run --no-project --with shellcheck-py==0.10.0.1 shellcheck sessions/01-fundamentals/exercises/check-setup.sh
+```
+
+## Session test suites in CI
+
+The required CI check runs the pytest suite of every session that has a `tests/` folder
+(`.github/workflows/session-tests.yml`), on Linux, on every pull request. Each session runs in its
+own pinned environment: `astral-sh/setup-uv` installs the uv version in the session's `mise.toml`,
+then, from the session folder and with that file's Python version,
+
+```sh
+uv run --locked pytest -q -m "not live"
+```
+
+installs the packages in its `uv.lock` and runs the same suite as the README's `uv run pytest`.
+The run fails if it collects nothing or skips anything. A test that needs what CI lacks (a
+logged-in `claude` or `codex`, network access to a vendor API, credentials, a real laptop,
+Windows or macOS) gets `@pytest.mark.live`, with the marker registered under `markers` in that
+session's `[tool.pytest.ini_options]`, so CI deselects it; it never skips itself. No test needs
+the marker yet, so no session registers it. Files that are not named `test_*.py`, such as
+`tests/fixture_replay_checks.py`, are not collected, in CI or locally.
+
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
 `/html-page`, `/ship`, `/implement` and `/turn-in` through `.claude/skills/`, and `$html-page`,
 `$ship`, `$implement` and `$turn-in` through `.agents/skills/`. No separate skill download or MCP
 registration is needed.
+
+### Instructors: the Session 1 Act III agent demos
+
+[`sessions/01-fundamentals/cursus/demos/agent/`](../sessions/01-fundamentals/cursus/demos/agent/README.md)
+(Linux only) drives both CLIs headless and needs nothing installed beyond the session setup above:
+
+- **The context-bomb MCP server** is `context_bomb.py`, a standard-library script in that folder.
+  It is passed per invocation only (`claude --strict-mcp-config --mcp-config <file>`,
+  `codex exec -c mcp_servers.context_bomb.…`) and never registered with `claude mcp add` or
+  `codex mcp add`. No global agent configuration changes.
+- **To record**: Claude Code and Codex installed and logged in (`claude` then /login,
+  `codex login`), and `tmux` for the Codex `/status` capture. The recordings were made with
+  Claude Code 2.1.301 and codex-cli 0.162.1.
+- **To reset offline**: the session's uv cache warmed once by the session setup (`uv sync`). The
+  reset exports P00 to `<tempdir>/cursus-s1-agent/` and runs `uv sync --locked --offline` there.
+- **To replay**: nothing; the replays start no CLI and open no socket.
 
 ## Students: turning in homework
 
@@ -218,9 +291,13 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Linux browser libraries without root | `browser-libs.py`: the pinned Chromium packages, plus dependencies apt says are missing, fetched with `apt-get download` and unpacked with `dpkg -x` under `--dest` only (the loop: its state directory under `.git/implementation-loop/`); used only by browser processes, through `CURSUS_BROWSER_LIBS` |
 | Pinned pytest for the implement loop | `uv run --no-project --with pytest==8.3.5` fetches pytest, and a Python if needed, into uv's per-user cache |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
+| PowerShell 7 for the Session 1 pre-work tests | `pwsh.sh`: the pinned, SHA-256-checked PowerShell 7.6.6 Linux tarball under `~/.local/share/coding-agent-cursus/pwsh/7.6.6/`, linked as `~/.local/bin/pwsh` |
+| shellcheck for the pre-work check script | `uv run --no-project --with shellcheck-py==0.10.0.1` fetches the pinned shellcheck binary into uv's per-user cache |
 | Git/Bash and an authenticated gh for students turning in homework | Contributor-installed prerequisites; `scripts/turn-in.sh` installs nothing |
 | uv for the turn-in tests in CI | `astral-sh/setup-uv` installs uv 0.11.28 on the CI runner; `uv run --with pytest==8.3.5` fetches pytest into uv's cache |
+| uv, Python and packages for the session test suites in CI | `astral-sh/setup-uv` installs the uv version pinned in each session's `mise.toml` on the CI runner; `uv run --locked` uses that file's Python version (the runner's, or one uv fetches into its cache) and installs the session's `uv.lock` packages into the session's `.venv/` |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
+| Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
 When adding another repository-wide tool, put its installer, manifests/lockfiles and diagnostic

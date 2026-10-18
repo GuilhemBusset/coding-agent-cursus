@@ -1,0 +1,128 @@
+$ claude -p /context --model claude-haiku-5-5 --effort low --strict-mcp-config --mcp-config <work>/bomb/mcp.json --no-session-persistence --output-format stream-json --verbose
+# captured 2026-10-16T19:45:00Z with 2.1.301 (Claude Code)
+
+## Context Usage
+
+**Model:** claude-haiku-5-5  
+**Tokens:** 14.6k / 1m (1%)
+
+### Estimated usage by category
+
+| Category | Tokens | Percentage |
+|----------|--------|------------|
+| System prompt | 2.7k | 0.3% |
+| System tools | 7.7k | 0.8% |
+| MCP server instructions | 1.6k | 0.2% |
+| MCP tools (deferred) | 8k | 0.8% |
+| System tools (deferred) | 11.7k | 1.2% |
+| Custom agents | 158 | 0.0% |
+| Skills | 2.4k | 0.2% |
+| Messages | 10 | 0.0% |
+| Free space | 952.4k | 95.2% |
+| Autocompact buffer | 33k | 3.3% |
+
+### MCP Tools
+
+| Tool | Server | Tokens |
+|------|--------|--------|
+| mcp__context_bomb__bomb_filler_01 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_02 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_03 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_04 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_status | context_bomb | 1.6k |
+
+### Custom Agents
+
+| Agent Type | Source | Tokens |
+|------------|--------|--------|
+| code-simplifier:code-simplifier | Plugin | 73 |
+| codex:codex-rescue | Plugin | 85 |
+
+### Skills
+
+| Skill | Source | Tokens |
+|-------|--------|--------|
+| codex:rescue | Plugin (codex) | ~40 |
+| codex:setup | Plugin (codex) | ~40 |
+| skill-creator:skill-creator | Plugin (skill-creator) | ~120 |
+| codex:codex-cli-runtime | Plugin (codex) | ~40 |
+| codex:codex-result-handling | Plugin (codex) | ~30 |
+| codex:gpt-5-4-prompting | Plugin (codex) | ~60 |
+| dataviz | Built-in | ~480 |
+| update-config | Built-in | ~240 |
+| keybindings-help | Built-in | ~80 |
+| code-review | Built-in | ~210 |
+| simplify | Built-in | ~60 |
+| fewer-permission-prompts | Built-in | ~60 |
+| loop | Built-in | ~120 |
+| schedule | Built-in | ~130 |
+| claude-api | Built-in | ~360 |
+| workflow-authoring | Built-in | ~80 |
+| run | Built-in | ~120 |
+| plugin-authoring | Built-in | ~90 |
+| init | Built-in | ~20 |
+| security-review | Built-in | ~30 |
+
+$ ENABLE_TOOL_SEARCH=false claude -p /context --model claude-haiku-5-5 --effort low --strict-mcp-config --mcp-config <work>/bomb/mcp.json --no-session-persistence --output-format stream-json --verbose
+# captured 2026-10-16T19:45:01Z with 2.1.301 (Claude Code)
+
+## Context Usage
+
+**Model:** claude-haiku-5-5  
+**Tokens:** 36.5k / 1m (4%)
+
+### Estimated usage by category
+
+| Category | Tokens | Percentage |
+|----------|--------|------------|
+| System prompt | 2.7k | 0.3% |
+| System tools | 21.7k | 2.2% |
+| MCP tools | 8k | 0.8% |
+| MCP server instructions | 1.6k | 0.2% |
+| Custom agents | 158 | 0.0% |
+| Skills | 2.4k | 0.2% |
+| Messages | 10 | 0.0% |
+| Free space | 930.5k | 93.0% |
+| Autocompact buffer | 33k | 3.3% |
+
+### MCP Tools
+
+| Tool | Server | Tokens |
+|------|--------|--------|
+| mcp__context_bomb__bomb_filler_01 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_02 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_03 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_filler_04 | context_bomb | 1.6k |
+| mcp__context_bomb__bomb_status | context_bomb | 1.6k |
+
+### Custom Agents
+
+| Agent Type | Source | Tokens |
+|------------|--------|--------|
+| code-simplifier:code-simplifier | Plugin | 73 |
+| codex:codex-rescue | Plugin | 85 |
+
+### Skills
+
+| Skill | Source | Tokens |
+|-------|--------|--------|
+| codex:rescue | Plugin (codex) | ~40 |
+| codex:setup | Plugin (codex) | ~40 |
+| skill-creator:skill-creator | Plugin (skill-creator) | ~120 |
+| codex:codex-cli-runtime | Plugin (codex) | ~40 |
+| codex:codex-result-handling | Plugin (codex) | ~30 |
+| codex:gpt-5-4-prompting | Plugin (codex) | ~60 |
+| dataviz | Built-in | ~480 |
+| update-config | Built-in | ~240 |
+| keybindings-help | Built-in | ~80 |
+| code-review | Built-in | ~210 |
+| simplify | Built-in | ~60 |
+| fewer-permission-prompts | Built-in | ~60 |
+| loop | Built-in | ~120 |
+| schedule | Built-in | ~130 |
+| claude-api | Built-in | ~360 |
+| workflow-authoring | Built-in | ~80 |
+| run | Built-in | ~120 |
+| plugin-authoring | Built-in | ~90 |
+| init | Built-in | ~20 |
+| security-review | Built-in | ~30 |

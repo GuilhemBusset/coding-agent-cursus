@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { chromium } from '../browser.mjs';
 import {
-  repoRoot, suites, scratch, openPage, count, enabled, focused, initialPredict, textOf, escapeRegExp,
+  repoRoot, assertCollected, scratch, openPage, count, enabled, focused, initialPredict, textOf, escapeRegExp,
 } from './component-helpers.mjs';
 
 // Issue 28, amended 2026-10-13: static, hand-written illustrations, no tokenizer.
@@ -424,13 +424,8 @@ test('A1: isolated file:// page needs only itself, no network APIs, modules or v
   await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 0)));
 });
 
-test('A1/A2: suite is registered in both independent CI collection lists', async () => {
-  assert.equal(suites.filter(suite => suite === 'tokenizer').length, 1);
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  const argv = pkg.scripts.test.trim().split(/\s+/);
-  assert.deepEqual(argv.slice(0, 2), ['node', '--test']);
-  assert.equal(argv.slice(2).filter(arg => path.resolve(repoRoot, 'setup', arg) ===
-    path.join(repoRoot, 'tools/html-pages/tests/tokenizer.test.mjs')).length, 1, 'npm test collects this suite exactly once');
+test('A1/A2: npm --prefix setup test collects this suite', async () => {
+  await assertCollected('tokenizer');
 });
 
 test('A2: current page hash, byte count, PASS command and seven named view observations', { timeout: 60000 }, async t => {

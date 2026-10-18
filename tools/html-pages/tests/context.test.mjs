@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { repoRoot, suites, eventually, initialPredict, focused } from './component-helpers.mjs';
+import { repoRoot, eventually, initialPredict, focused, assertCollected } from './component-helpers.mjs';
 
 /* Locked acceptance contract for issue 34. All expected arithmetic is computed
  * here, never by using a ContextLab calculation as an oracle. Only the agreed
@@ -206,10 +206,7 @@ test('D1: session lab, ordered panels, registered suite and final-page review ev
   assert.equal(await page.locator('section#sources table[data-ctx-sources]').count(), 1);
   const reserved = await page.locator('*').evaluateAll(nodes => nodes.flatMap(n => [...n.attributes].filter(a => a.name === 'data-lab' || a.name === 'data-reset' || a.name.startsWith('data-budget')).map(a => a.name)));
   assert.deepEqual(reserved, [], 'reserved starter hooks are absent');
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, 'setup/package.json'), 'utf8'));
-  const suitePath = path.join(repoRoot, 'tools/html-pages/tests/context.test.mjs');
-  assert.equal(pkg.scripts.test.split(/\s+/).filter(p => p.endsWith('.mjs')).map(p => path.resolve(repoRoot, 'setup', p)).filter(p => p === suitePath).length, 1);
-  assert.equal(suites.filter(name => name === 'context').length, 1);
+  await assertCollected('context');
   const api = await page.evaluate(() => Object.fromEntries(['estimateTokens', 'requestInput', 'costRow', 'applyAction', 'initialBudget'].map(name => [name, typeof window.ContextLab?.[name]])));
   assert.ok(Object.values(api).every(type => type === 'function'), 'agreed pure API is exposed');
   await reviewEvidence();

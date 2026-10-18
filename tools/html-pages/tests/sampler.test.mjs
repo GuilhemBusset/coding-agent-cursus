@@ -5,13 +5,12 @@ import { access, mkdir, readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
-import { openPage, repoRoot, read, count, eventually } from './component-helpers.mjs';
+import { openPage, repoRoot, count, eventually, assertCollected } from './component-helpers.mjs';
 
 // Issue 46. These are structural/behavioural floors, complemented by check-page
 // and the cross-vendor prose/math review at the recorded deck hash. A keyword
 // match is not a correctness review, and a 45-minute budget is not a rehearsal.
-// Do not add this suite to component-helpers' suite list: the agreed design
-// explicitly leaves that shared file alone. setup/package.json owns collection.
+// npm --prefix setup test collects this suite by discovery: there is no list to edit.
 const cursus = path.join(repoRoot, 'sessions/01-fundamentals/cursus');
 const file = path.join(cursus, '01-sampler.html');
 const evidence = path.join(cursus, '01-sampler');
@@ -125,9 +124,7 @@ test('D1 / A1 automated part: authored deck, one disclosure per slide, and a 45-
   }
   assert.equal(total, 45, 'planned minutes total 45; this does not certify an observed rehearsal');
   assert.ok(norm(await page.locator('.masthead').innerText()).includes('session 1 · act i · 45 minutes'));
-  const pkg = JSON.parse(await read('setup/package.json'));
-  assert.ok(pkg.scripts.test.split(/\s+/).includes('../tools/html-pages/tests/sampler.test.mjs'),
-    'register sampler.test.mjs in setup/package.json so required CI runs it');
+  await assertCollected('sampler');
 });
 
 test('D2–D7: teaching order, with room for additional activity slides', async t => {

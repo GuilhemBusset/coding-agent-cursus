@@ -1,0 +1,129 @@
+{
+  "vendor": "claude",
+  "task": "flipped-sense",
+  "attempt": 1,
+  "contract_digests_pre": {
+    "p00_checker.py": "e045eff2c4724fcbef90c7ef041e41ad2a55cc03642fcefc70fb19b032254da4",
+    "data/costs.csv": "30c27544a5ec194e55f7c2a6c56901b8a4c7336a7e052bd623c24caf09d97fca",
+    "data/customers.csv": "202091a15c5d1d853d70e2e5e3f6ea29e250a91d0009c0ede4e56e1912270fcd",
+    "data/plants.csv": "aefe4fc194cc34f32057673b78a3e6713e43ee82990975928beb0c48bfee1b41",
+    "test_p00_contract.py": "1233901c96fc05f8a909193a38840dd3a55a0d0b8200455ea3c10e265f69c9b5"
+  },
+  "verification": {
+    "pre": {
+      "exit_code": 1,
+      "summary": "1 failed, 29 passed in 0.16s"
+    },
+    "post": {
+      "exit_code": 0,
+      "summary": "30 passed in 0.07s"
+    }
+  },
+  "contract_digests_post": {
+    "p00_checker.py": "e045eff2c4724fcbef90c7ef041e41ad2a55cc03642fcefc70fb19b032254da4",
+    "data/costs.csv": "30c27544a5ec194e55f7c2a6c56901b8a4c7336a7e052bd623c24caf09d97fca",
+    "data/customers.csv": "202091a15c5d1d853d70e2e5e3f6ea29e250a91d0009c0ede4e56e1912270fcd",
+    "data/plants.csv": "aefe4fc194cc34f32057673b78a3e6713e43ee82990975928beb0c48bfee1b41",
+    "test_p00_contract.py": "1233901c96fc05f8a909193a38840dd3a55a0d0b8200455ea3c10e265f69c9b5"
+  },
+  "changed_files": [
+    " M p00_model.py"
+  ],
+  "cli_version": "2.1.301 (Claude Code)",
+  "model": "claude-opus-5-5",
+  "effort": "medium",
+  "started_at": "2026-10-16T19:16:42.761Z",
+  "ended_at": "2026-10-16T19:16:54.805Z",
+  "date": "2026-10-16",
+  "argv": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--effort",
+    "medium",
+    "--model",
+    "claude-opus-5-5",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "project,local",
+    "--settings",
+    "{\"enabledPlugins\":{\"cc-plugin-agents-md@builtin\":false,\"cc-plugin-plugin-authoring@builtin\":false}}",
+    "--permission-mode",
+    "acceptEdits",
+    "--allowedTools",
+    "Bash"
+  ],
+  "exit_code": 0,
+  "prompt": "Run `uv run pytest`, find out why it fails and fix it.",
+  "prompt_sha256": "217e3af1f9bf713a041009474976a5135478c5b5dbb61b44702629174e9c3003",
+  "line_offsets_ms": [
+    424,
+    3507,
+    3537,
+    3817,
+    5622,
+    6825,
+    6850,
+    7269,
+    7486,
+    12019,
+    12021,
+    12029
+  ],
+  "blank_lines_dropped": 0,
+  "stderr_tail": "",
+  "isolation": {
+    "workspace": "fresh scratch folder outside the repository, deleted afterwards",
+    "env_dropped_prefixes": [
+      "CLAUDE",
+      "CODEX",
+      "AI_AGENT",
+      "VIRTUAL_ENV",
+      "UV_"
+    ],
+    "env_set": [
+      "CLAUDE_CONFIG_DIR",
+      "UV_CACHE_DIR"
+    ],
+    "config_home": "CLAUDE_CONFIG_DIR: fresh folder holding only a copy of the auth file, deleted afterwards",
+    "flags": [
+      "--setting-sources project,local",
+      "--settings (built-in plugins disabled)",
+      "--strict-mcp-config",
+      "--no-session-persistence"
+    ]
+  },
+  "scenario": {
+    "setup": [
+      [
+        "uv",
+        "sync",
+        "--locked"
+      ]
+    ],
+    "verification": [
+      "uv",
+      "run",
+      "pytest",
+      "-q"
+    ],
+    "prompt": "Run `uv run pytest`, find out why it fails and fix it.",
+    "prompt_sha256": "217e3af1f9bf713a041009474976a5135478c5b5dbb61b44702629174e9c3003",
+    "export": [
+      "python",
+      "exercises/p00-lab/export.py",
+      "--bug",
+      "flipped-sense",
+      "--out",
+      "<work>"
+    ],
+    "contract": [
+      "p00_checker.py",
+      "test_p00_contract.py",
+      "data/"
+    ]
+  }
+}
