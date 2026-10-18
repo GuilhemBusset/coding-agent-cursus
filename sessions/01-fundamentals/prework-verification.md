@@ -132,7 +132,8 @@ and unreadable `ls-remote` after the delete or at verification. In every case `m
 `homework/*` stay untouched.
 
 On 2026-10-17, `PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework.py
-tests/test_prework_cleanup.py` passed 171 tests in 182.5 s. The four agent smoke-timeout
+tests/test_prework_cleanup.py` passed 171 tests in 182.5 s; re-run on 2026-10-18 with the same
+script hashes, 171 passed in 183.8 s. The four agent smoke-timeout
 scenarios set `CHECK_SETUP_SMOKE_TIMEOUT=5`, the documented override of the checker's 180 s
 default, so they no longer wait three minutes each. The session suite runs in CI
 (`.github/workflows/session-tests.yml`), where none of these tests may skip.
@@ -142,13 +143,14 @@ default, so they no longer wait three minutes each. The session suite runs in CI
 `PATH="$HOME/.local/bin:$PATH" uv run --locked python tests/prework_live_agents.py`: the real
 `claude`, then the real `codex`, each alone on a `PATH` made only of symlinks (no `/usr/bin`; the
 other agent is asserted absent). gh, the network and the push are local fixtures, so these blocks
-prove A1, not a full real run. All four exited 0 (run on 2026-10-17).
+prove A1, not a full real run. All four exited 0 (run on 2026-10-17, re-run on 2026-10-18 with the same script hashes and CLI
+versions; the blocks below are from the 2026-10-18 run).
 
 Claude Code only, `check-setup.sh` (the PowerShell entry point printed the same lines):
 
 ```text
 ----- BEGIN SETUP SUMMARY -----
-date: 2026-10-17 (UTC)
+date: 2026-10-18 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
@@ -174,7 +176,7 @@ Codex only, `check-setup.ps1` under PowerShell 7.6.6 (the bash entry point print
 
 ```text
 ----- BEGIN SETUP SUMMARY -----
-date: 2026-10-17 (UTC)
+date: 2026-10-18 (UTC)
 os: Linux (WSL)
 kernel: 6.18.33.2-microsoft-standard-WSL2
 python: 3.12.13
