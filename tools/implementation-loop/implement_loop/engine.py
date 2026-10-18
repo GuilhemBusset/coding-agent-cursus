@@ -2188,11 +2188,16 @@ def criterion_item(criterion: str | None, items: set[str]) -> str | None:
 
 
 def _names_probe(command: dict, probe: str) -> bool:
-    """Whether an examiner's command runs a probe file, named from the repo root or from the
-    command's own cwd (`tests/x.py` run in `sessions/01/` names `sessions/01/tests/x.py`)."""
-    text = command.get("command") or ""
-    cwd = posixpath.normpath(command.get("cwd") or ".")
-    return probe in text or (cwd != "." and posixpath.relpath(probe, cwd) in text)
+    """Whether an examiner's command runs a probe file: one of its path words, resolved from the
+    command's cwd, is the probe (`tests/x.py` run in `sessions/01/` names `sessions/01/tests/x.py`;
+    `archive/tests/x.py` there does not)."""
+    cwd = command.get("cwd") or "."
+    target = posixpath.normpath(probe)
+    for word in re.findall(r"[^\s'\"=;&|()<>]+", command.get("command") or ""):
+        path = word.split("::", 1)[0]
+        if path and posixpath.normpath(posixpath.join(cwd, path)) == target:
+            return True
+    return False
 
 
 def environment_problem(evidence: list[dict]) -> str | None:
