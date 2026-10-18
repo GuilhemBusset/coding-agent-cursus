@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="en" data-page-kind="page" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 1 homework</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+  <style>/* Page-specific: good-answer blocks, wrapped prompts and the parts list. */
+.good { border-left-color: var(--accent); }
+.good h3 { margin-top: 0; }
+.rule { border-left-color: var(--amber); }
+pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.nobr { white-space: nowrap; }
+.demo { margin-top: 2.5rem; }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Homework · after the session</p>
+      <h1>Session 1 homework: rerun, explain, solve, turn in</h1>
+      <p class="lede">Four parts. Rerun two of today’s demos with your own agent and note what changed. Explain “sampling, not retrieval” in three sentences. Have your agent solve P01 and prove the plan with the checker. Then turn it all in with the command you will use every week.</p>
+    </header>
+    <main id="content" class="prose" tabindex="-1">
+      <section id="start" aria-labelledby="start-title">
+        <h2 id="start-title">Before you start</h2>
+        <p>You need <strong>one</strong> coding agent, Claude Code or Codex. Every step below gives the command for each, and anything without a label is the same in both. You need the setup from the <a href="00-prework.html">pre-work</a> too: the course clone, Session 1 set up with <code>bash setup/session-01-fundamentals.sh</code>, and <code>gh</code> logged in. On Windows, run every <code>bash …</code> command in Git Bash, and the rest in Git Bash or PowerShell.</p>
+        <ol>
+          <li>Open a terminal in <code>sessions/01-fundamentals/</code> in your course clone. Unless a step says otherwise, run every command from there.</li>
+          <li>Start your agent there: <code>claude</code> for Claude Code, or <code>codex</code> for Codex.</li>
+          <li>Create <code>exercises/home-notes.md</code> from the template below. Parts 1 to 3 write into it. Only files under <code>exercises/</code> are turned in, so the notes must live there.</li>
+          <li>Do not commit anything yourself. The turn-in in part 4 makes the commit.</li>
+        </ol>
+        <pre tabindex="0" aria-label="Template for exercises/home-notes.md"><code># Session 1 homework · &lt;your GitHub handle&gt;
+
+## Part 1 · Two demos, rerun
+Agent and version (`claude --version` or `codex --version`):
+Model (as your agent reports it):
+
+### Demo: &lt;name&gt;
+- In class:
+- My runs:
+- What changed, and why:
+
+### Demo: &lt;name&gt;
+- In class:
+- My runs:
+- What changed, and why:
+
+## Part 2 · Sampling, not retrieval
+&lt;three sentences&gt;
+
+## Part 3 · P01
+- Checker verdict (the first line and the summary):
+- Contracts that failed on the way, and what the agent changed:</code></pre>
+        <div class="table-wrap" role="region" aria-label="What you turn in" tabindex="0">
+          <table>
+            <caption>What you turn in, all under <code>sessions/01-fundamentals/exercises/</code></caption>
+            <thead><tr><th scope="col">Part</th><th scope="col">File</th></tr></thead>
+            <tbody>
+              <tr><td>1 and 2</td><td><code>home-notes.md</code></td></tr>
+              <tr><td>3</td><td><code>homework-p01/p01_model.py</code>, <code>homework-p01/solution.json</code>, and the P01 lines of <code>home-notes.md</code></td></tr>
+              <tr><td>4</td><td>The commit on your branch <code>homework/s01/&lt;handle&gt;</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="grading" aria-labelledby="grading-title">
+        <h2 id="grading-title">How it is graded</h2>
+        <div class="callout rule">
+          <h3>The rule: feasibility proven by the checker counts more than the objective value.</h3>
+          <p>For P01, grading reruns the checker and the data from <code>main</code> on the <code>solution.json</code> you turned in, then reads your <code>p01_model.py</code>. It asks three questions, in this order:</p>
+          <ol>
+            <li>Does the checker prove the plan feasible? Coverage, sequence, maintenance, charging and SoC must all pass.</li>
+            <li>Did your model produce that plan? The plan must come from your model, not from a hand-edited file.</li>
+            <li>Only then: how far is the objective from the known optimum?</li>
+          </ol>
+          <p>A correct model stopped at a feasible incumbent beats a wrong model with a lower number. A plan that claims a lower cost but fails a feasibility contract is not a better answer. It is not an answer at all.</p>
+        </div>
+        <p>Parts 1 and 2 are read against their “What a good answer looks like” blocks below. Only what is on your homework branch is graded. Copies of the checker, the data or the contract suite on your branch are not trusted.</p>
+      </section>
+
+      <section id="part-1" aria-labelledby="part-1-title">
+        <h2 id="part-1-title">Part 1 · Rerun two demos and note what changed</h2>
+        <p>Choose <strong>two</strong> of the three demos below and run each one as in class. The prompt is the one used in class, so any difference comes from the draw, the model or the agent. For each demo, write in <code>home-notes.md</code> what the class saw, what you saw, and what changed. Compare your runs with the class, and with each other.</p>
+        <p>To match the class model, add <code>--model claude-haiku-5-5</code> (Claude Code) or <code>-m gpt-6-luna</code> (Codex) after <code>-p</code> or <code>exec</code>, if your account offers that model. Your default model is also a fine choice. Just write down which model you used.</p>
+
+        <div class="demo" id="demo-sampling">
+          <h3>A · Sampling divergence: one prompt, five answers</h3>
+          <p>Send the same prompt five times, each in its own headless call. A call starts fresh and remembers nothing from the last one. Count how many different names come back.</p>
+          <div class="grid">
+            <div>
+              <p class="label">Claude Code</p>
+              <pre class="wrap" tabindex="0" aria-label="Sampling demo in Claude Code"><code>claude -p "Invent a name for a new optimization solver. Reply with the name only."</code></pre>
+            </div>
+            <div>
+              <p class="label">Codex</p>
+              <pre class="wrap" tabindex="0" aria-label="Sampling demo in Codex"><code>codex exec <span class="nobr">--sandbox read-only</span> "Invent a name for a new optimization solver. Reply with the name only."</code></pre>
+            </div>
+          </div>
+          <p><strong>In class</strong> (recorded 2026-10-11, <a href="../cursus/demos/model/sampling.md">runbook</a>): Claude Code with <code>claude-haiku-5-5</code> answered Vantablend, Quorvex, Quillstep, Quillfathom and Gradientwhisk, so 5 of 5 were distinct. Codex with <code>gpt-6-luna</code> answered Fluxforge, Fluxora, OptiForge, Parallax Solver and OptiForge, so 4 of 5 were distinct.</p>
+        </div>
+
+        <div class="demo" id="demo-strawberry">
+          <h3>B · Strawberry: count the r’s without tools</h3>
+          <p>The word is invented: 300 letters, of which 146 are r. Ask five times, each in its own headless call, and mark each answer right or wrong. The prompt forbids tools. If an answer shows that the agent ran code anyway, note it, because it does not count.</p>
+          <p class="label">The prompt</p>
+          <pre class="wrap" tabindex="0" aria-label="Strawberry prompt"><code>How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.</code></pre>
+          <div class="grid">
+            <div>
+              <p class="label">Claude Code</p>
+              <pre class="wrap" tabindex="0" aria-label="Strawberry demo in Claude Code"><code>claude -p "&lt;the prompt&gt;"</code></pre>
+            </div>
+            <div>
+              <p class="label">Codex</p>
+              <pre class="wrap" tabindex="0" aria-label="Strawberry demo in Codex"><code>codex exec <span class="nobr">--sandbox read-only</span> <span class="nobr">--disable shell_tool</span> <span class="nobr">--disable unified_exec</span> "&lt;the prompt&gt;"</code></pre>
+            </div>
+          </div>
+          <p>Paste the whole prompt in place of <code>&lt;the prompt&gt;</code> and keep the double quotes around it.</p>
+          <p><strong>In class</strong> (recorded 2026-10-11, <a href="../cursus/demos/model/strawberry.md">runbook</a>): Claude Code with <code>claude-haiku-5-5</code> answered 118, 146, 146, 146 and 142, so 2 of 5 were wrong. Codex with <code>gpt-6-luna</code> answered 138, 146, 128, 114 and 133, so 4 of 5 were wrong.</p>
+        </div>
+
+        <div class="demo" id="demo-cold-open">
+          <h3>C · Cold open: a word problem to a certified LP</h3>
+          <p>Run it twice, and start each run clean. In a terminal, go to <code>sessions/01-fundamentals/cursus/demos/cold-open/</code> and start a fresh session there with <code>claude</code> or <code>codex</code>. Open <a href="../cursus/demos/cold-open/prompt.txt"><code>prompt.txt</code></a>, then paste its whole text as your first message. Approve the agent’s <code>uv run python work/model.py</code> when it asks. Before you exit, copy the seven printed lines into your notes, and the agent’s <code>work/model.py</code> as well. Then clear the run from that folder with:</p>
+          <pre tabindex="0" aria-label="Reset the cold open"><code>git clean -fdx -- .</code></pre>
+          <p>This deletes the agent’s <code>work/</code> folder and nothing that git tracks.</p>
+          <p><strong>In class</strong> (recorded 2026-10-10, <a href="../cursus/demos/cold-open/rehearsal.md">rehearsal</a>): two runs with Claude Code 2.1.296 (<code>claude-opus-5-5</code>) and two with Codex 0.160.0 (<code>gpt-6-astra</code>). Every run printed the same certificate: <code>status: Optimal</code>, tables=20, chairs=20, duals 20, 10 and 0, primal and dual objective 1400, a duality gap of about 2.3e-13 and binding constraints assembly and carpentry. The programs differed. Claude Code checked HiGHS’s dual signs before trusting them. Codex flipped them on a condition in one run and took <code>abs()</code> in the other.</p>
+        </div>
+
+        <div class="callout good">
+          <h3>What a good answer looks like</h3>
+          <ul>
+            <li>It names the two demos, your agent and its version, and the model that answered.</li>
+            <li>It writes down the class result and your own runs as they came out: the names, the counts, or the seven certificate lines. It does not summarize them.</li>
+            <li>It says what changed, both from the class and between your runs, and what stayed the same. For example: “3 of 5 distinct, against 5 of 5 in class”, “the count ranged from 121 to 150”, or “a different program, the same certificate”.</li>
+            <li>It gives a reason for each change. Each answer is a fresh draw from a distribution. A different model or version changes that distribution. The model reads tokens, not letters. Two programs can both be checked against one certificate.</li>
+          </ul>
+          <p>A weak answer says “the results were a bit different” without numbers or a reason.</p>
+        </div>
+      </section>
+
+      <section id="part-2" aria-labelledby="part-2-title">
+        <h2 id="part-2-title">Part 2 · Three sentences on “sampling, not retrieval”</h2>
+        <p>In <code>home-notes.md</code>, explain in exactly three sentences of your own what “sampling, not retrieval” means for an LLM, and why it matters when you work with an agent. Write them yourself, not with your agent: the point is to check your own understanding. Use your part 1 runs as evidence. The <a href="../cursus/labs/next-token.html">next-token lab</a> lets you see the distribution again.</p>
+        <div class="callout good">
+          <h3>What a good answer looks like</h3>
+          <ul>
+            <li><strong>Mechanism.</strong> One forward pass gives a probability distribution over the next token, and the reply is drawn from it one token at a time.</li>
+            <li><strong>Not a lookup.</strong> No stored document or database row is fetched. A fluent, confident reply is generated, so being plausible is not being true, and a citation or number can be invented.</li>
+            <li><strong>Consequence.</strong> The same prompt can give different answers, as your part 1 runs showed, so you check the output with something deterministic: run the code, or call the checker or the solver. Re-asking does not count as checking.</li>
+          </ul>
+          <p>A weak answer says the model “searches its training data”, or repeats the phrase without saying what is drawn from what.</p>
+        </div>
+      </section>
+
+      <section id="part-3" aria-labelledby="part-3-title">
+        <h2 id="part-3-title">Part 3 · Solve P01 with your own agent</h2>
+        <p>P01 is the take-home that the course comes back to: EV linehaul scheduling and charging, with 40 legs, 10 electric trucks and eight depots. The statement is in <a href="homework-p01/PROBLEM.md"><code>homework-p01/PROBLEM.md</code></a>, and the task, the solution format and how to read the checker are in <a href="homework-p01/README.md"><code>homework-p01/README.md</code></a>. Your agent writes the model. Your job is to set the contract and to believe only what the checker certifies.</p>
+        <ol>
+          <li>Read <code>PROBLEM.md</code> yourself first.</li>
+          <li>In your agent, started in <code>sessions/01-fundamentals/</code>, give it this prompt. It is the same for both agents.
+            <pre class="wrap" tabindex="0" aria-label="P01 starting prompt"><code>Read exercises/homework-p01/README.md and exercises/homework-p01/PROBLEM.md. Build exercises/homework-p01/p01_model.py as a MILP on HiGHS through highspy, keeping the API of the stub. Do not edit exercises/homework-p01/data/, p01_checker.py or p01_contract.py. Run the model, then the checker and the contract suite with the commands in the README, and fix the model until the checker prints PASS. Show me the checker output.</code></pre>
+          </li>
+          <li>Run the proof yourself, and do not take your agent’s word for it:
+            <pre tabindex="0" aria-label="Solve and check P01"><code>uv run python exercises/homework-p01/p01_model.py
+uv run python exercises/homework-p01/p01_checker.py
+uv run pytest exercises/homework-p01/p01_contract.py</code></pre>
+          </li>
+          <li>When a check fails, give the failure line to your agent. Each line starts with the contract that broke. Write the verdict and the failures you met into <code>home-notes.md</code>.</li>
+        </ol>
+        <div class="callout good">
+          <h3>What a good answer looks like</h3>
+          <ul>
+            <li><strong>Best:</strong> <code>solution.json</code> has status <code>optimal</code>, the checker’s first line is <code>PASS</code>, and its summary gives the recomputed objective with its breakdown, the known optimum and a gap of 0.</li>
+            <li><strong>Still a good answer:</strong> a time limit stopped the solve at a feasible incumbent (status <code>feasible</code> in <code>solution.json</code>), and every feasibility contract passes. Only <code>optimality</code> fails, and your notes give the gap. Under the grading rule, this beats any infeasible plan, whatever its cost.</li>
+            <li><code>p01_model.py</code> is your agent’s model with the stub’s API, and running it produces the <code>solution.json</code> you turn in. You have not edited the file by hand.</li>
+            <li>You ran the contract suite, and <code>data/</code>, <code>p01_checker.py</code> and <code>p01_contract.py</code> are unchanged.</li>
+            <li>Your notes give the checker verdict and one or two contracts that failed on the way, with what the agent changed to fix them.</li>
+          </ul>
+          <p>A weak answer reports a low objective that the checker rejects, or a plan the model does not produce.</p>
+        </div>
+      </section>
+
+      <section id="part-4" aria-labelledby="part-4-title">
+        <h2 id="part-4-title">Part 4 · Turn it in</h2>
+        <p>One command, the same for every session this term. In your agent:</p>
+        <div class="grid">
+          <div>
+            <p class="label">Claude Code</p>
+            <pre tabindex="0" aria-label="Turn in with Claude Code"><code>/turn-in 01</code></pre>
+          </div>
+          <div>
+            <p class="label">Codex</p>
+            <pre tabindex="0" aria-label="Turn in with Codex"><code>$turn-in 01</code></pre>
+          </div>
+        </div>
+        <p>Without an agent, run it from the repository root in a terminal (Git Bash on Windows):</p>
+        <pre tabindex="0" aria-label="Turn in from a terminal"><code>bash scripts/turn-in.sh 01</code></pre>
+        <p>The turn-in first runs <code>exercises/turn-in-check.sh</code>, which runs the P01 checker on your <code>solution.json</code>. A malformed <code>solution.json</code> or an edited <code>data/</code> stops it, so you can fix the problem and run it again. An infeasible or suboptimal plan is reported and still turned in. It then commits only <code>sessions/01-fundamentals/exercises/</code> to your own branch, <code>homework/s01/&lt;handle&gt;</code>, where <code>&lt;handle&gt;</code> is your GitHub login, and pushes it. It never pushes to <code>main</code>. If you have no push access to the course repo, it pushes to your fork and also prints a compare URL.</p>
+        <p>You can run it as often as you like. Every run adds a commit, and the history keeps every submission. <strong>Homework branches are public</strong>, because the course repo is public, so keep secrets and personal data out of your notes. If the turn-in refuses, read its message and fix the cause. Never work around it with <code>--force</code> or <code>--no-verify</code>.</p>
+        <div class="callout good">
+          <h3>What a good answer looks like</h3>
+          <ul>
+            <li>The run ends with your branch URL, <code>https://github.com/&lt;course or your fork&gt;/tree/homework/s01/&lt;handle&gt;</code>. From a fork, it also prints a line starting <code>Compare with the course:</code>.</li>
+            <li>On that page, the latest commit is <code>Turn in session 01 homework (&lt;handle&gt;)</code>. It holds <code>exercises/home-notes.md</code>, <code>exercises/homework-p01/p01_model.py</code> and <code>exercises/homework-p01/solution.json</code>.</li>
+            <li>The checker verdict printed during the turn-in matches the one in your notes.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+    <footer>Session 1 homework · Demo results are dated recordings from the class runbooks, not illustrations. Your own runs will differ, and that difference is what part 1 asks you to explain.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+</body>
+</html>
