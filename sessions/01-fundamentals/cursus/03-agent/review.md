@@ -1,7 +1,7 @@
 # Act III deck: review evidence
 
 Agent review by the implementer, 2026-10-18. Reviewed file: `../03-agent.html`,
-94,841 bytes, sha256 `91c7507e75c99e9fd1cf550c27c86442c77d62843d2277c7500791a173106576`.
+94,895 bytes, sha256 `8f196a87837430044204cce9ba81bb39ffd8765fc8213bce4f32034c55b735be`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every external source below was opened on 2026-10-18 while authoring. Each date comes from the
@@ -117,7 +117,8 @@ This is a plan, not a measured delivery. A timed rehearsal needs a person and a 
   out to $19.56 uncached against $0.90 + $1.96 = $2.86.
 
   The Driving line separates changes to the request prefix from changes that leave it alone, per
-  the caching doc: switching models or connecting an MCP server invalidates the cache; in Claude
+  the caching doc: switching models invalidates the cache, and so does connecting an MCP server when its tools
+  load upfront (with tool search on, the default, the tool list is kept); in Claude
   Code, changing effort on Opus 5.5 or Haiku 5.5 (API key or subscription) keeps it, and a
   mid-session edit to the root CLAUDE.md keeps it because the edit loads only on `/clear`,
   `/compact` or a restart. An earlier version said every effort change or instruction-file edit
@@ -259,7 +260,7 @@ belongs to the fact-check issue, done one week before the session.
 | context-window | Codex `/compact` and `/status` (context capacity) | 2026-10-18 (read) | https://learn.chatgpt.com/docs/developer-commands?surface=cli | Slash command table | Supported |
 | context-window | `/context` 13k before; `/status` 13.8K used / 828K | 2026-10-16 | sessions/01-fundamentals/cursus/demos/agent/context-bomb.md | Expected outcome | Matches |
 | kv-cache | Prefix match is exact; a change recomputes everything after it; model switch recomputes | 2026-10-18 (read) | https://code.claude.com/docs/en/prompt-caching | How the cache is organized | Supported |
-| kv-cache | Model switch and MCP server change invalidate; effort change on Opus 5.5 / Haiku 5.5 and a mid-session root CLAUDE.md edit keep the cache | 2026-10-18 (read) | https://code.claude.com/docs/en/prompt-caching | Changing effort level; Editing CLAUDE.md mid-session | Supported |
+| kv-cache | Model switch invalidates, and an MCP server change does when tools load upfront (tool search off); effort change on Opus 5.5 / Haiku 5.5 and a mid-session root CLAUDE.md edit keep the cache | 2026-10-18 (read) | https://code.claude.com/docs/en/prompt-caching | Changing effort level; Editing CLAUDE.md mid-session | Supported |
 | kv-cache | Opus 5.5 $4 input, $0.20 cache hit (0.05x) | 2026-10-18 (read) | https://platform.claude.com/docs/en/about-claude/pricing | Model pricing table, footnote 2 | Supported |
 | kv-cache | GPT-6 Astra $10 input, $1 cached input | 2026-10-18 (read) | https://developers.openai.com/api/docs/models/gpt-6-astra | Pricing, text tokens | Supported |
 | agent-loop | ReAct interleaves reasoning traces and actions | 2022-10-06 | https://arxiv.org/abs/2210.03629 | Abstract | Supported |
