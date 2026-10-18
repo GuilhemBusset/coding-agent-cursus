@@ -10,7 +10,8 @@
 # implementer already committed unchanged, with "Loop-Locks: <path>" trailers (one path per
 # line, as many as needed): from that commit on they are locked exactly like the files it
 # wrote, and a later "Loop-Unlocks: <path>" releases them the same way. Both trailers count
-# only on acceptance-checks commits. Merge commits are ignored: they only bring in main.
+# only on acceptance-checks commits. Merge commits are ignored, and so are the commits they
+# bring in from main (anything reachable from <base-sha>): those landed through their own PR.
 #
 #   bash scripts/check-loop-guard.sh <base-sha> <head-sha>
 set -euo pipefail
@@ -32,7 +33,7 @@ for locker in $(git rev-list --reverse --no-merges --grep="$trailer" "$base..$he
   if [ -n "$own" ]; then
     locked="$(grep -Fxv -f <(printf '%s\n' "$own") <<<"$locked" || true)"
   fi
-  for later in $(git rev-list --reverse --no-merges "$locker..$head"); do
+  for later in $(git rev-list --reverse --no-merges "$locker..$head" --not "$base"); do
     if is_checks_commit "$later"; then
       released="$(unlocks "$later")"
       if [ -n "$released" ]; then
