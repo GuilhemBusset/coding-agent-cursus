@@ -58,12 +58,26 @@ class ProbeCommandCase(unittest.TestCase):
         self.assertFalse([s for s in self.engine._specs(st) if "test_examiner50_cli" in s.command])
 
     def test_a_revival_heals_a_state_saved_with_the_stale_command(self):
+        stale = command("D1", GONE, "examiner")
         st = IssueState(number=50, phase=Phase.FAILED, plan={"items": []}, worktree=str(self.wt), probes=[KEPT],
-                        fail={"cause": "ceiling", "version": "1.0.5"},
-                        commands=self.builder + [command("D1", GONE, "examiner"), self.kept])
+                        fail={"cause": "ceiling", "version": "1.0.5"}, commands=self.builder + [stale, self.kept])
+        self.engine._maybe_revive(st)
+        self.assertEqual(st.commands, self.builder + [stale, self.kept])   # no approved deletion: it stays
+        st.phase, st.fail = Phase.FAILED, {"cause": "ceiling", "version": "1.0.5"}
+        st.requests = [{"id": "R50-2", "kind": "test_change", "status": "approved", "content": {GONE: None}}]
         self.engine._maybe_revive(st)
         self.assertEqual(st.phase, Phase.BUILD)
         self.assertEqual(st.commands, self.builder + [self.kept])
+
+    def test_an_unrelated_approved_edit_keeps_a_module_probe(self):
+        probe = {"criterion": "D1", "command": "python -m checks.probe_contract", "cwd": ".", "author": "examiner"}
+        (self.wt / "checks").mkdir()
+        (self.wt / "checks/other.py").write_text("# a check\n")
+        st = IssueState(number=50, probes=["checks/probe_contract.py"], tests=["checks/other.py"],
+                        commands=self.builder + [probe])
+        self.engine._apply_request(50, st, self.wt, {"id": "R1", "kind": "test_change",
+                                                     "content": {"checks/other.py": "# edited\n"}}, {})
+        self.assertIn(probe, st.commands)
 
     def test_the_engine_version_moves_past_the_one_50_failed_on(self):
         self.assertGreater(tuple(map(int, VERSION.split("."))), (1, 0, 5))
