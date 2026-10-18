@@ -501,6 +501,24 @@ class LoopGuardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("tests/test_b.py was locked", result.stdout)
 
+    def test_a_main_commit_merged_in_does_not_count_against_a_lock(self):
+        self.commit("tests/test_a.py", "def test_a(): pass\n", "acceptance-checks")
+        git("fetch", "-q", "origin", cwd=self.repo.merger)
+        git("checkout", "-q", "main", cwd=self.repo.merger)
+        (self.repo.merger / "tests").mkdir()
+        (self.repo.merger / "tests" / "test_a.py").write_text("def test_a(): assert 'main'\n")
+        git("add", "-A", cwd=self.repo.merger)
+        git("commit", "-q", "-m", "main changes the file through its own PR", cwd=self.repo.merger)
+        git("push", "-q", "origin", "HEAD:main", cwd=self.repo.merger)
+        git("fetch", "-q", "origin", cwd=self.wt)
+        git("merge", "-q", "-X", "theirs", "--no-edit", "origin/main", cwd=self.wt)
+        self.base = git("rev-parse", "origin/main", cwd=self.wt)   # CI's base is main's tip
+        self.assertEqual(self.guard().returncode, 0, self.guard().stdout)
+        self.commit("tests/test_a.py", "def test_a(): assert True\n", "implementation")
+        result = self.guard()
+        self.assertEqual(result.returncode, 1, "a branch commit after the merge is still judged")
+        self.assertIn("tests/test_a.py was locked", result.stdout)
+
     # Loop-Locks: lock files already on the branch, which the acceptance-checks commit leaves unchanged
 
     def trailers(self, phase, **paths):

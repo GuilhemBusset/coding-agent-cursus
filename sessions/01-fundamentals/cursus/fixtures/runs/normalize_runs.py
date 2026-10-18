@@ -9,7 +9,10 @@
    (`claude -p --output-format stream-json --verbose` or `codex exec --json`), resolves each
    one to its rehearsal's `*.meta.json`, and writes `agent-demos.json` next to this script.
    The same bytes are copied into the inline `<script type="application/json" id="agent-runs">`
-   block of `cursus/labs/agent-loop.html`; the rest of that page is authored and left alone.
+   block of `cursus/labs/agent-loop.html`.
+3. The page's copy of the agent-run recordings from (1), schema agent-run-recordings/1, in its
+   inline `<script type="application/json" id="agent-run-recordings">` block: every step with
+   its text clipped for display. The rest of that page is authored and left alone.
 
 With no --raw or --out both outputs are built; with either, only the agent runs in those folders.
 --check writes nothing and exits 1 if any output differs byte for byte, is missing, or is extra
@@ -63,7 +66,16 @@ CATALOG_SCHEMA = 1
 MAX_CHARS = 1200
 CATALOG_CODEX_TOOLS = ("command_execution", "file_change", "mcp_tool_call")
 CAPTURE_METHOD = {"claude": "context", "codex": "status"}
-INLINE = re.compile(rb'(<script\b(?=[^>]*\bid=[\'"]agent-runs[\'"])[^>]*>)(.*?)(</script\s*>)', re.S | re.I)
+RECORDINGS_SCHEMA = "agent-run-recordings/1"
+RECORDING_STEP_FIELDS = ("i", "t_ms", "tool", "input", "is_error", "tokens")
+
+
+def inline_block(block_id):
+    return re.compile(rb'(<script\b(?=[^>]*\bid=[\'"]' + block_id + rb'[\'"])[^>]*>)(.*?)(</script\s*>)', re.S | re.I)
+
+
+INLINE = inline_block(b"agent-runs")
+RECORDINGS_INLINE = inline_block(b"agent-run-recordings")
 SHA_ATTR = re.compile(rb'\bdata-sha256=(["\'])[^"\']*\1')
 ESCAPED_AT = re.compile(r"(?<!\\)((?:\\\\)*\\[bfnrt])@")
 
@@ -532,25 +544,51 @@ def serialize(catalog):
     return ESCAPED_AT.sub(r"\1\\u0040", text).encode("utf-8")
 
 
-def inline_page(page, data):
-    matches = list(INLINE.finditer(page))
+def inline_page(page, data, pattern=INLINE, block_id="agent-runs"):
+    matches = list(pattern.finditer(page))
     if len(matches) != 1:
-        raise RecordingError(f"{PAGE.name}: expected one inline agent-runs script block, found {len(matches)}")
+        raise RecordingError(f"{PAGE.name}: expected one inline {block_id} script block, found {len(matches)}")
     match = matches[0]
     opening = match.group(1)
     if not SHA_ATTR.search(opening):
-        raise RecordingError(f"{PAGE.name}: the agent-runs block needs a data-sha256 attribute")
+        raise RecordingError(f"{PAGE.name}: the {block_id} block needs a data-sha256 attribute")
     digest = hashlib.sha256(data).hexdigest().encode()
     opening = SHA_ATTR.sub(lambda m: b"data-sha256=" + m.group(1) + digest + m.group(1), opening, count=1)
     return page[:match.start()] + opening + data + match.group(3) + page[match.end():]
 
 
-def catalog_outputs():
-    """The demo catalog's bytes, keyed by every file that must hold them."""
+def recording_call_text(vendor, tool_input):
+    """What the page shows for a recorded tool call: the command, the changed files, or the input as JSON."""
+    if isinstance(tool_input, dict) and isinstance(tool_input.get("command"), str):
+        return tool_input["command"]
+    if vendor == "codex" and isinstance(tool_input, dict) and isinstance(tool_input.get("changes"), list):
+        return "\n".join(f"{c.get('kind', '?')} {c.get('path', '?')}" for c in tool_input["changes"] if isinstance(c, dict))
+    return json.dumps(tool_input, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def build_recordings(outputs):
+    """The page's copy of every normalized agent run: meta and totals as they are, step texts clipped."""
+    runs = []
+    for filename, content in sorted(outputs.items()):
+        run = json.loads(content)
+        steps = []
+        for source in run["steps"]:
+            text = source["text"]
+            if source["type"] == "tool_call" and text is None:
+                text = recording_call_text(run["meta"]["vendor"], source["input"])
+            steps.append(step(source["type"], text, **{field: source[field] for field in RECORDING_STEP_FIELDS}))
+        runs.append({"meta": run["meta"], "totals": run["totals"], "steps": steps})
+    return {"schema": RECORDINGS_SCHEMA, "runs": runs}
+
+
+def catalog_outputs(outputs):
+    """The demo catalog's bytes, keyed by every file that must hold them, plus the page's recordings block."""
     data = serialize(build_catalog(RECORDED))
     if not PAGE.is_file():
         raise RecordingError(f"missing replay page {PAGE}")
-    return data, {CATALOG: data, PAGE: inline_page(PAGE.read_bytes(), data)}
+    page = inline_page(PAGE.read_bytes(), data)
+    page = inline_page(page, serialize(build_recordings(outputs)), RECORDINGS_INLINE, "agent-run-recordings")
+    return data, {CATALOG: data, PAGE: page}
 
 
 def main(argv=None):
@@ -571,7 +609,7 @@ def main(argv=None):
     data, catalog = b"", {}
     if with_catalog:
         try:
-            data, catalog = catalog_outputs()
+            data, catalog = catalog_outputs(outputs)
         except (RecordingError, KeyError, ValueError) as error:
             print(f"normalize_runs: {type(error).__name__}: {error}", file=sys.stderr)
             return 2
