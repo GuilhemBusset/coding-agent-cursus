@@ -320,13 +320,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <h2 id="pocketos-title">PocketOS, April 2026: one API call, a production database gone.</h2>
         <div class="cols">
           <ul class="tight">
-            <li>PocketOS sells software to car-rental businesses. Its founder says a coding agent on a routine staging task “decided — entirely on its own initiative — to ‘fix’ the problem by deleting a Railway volume.”</li>
+            <li>PocketOS sells software to car-rental businesses. Its founder, as quoted by Tom’s Hardware, says a coding agent on a routine staging task “decided — entirely on its own initiative — to ‘fix’ the problem by deleting a Railway volume.”</li>
             <li>Railway: the agent “found a Railway API token stored locally on the user’s machine and used it to call <code>volumeDelete</code> on a production volume.” The token “was provisioned with account scoped access, the maximum access possible.”</li>
-            <li>The founder: the call deleted “our production database and all volume-level backups”. “It took 9 seconds.” Railway says it has since recovered the database.</li>
+            <li>The founder, as quoted: the call deleted “our production database and all volume-level backups”. “It took 9 seconds.” Railway says it has since recovered the database.</li>
           </ul>
           <div class="callout control"><p><strong>Control:</strong> scope every credential to the task and keep it out of the agent’s reach. Railway’s own conclusion: “Tokens should have scopes that match the task.”</p></div>
         </div>
-        <p class="cite">Sources: Mark Tyson, <cite>Claude-powered AI coding agent deletes entire company database in 9 seconds</cite>, <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/claude-powered-ai-coding-agent-deletes-entire-company-database-in-9-seconds-backups-zapped-after-cursor-tool-powered-by-anthropics-claude-goes-rogue">Tom’s Hardware</a>, 2026-04-27, quoting PocketOS founder Jer Crane. Railway, <cite>Your AI wants to nuke your database. Guardrails fix that.</cite>, <a href="https://blog.railway.com/p/your-ai-wants-to-nuke-your-database">blog.railway.com</a>, 2026-04-29.</p>
+        <p class="cite">Sources: Mark Tyson, <cite>Claude-powered AI coding agent deletes entire company database in 9 seconds</cite>, <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/claude-powered-ai-coding-agent-deletes-entire-company-database-in-9-seconds-backups-zapped-after-cursor-tool-powered-by-anthropics-claude-goes-rogue">Tom’s Hardware</a>, 2026-04-27, quoting PocketOS founder Jer Crane, whose own <a href="https://x.com/lifeofjer/status/2048103471019434248">article on X</a> (2026-04-25) needs a login to read. Railway, which describes the incident without naming the customer, <cite>Your AI wants to nuke your database. Guardrails fix that.</cite>, <a href="https://blog.railway.com/p/your-ai-wants-to-nuke-your-database">blog.railway.com</a>, 2026-04-29.</p>
       </section>
 
       <section id="trifecta" data-slide tabindex="-1" aria-labelledby="trifecta-title">

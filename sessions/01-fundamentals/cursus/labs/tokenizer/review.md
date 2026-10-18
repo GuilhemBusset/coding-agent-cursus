@@ -7,7 +7,7 @@ the shared runtime block identified by `cursus-script-sha256`.
 
 | File | Bytes | sha256 |
 | --- | --- | --- |
-| `../tokenizer.html` | 42612 | `e9ef0f4e859dd6ac9f089c8710ad262b04b45d4c14837bfbe647d8e5a301a5d1` |
+| `../tokenizer.html` | 42636 | `0aa2c50112a89d7e280b25a20a90335e3204802df9140ab4977f5dc6a14ea2c2` |
 
 Any edit to the page invalidates this review: re-run the check, look at the screenshots again,
 then update the hash, the byte count and the quotes below.
@@ -15,7 +15,9 @@ then update the hash, the byte count and the quotes below.
 ## Check
 
 `node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/tokenizer.html --output artifacts/html-pages/tokenizer`
-from the repository root, 2026-10-13, on the hash above: PASS, 0 failed checks. The locked suite
+from the repository root, 2026-10-13: PASS, 0 failed checks. Re-run 2026-10-18 on the hash above,
+after the fact-check pass (#50) changed only the note's as-of date and added that the old tokenizer
+repository is archived: PASS, 0 failed checks; the note was looked at again on screen. The locked suite
 `tools/html-pages/tests/tokenizer.test.mjs` writes `tokenizer-no-js.png`, `tokenizer-print.png`,
 `tokenizer-reduced-motion.png` and `tokenizer-predict-revealed.png` into the same directory.
 Leftover screenshots from the earlier live-tokenizer attempts were deleted from that directory
@@ -60,9 +62,9 @@ not in the input. It ends with the move the session pivots to: have the model wr
 
 Note (`[data-tok-note]`), verbatim:
 
-> Every model family has its own tokenizer Each model family uses its own tokenizer, sometimes inherited from an earlier model and sometimes replaced between versions, so the same text splits into different tokens and IDs in GPT-2, GPT-4o, Llama or Claude. The tokenizer used by current Claude models is not public (as of 2026-10-13). Anthropic’s token counting endpoint returns a count of tokens, not the pieces or their IDs, and its documentation notes that Claude Opus 4.7 and later models use a newer tokenizer. Anthropic’s older published tokenizer, anthropic-tokenizer-typescript, says it is no longer accurate from the Claude 3 models onward.
+> Every model family has its own tokenizer Each model family uses its own tokenizer, sometimes inherited from an earlier model and sometimes replaced between versions, so the same text splits into different tokens and IDs in GPT-2, GPT-4o, Llama or Claude. The tokenizer used by current Claude models is not public (as of 2026-10-18). Anthropic’s token counting endpoint returns a count of tokens, not the pieces or their IDs, and its documentation notes that Claude Opus 4.7 and later models use a newer tokenizer. Anthropic’s older published tokenizer, anthropic-tokenizer-typescript, archived on 2026-09-01, says it is no longer accurate from the Claude 3 models onward.
 
-Judgement: each claim was checked against a live source on 2026-10-13.
+Judgement: each claim was checked against a live source on 2026-10-13 and again on 2026-10-18.
 
 - <https://platform.claude.com/docs/en/build-with-claude/token-counting> (the old
   docs.anthropic.com URL redirects here) describes an endpoint whose response "contains the total

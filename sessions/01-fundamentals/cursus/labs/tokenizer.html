@@ -335,7 +335,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
       <aside class="callout tok-note" data-tok-note aria-labelledby="tok-note-title">
         <h2 id="tok-note-title" class="label">Every model family has its own tokenizer</h2>
         <p>Each model family uses its own tokenizer, sometimes inherited from an earlier model and sometimes replaced between versions, so the same text splits into different tokens and IDs in GPT-2, GPT-4o, Llama or Claude.</p>
-        <p>The tokenizer used by current Claude models is not public (as of 2026-10-13). Anthropic’s <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">token counting endpoint</a> returns a count of tokens, not the pieces or their IDs, and its documentation notes that Claude Opus 4.7 and later models use a newer tokenizer. Anthropic’s older published tokenizer, <a href="https://github.com/anthropics/anthropic-tokenizer-typescript">anthropic-tokenizer-typescript</a>, says it is no longer accurate from the Claude 3 models onward.</p>
+        <p>The tokenizer used by current Claude models is not public (as of 2026-10-18). Anthropic’s <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">token counting endpoint</a> returns a count of tokens, not the pieces or their IDs, and its documentation notes that Claude Opus 4.7 and later models use a newer tokenizer. Anthropic’s older published tokenizer, <a href="https://github.com/anthropics/anthropic-tokenizer-typescript">anthropic-tokenizer-typescript</a>, archived on 2026-09-01, says it is no longer accurate from the Claude 3 models onward.</p>
       </aside>
     </main>
   </div>
