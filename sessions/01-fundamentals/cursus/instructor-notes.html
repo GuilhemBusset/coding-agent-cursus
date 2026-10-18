@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en" data-page-kind="page" data-design-system="cursus">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 1 · Instructor notes</title>
+  <!-- shared-style:begin -->
+  <style>/* Shared editorial primitives. Keep content readable before enhancement. */
+:root {
+  color-scheme: dark;
+  --paper: #0A1013;
+  --sheet: #111B1F;
+  --ink: #E3ECE7;
+  --secondary: #A3B3AD;
+  --muted: #8FA39B;
+  --rule: #2B3B3F;
+  --faint: #18252A;
+  --accent: #3EC3A9;
+  --accent-soft: #153B35;
+  --amber: #E4A94A;
+  --amber-soft: #3D2F17;
+  --red: #F07A70;
+  --red-soft: #3F1F1C;
+  --on: #0A1013;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: clamp(1rem, 3vw, 2rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-block: 1rem; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.65 var(--sans); }
+[hidden] { display: none !important; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: .15em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+::selection { background: var(--accent); color: var(--paper); }
+.skip-link { position: absolute; top: .5rem; left: 1rem; padding: .5rem 1rem; background: var(--sheet); z-index: 10; transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+.shell { width: min(100% - 2rem, 72rem); margin-inline: auto; padding-block: var(--space); }
+.masthead { border-bottom: 1px solid var(--rule); padding-block: var(--space); margin-bottom: var(--space); }
+.eyebrow, .label { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+h1, h2, h3 { line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 { font-size: clamp(2.25rem, 5vw, 4.5rem); max-width: 20ch; margin: .5rem 0 1rem; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.5rem); margin-block: 0 1rem; }
+h3 { font-size: 1.25rem; margin-block: 0 .75rem; }
+p, ul, ol, pre, table, details { margin-block: 0 1.25rem; }
+li + li { margin-top: .5rem; }
+.lede { font-size: clamp(1.125rem, 2vw, 1.4rem); color: var(--secondary); max-width: 60ch; }
+.prose { max-width: 72ch; }
+.prose > section { margin-block: 2.5rem; }
+.muted, .source { color: var(--muted); }
+.source { font-size: .875rem; margin-top: 1.5rem; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+.warning { color: var(--red); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--space); }
+.grid > * { min-width: 0; }
+.process-figure { margin: 1.5rem 0; }
+.process-figure figcaption { color: var(--secondary); margin-bottom: 1rem; }
+.process { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+.process > li { position: relative; flex: 1 1 13rem; display: flex; flex-direction: column; justify-content: center; gap: .5rem; min-width: 0; margin: 0; padding: 1.25rem .5rem 1.25rem 2rem; border-block: 1px solid var(--rule); }
+.process > li + li::before { content: "→"; position: absolute; left: .125rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem var(--mono); }
+.process strong, .process-value { font-size: clamp(1.25rem, 2.2vw, 1.75rem); line-height: 1.3; overflow-wrap: anywhere; }
+.process .metric { font-size: 3rem; margin: 0; }
+.process > li > span:last-child:not(.label) { color: var(--secondary); }
+@media (max-width: 599px) {
+  .process { flex-direction: column; gap: 2rem; }
+  .process > li { flex-basis: auto; padding-inline: .5rem; }
+  .process > li + li::before { content: "↓"; left: 50%; top: -1.75rem; transform: translateX(-50%); }
+}
+.panel { background: var(--sheet); border-top: 2px solid var(--rule); padding: var(--space); }
+.callout { border-left: 3px solid var(--accent); padding: .75rem 1.25rem; background: var(--sheet); margin-block: 1.5rem; }
+.callout > :last-child, .panel > :last-child { margin-bottom: 0; }
+code, pre, output, .metric { font-family: var(--mono); }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { padding: 1.25rem; background: var(--sheet); border: 1px solid var(--rule); overflow-x: auto; line-height: 1.6; }
+pre code { overflow-wrap: normal; }
+.table-wrap { max-width: 100%; overflow-x: auto; margin-bottom: 1.25rem; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+caption { text-align: left; color: var(--secondary); padding-bottom: .75rem; }
+th, td { padding: .75rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 650; }
+td code { overflow-wrap: normal; }
+details { border-block: 1px solid var(--rule); padding: 1rem 0; }
+summary { cursor: pointer; font-weight: 650; min-height: 44px; padding-block: .5rem; }
+details[open] summary { margin-bottom: 1rem; }
+button, input, select, textarea { font: inherit; }
+select, textarea, input:not([type="range"]):not([type="checkbox"]):not([type="radio"]) { max-width: 100%; min-height: 44px; padding: .5rem .75rem; color: var(--ink); background: var(--sheet); border: 1px solid var(--muted); border-radius: .2rem; }
+textarea { width: 100%; min-height: 7rem; resize: vertical; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+button { min-height: 44px; min-width: 44px; padding: .5rem 1rem; border: 1px solid var(--muted); border-radius: .2rem; color: var(--ink); background: var(--sheet); cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { color: var(--muted); cursor: default; border-color: var(--rule); }
+input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--accent); }
+label { display: block; font-weight: 650; margin-bottom: .5rem; }
+.metric { font-size: clamp(1.75rem, 4vw, 3rem); font-variant-numeric: tabular-nums; line-height: 1.2; margin-block: .5rem; }
+dl { margin: 0; }
+dd { margin-inline: 0; }
+meter, .meter { width: 100%; height: 1rem; }
+meter::-webkit-meter-bar { background: var(--faint); border: 1px solid var(--rule); border-radius: 0; }
+meter::-webkit-meter-optimum-value { background: var(--accent); }
+meter::-webkit-meter-suboptimum-value { background: var(--amber); }
+meter::-webkit-meter-even-less-good-value { background: var(--red); }
+meter::-moz-meter-bar { background: var(--accent); }
+meter:-moz-meter-sub-optimum::-moz-meter-bar { background: var(--amber); }
+meter:-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--red); }
+svg { display: block; max-width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+svg line { stroke: var(--rule); }
+.f-ink { fill: var(--ink); } .f-secondary { fill: var(--secondary); } .f-muted { fill: var(--muted); }
+.f-paper { fill: var(--paper); } .f-sheet { fill: var(--sheet); } .f-rule { fill: var(--rule); } .f-faint { fill: var(--faint); }
+.f-accent { fill: var(--accent); } .f-accent-soft { fill: var(--accent-soft); }
+.f-amber { fill: var(--amber); } .f-amber-soft { fill: var(--amber-soft); }
+.f-red { fill: var(--red); } .f-red-soft { fill: var(--red-soft); } .f-on { fill: var(--on); } .f-none { fill: none; }
+.s-ink { stroke: var(--ink); } .s-secondary { stroke: var(--secondary); } .s-muted { stroke: var(--muted); }
+.s-rule { stroke: var(--rule); } .s-accent { stroke: var(--accent); } .s-amber { stroke: var(--amber); }
+.s-red { stroke: var(--red); } .s-sheet { stroke: var(--sheet); } .s-none { stroke: none; }
+footer { border-top: 1px solid var(--rule); margin-top: 2rem; padding-top: 1rem; color: var(--muted); font-size: .875rem; }
+[data-slide] { padding: var(--space); background: var(--sheet); border-top: 2px solid var(--rule); margin-block: 0 1.5rem; scroll-margin-top: 1rem; }
+[data-slide] .panel, [data-slide] pre { background: var(--paper); }
+[data-slide] > :last-child { margin-bottom: 0; }
+[data-deck-nav] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding-block: .5rem; }
+[data-slide-status] { color: var(--secondary); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+@media screen and (min-width: 800px) and (min-height: 600px) {
+  [data-deck-paged] .shell { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .75rem; padding-block: .75rem; }
+  [data-deck-paged] .masthead { margin: 0; padding: 0 0 .5rem; }
+  [data-deck-paged] .masthead .eyebrow { margin-bottom: .25rem; }
+  [data-deck-paged] .masthead h1 { max-width: none; font-size: clamp(1.5rem, 2.5vw, 2rem); margin: 0 0 .25rem; }
+  [data-deck-paged] .masthead .lede { max-width: none; font-size: 1rem; margin: 0; }
+  [data-deck-paged] [data-deck] { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .5rem; }
+  [data-deck-paged] [data-slide] { grid-area: 1 / 1; min-height: 0; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 1.25rem 1.5rem; }
+  [data-deck-paged] [data-slide] { display: flex; flex-direction: column; justify-content: safe center; }
+  /* Keep intrinsic content height so dense slides scroll from their first line. */
+  [data-deck-paged] [data-slide] > * { flex-shrink: 0; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .75rem; }
+  [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
+  [data-deck-paged] [data-deck-nav] { grid-area: 2 / 1; }
+  [data-deck-paged] footer { margin: 0; padding-top: .5rem; }
+  [data-deck-paged] .process-figure { margin-block: .5rem; }
+  [data-deck-paged] .process-figure figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] .process { margin-bottom: .5rem; }
+  [data-deck-paged] .process > li { padding-block: .5rem; }
+  [data-deck-paged] .process strong, [data-deck-paged] .process-value { font-size: clamp(1.35rem, 2.4vw, 1.95rem); }
+  [data-deck-paged] .process > li > span:last-child:not(.label) { font-size: 1.125rem; }
+  [data-deck-paged] .process .metric { font-size: 2.25rem; }
+}
+/* components:begin */
+/* Shared interaction components; contracts in GUIDE.md, Interaction components. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+[data-predict], [data-formula], [data-stepper] { margin-block: 1.5rem; }
+[data-predict-question] { margin: 0 0 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-width: 0; }
+[data-predict-question] legend { font-weight: 650; padding-inline: .25rem; }
+[data-predict-question] .choice { display: flex; align-items: center; gap: .75rem; margin: 0; }
+[data-predict-question] .choice + .choice { margin-top: .25rem; }
+[data-predict-question] .choice label { flex: 1 1 auto; min-width: 0; margin: 0; padding-block: .5rem; font-weight: 400; cursor: pointer; }
+[data-predict] input[type="radio"] { flex: none; width: 44px; height: 44px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+[data-predict] input[type="radio"]:disabled, [data-predict] input[type="radio"]:disabled + label { cursor: default; }
+[data-predict-result] { margin: 1rem 0 .5rem; color: var(--ink); font-weight: 650; }
+[data-predict-result]:empty { display: none; }
+[data-predict-answer] { margin-top: 1rem; padding: .75rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+[data-predict-answer] > :last-child { margin-bottom: 0; }
+.predict-actions, .formula-row, [data-step-controls] { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+[data-predict-status], [data-step-status] { margin: .75rem 0 0; color: var(--ink); font: .875rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+figure:has(> [data-prob-chart]) { margin-inline: 0; }
+figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-bottom: 1rem; }
+[data-prob-chart] { list-style: none; padding: 0; margin: 0 0 1rem; }
+[data-prob-row] { display: grid; grid-template-columns: clamp(4.5rem, 25%, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: .75rem; }
+[data-prob-row] + [data-prob-row] { margin-top: .5rem; }
+[data-prob-label] { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+[data-prob-row][data-highlight] [data-prob-label] { font-weight: 700; }
+[data-prob-value] { grid-column: 3; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.prob-bar { grid-column: 2; width: 100%; height: 1rem; overflow: visible; }
+[data-formula] output { display: block; margin-block: .5rem 1rem; color: var(--ink); overflow-wrap: anywhere; }
+[data-step-stage] { padding: 1rem 1.25rem; border: 1px solid var(--rule); border-radius: .2rem; min-height: 44px; }
+[data-step-stage] > [data-step] > :last-child { margin-bottom: 0; }
+[data-step-stage] > [data-step] + [data-step] { margin-top: 1.25rem; }
+[data-step-controls] { margin-top: .75rem; }
+[data-step-controls] [data-step-status] { margin: 0; }
+@media print {
+  [data-predict-answer][hidden], [data-stepper] [data-step][hidden] { display: block !important; }
+  .predict-actions, [data-predict-status], [data-step-controls], [data-formula-reset] { display: none !important; }
+}
+/* components:end */
+@media (prefers-reduced-motion: no-preference) {
+  button, a { transition: color .15s ease, border-color .15s ease; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media print {
+  :root { color-scheme: light; --paper: #fff; --sheet: #fff; --ink: #14212B; --secondary: #34443D; --muted: #46584F; --rule: #BBC8C0; --faint: #E4EAE5; --accent: #086553; --accent-soft: #D2EAE2; --amber: #80510C; --amber-soft: #F3E4C6; --red: #A32922; --red-soft: #F6DAD5; --on: #fff; }
+  body { font-size: 11pt; }
+  .shell { width: 100%; padding: 0; }
+  .skip-link, [data-deck-nav], .lab-controls { display: none !important; }
+  [data-slide][hidden], [data-slide] { display: block !important; min-height: 0 !important; break-before: page; margin: 0; }
+  [data-slide]:first-of-type { break-before: auto; }
+  h1, h2, h3, summary { break-after: avoid; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: anywhere; }
+  .table-wrap { overflow: visible; }
+  tr, .callout, .panel { break-inside: avoid; }
+  /* Modern browsers expose closed disclosure content without JavaScript. */
+  details::details-content { display: block; content-visibility: visible; height: auto; }
+  details > :not(summary) { display: block !important; }
+  a { color: inherit; }
+}
+</style>
+  <!-- shared-style:end -->
+  <style>/* Page-specific: instructor notes. Uses the shared variables only. */
+.shell { width: min(100% - 2rem, 80rem); }
+.notes > section { margin-block: 3rem; }
+.notes > section > p { max-width: 80ch; }
+.notes h3 { margin-top: 2rem; }
+.notes table { font-size: .95rem; line-height: 1.55; }
+.notes td:first-child { min-width: 14rem; }
+.notes td:last-child { min-width: 9rem; }
+.peer-table { min-width: 60rem; }
+.peer-table td:first-child { min-width: 9rem; }
+.peer-table td:last-child { min-width: 20rem; }
+.tag { display: inline-block; padding: 0 .4rem; border: 1px solid var(--amber); color: var(--amber); font: 600 .7rem/1.6 var(--mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.qa { max-width: 80ch; }
+.qa > div { border-top: 1px solid var(--rule); padding-block: .9rem; }
+.qa dt { font-weight: 650; margin-bottom: .35rem; }
+.qa dd { color: var(--secondary); }
+.notes table:not(.peer-table) { min-width: 40rem; }
+@media print { .notes table, .peer-table { min-width: 0; } }
+</style>
+  <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
+  <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">Session 1 · Instructor · Notes</p>
+      <h1>What students get wrong, what they ask, and the answers.</h1>
+      <p class="lede">Grouped by act: the misconceptions to correct, the questions to expect, and every peer-instruction question in the decks and labs with its answer and why the other options are wrong.</p>
+    </header>
+    <main id="content" class="notes" tabindex="-1">
+      <section aria-labelledby="source">
+        <h2 id="source">Where the list comes from</h2>
+        <p>The starting point is the 2025 primer’s list: the “Common Misconceptions To Correct” and “Anticipated Questions” sections of <a href="https://github.com/GuilhemBusset/agentic-or-workshop/blob/main/workshop/materials/part-00-fundamental/00-llm-architecture/instructor-llm-architecture-primer.md">Instructor Guide: LLM Architecture Primer</a>, in the 2025 agentic-or-workshop repository (file last changed 2026-03-07, accessed 2026-10-18). All six of its items appear below, marked <span class="tag">2025 primer</span>, each placed in the act that teaches it and reworded for this session. The other items come from this session’s decks, labs and demo runbooks, each linked where it is taught.</p>
+        <p>Use the run of show for timing and this page for content: <a href="run-of-show.html">run of show</a> · <a href="../index.html">session hub</a>.</p>
+      </section>
+
+      <section aria-labelledby="act-1">
+        <h2 id="act-1">Act I · The sampler</h2>
+        <h3 id="act-1-misconceptions">Misconceptions to correct</h3>
+        <div class="table-wrap" role="region" aria-label="Act I misconceptions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">What students believe</th><th scope="col">What to say</th><th scope="col">Where</th></tr></thead>
+            <tbody>
+              <tr><td>“LLMs output whole sentences at once.” <span class="tag">2025 primer</span></td><td>One token per loop step: sample, append, run the pass again. The factorization over tokens is exact, so nothing is lost by writing one token at a time.</td><td><a href="01-sampler.html#factorization">#factorization</a>, <a href="labs/tiny-lm.html">tiny-LM lab</a></td></tr>
+              <tr><td>“Sampling is random guessing.” <span class="tag">2025 primer</span></td><td>The draw is constrained by the model’s probabilities. Temperature and top-p reshape that distribution; they do not replace it.</td><td><a href="01-sampler.html#distribution">#distribution</a>, <a href="labs/next-token.html">next-token lab</a></td></tr>
+              <tr><td>“The model reads letters, so it should count them.”</td><td>It receives integer IDs for sub-word chunks. Spelling facts come only from training text about those IDs, so counting is unreliable rather than impossible. Hand the counting to code.</td><td><a href="01-sampler.html#tokens">#tokens</a>, <a href="labs/tokenizer.html">tokenizer lab</a>, <a href="demos/model/strawberry.md">strawberry demo</a></td></tr>
+              <tr><td>“Two different answers to the same prompt mean a bug.”</td><td>It is sampling. That is the root of the non-reproducibility Sessions 3 and 4 deal with.</td><td><a href="01-sampler.html#reproducibility">#reproducibility</a>, <a href="demos/model/sampling.md">sampling demo</a></td></tr>
+              <tr><td>“A fluent answer is a correct one”, or “the next release will fix hallucination.”</td><td>No training step installs a truth oracle, and there is no reserved mass for “I don’t know”. A flipped objective sense reads exactly as fluently as a correct one.</td><td><a href="01-sampler.html#hallucination">#hallucination</a>, <a href="01-sampler.html#or-stake">#or-stake</a></td></tr>
+              <tr><td>“A hard question gets more thought.”</td><td>One forward pass uses the same layers once per token, whatever the question. Thinking longer needs more tokens: that is Act II.</td><td><a href="01-sampler.html#system-1">#system-1</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="act-1-questions">Expected questions</h3>
+        <dl class="qa">
+          <div><dt>Why does the attention lab show one lookup? Real models have many. <span class="tag">2025 primer</span></dt><dd>Yes: multi-head attention runs several lookups in parallel, each learning a different pattern, and the slide says so in one sentence. The lab shows one so the weights and the output can be read.</dd></div>
+          <div><dt>Why only one layer? <span class="tag">2025 primer</span></dt><dd>Real transformers stack many identical attention and feed-forward blocks; the 2025 primer gives about 32 for a 7B model and 80 or more for larger ones. One pass through one block is enough to show the flow.</dd></div>
+          <div><dt>Where does mixture-of-experts fit? <span class="tag">2025 primer</span></dt><dd>The 2025 misconception was “MoE changes the attention math”. It does not: MoE routes each token through some of several feed-forward experts, and the attention lookup is unchanged. This session does not teach MoE; answer in one sentence and move on.</dd></div>
+          <div><dt>Is temperature 0 deterministic?</dt><dd>In the tiny-LM lab, Argmax mode gives the same text every time. Neither agent CLI exposes a temperature setting (as of 2026-10-11, see the sampling runbook), so treat repeatability as something you measure, not something you assume.</dd></div>
+          <div><dt>Why does the strawberry demo use an invented word?</dt><dd>Current models have seen the strawberry question many times, so the real word would test recall instead of counting. The 300-letter word has 146 r’s.</dd></div>
+          <div><dt>Do I need both Claude Code and Codex?</dt><dd>No. You need one. Every instruction in this session works in either (ADR 0002).</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="act-2">
+        <h2 id="act-2">Act II · Thinking</h2>
+        <h3 id="act-2-misconceptions">Misconceptions to correct</h3>
+        <div class="table-wrap" role="region" aria-label="Act II misconceptions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">What students believe</th><th scope="col">What to say</th><th scope="col">Where</th></tr></thead>
+            <tbody>
+              <tr><td>“Reasoning models have a separate System 2 module.”</td><td>It is the same network, run for more passes. System 1 and System 2 are a metaphor, and the deck labels it as one.</td><td><a href="02-thinking.html#system-1-2">#system-1-2</a></td></tr>
+              <tr><td>“More samples always help, and a majority vote finds the truth.”</td><td>A vote keeps the most common answer, even a common wrong one. Search is only as good as its verifier.</td><td><a href="labs/test-time-compute.html#best-of-n">best-of-N panel</a></td></tr>
+              <tr><td>“Maximum effort is the safe setting.”</td><td>Accuracy can fall as the trace grows (inverse scaling), and easy problems get overthought. In the recorded effort demo both efforts were right; high effort only cost more tokens, time and money.</td><td><a href="02-thinking.html#overthinking">#overthinking</a>, <a href="demos/effort/README.md">effort demo</a></td></tr>
+              <tr><td>“The chain of thought shows how the model reached its answer.”</td><td>Treat it as a lead, not as evidence. Models use hints they do not mention, especially when the hint arrives through tool output.</td><td><a href="02-thinking.html#cot-faithfulness">#cot-faithfulness</a>, <a href="02-thinking.html#addition-36-59">#addition-36-59</a>, <a href="02-thinking.html#tool-cues">#tool-cues</a></td></tr>
+              <tr><td>“RL has settled it: it makes models smarter.”</td><td>Whether RL sharpens what the base model could already do or expands it is contested. Say so, and point to the illustrative panel.</td><td><a href="02-thinking.html#sharpen-or-expand">#sharpen-or-expand</a></td></tr>
+              <tr><td>“The agent knows my repository.”</td><td>“World model” means three things. The one that matters on Monday, the agent’s picture of your repo, goes stale after every edit unless tools refresh it.</td><td><a href="02-thinking.html#world-models">#world-models</a>, <a href="02-thinking.html#repo-model">#repo-model</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="act-2-questions">Expected questions</h3>
+        <dl class="qa">
+          <div><dt>What does RL with verifiable rewards have to do with OR?</dt><dd>The reward is a checker: a test that passes or an answer that matches. Your solve contract is the same idea, used to judge an agent instead of to train it.</dd></div>
+          <div><dt>Which effort setting should I use?</dt><dd>The dial is an allowance, not a guarantee. Turn it up when the problem is hard and checkable, not by default, and measure it on your own task.</dd></div>
+          <div><dt>If the trace is not faithful, why read it at all?</dt><dd>It tells you where to look: which file, which assumption. Then you check that place yourself.</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="act-3">
+        <h2 id="act-3">Act III · Agent = model + harness</h2>
+        <h3 id="act-3-misconceptions">Misconceptions to correct</h3>
+        <div class="table-wrap" role="region" aria-label="Act III misconceptions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">What students believe</th><th scope="col">What to say</th><th scope="col">Where</th></tr></thead>
+            <tbody>
+              <tr><td>“The model remembers our conversation.”</td><td>The model is a pure function of its context. The harness re-sends the whole transcript every turn.</td><td><a href="03-agent.html#pure-function">#pure-function</a>, <a href="03-agent.html#resend">#resend</a></td></tr>
+              <tr><td>“RAG happens after generation.” <span class="tag">2025 primer</span></td><td>The 2025 primer put retrieval before tokenization, as grounding context, and noted that real systems retrieve at different times. In an agent, retrieval is usually a tool call in the middle of the loop. Either way, retrieved text helps only once it is in the window for this call.</td><td><a href="03-agent.html#agent-loop">#agent-loop</a>, <a href="labs/context.html">context lab</a></td></tr>
+              <tr><td>“A bigger window fixes forgetting.”</td><td>The window is a budget shared by everything the harness loads, and quality degrades as it fills with noise. Compaction is lossy. Put a rule that must survive into AGENTS.md or CLAUDE.md, which the harness reloads.</td><td><a href="03-agent.html#context-window">#context-window</a></td></tr>
+              <tr><td>“Prompt caching makes long sessions free.”</td><td>Caching bills the repeated prefix at a lower rate, but the tokens are still sent and still fill the window.</td><td><a href="labs/context.html#cost-title">context lab, cost</a>, <a href="03-agent.html#kv-cache">#kv-cache</a></td></tr>
+              <tr><td>“The agent loop is the token loop.”</td><td>The token loop of Act II writes one reply. The agent loop acts on real tools, observes real output and gets corrected by reality every turn.</td><td><a href="03-agent.html#agent-loop">#agent-loop</a></td></tr>
+              <tr><td>“The agent stops when the task is done.”</td><td>The model proposes to stop; the harness decides. Stop conditions fail two ways: the runaway loop, and victory declared while the tests are red.</td><td><a href="03-agent.html#stop-conditions">#stop-conditions</a></td></tr>
+              <tr><td>“A vendor’s benchmark table is what I will get.”</td><td>Vendor tables mix settings and pick each model’s best run. A standardized run fixes the harness, effort and trials. Neither says how a model does on your task.</td><td><a href="03-agent.html#benchmarks">#benchmarks</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="act-3-questions">Expected questions</h3>
+        <dl class="qa">
+          <div><dt>Should I send everything to subagents?</dt><dd>A subagent gets its own window, so exploration and long logs stay out of yours. But it spends its own tokens: it is a context tool, not a free lunch.</dd></div>
+          <div><dt>Is METR’s time horizon how long an agent can run?</dt><dd>No. It measures task difficulty in skilled-human time, at 50% reliability, on self-contained tasks that are cleaner than real work.</dd></div>
+          <div><dt>Why did the context bomb not make the agent forget?</dt><dd>With tool search on, these CLI versions no longer flood the window with the bomb’s tool descriptions, and both agents kept the opening rule in the recordings. The runbook says to report that honestly. In Claude Code the bomb still added about 1.7k tokens to every call (its instructions and tool names), and more than 23k with tool search off; in the Codex recordings the input did not change.</dd></div>
+          <div><dt>AGENTS.md or CLAUDE.md?</dt><dd>Write AGENTS.md, which both agents read, and make CLAUDE.md import it. This repository does exactly that.</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="act-4">
+        <h2 id="act-4">Act IV · Drive it yourself</h2>
+        <h3 id="act-4-misconceptions">Misconceptions to correct</h3>
+        <div class="table-wrap" role="region" aria-label="Act IV misconceptions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">What students believe</th><th scope="col">What to say</th><th scope="col">Where</th></tr></thead>
+            <tbody>
+              <tr><td>“The tests are green, so L2 is done.”</td><td>Done means green, <code>git diff --stat -- tests/</code> empty, and <code>git status --short</code> listing only <code>M p00_model.py</code>. Staged edits and new files show up only in <code>git status</code>.</td><td><a href="../exercises/lab-ladder.html">lab ladder, L2</a></td></tr>
+              <tr><td>“The done commands rule out cheating.”</td><td>They cannot catch a model that returns the known optimum as a constant: the contract solves only the bundled instance. Read <code>git diff -- p00_model.py</code>.</td><td><a href="../exercises/lab-ladder.html">lab ladder, L2 hints</a></td></tr>
+              <tr><td>“The solver said Optimal, so the answer is right.”</td><td>The status is a claim. The solve contract checks it against a whitelist and recomputes feasibility and the objective in plain code; a time-limit stop is slow, never Optimal.</td><td><a href="../exercises/p00-lab/PROBLEM.md">P00</a>, <a href="../exercises/l3-word-problem/README.md">L3 checker</a></td></tr>
+              <tr><td>“Plan mode wastes time.”</td><td>It is the cheapest check there is: you review the plan before any file changes. In L3 the integrality and wraparound mistakes are cheaper to catch in the plan.</td><td><a href="../exercises/lab-ladder.html">lab ladder, L3</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="act-4-questions">Expected questions</h3>
+        <dl class="qa">
+          <div><dt>Can I turn in L3 from my partner’s laptop?</dt><dd>No. The driver copies <code>solution.json</code> and <code>work/</code> into their own checkout, reruns <code>uv run python check.py</code> there, and turns in from their own laptop with <code>/turn-in 01</code> or <code>$turn-in 01</code>.</dd></div>
+          <div><dt>Why work in an export instead of the course checkout?</dt><dd>The checkout holds the P00 instructor notes, which name the planted bugs. An agent that reads them is not exploring.</dd></div>
+          <div><dt>Are homework branches private?</dt><dd>No. The repository is public, so <code>homework/s01/&lt;handle&gt;</code> is public too.</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="act-5">
+        <h2 id="act-5">Act V · When agents fail</h2>
+        <h3 id="act-5-misconceptions">Misconceptions to correct</h3>
+        <div class="table-wrap" role="region" aria-label="Act V misconceptions" tabindex="0">
+          <table>
+            <thead><tr><th scope="col">What students believe</th><th scope="col">What to say</th><th scope="col">Where</th></tr></thead>
+            <tbody>
+              <tr><td>“If the agent says all tests pass, the work is right.”</td><td>Agents optimize what you check. Check that the verifier was not touched, then check the solution itself.</td><td><a href="05-failure.html#anchor">#anchor</a>, <a href="05-failure.html#gap">#gap</a></td></tr>
+              <tr><td>“More agents means more correct.”</td><td>In the 2025 workshop, four cooperating agents dropped the CVaR term and still reported the same objective.</td><td><a href="05-failure.html#workshop">#workshop</a></td></tr>
+              <tr><td>“A careful prompt stops prompt injection.”</td><td>Not reliably. Remove one leg of the trifecta: untrusted input, private data, or a way to send data out.</td><td><a href="05-failure.html#trifecta">#trifecta</a></td></tr>
+              <tr><td>“A right answer is a verified answer.”</td><td>A correct point with a broken certificate is still unverified (Agent D in the verifier-gaming lab).</td><td><a href="labs/verifier-gaming.html">verifier-gaming lab</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 id="act-5-questions">Expected questions</h3>
+        <dl class="qa">
+          <div><dt>Is the verifier’s law a theorem?</dt><dd>No. It is a proposed rule from a blog post. The corollary for the course still holds: an agent gets good at whatever your verifier actually measures.</dd></div>
+          <div><dt>How do I keep secrets away from my agent?</dt><dd>Keep them out of the repository and out of the agent’s working directory, scope every token to the task, and scan before you push.</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="peer">
+        <h2 id="peer">Peer-instruction questions, with answers</h2>
+        <p>In the order they come up. The exit ticket in the close repeats one question per act. Without JavaScript the answers are visible at once, so take a show of hands before you scroll.</p>
+        <div class="table-wrap" role="region" aria-label="Peer-instruction questions and answers" tabindex="0">
+          <table class="peer-table">
+            <thead><tr><th scope="col">Where</th><th scope="col">Question</th><th scope="col">Answer</th><th scope="col">Why the other options are wrong</th></tr></thead>
+            <tbody>
+              <tr><td><a href="00-opening.html#metr-poll">Opening, poll</a></td><td>Developers forecast that AI would make them 24% faster. What did METR measure?</td><td><strong>Slower</strong>: 19% longer with AI allowed.</td><td>“Much faster” and “about as forecast” repeat the feeling, which stayed wrong: afterwards they still believed in a 20% speedup. “No difference” is out because the interval, +2% to +39%, excludes zero. The 2026 follow-up is weak evidence by METR’s own account.</td></tr>
+              <tr><td><a href="01-sampler.html#factorization">Act I, factorization</a></td><td>Is writing a text one token at a time a simplification that loses something?</td><td><strong>No.</strong> The factorization is exact (the chain rule).</td><td>What limits a model is how well it learns each conditional, not the one-token-at-a-time form.</td></tr>
+              <tr><td><a href="labs/tokenizer.html">Tokenizer lab</a></td><td>How many tokens is “ strawberry”, with its leading space?</td><td><strong>2</strong> in this page’s illustrative tokenizer: “ straw” and “berry”.</td><td>1 or 3 are what other real vocabularies might give; the lab says so. 11, one per character, is the misconception the lab exists to break.</td></tr>
+              <tr><td><a href="labs/tokenizer.html">Tokenizer lab</a></td><td>How many r’s in “ strawberry” can the model see?</td><td><strong>None directly</strong>: it receives two integer IDs.</td><td>Three, two and one all assume the model sees letters.</td></tr>
+              <tr><td><a href="demos/model/strawberry.md">Act I, strawberry</a></td><td>Same model, same question, five times, no tools: how many right?</td><td>Whatever the live run gives. Recorded 2026-10-11: 3 of 5 for Claude Code (claude-haiku-5-5), 1 of 5 for Codex (gpt-6-luna).</td><td>There is no fixed right number; that is the point. The pivot to code gets 146.</td></tr>
+              <tr><td><a href="demos/model/sampling.md">Act I, sampling</a></td><td>Same prompt, same model, same settings, five times: how many different names?</td><td>Recorded 2026-10-11: 5 distinct of 5 (Claude Code), 4 of 5 (Codex).</td><td>Expecting one name assumes the model retrieves an answer instead of sampling one.</td></tr>
+              <tr><td><a href="99-close.html#exit-ticket">Exit ticket, Act I</a></td><td>The same prompt, run twice at temperature 0.7, gives two different objective values. Why?</td><td><strong>Sampling.</strong></td><td>A model update between two runs a minute apart is not the cause, and would not explain the spread on every rerun. Server load changes how long you wait; the tiny-LM lab shows the same spread on a model running in your browser. Memory of the first run: there is none between calls (Act III).</td></tr>
+              <tr><td><a href="labs/test-time-compute.html#best-of-n">Best-of-N panel</a></td><td>With a 10% false-positive verifier, as N grows without bound, which curve’s limit is 100%?</td><td><strong>Coverage only.</strong></td><td>The verifier pick stays below 1 because the wrong samples it lets through grow with the right ones. Majority vote tends to the share of problems the model gets right more than half the time.</td></tr>
+              <tr><td><a href="99-close.html#exit-ticket">Exit ticket, Act II</a></td><td>Which solves more hard problems: best-of-100 with majority vote, or best-of-5 with exact tests?</td><td><strong>Best-of-5 with exact tests.</strong></td><td>A vote keeps the most common answer, even a common wrong one. “About the same” ignores that an exact test keeps any candidate that passes.</td></tr>
+              <tr><td><a href="labs/test-time-compute.html#sharpen-or-expand">Sharpen or expand panel</a></td><td>At k = 1,024, which model solves more problems in this illustrative mixture?</td><td><strong>The base model</strong>, about 96% against 73%.</td><td>The RL-tuned model leads at k = 1, not at k = 1,024. They do not tie. The numbers come from a model built to show the debate, which is contested, not from measured data.</td></tr>
+              <tr><td><a href="labs/test-time-compute.html#effort-dial">Effort-dial panel</a></td><td>On the inverse-scaling task, what does doubling thinking tokens past the peak do?</td><td><strong>Accuracy falls</strong>, and you pay double for it.</td><td>“Keeps rising” is true only before the peak. “Flat and harmless” misses that each doubling past the peak costs accuracy. The curve is illustrative; the shape follows Gema et al.</td></tr>
+              <tr><td><a href="labs/world-model.html#planner">Act II, think-pair-share</a></td><td>Recall or search, and where is your verifier?</td><td>Open. A good answer names the task, says whether the agent recalls or searches, and names a check that does not trust the agent: a test, a checker, a certificate.</td><td>A weak answer names no verifier, or names the agent’s own report.</td></tr>
+              <tr><td><a href="labs/context.html#cost-title">Context lab</a>, <a href="99-close.html#exit-ticket-2">exit ticket, Act III</a></td><td>Message 30 is as long as message 1. Why does it cost more?</td><td><strong>The harness re-sends the whole transcript</strong>, so turn 30 carries every earlier message and reply as input.</td><td>Later turns use the same model, at the same price per token. The model has no stored memory to search. Text does not tokenize into more tokens later. Earlier replies come back as input, not as output.</td></tr>
+              <tr><td><a href="99-close.html#exit-ticket-2">Exit ticket, Act IV</a></td><td>The agent says “fixed”. What makes L2 done?</td><td><strong>Green, and only <code>p00_model.py</code> changed</strong>, as <code>git status --short</code> shows.</td><td>The summary is a claim. A green suite alone can come from edited tests, and <code>git diff --stat</code> misses staged test edits.</td></tr>
+              <tr><td><a href="labs/verifier-gaming.html">Verifier-gaming lab, certificates</a></td><td>Agents A to D each report “optimal”. Which are certified?</td><td><strong>Only B</strong>: feasible primal and dual, gap 0.</td><td>A: the gap is 1, so 10 is not proven unreachable. C: x = 3 breaks x ≤ 2; an infeasible point can match any bound. D: the right point, but the dual breaks u + w ≥ 2, so its bound proves nothing.</td></tr>
+              <tr><td><a href="labs/verifier-gaming.html#catch-the-agent">Verifier-gaming lab, catch the agent</a></td><td>Three patches all pass the test. Label each one.</td><td><strong>A edits the test, B is the honest fix, C hard-codes the value.</strong></td><td>A changes the expected value to the wrong answer the code already gives. C returns 5 only for the test’s input. A second test such as <code>sum([7])</code> separates B from C.</td></tr>
+              <tr><td><a href="05-failure.html#catch-exercise">Act V, peer question</a>, <a href="99-close.html#exit-ticket-3">exit ticket, Act V</a></td><td>The agent says “all tests pass”. What do you check first?</td><td><strong>Whether the verifier was touched, then the solution itself</strong>: a certificate, a bound, a duality gap.</td><td>Asking the agent whether it is sure, or reading its summary, gets another self-report. Checking is often cheap.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <footer>Session 1 · Instructor notes. Back to <a href="../index.html">the session hub</a>.</footer>
+  </div>
+  <!-- shared-script:begin -->
+  <script>/* Classic script; each enhancement is optional and scoped to its own root. */
+(function () {
+  'use strict';
+
+  function enhanceDisclosurePrint() {
+    var snapshot = null;
+    function openForPrint() {
+      if (snapshot) return;
+      snapshot = Array.from(document.querySelectorAll('details')).map(function (details) {
+        return { element: details, open: details.open, name: details.getAttribute('name') };
+      });
+      // Named disclosure groups allow only one open member; suspend that grouping.
+      snapshot.forEach(function (item) { item.element.removeAttribute('name'); });
+      snapshot.forEach(function (item) { item.element.open = true; });
+    }
+    function restore() {
+      if (!snapshot) return;
+      snapshot.forEach(function (item) { item.element.open = false; });
+      snapshot.forEach(function (item) {
+        if (item.name !== null) item.element.setAttribute('name', item.name);
+        item.element.open = item.open;
+      });
+      snapshot = null;
+    }
+    var print = window.matchMedia('print');
+    window.addEventListener('beforeprint', openForPrint);
+    window.addEventListener('afterprint', restore);
+    print.addEventListener('change', function () {
+      if (print.matches) openForPrint();
+      else restore();
+    });
+    if (print.matches) openForPrint();
+  }
+
+  function enhanceDeck(deck) {
+    var slides = Array.from(deck.querySelectorAll('[data-slide]'));
+    var nav = deck.querySelector('[data-deck-nav]');
+    if (!slides.length || !nav) return;
+    var previous = nav.querySelector('[data-prev]');
+    var next = nav.querySelector('[data-next]');
+    var status = nav.querySelector('[data-slide-status]');
+    if (!previous || !next || !status) return;
+    var wide = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
+    var print = window.matchMedia('print');
+    var printing = false;
+    var current = 0;
+
+    function hashIndex() {
+      var id;
+      try { id = decodeURIComponent(window.location.hash.slice(1)); }
+      catch (_) { return -1; }
+      if (!id) return 0;
+      var target = document.getElementById(id);
+      return target ? slides.indexOf(target.closest('[data-slide]')) : -1;
+    }
+
+    function render() {
+      var paged = wide.matches && !print.matches && !printing;
+      var focused = document.activeElement;
+      var hidingFocus = paged && slides.some(function (slide, index) {
+        return index !== current && slide.contains(focused);
+      });
+      var hidingNavFocus = !paged && nav.contains(focused);
+      document.documentElement.toggleAttribute('data-deck-paged', paged);
+      slides.forEach(function (slide, index) {
+        var inactive = paged && index !== current;
+        slide.hidden = inactive;
+        slide.toggleAttribute('inert', inactive);
+        slide.tabIndex = paged && !inactive ? 0 : -1;
+      });
+      nav.hidden = !paged;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      status.textContent = 'Slide ' + (current + 1) + ' of ' + slides.length;
+      if (hidingFocus || hidingNavFocus) slides[current].focus({ preventScroll: true });
+      else if ((focused === previous && previous.disabled) || (focused === next && next.disabled)) {
+        var fallback = focused === previous ? next : previous;
+        (fallback.disabled ? slides[current] : fallback).focus({ preventScroll: true });
+      }
+    }
+
+    function go(index) {
+      index = Math.max(0, Math.min(slides.length - 1, index));
+      if (index === current) return;
+      current = index;
+      // pushState preserves Back/Forward without scrolling the page to the hash.
+      try { window.history.pushState(null, '', '#' + encodeURIComponent(slides[current].id)); }
+      catch (_) { window.location.hash = slides[current].id; }
+      render();
+    }
+
+    function readLocation() {
+      var index = hashIndex();
+      if (index >= 0) current = index;
+      render();
+      if (index >= 0 && window.location.hash) {
+        var target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+        if (target && target !== slides[current]) target.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    document.addEventListener('keydown', function (event) {
+      if (nav.hidden || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var target = event.target;
+      if (target instanceof Element && (target.isContentEditable || target.closest('input, textarea, select, button, a, summary, pre, [role="region"], [tabindex]:not([data-slide]):not([data-deck]), [contenteditable], [role="button"], [role="slider"], [role="radio"], [role="tab"], [role="textbox"], [role="combobox"], [role="listbox"], [role="spinbutton"], audio, video'))) return;
+      var index;
+      if (event.key === 'ArrowLeft' || event.key === 'PageUp') index = current - 1;
+      else if (event.key === 'ArrowRight' || event.key === 'PageDown' || event.key === ' ') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = slides.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    window.addEventListener('hashchange', readLocation);
+    window.addEventListener('popstate', readLocation);
+    wide.addEventListener('change', render);
+    print.addEventListener('change', render);
+    window.addEventListener('beforeprint', function () { printing = true; render(); });
+    window.addEventListener('afterprint', function () { printing = false; render(); });
+    deck.setAttribute('data-enhanced', '');
+    readLocation();
+  }
+
+  function enhanceLab(lab) {
+    var slider = lab.querySelector('[data-budget]');
+    var output = lab.querySelector('[data-budget-output]');
+    var used = lab.querySelector('[data-budget-used]');
+    var remaining = lab.querySelector('[data-budget-remaining]');
+    var meter = lab.querySelector('[data-budget-meter]');
+    var reset = lab.querySelector('[data-reset]');
+    if (!slider || !output || !used || !remaining || !meter || !reset) return;
+    var total = Number(lab.getAttribute('data-budget-total'));
+    var fixed = Number(lab.getAttribute('data-budget-fixed'));
+    if (!Number.isFinite(total) || !Number.isFinite(fixed) || total <= 0 || fixed < 0 || Number(slider.max) + fixed > total) return;
+    function update() {
+      var context = Number(slider.value);
+      var consumed = fixed + context;
+      output.textContent = String(context);
+      used.textContent = String(consumed);
+      remaining.textContent = String(total - consumed);
+      meter.value = consumed;
+      meter.textContent = consumed + ' of ' + total + ' tokens used';
+      slider.setAttribute('aria-valuetext', context + ' context tokens; ' + (total - consumed) + ' tokens remaining');
+    }
+    slider.addEventListener('input', update);
+    reset.addEventListener('click', function () { slider.value = slider.defaultValue; update(); });
+    update();
+    slider.disabled = false;
+    reset.disabled = false;
+  }
+
+  function labelText(input) {
+    return Array.from(input.labels || []).map(function (label) { return label.textContent.trim(); }).join(' ');
+  }
+
+  // Predict and reveal: choose, lock in, then reveal as a separate action, or reset.
+  function enhancePredict(root) {
+    var questions = Array.from(root.querySelectorAll('[data-predict-question]'));
+    var lock = root.querySelector('button[data-predict-lock]');
+    var reveal = root.querySelector('button[data-predict-reveal]');
+    var reset = root.querySelector('button[data-predict-reset]');
+    var status = root.querySelector('[data-predict-status]');
+    if (!questions.length || !lock || !reveal || !reset || !status) return;
+    var parts = questions.map(function (question) {
+      return {
+        radios: Array.from(question.querySelectorAll('input[type="radio"]')),
+        answer: question.querySelector('[data-predict-answer]'),
+        result: question.querySelector('[data-predict-result]'),
+      };
+    });
+    if (parts.some(function (part) {
+      return part.radios.length < 2 || !part.answer || !part.result ||
+        part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); }).length !== 1;
+    })) return;
+    var locked = false;
+    var revealed = false;
+    var noun = questions.length === 1 ? 'an answer' : 'an answer for every question';
+
+    function chosen(part) {
+      return part.radios.filter(function (radio) { return radio.checked; })[0] || null;
+    }
+    function render() {
+      var complete = parts.every(chosen);
+      parts.forEach(function (part) {
+        part.radios.forEach(function (radio) { radio.disabled = locked; });
+        part.answer.hidden = !revealed;
+        if (!revealed) part.result.textContent = '';
+        else {
+          var correct = part.radios.filter(function (radio) { return radio.hasAttribute('data-correct'); })[0];
+          part.result.textContent = chosen(part) === correct ? 'Correct.' : 'Not quite. The answer is ' + labelText(correct) + '.';
+        }
+      });
+      lock.disabled = locked || !complete;
+      reveal.disabled = !locked || revealed;
+      reset.disabled = false;
+      if (revealed) {
+        var score = parts.filter(function (part) { return chosen(part) && chosen(part).hasAttribute('data-correct'); }).length;
+        status.textContent = 'Revealed: ' + score + ' of ' + parts.length + ' correct.';
+      } else if (locked) status.textContent = 'Locked in. Reveal when everyone has locked in.';
+      else status.textContent = complete ? 'Ready to lock in.' : 'Choose ' + noun + ', then lock in.';
+    }
+
+    root.addEventListener('change', function (event) {
+      if (event.target instanceof HTMLInputElement && event.target.type === 'radio') render();
+    });
+    lock.addEventListener('click', function () {
+      if (!parts.every(chosen)) return;
+      var hadFocus = document.activeElement === lock;
+      locked = true;
+      render();
+      if (hadFocus) reveal.focus();
+    });
+    reveal.addEventListener('click', function () {
+      if (!locked) return;
+      var hadFocus = document.activeElement === reveal;
+      revealed = true;
+      render();
+      if (hadFocus) reset.focus();
+    });
+    reset.addEventListener('click', function () {
+      locked = false;
+      revealed = false;
+      parts.forEach(function (part) { part.radios.forEach(function (radio) { radio.checked = false; }); });
+      render();
+      parts[0].radios[0].focus();
+    });
+    render();
+  }
+
+  // Probability bars: authored labels and values, an SVG bar per row once enhanced.
+  function enhanceProbChart(chart) {
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function renderRow(row) {
+      var label = row.querySelector('[data-prob-label]');
+      var value = row.querySelector('[data-prob-value]');
+      if (!label || !value) return;
+      var raw = row.getAttribute('data-value');
+      var number = raw === null || raw.trim() === '' ? NaN : Number(raw);
+      var valid = Number.isFinite(number) && number >= 0 && number <= 1;
+      var highlighted = row.hasAttribute('data-highlight');
+      var svg = row.querySelector('svg.prob-bar');
+      var flag = label.querySelector('[data-prob-flag]');
+      if (highlighted && !flag) {
+        flag = document.createElement('span');
+        flag.className = 'visually-hidden';
+        flag.setAttribute('data-prob-flag', '');
+        flag.textContent = ' (highlighted)';
+        label.appendChild(flag);
+      } else if (!highlighted && flag) flag.remove();
+      if (!valid) {
+        if (svg) svg.remove();
+        value.textContent = 'n/a';
+        return;
+      }
+      if (!svg) {
+        svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'prob-bar');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        ['track', 'bar'].forEach(function () {
+          var rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('height', '100%');
+          svg.appendChild(rect);
+        });
+        row.insertBefore(svg, value);
+      }
+      var rects = svg.querySelectorAll('rect');
+      rects[0].setAttribute('class', 'f-faint');
+      rects[0].setAttribute('width', '100%');
+      rects[1].setAttribute('class', highlighted ? 'f-accent' : 'f-muted');
+      rects[1].setAttribute('width', number * 100 + '%');
+      value.textContent = (number * 100).toFixed(1) + '%';
+    }
+    chart.querySelectorAll('[data-prob-row]').forEach(renderRow);
+    new MutationObserver(function (records) {
+      var rows = [];
+      records.forEach(function (record) {
+        if (record.target.matches('[data-prob-row]') && rows.indexOf(record.target) < 0) rows.push(record.target);
+      });
+      rows.forEach(renderRow);
+    }).observe(chart, { subtree: true, attributes: true, attributeFilter: ['data-value', 'data-highlight'] });
+  }
+
+  // Labelled slider whose readout comes from window.CursusFormulas[name](value, root).
+  function enhanceFormula(root) {
+    var input = root.querySelector('input[type="range"][data-formula-input]');
+    var output = root.querySelector('output[data-formula-output]');
+    var reset = root.querySelector('button[data-formula-reset]');
+    var formulas = window.CursusFormulas;
+    var formula = formulas && Object.prototype.hasOwnProperty.call(formulas, root.getAttribute('data-formula'))
+      ? formulas[root.getAttribute('data-formula')] : null;
+    if (!input || !output || !reset || typeof formula !== 'function') return;
+    function update() {
+      var text = String(formula(Number(input.value), root)).trim();
+      output.textContent = text;
+      input.setAttribute('aria-valuetext', text);
+    }
+    input.addEventListener('input', update);
+    reset.addEventListener('click', function () { input.value = input.defaultValue; update(); });
+    update();
+    input.disabled = false;
+    reset.disabled = false;
+  }
+
+  // Step-through controller; arrow keys act only on the focused stage itself.
+  function enhanceStepper(root) {
+    var stage = root.querySelector('[data-step-stage]');
+    var controls = root.querySelector('[data-step-controls]');
+    if (!stage || !controls) return;
+    var steps = Array.from(stage.querySelectorAll('[data-step]'));
+    var previous = controls.querySelector('button[data-step-prev]');
+    var next = controls.querySelector('button[data-step-next]');
+    var reset = controls.querySelector('button[data-step-reset]');
+    var status = controls.querySelector('[data-step-status]');
+    if (!steps.length || !previous || !next || !reset || !status) return;
+    var current = 0;
+
+    function render() {
+      var focused = document.activeElement;
+      steps.forEach(function (step, index) { step.hidden = index !== current; });
+      previous.disabled = current === 0;
+      next.disabled = current === steps.length - 1;
+      status.textContent = 'Step ' + (current + 1) + ' of ' + steps.length;
+      root.setAttribute('data-step-current', String(current));
+      if ((focused === previous && previous.disabled) || (focused === next && next.disabled) ||
+          steps.some(function (step) { return step.hidden && step.contains(focused); })) stage.focus();
+    }
+    function go(index) {
+      index = Math.max(0, Math.min(steps.length - 1, index));
+      if (index === current) return;
+      current = index;
+      render();
+      root.dispatchEvent(new CustomEvent('cursus:step', { bubbles: true, detail: { index: current } }));
+    }
+
+    previous.addEventListener('click', function () { go(current - 1); });
+    next.addEventListener('click', function () { go(current + 1); });
+    reset.addEventListener('click', function () { go(0); });
+    stage.addEventListener('keydown', function (event) {
+      if (event.target !== stage || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      var index;
+      if (event.key === 'ArrowLeft') index = current - 1;
+      else if (event.key === 'ArrowRight') index = current + 1;
+      else if (event.key === 'Home') index = 0;
+      else if (event.key === 'End') index = steps.length - 1;
+      else return;
+      event.preventDefault();
+      go(index);
+    });
+    controls.hidden = false;
+    render();
+  }
+
+  function init() {
+    enhanceDisclosurePrint();
+    document.querySelectorAll('[data-deck]').forEach(enhanceDeck);
+    document.querySelectorAll('[data-lab]').forEach(enhanceLab);
+    document.querySelectorAll('[data-predict]').forEach(enhancePredict);
+    document.querySelectorAll('[data-prob-chart]').forEach(enhanceProbChart);
+    document.querySelectorAll('[data-formula]').forEach(enhanceFormula);
+    document.querySelectorAll('[data-stepper]').forEach(enhanceStepper);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <!-- shared-script:end -->
+</body>
+</html>
