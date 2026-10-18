@@ -335,9 +335,32 @@ class Engine:
         st.unproductive = st.replans = 0
         st.fail = {**f, "resumed": True}
         st.phase = Phase.BUILD if st.plan and st.worktree else Phase.PENDING
+        if st.worktree and Path(st.worktree).is_dir():   # heals a state saved before the fix (#50)
+            self._retire_probe_commands(st.number, st, Path(st.worktree))
         st.feedback = [f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
                        f"A new engine version gives it one more try."]
         self.store.event("revived", issue=st.number, cause=f.get("cause"), phase=st.phase.value)
+
+    def _retire_probe_commands(self, n: int, st: IssueState, wt: Path) -> None:
+        """An examiner's command whose probe an approved change deleted goes with it: it names no
+        current probe and a test file that is gone. Only the examiner's own commands are kept beside
+        the builder's, so nobody else could retire it (#50 spent its ceiling on that exit 4)."""
+        def gone(c: dict) -> bool:
+            base = c.get("cwd") or "."
+            for word in re.findall(r"[^\s'\"=;&|()<>]+", c.get("command") or ""):
+                path = word.split("::", 1)[0]
+                if path.startswith("-") or not posixpath.splitext(path)[1]:
+                    continue
+                rel = posixpath.normpath(posixpath.join(base, path))
+                if self._inside(wt, rel) and not (wt / rel).exists():
+                    return True
+            return False
+        stale = [c for c in st.commands if c.get("author") == "examiner"
+                 and not any(_names_probe(c, p) for p in st.probes) and gone(c)]
+        if stale:
+            st.commands = [c for c in st.commands if c not in stale]
+            self.store.event("probe_commands_retired", issue=n,
+                             commands=[f"{c.get('criterion')}: {c['command'][:160]}" for c in stale])
 
     def _owner_edit(self, st: IssueState) -> None:
         """The owner edited the issue: new evidence. Plan again on the branch, with the previous
@@ -1228,6 +1251,7 @@ class Engine:
                     st.probes = [t for t in st.probes if t != p]
                 elif p in st.locked:
                     st.locked[p] = verify.digest(wt / p)
+            self._retire_probe_commands(n, st, wt)
             self.store.event("locked_tests_changed", issue=n, request=r["id"], sha=sha, files=sorted(content))
         st.dispositions.update(dispositions or {})
         if kind in ("test_change", "command_change") and dispositions and st.manifest:
