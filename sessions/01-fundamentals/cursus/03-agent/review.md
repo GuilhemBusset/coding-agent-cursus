@@ -1,7 +1,7 @@
 # Act III deck: review evidence
 
 Agent review by the implementer, 2026-10-18. Reviewed file: `../03-agent.html`,
-94,612 bytes, sha256 `56ec9bd1d7632202c736be8f64ddb9ae278f28c797aef29395bb9407c0b1d89e`.
+94,841 bytes, sha256 `91c7507e75c99e9fd1cf550c27c86442c77d62843d2277c7500791a173106576`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every external source below was opened on 2026-10-18 while authoring. Each date comes from the
@@ -51,6 +51,10 @@ I opened the check-page screenshots and looked at each one.
   left with a leader line.
 - **Mobile 390×844:** a continuous page. The agenda, ladder, habit cards and two-column slides
   stack; tables scroll inside their labelled regions.
+  The examiner's navigation probe (`tools/html-pages/examiner-48-navigation.mjs`) failed about one
+  run in ten: it counts slides right after shrinking the viewport, before the media-query change
+  event re-renders. A page-specific CSS rule now mirrors the paged condition, so slides show as
+  soon as the viewport stops matching it. After the fix the probe passed 15 runs out of 15.
 - **No-JS:** every slide is visible in order, navigation is hidden, and notes and reveals are
   closed but open natively.
 - **Print:** every slide is on its own page, with notes and reveals expanded.

@@ -209,6 +209,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 </style>
   <!-- shared-style:end -->
   <style>/* Page-specific layout for the Act III deck; uses the shared tokens. */
+/* Mirror the script's paged condition so a resize shows the continuous page before its change event lands. */
+@media not all and (min-width: 800px) and (min-height: 600px) { [data-slide][hidden] { display: block !important; } }
 .cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem var(--space); align-items: start; }
 .cols.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cols > * { min-width: 0; }
