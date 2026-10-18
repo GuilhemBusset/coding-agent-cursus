@@ -10,7 +10,8 @@ removed: every one either still held or could be corrected from its source. The 
 
 - **Pages covered.** The decks `cursus/00-opening`, `01-sampler`, `02-thinking`, `03-agent`,
   `05-failure` and `99-close`; every lab under `cursus/labs/`; and `exercises/00-prework`,
-  `lab-ladder` and `home`. The demo runbooks that state an as-of date were also covered:
+  `lab-ladder` and `home`; and the session hub `index.html`, `cursus/run-of-show.html` and
+  `cursus/instructor-notes.html`. The demo runbooks that state an as-of date were also covered:
   `demos/model/sampling.md`, `demos/effort/README.md` and `demos/agent/context-bomb.md`.
 - **How sources were read.** Every external link on those pages was fetched on 2026-10-18 and
   read as text. CLI flags were also checked against the installed CLIs: `claude --help` for
@@ -153,6 +154,14 @@ The pass still re-read the time-sensitive claims.
 | Claude Code 101: "lesson estimates add up to about 2 hours" | https://anthropic.skilljar.com/claude-code-101 | reworded: the public page no longer shows lesson times. The page says 12 lessons and a quiz, that the times shown on 2026-10-10 added up to about 2 hours, and that they are gone now |
 | Get Started with Codex, "~80 minutes" | https://academy.openai.com/public/courses/get-started-with-codex-jkhsq | kept, stamped |
 
+### Session hub and instructor pages (`index.html`, `cursus/run-of-show.html`, `cursus/instructor-notes.html`)
+
+| Claim | Primary source | Outcome |
+| --- | --- | --- |
+| Agenda and time boxes | `docs/cursus-narrative.md` (unchanged since 2026-10-04) | kept, as-of 2026-10-10 to 2026-10-18 (hub and run of show) |
+| Neither agent CLI exposes a temperature setting | `claude --help` (Claude Code 2.1.302), `codex --help` and `codex exec --help` (codex-cli 0.162.1) | kept, as-of 2026-10-11 to 2026-10-18 |
+| The 2025 primer's misconceptions and anticipated questions; file last changed 2026-03-07 | https://github.com/GuilhemBusset/agentic-or-workshop/blob/main/workshop/materials/part-00-fundamental/00-llm-architecture/instructor-llm-architecture-primer.md and its GitHub commit history | kept; added to `sources.html` |
+
 ## A2 · Claims backed by a single secondary source
 
 | Page | Claim | Before | Now |
@@ -196,6 +205,8 @@ The PR description repeats this list.
 - **Pre-work:**
   - every install, login and reading source stamped "rechecked 2026-10-18";
   - the Claude Code 101 duration reworded, since the course page no longer shows lesson times.
+- **Session hub, run of show, instructor notes:** plan and CLI as-of dates moved to 2026-10-18
+  after the recheck; the 2025 primer added to the bibliography.
 - **Runbooks:** `sampling.md` and the effort README note the 2026-10-18 recheck.
 - **New:**
   - `cursus/sources.html`, the bibliography by act with access dates;
