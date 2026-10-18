@@ -1,29 +1,54 @@
 import assert from 'node:assert/strict';
-import {pathToFileURL} from 'node:url';
+import { access, realpath } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
-import {chromium} from './browser.mjs';
+import { chromium } from './browser.mjs';
 
-const deck = pathToFileURL(path.resolve('sessions/01-fundamentals/cursus/03-agent.html')).href;
+const session = await realpath('sessions/01-fundamentals');
+const deckURL = pathToFileURL(path.join(session, 'cursus/03-agent.html')).href;
 const browser = await chromium.launch();
 try {
-  const page = await browser.newPage();
-  await page.route(/^https?:/, route => route.abort());
-  await page.goto(deck);
-  const links = await page.locator('[data-slide] a[href^="labs/"]').evaluateAll(nodes => nodes.map(n => n.href));
-  assert.ok(links.some(h => h.includes('context.html')));
-  assert.ok(links.some(h => h.includes('agent-loop.html')));
-  for (const href of new Set(links)) {
-    await page.goto(href);
-    const target = new URL(href);
-    if (target.hash.startsWith('#run=')) {
-      const id = decodeURIComponent(target.hash.slice(5));
-      assert.equal(await page.locator('#run-select').inputValue(), id, href);
-      assert.ok(await page.locator('[data-stepper]:visible').count() > 0, href);
-    } else if (target.hash) {
-      assert.ok(await page.locator(target.hash).isVisible(), href);
-    } else {
-      assert.ok(await page.locator('main').isVisible(), href);
-    }
+  const context = await browser.newContext({ offline: true });
+  const page = await context.newPage();
+  const errors = [], remote = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('request', r => { if (/^https?:/.test(r.url())) remote.push(r.url()); });
+  await page.goto(deckURL);
+  const links = await page.locator('[data-slide] a[href]').evaluateAll(nodes => nodes.map(a => a.href).filter(h => h.startsWith('file:')));
+  assert.ok(links.some(h => h.endsWith('/demos/agent/loop.md')));
+  assert.ok(links.some(h => h.endsWith('/demos/agent/context-bomb.md')));
+  const replay = [...new Set(links.filter(h => new URL(h).hash.startsWith('#run=')))];
+  assert.ok(replay.some(h => h.includes('loop-claude')) && replay.some(h => h.includes('loop-codex')));
+  assert.ok(replay.some(h => h.includes('bomb-claude')) && replay.some(h => h.includes('bomb-codex')));
+  for (const link of new Set(links)) {
+    const url = new URL(link), target = await realpath(fileURLToPath(url));
+    assert.ok(target.startsWith(session + path.sep), link);
+    await access(target);
+    if (!url.hash || url.hash.startsWith('#run=')) continue;
+    await page.goto(link);
+    assert.equal(await page.locator('[id]').evaluateAll((nodes, id) => nodes.filter(n => n.id === id).length, decodeURIComponent(url.hash.slice(1))), 1, link);
   }
-  console.log('PASS: deck lab links open offline; every replay selects the named recording');
+  for (const link of replay) {
+    await page.goto(link);
+    const id = decodeURIComponent(new URL(link).hash.slice(5));
+    assert.equal(await page.locator('#run-select').inputValue(), id, link);
+    const panel = page.locator('[data-run-panel]').filter({ visible: true });
+    assert.equal(await panel.count(), 1);
+    assert.equal(await panel.getAttribute('data-run-panel'), id);
+    const stepper = panel.locator('[data-stepper]');
+    assert.equal(await stepper.getAttribute('data-step-current'), '0');
+    const count = await panel.locator('[data-step]').count();
+    assert.ok(count > 0, id);
+    if (count > 1) {
+      await panel.locator('[data-step-next]').click();
+      assert.equal(await stepper.getAttribute('data-step-current'), '1');
+    } else {
+      assert.equal(await panel.locator('[data-step-next]').isDisabled(), true);
+    }
+    await panel.locator('[data-step-reset]').click();
+    assert.equal(await stepper.getAttribute('data-step-current'), '0');
+  }
+  assert.deepEqual(errors, []);
+  assert.deepEqual(remote, []);
+  console.log(`PASS: local targets and ${replay.length} offline replay links, selection, next and reset`);
 } finally { await browser.close(); }
