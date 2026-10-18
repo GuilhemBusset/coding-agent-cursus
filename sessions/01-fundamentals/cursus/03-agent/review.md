@@ -1,7 +1,7 @@
 # Act III deck: review evidence
 
 Agent review by the implementer, 2026-10-18. Reviewed file: `../03-agent.html`,
-94,586 bytes, sha256 `80aa3680f6ebe873c2afbc9f185f70d0ee8b842d658612f49619cd5d020f7b06`.
+94,612 bytes, sha256 `56ec9bd1d7632202c736be8f64ddb9ae278f28c797aef29395bb9407c0b1d89e`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every external source below was opened on 2026-10-18 while authoring. Each date comes from the
