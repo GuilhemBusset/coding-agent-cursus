@@ -1,7 +1,7 @@
 # Act III deck: review evidence
 
 Agent review by the implementer, 2026-10-18. Reviewed file: `../03-agent.html`,
-94,176 bytes, sha256 `543e124559c0d741a361b8bfedee16cbefd56af1067a0767df60bdc60a3f39a0`.
+94,586 bytes, sha256 `80aa3680f6ebe873c2afbc9f185f70d0ee8b842d658612f49619cd5d020f7b06`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every external source below was opened on 2026-10-18 while authoring. Each date comes from the
@@ -112,6 +112,13 @@ This is a plan, not a measured delivery. A timed rehearsal needs a person and a 
   "at most", because the normalized run does not split cache writes from fresh input. It works
   out to $19.56 uncached against $0.90 + $1.96 = $2.86.
 
+  The Driving line separates changes to the request prefix from changes that leave it alone, per
+  the caching doc: switching models or connecting an MCP server invalidates the cache; in Claude
+  Code, changing effort on Opus 5.5 or Haiku 5.5 (API key or subscription) keeps it, and a
+  mid-session edit to the root CLAUDE.md keeps it because the edit loads only on `/clear`,
+  `/compact` or a restart. An earlier version said every effort change or instruction-file edit
+  threw the memo away; the examiner found that false (E48-1-1) and it was corrected.
+
 ## D3 · The agent loop and stop conditions
 
 - **ReAct.** It is cited from its abstract: reasoning traces and task-specific actions
@@ -215,7 +222,8 @@ These five slides carry `data-landscape`, a visible "As of 2026-10-18" badge and
   The slide shows the comparison as it is, so the figures are not bent to fit the narrative. It
   teaches what does differ: who ran the numbers, the setting, the harness, the trials and the
   error bars. It also quotes Anthropic: "benchmark margins have become a less reliable guide to
-  real-world differences".
+  real-world differences". The notes call 66.4 and 64.8 what they are, two evaluations of the
+  same model (Opus 5.5), and place the between-model gap at about 65 against 58 (E48-1-2).
 - **Vibe coding and agentic engineering.** The Karpathy quote is the original post as Willison
   reproduces it (2025-03-19). The definition of agentic engineering paraphrases Willison's guide
   chapter (`updated_time` 1773614517, that is 2026-03-15). That the term spread in early 2026 is
@@ -247,6 +255,7 @@ belongs to the fact-check issue, done one week before the session.
 | context-window | Codex `/compact` and `/status` (context capacity) | 2026-10-18 (read) | https://learn.chatgpt.com/docs/developer-commands?surface=cli | Slash command table | Supported |
 | context-window | `/context` 13k before; `/status` 13.8K used / 828K | 2026-10-16 | sessions/01-fundamentals/cursus/demos/agent/context-bomb.md | Expected outcome | Matches |
 | kv-cache | Prefix match is exact; a change recomputes everything after it; model switch recomputes | 2026-10-18 (read) | https://code.claude.com/docs/en/prompt-caching | How the cache is organized | Supported |
+| kv-cache | Model switch and MCP server change invalidate; effort change on Opus 5.5 / Haiku 5.5 and a mid-session root CLAUDE.md edit keep the cache | 2026-10-18 (read) | https://code.claude.com/docs/en/prompt-caching | Changing effort level; Editing CLAUDE.md mid-session | Supported |
 | kv-cache | Opus 5.5 $4 input, $0.20 cache hit (0.05x) | 2026-10-18 (read) | https://platform.claude.com/docs/en/about-claude/pricing | Model pricing table, footnote 2 | Supported |
 | kv-cache | GPT-6 Astra $10 input, $1 cached input | 2026-10-18 (read) | https://developers.openai.com/api/docs/models/gpt-6-astra | Pricing, text tokens | Supported |
 | agent-loop | ReAct interleaves reasoning traces and actions | 2022-10-06 | https://arxiv.org/abs/2210.03629 | Abstract | Supported |

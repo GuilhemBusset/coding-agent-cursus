@@ -415,7 +415,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <ul class="tight">
             <li><strong>Inside a call,</strong> attention keeps each processed token’s keys and values, so later tokens do not recompute them.</li>
             <li><strong>Across calls,</strong> prompt caching keeps that work for a prefix: the next request is matched against it, and only what changed is fully processed.</li>
-            <li><strong>Exact match:</strong> change anything early (the model, the system prompt, an instruction file) and everything after it is recomputed.</li>
+            <li><strong>Exact match:</strong> change anything early in the request (the model, the system prompt, the tool set) and everything after it is recomputed.</li>
           </ul>
           <div class="table-wrap" role="region" tabindex="0" aria-label="Cached input prices">
             <table class="compact">
@@ -430,7 +430,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
         <p>In the recorded Claude Code run above, 4,497,201 of the 4,889,658 input tokens (92%) were cache reads.</p>
         <p class="cite">Sources, read 2026-10-18: Anthropic, <cite>How Claude Code uses prompt caching</cite>, <a href="https://code.claude.com/docs/en/prompt-caching">code.claude.com</a>; Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>; OpenAI, <cite>GPT-6 Astra</cite>, <a href="https://developers.openai.com/api/docs/models/gpt-6-astra">developers.openai.com</a>. Prices change; recheck before quoting.</p>
-        <p class="drive"><strong>Driving:</strong> pick the model and effort at the start, and do not edit instruction files mid-task: each change throws the memo away.</p>
+        <p class="drive"><strong>Driving:</strong> pick the model at the start; switching it, or adding an MCP server, mid-task recomputes the whole prefix. In Claude Code, changing effort on Opus&nbsp;5.5 or Haiku&nbsp;5.5 keeps the cache, and so does editing the root CLAUDE.md: the edit waits for <code>/clear</code>, <code>/compact</code> or a restart.</p>
         <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
           <p>For this audience: memoization keyed on the exact prefix. A function call you already evaluated is looked up, not recomputed. Billing makes it visible: a cache hit costs 5% of base input on Opus 5.5 and 10% on GPT-6 Astra.</p>
           <p>Estimate, not a bill: at Opus 5.5 list prices the recorded run’s 4.89M input tokens would cost about $19.56 uncached; with 4.50M as cache hits ($0.90) and the remaining 0.39M at most at the 5-minute write rate ($1.96), about $2.86. The normalized run does not split cache writes from fresh input, hence “at most”.</p>
@@ -749,7 +749,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <p class="cite">Sources: Anthropic, <cite>Claude Opus 5.5</cite>, <a href="https://www.anthropic.com/news/claude-opus-5-5">anthropic.com</a>, 2026-09-22, table and footnote 1; <cite>Terminal-Bench 4.0 leaderboard</cite>, <a href="https://www.tbench.ai/leaderboard">tbench.ai</a>, read 2026-10-18.</p>
         <p class="drive"><strong>Driving:</strong> a few points between models is inside the noise. Read the footnotes (harness, effort, trials), then test on your own task.</p>
         <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>The honest reading of today’s numbers: on Terminal-Bench 4.0 the vendor figures sit close to the standardized ones, and Anthropic reproduces the leaderboard’s number for its previous model. The gap to watch is between models: 66.4 versus 64.8 is noise at ±3.</p>
+          <p>The honest reading of today’s numbers: on Terminal-Bench 4.0 the vendor figures sit close to the standardized ones, and Anthropic reproduces the leaderboard’s number for its previous model. 66.4 and 64.8 are two evaluations of the same model, Opus 5.5, by the vendor and by the leaderboard, and they agree within their ±3. The gap between the two models, about 65 against 58, is larger than that noise, and still only says something about this benchmark at these settings.</p>
           <p>Vendor tables mix settings (xhigh for one model, high for another, scores “as reported” by a competitor) and pick each model’s best. A standardized run fixes the harness, effort and trials. Neither tells you how it does on P00.</p>
         </details>
       </section>
