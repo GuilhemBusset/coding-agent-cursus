@@ -75,6 +75,10 @@ def test_revival_heals_a_pre_fix_orphan_and_preserves_the_ceiling(tmp_path):
     engine.store.change_budget(50, calls=20)
     assert not check(engine, st, wt, tmp_path)[0]
     engine._maybe_revive(st)
+    assert not check(engine, st, wt, tmp_path)[0], "no approved deletion recorded: the command stays"
+    st.phase, st.fail = Phase.FAILED, {"version": "1.0.5", "cause": "ceiling"}
+    st.requests = [{"id": "R50-2", "kind": "test_change", "status": "approved", "content": {"deleted.py": None}}]
+    engine._maybe_revive(st)
     assert st.phase == Phase.BUILD
     assert st.fail["resumed"]
     assert engine.store.budget(50)["calls"] == 20
