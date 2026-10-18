@@ -256,7 +256,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section id="install" aria-labelledby="install-title">
         <h2 id="install-title">Install the tools</h2>
-        <p>Each block names its platforms, gives the commands from the tool's official documentation, and links to that page. “Checked” is the date we last read that page; it does not mean every command was run on every platform (see <a href="#platforms">Platforms</a>). If a command fails, follow the linked page, which is kept up to date by the tool's authors.</p>
+        <p>Each block names its platforms, gives the commands from the tool's official documentation, and links to that page. “Checked” is the date we first read that page and “rechecked” the date we last read it; it does not mean every command was run on every platform (see <a href="#platforms">Platforms</a>). If a command fails, follow the linked page, which is kept up to date by the tool's authors.</p>
 
         <div class="tool">
           <h3>git</h3>
@@ -266,7 +266,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <pre tabindex="0" aria-label="Install git on macOS with the developer tools"><code>xcode-select --install</code></pre>
             <p>Or, with Homebrew:</p>
             <pre tabindex="0" aria-label="Install git on macOS with Homebrew"><code>brew install git</code></pre>
-            <p class="source"><a href="https://git-scm.com/install/mac">Git: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://git-scm.com/install/mac">Git: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="git" data-platform="linux wsl">
             <p class="label">Linux and WSL</p>
@@ -274,13 +274,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <pre tabindex="0" aria-label="Install git on Debian or Ubuntu"><code>sudo apt-get install git</code></pre>
             <p>Fedora:</p>
             <pre tabindex="0" aria-label="Install git on Fedora"><code>sudo dnf install git</code></pre>
-            <p class="source"><a href="https://git-scm.com/install/linux">Git: install on Linux</a> (other distributions too) · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://git-scm.com/install/linux">Git: install on Linux</a> (other distributions too) · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="git" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
             <pre tabindex="0" aria-label="Install Git for Windows with winget"><code>winget install --id Git.Git -e --source winget</code></pre>
             <p>This installs Git for Windows, which includes Git Bash. The same page also offers a downloadable installer.</p>
-            <p class="source"><a href="https://git-scm.com/install/windows">Git: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://git-scm.com/install/windows">Git: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <p>Then, on every platform, tell git who you are. The check verifies that both are set:</p>
           <pre tabindex="0" aria-label="Set your git identity"><code>git config --global user.name "Your Name"
@@ -292,7 +292,7 @@ git config --global user.email "you@example.com"</code></pre>
           <div class="install" data-install data-tool="gh" data-platform="macos">
             <p class="label">macOS</p>
             <pre tabindex="0" aria-label="Install gh on macOS with Homebrew"><code>brew install gh</code></pre>
-            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_macos.md#homebrew">GitHub CLI: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_macos.md#homebrew">GitHub CLI: install on macOS</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="gh" data-platform="linux wsl">
             <p class="label">Linux and WSL</p>
@@ -310,13 +310,13 @@ git config --global user.email "you@example.com"</code></pre>
             <pre tabindex="0" aria-label="Install gh on Fedora"><code>sudo dnf install dnf5-plugins
 sudo dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
 sudo dnf install gh</code></pre>
-            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian">GitHub CLI: install on Debian and Ubuntu</a>, <a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#dnf5">on Fedora</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian">GitHub CLI: install on Debian and Ubuntu</a>, <a href="https://github.com/cli/cli/blob/trunk/docs/install_linux.md#dnf5">on Fedora</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="gh" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
             <pre tabindex="0" aria-label="Install gh on Windows with winget"><code>winget install --id GitHub.cli --source winget</code></pre>
             <p>The installer changes your <code>PATH</code>: open a new Windows Terminal window, not just a new tab.</p>
-            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_windows.md#winget">GitHub CLI: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://github.com/cli/cli/blob/trunk/docs/install_windows.md#winget">GitHub CLI: install on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
         </div>
 
@@ -325,12 +325,12 @@ sudo dnf install gh</code></pre>
           <div class="install" data-install data-tool="uv" data-platform="macos linux wsl">
             <p class="label">macOS, Linux and WSL</p>
             <pre tabindex="0" aria-label="Install uv on macOS, Linux or WSL"><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre>
-            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="uv" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
             <pre tabindex="0" aria-label="Install uv on Windows"><code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></pre>
-            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://docs.astral.sh/uv/getting-started/installation/">uv: installation</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
         </div>
 
@@ -342,12 +342,12 @@ sudo dnf install gh</code></pre>
             <pre tabindex="0" aria-label="Install mise on macOS, Linux or WSL"><code>curl -fsSL https://mise.run | sh</code></pre>
             <p>It installs <code>mise</code> in <code>~/.local/bin</code>. If a new terminal still cannot find it, add <code>~/.local/bin</code> to your <code>PATH</code>. On macOS you can use Homebrew instead:</p>
             <pre tabindex="0" aria-label="Install mise on macOS with Homebrew"><code>brew install mise</code></pre>
-            <p class="source"><a href="https://mise.jdx.dev/getting-started.html">mise: getting started</a>, <a href="https://mise.jdx.dev/installing-mise.html#homebrew">installing with Homebrew</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://mise.jdx.dev/getting-started.html">mise: getting started</a>, <a href="https://mise.jdx.dev/installing-mise.html#homebrew">installing with Homebrew</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="mise" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
             <pre tabindex="0" aria-label="Install mise on Windows with winget"><code>winget install jdx.mise</code></pre>
-            <p class="source"><a href="https://mise.jdx.dev/installing-mise.html#windows-winget">mise: installing on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://mise.jdx.dev/installing-mise.html#windows-winget">mise: installing on Windows</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
         </div>
 
@@ -358,13 +358,13 @@ sudo dnf install gh</code></pre>
             <p class="label">macOS, Linux and WSL</p>
             <pre tabindex="0" aria-label="Install Claude Code on macOS, Linux or WSL"><code>curl -fsSL https://claude.ai/install.sh | bash</code></pre>
             <p>In WSL, run it inside the WSL terminal, not in PowerShell.</p>
-            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="claude" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
             <pre tabindex="0" aria-label="Install Claude Code on Windows"><code>irm https://claude.ai/install.ps1 | iex</code></pre>
             <p>Claude Code uses Git Bash, from Git for Windows, for its shell commands.</p>
-            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://code.claude.com/docs/en/setup">Claude Code: advanced setup</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <p>Open a new terminal and run <code>claude --version</code>: it should print a version number.</p>
         </div>
@@ -383,7 +383,7 @@ sudo dnf install gh</code></pre>
             <div class="callout caution">
               <p><strong>Type <code>@openai/codex</code> exactly.</strong> <code>npm i -g codex</code> installs an unrelated package that happens to be called <code>codex</code>, not OpenAI's CLI.</p>
             </div>
-            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <div class="install" data-install data-tool="codex" data-platform="windows">
             <p class="label">Windows (PowerShell)</p>
@@ -395,7 +395,7 @@ sudo dnf install gh</code></pre>
               <p><strong>Type <code>@openai/codex</code> exactly.</strong> <code>npm i -g codex</code> installs an unrelated package that happens to be called <code>codex</code>, not OpenAI's CLI.</p>
             </div>
             <p>Codex runs natively in PowerShell with its own Windows sandbox; see <a href="https://developers.openai.com/codex/windows">Codex on Windows</a>.</p>
-            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a>, <a href="https://github.com/openai/codex">the Codex README</a> · checked <time datetime="2026-10-10">2026-10-10</time></p>
+            <p class="source"><a href="https://developers.openai.com/codex/cli">Codex CLI: get started</a>, <a href="https://github.com/openai/codex">the Codex README</a> · checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time></p>
           </div>
           <p>Open a new terminal and run <code>codex --version</code>: it should print a version number.</p>
         </div>
@@ -437,7 +437,7 @@ grep -n ANTHROPIC_API_KEY ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile</code></
           </div>
         </div>
         <p>Then run <code>claude</code> again and check <code>/status</code>.</p>
-        <p class="source">Sources: <a href="https://code.claude.com/docs/en/authentication">Claude Code authentication</a>, <a href="https://developers.openai.com/codex/auth">Codex authentication</a>, checked <time datetime="2026-10-10">2026-10-10</time>.</p>
+        <p class="source">Sources: <a href="https://code.claude.com/docs/en/authentication">Claude Code authentication</a>, <a href="https://developers.openai.com/codex/auth">Codex authentication</a>, checked <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time>.</p>
       </section>
 
       <section id="check" aria-labelledby="check-title">
@@ -516,13 +516,13 @@ result: PASS
 
       <section id="reading" aria-labelledby="reading-title">
         <h2 id="reading-title">Pre-reading</h2>
-        <p>Watch or read these before the session. Lengths are approximate; “as of” is the date the link and its contents were checked.</p>
+        <p>Watch or read these before the session. Lengths are approximate; “as of” is the date the link and its contents were first checked, “rechecked” the date of the latest check.</p>
         <ol>
           <li>
-            <p><strong>3Blue1Brown, <a href="https://www.youtube.com/watch?v=LPZh9BOjkQs">Large Language Models explained briefly</a></strong>, the whole video, about 8 minutes. What a language model computes: a probability for every possible next word, sampled one word at a time. Session 1 builds on that idea. As of <time datetime="2026-10-10">2026-10-10</time>.</p>
+            <p><strong>3Blue1Brown, <a href="https://www.youtube.com/watch?v=LPZh9BOjkQs">Large Language Models explained briefly</a></strong>, the whole video, about 8 minutes. What a language model computes: a probability for every possible next word, sampled one word at a time. Session 1 builds on that idea. As of <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time>.</p>
           </li>
           <li>
-            <p><strong>Andrej Karpathy, <a href="https://www.youtube.com/watch?v=EWvNQjAaOHw">How I use LLMs</a></strong>, the full video is 2 h 11 min. Watch these four chapters, about 38 minutes in total, for how a chat works under the hood, what thinking models change, and how tools extend a model. As of <time datetime="2026-10-10">2026-10-10</time>.</p>
+            <p><strong>Andrej Karpathy, <a href="https://www.youtube.com/watch?v=EWvNQjAaOHw">How I use LLMs</a></strong>, the full video is 2 h 11 min. Watch these four chapters, about 38 minutes in total, for how a chat works under the hood, what thinking models change, and how tools extend a model. As of <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time>.</p>
             <ul>
               <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=174s">ChatGPT interaction under the hood</a> (2:54, about 10 minutes): tokens and the context window.</li>
               <li><a href="https://www.youtube.com/watch?v=EWvNQjAaOHw&amp;t=1374s">Thinking models and when to use them</a> (22:54, about 8 minutes).</li>
@@ -533,8 +533,8 @@ result: PASS
           <li>
             <p><strong>Pick the one for your agent.</strong> A free course from your agent's maker, from installation to daily workflow. Both need a free sign-up on the course site.</p>
             <ul>
-              <li>Claude Code: Anthropic Academy, <a href="https://anthropic.skilljar.com/claude-code-101">Claude Code 101</a>. Its lesson estimates add up to about 2 hours; at least do the lessons up to “Context management”. As of <time datetime="2026-10-10">2026-10-10</time>.</li>
-              <li>Codex: OpenAI Academy, <a href="https://academy.openai.com/public/courses/get-started-with-codex-jkhsq">Get Started with Codex</a>, the first course of its Codex track, about 80 minutes. As of <time datetime="2026-10-10">2026-10-10</time>.</li>
+              <li>Claude Code: Anthropic Academy, <a href="https://anthropic.skilljar.com/claude-code-101">Claude Code 101</a>. 12 lessons and a quiz. The lesson times the course page showed on 2026-10-10 added up to about 2 hours; the public page no longer shows them. At least do the lessons up to “Context management”. As of <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time>.</li>
+              <li>Codex: OpenAI Academy, <a href="https://academy.openai.com/public/courses/get-started-with-codex-jkhsq">Get Started with Codex</a>, the first course of its Codex track, about 80 minutes. As of <time datetime="2026-10-10">2026-10-10</time>, rechecked <time datetime="2026-10-18">2026-10-18</time>.</li>
             </ul>
           </li>
         </ol>

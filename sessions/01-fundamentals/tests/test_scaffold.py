@@ -82,5 +82,5 @@ def test_readme_runbook():
     for term in ("mise install", "uv sync", "uv run pytest", "file://", "cursus/", "exercises/", "setup/session-01-fundamentals.sh"):
         assert term in text, f"Missing runbook instruction: {term}"
     agenda = markdown_section(text, "Agenda")
-    assert "delivery hub" in agenda.lower()
-    assert re.search(r"(?i)\b(tbd|placeholder|to be|filled in)\b", agenda), "Agenda must mark pending content"
+    assert "index.html" in agenda, "Agenda must point to the session hub"
+    assert not re.search(r"(?i)\b(tbd|placeholder)\b", agenda), "Agenda still holds placeholder content"

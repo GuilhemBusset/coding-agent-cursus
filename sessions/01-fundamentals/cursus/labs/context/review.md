@@ -1,7 +1,11 @@
 # Context lab: review evidence
 
 Agent review by the implementer, 2026-10-16. Reviewed file: `../context.html`,
-111,162 bytes, sha256 `d8dc0bc8d21071ac25987af2c9bf5d591827c0b08233346734a3aed7ab741d2e`.
+111,308 bytes, sha256 `d3425dd85d514f33e8aa7d52466de04da262d4311711d994b52a538f924d69f4`.
+Re-reviewed 2026-10-18 after the fact-check pass (#50, `../../sources/fact-check.md`): the
+price figure caption, the commands paragraph, the constants caption and the footer gained a
+"rechecked 2026-10-18" stamp; values and dates in `CONFIG` are unchanged. check-page PASS, and the
+changed captions were looked at again on screen.
 Any edit to the page invalidates this review; re-review and update the hash.
 
 ## Checks run

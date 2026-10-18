@@ -23,6 +23,8 @@ and `codex exec --help` (codex-cli 0.162.1) list no temperature, top-p or seed o
 neither does the [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) nor
 the [Codex CLI reference](https://developers.openai.com/codex/cli/reference). So this demo shows
 the spread at each CLI's default sampling, and `sampling.py` passes no sampling argument at all.
+Rechecked 2026-10-18 with `claude --help` (Claude Code 2.1.302), `codex --help` and
+`codex exec --help` (codex-cli 0.162.1) and both references: still no such option.
 
 For what temperature does to the distribution, send the room to the
 [next-token lab](../../labs/next-token.html): its temperature, top-k and top-p sliders reshape

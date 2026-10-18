@@ -339,7 +339,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <p>Draw the loop with your hand: pass, sample, append, repeat. The key word is serial. Pass 500 can use the result of pass 499 because that result is now text in the context.</p>
           <p>This is the whole mechanism behind “thinking” models: they write more tokens before the final answer. Nothing else changes in the network.</p>
           <p>Cost link: on the demo’s price list an output token costs 5 times an input token, for both models (claude-opus-5-5: $4 in, $20 out; gpt-6-astra: $10 in, $50 out, per million tokens). Thinking is output.</p>
-          <p class="cite">Prices as of 2026-10-11: <code>cursus/demos/effort/prices.json</code>, copied from Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>, and OpenAI, <cite>Pricing</cite>, <a href="https://platform.openai.com/docs/pricing">platform.openai.com</a>. List prices change; recheck before quoting.</p>
+          <p class="cite">Prices as of 2026-10-11, rechecked 2026-10-18 and unchanged: <code>cursus/demos/effort/prices.json</code>, copied from Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>, and OpenAI, <cite>Pricing</cite>, <a href="https://platform.openai.com/docs/pricing">platform.openai.com</a>. List prices change; recheck before quoting.</p>
         </details>
       </section>
 
@@ -441,7 +441,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <p>Prolonged RL, with KL control and policy resets, beats the base model across pass@k, even on tasks where the base fails at any number of attempts.</p>
           </div>
         </div>
-        <p><span class="contested">Contested</span> Different models, tasks and training lengths; the question is open as of 2026-10-11. See it in <a href="labs/test-time-compute.html#sharpen-or-expand">Test-time compute · Sharpen or expand</a> (illustrative).</p>
+        <p><span class="contested">Contested</span> Different models, tasks and training lengths; the question is open as of 2026-10-18. See it in <a href="labs/test-time-compute.html#sharpen-or-expand">Test-time compute · Sharpen or expand</a> (illustrative).</p>
         <p class="cite">Sources: Yang Yue et al., <cite>Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?</cite>, <a href="https://arxiv.org/abs/2504.13837">arXiv 2504.13837</a>, v1 2025-04-18. Mingjie Liu et al., <cite>ProRL</cite>, <a href="https://arxiv.org/abs/2505.24864">arXiv 2505.24864</a>, 2025-05-30.</p>
         <p class="drive"><strong>Driving:</strong> if the right answer is never among the model’s samples, more attempts or effort will not find it. Change the task: split it, add a tool, supply the missing knowledge.</p>
         <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
@@ -458,13 +458,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <thead><tr><th scope="col">Vendor</th><th scope="col">Setting</th><th scope="col">Levels</th><th scope="col">Demo model</th></tr></thead>
             <tbody>
               <tr><th scope="row">Anthropic · Claude</th><td><a href="https://platform.claude.com/docs/en/build-with-claude/effort"><code>effort</code></a> (<code>--effort</code>)</td><td>low, medium, high, xhigh, max; Opus 5.5 defaults to medium</td><td><code>claude-opus-5-5</code></td></tr>
-              <tr><th scope="row">OpenAI · Codex</th><td><a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a></td><td>Per model, such as low, medium, high, xhigh</td><td><code>gpt-6-astra</code></td></tr>
+              <tr><th scope="row">OpenAI · Codex</th><td><a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a></td><td>Per model and client, such as low, medium, high, xhigh, max</td><td><code>gpt-6-astra</code></td></tr>
               <tr><th scope="row">Google · Gemini API</th><td><a href="https://ai.google.dev/gemini-api/docs/thinking"><code>thinking_level</code></a></td><td>minimal, low, medium, high, by model</td><td>Not in the demo</td></tr>
             </tbody>
           </table>
         </div>
         <p class="qualify">Anthropic calls effort “a behavioral signal, not a strict token budget”.</p>
-        <p class="cite">Vendor documentation as of 2026-10-11: Anthropic, <cite>Effort</cite>, <a href="https://platform.claude.com/docs/en/build-with-claude/effort">platform.claude.com</a>; OpenAI, <cite>Codex configuration reference</cite>, <a href="https://developers.openai.com/codex/config-reference">developers.openai.com</a>; Google, <cite>Gemini thinking</cite>, <a href="https://ai.google.dev/gemini-api/docs/thinking">ai.google.dev</a>. Demo models from <code>cursus/demos/effort/prices.json</code>.</p>
+        <p class="cite">Vendor documentation as of 2026-10-18: Anthropic, <cite>Effort</cite>, <a href="https://platform.claude.com/docs/en/build-with-claude/effort">platform.claude.com</a>; OpenAI, <cite>Codex configuration reference</cite>, <a href="https://developers.openai.com/codex/config-reference">developers.openai.com</a>; Google, <cite>Gemini thinking</cite>, <a href="https://ai.google.dev/gemini-api/docs/thinking">ai.google.dev</a>. Demo models from <code>cursus/demos/effort/prices.json</code>.</p>
         <p class="drive"><strong>Driving:</strong> the default is a choice someone made for you. Set effort per task: low for lookups and subagents, high when the problem is hard and checkable.</p>
         <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
           <p>Read across the table, not down. Three names for one idea: how many tokens the model may spend before answering. Levels and defaults change with each model release, hence the date.</p>
@@ -499,7 +499,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </div>
         </details>
         <p><strong>One sample is an anecdote, not a rate.</strong> A claim about effort needs many runs and a verifier.</p>
-        <p class="cite">Source: <cite>Effort-dial demo</cite>, <code>cursus/demos/effort/README.md</code> and <code>recorded/results.json</code>, recorded 2026-10-11 with Claude Code 2.1.296 and codex-cli 0.162.1; list prices as of 2026-10-11.</p>
+        <p class="cite">Source: <cite>Effort-dial demo</cite>, <code>cursus/demos/effort/README.md</code> and <code>recorded/results.json</code>, recorded 2026-10-11 with Claude Code 2.1.296 and codex-cli 0.162.1; list prices as of 2026-10-11, rechecked 2026-10-18 and unchanged.</p>
         <details class="notes" data-minutes="6"><summary>Speaker notes · 6 min</summary>
           <p>Run the demo by its runbook timing. 0:00 read the puzzle and take the bets. 1:00 launch <code>uv run effort.py live --cli claude</code> or <code>--cli codex</code>. 2:30 read one row aloud. 3:15 compare the ratios with the bets. 4:15 the fixed input cost, same at both efforts. 5:15 close.</p>
           <p>If the network, quota or login fails, or the high run passes two minutes: Ctrl-C and replay with <code>uv run --offline effort.py replay</code>, then continue from 2:30.</p>
@@ -672,7 +672,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </table>
         </div>
         <p><span class="contested">Contested</span> Vendor and startup announcements, not independent evaluations.</p>
-        <p class="cite">Sources: Mido Assran et al., <cite>V-JEPA 2</cite>, <a href="https://arxiv.org/abs/2506.09985">arXiv 2506.09985</a>, 2025-06-11. Google DeepMind, <cite>Genie 3</cite>, <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">deepmind.google</a>, 2025-08-05. NVIDIA, <cite>NVIDIA Launches Cosmos 3</cite>, <a href="https://nvidianews.nvidia.com/news/nvidia-launches-cosmos-3-the-open-frontier-foundation-model-for-physical-ai">nvidianews.nvidia.com</a>, 2026-05-31. AMI Labs, <cite>Official launch</cite>, <a href="https://amilabs.xyz/updates">amilabs.xyz</a>, 2026-03-10.</p>
+        <p class="cite">Sources: Mido Assran et al., <cite>V-JEPA 2</cite>, <a href="https://arxiv.org/abs/2506.09985">arXiv 2506.09985</a>, 2025-06-11. Google DeepMind, <cite>Genie 3</cite>, <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">deepmind.google</a>, 2025-08-05. NVIDIA, <cite>NVIDIA Launches Cosmos 3</cite>, <a href="https://nvidianews.nvidia.com/news/nvidia-launches-cosmos-3-the-open-frontier-foundation-model-for-physical-ai">nvidianews.nvidia.com</a>, 2026-05-31. AMI Labs, <cite>Official launch</cite>, <a href="https://amilabs.xyz/updates">amilabs.xyz</a>, 2026-03-10, and its <a href="https://amilabs.xyz/">home page</a>.</p>
         <p class="drive"><strong>Driving:</strong> these simulate physical worlds; your coding agent does not run one. The idea transfers: predict, act, observe, correct.</p>
         <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
           <p>Meaning 2, quickly. LeCun’s Mode-2, from the System 1 and System 2 slide, plans through exactly this kind of model. AMI Labs is LeCun’s company; it launched in March 2026 with a $1.03B round and states its aims, it has not shipped a simulator we can cite. All four rows are the makers’ own claims.</p>
