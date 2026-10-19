@@ -1,7 +1,8 @@
 # Act III deck: review evidence
 
-Agent review by the implementer, 2026-10-18. Reviewed file: `../03-agent.html`,
-94,895 bytes, sha256 `8f196a87837430044204cce9ba81bb39ffd8765fc8213bce4f32034c55b735be`.
+Agent review by the implementer, 2026-10-18, re-reviewed 2026-10-19 after the A1 recheck.
+Reviewed file: `../03-agent.html`, 95,805 bytes, sha256
+`fa8ce85208124beac6531e48e1a4f56874a24f3b86740e5287a545af78f77baf`.
 Any edit to the deck invalidates this review; re-review and update the hash and byte size.
 
 Every external source below was opened on 2026-10-18 while authoring. Each date comes from the
@@ -283,13 +284,38 @@ belongs to the fact-check issue, done one week before the session.
 | permissions-modes | Codex sandbox modes, network off by default, approval policy, `/plan`, `codex exec` | 2026-10-18 (read) | https://learn.chatgpt.com/docs/sandboxing; https://learn.chatgpt.com/docs/agent-approvals-security; https://learn.chatgpt.com/docs/non-interactive-mode | Modes; defaults | Supported |
 | ladder | Cloud sessions and parallel agents exist in both products | 2026-10-18 (read) | https://code.claude.com/docs/en/claude-code-on-the-web; https://code.claude.com/docs/en/agents; https://learn.chatgpt.com/docs/cloud; https://learn.chatgpt.com/docs/agent-configuration/subagents | Intros | Supported; the ladder is labelled the course's framing |
 | models | Opus 5.5 and Fable 5.1: 1M context; default effort medium and high | 2026-10-18 (read) | https://platform.claude.com/docs/en/about-claude/models/overview | Compare models | Supported |
-| models | GPT-6 Astra: 1,050,000 context, 922,000 max input, effort low to max | 2026-10-18 (read) | https://developers.openai.com/api/docs/models/gpt-6-astra | Model details | Supported |
+| models | GPT-6 Astra: 1,050,000 context including up to 128,000 output, effort low to max | 2026-10-18 (read) | https://developers.openai.com/api/docs/models/gpt-6-astra | Model details | Supported (corrected by #50: the page does not state 922,000 input) |
 | models | Gemini 4 Argon: 1,048,576 unified window, thinking low/medium/high | 2026-10-18 (read) | https://ai.google.dev/gemini-api/docs/models/gemini-4-argon | Model card table | Supported |
 | time-horizons | TH1.1 doubling: 196.5 days all time, 130.8 since 2023, 88.6 since 2024 | 2026-01-29 | https://metr.org/blog/2026-1-29-time-horizon-1-1/ | Appendix table | Supported |
-| time-horizons | Frontier p50 points 2023–2026; GPT-4 ≈ 4 min, Mythos Preview (early) ≈ 17 h | 2026-09-08 (page update) | https://metr.org/time-horizons/ (data: https://metr.org/assets/benchmark_results_1_1.yaml) | is_sota points | Plotted as published |
+| time-horizons | Frontier p50 points 2023–2026 (all 15 `is_sota` models from 2023 on); GPT-4 ≈ 4 min, Mythos Preview (early) ≈ 17 h | 2026-09-08 (page update) | https://metr.org/time-horizons/ (data: https://metr.org/assets/benchmark_results_1_1.yaml) | is_sota points | Plotted as published (3 missing points added on recheck) |
 | time-horizons | Above 16 h unreliable; page no longer actively updated | 2026-09-08 | https://metr.org/time-horizons/ | Header; chart note | Supported |
 | benchmarks | Opus 5.5 66.4% ± 2.6 (xhigh); GPT-6 Astra 57.9% (high, as reported by OpenAI); "benchmark margins … less reliable" | 2026-09-22 | https://www.anthropic.com/news/claude-opus-5-5 | Benchmark table, footnote 1, intro | Supported |
 | benchmarks | Leaderboard: Opus 5.5 + Claude Code 64.8% ± 3.1 (max); GPT-6 Astra + Codex 57.9% ± 3.0 (high), 58.2% ± 2.8 (max) | 2026-10-18 (read) | https://www.tbench.ai/leaderboard | Terminal-Bench 4.0 table | Supported |
-| vibe-vs-agentic | Karpathy's "vibe coding" post, quote | 2025-02-02 | https://twitter.com/karpathy/status/1886192184808149383 (via https://simonwillison.net/2025/Mar/19/vibe-coding/) | Quoted in full by Willison | Supported via Willison |
+| vibe-vs-agentic | Karpathy's "vibe coding" post, quote | 2025-02-02 | https://twitter.com/karpathy/status/1886192184808149383 (also quoted by https://simonwillison.net/2025/Mar/19/vibe-coding/) | Post text | Supported (checked against the post by #50) |
 | vibe-vs-agentic | Agentic engineering: tools, specify, verify and iterate | 2026-03-15 | https://simonwillison.net/guides/agentic-engineering-patterns/what-is-agentic-engineering/ | Agentic engineering | Supported, paraphrase |
-| vibe-vs-agentic | The term appears in early 2026, notably from Karpathy and Addy Osmani | 2026-02-11 | https://simonwillison.net/2026/Feb/11/glm-5/ | Body | Supported |
+| vibe-vs-agentic | The term appears in early 2026, notably from Karpathy and Addy Osmani | 2026-02-04 | https://x.com/karpathy/status/2019137879310836075; https://addyosmani.com/blog/agentic-engineering/; https://simonwillison.net/2026/Feb/11/glm-5/ | Post; body | Supported by the primary posts (cited by #50) |
+
+## A1 · Recheck record
+
+The fact-check issue #50 rechecked every landscape claim on 2026-10-18 and merged as #113. Its
+log, [`../sources/fact-check.md`](../sources/fact-check.md), section "Act III", has one row per
+claim with its outcome. The bibliography is [`../sources.html`](../sources.html). Its two changes
+to this deck are reflected in the rows above:
+
+- `models`: the GPT-6 Astra "922,000 input tokens" figure became "the window includes up to
+  128,000 output tokens";
+- `vibe-vs-agentic`: Karpathy's 2026-02-04 post and Osmani's post are now cited directly.
+
+This branch reopened the METR sources on 2026-10-19:
+`https://metr.org/assets/benchmark_results_1_1.yaml`, `https://metr.org/time-horizons/` (still
+"no longer actively updated", last updated 2026-09-08) and the TH1.1 post (doubling times 196.5,
+130.8 and 88.6 days, as stated on the slide and in the notes). The chart had 12 of the 15 frontier
+(`is_sota`) points released since 2023. The 3 that were missing are now plotted from the same data:
+
+- GPT-4 (1106), 2023-11-06, 4 min;
+- Claude 3.5 Sonnet (new), 2024-10-22, 21 min;
+- Gemini 3 Pro, 2025-11-18, 224 min.
+
+Every point's position and interval were recomputed from the YAML and agree to 0.1 px. The
+slide text and the as-of date (2026-10-18) did not need to change: the summary's endpoints and
+doubling times are the same, and the data has not changed since 2026-09-08.
