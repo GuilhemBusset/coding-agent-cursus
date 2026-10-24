@@ -211,6 +211,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   <style>/* Page-specific layout for the Act I deck; uses the shared tokens. */
 .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem var(--space); align-items: start; }
 .cols > * { min-width: 0; }
+.cols > figure { margin: 0; }
+.cols [data-prob-chart] { margin-bottom: 0; }
 @media (min-width: 800px) { .cols.wide-left { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
 @media (max-width: 799px) { .cols { grid-template-columns: minmax(0, 1fr); } }
 .tight { padding-left: 1.25rem; }
@@ -222,16 +224,46 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .formula { font: 600 clamp(1.5rem, 3vw, 2.25rem)/1.3 var(--mono); margin: 0 0 .5rem; overflow-wrap: anywhere; }
 .formula.small { font-size: clamp(1.15rem, 2vw, 1.5rem); }
 .formula sub, .formula sup { font-size: .7em; }
-.process.compact { gap: .75rem; margin-bottom: .6rem; }
-.process.compact > li, [data-deck-paged] .process.compact > li { padding-block: .4rem; gap: .25rem; }
-.process.compact strong, .process.compact .process-value, [data-deck-paged] .process.compact strong, [data-deck-paged] .process.compact .process-value { font-size: clamp(1.1rem, 1.8vw, 1.35rem); }
-.process.compact > li > span:last-child:not(.label), [data-deck-paged] .process.compact > li > span:last-child:not(.label) { font-size: .9375rem; }
 .takeaway { font-size: clamp(1.15rem, 1.8vw, 1.35rem); font-weight: 650; line-height: 1.3; }
-.activity { border-left-color: var(--accent); }
 .go { font-size: 1.125rem; font-weight: 650; }
 .steps { padding-left: 1.5rem; }
 .steps li + li { margin-top: .3rem; }
-.tag { display: inline-block; padding: 0 .4rem; border: 1px solid var(--amber); color: var(--amber); font: 600 .75rem/1.6 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.callout.lab > .label { margin-bottom: .25rem; }
+.callout.lab .go { margin-bottom: .5rem; }
+.callout.lab > :last-child { margin-bottom: 0; }
+.formula.small { white-space: nowrap; }
+/* In → out readout for the running example on each stage slide. */
+.io { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr); gap: .35rem 1rem; align-items: baseline; margin: 0 0 .75rem; }
+.io dt { color: var(--accent); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.io dd { margin: 0; min-width: 0; }
+.io code { font-size: 1.0625rem; }
+/* The pipeline graph: one static SVG per slide; the class on each node marks the stage. */
+.pipeline-wrap { overflow-x: auto; margin: 0 0 .5rem; }
+.pipeline { width: 100%; min-width: 46rem; }
+.pipeline .node rect { fill: var(--paper); stroke: var(--rule); stroke-width: 1.5; }
+.pipeline .node .t { font-size: 19px; font-weight: 650; fill: var(--muted); }
+.pipeline .node .s { font-size: 14px; fill: var(--muted); }
+.pipeline .node.all rect, .pipeline .node.done rect { stroke: var(--muted); }
+.pipeline .node.all .t, .pipeline .node.done .t, .pipeline .node.now .t, .pipeline .node.now .s { fill: var(--ink); }
+.pipeline .node.all .s, .pipeline .node.done .s { fill: var(--secondary); }
+.pipeline .node.now rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+.pipeline a:hover .node rect, .pipeline a:focus-visible .node rect { stroke: var(--accent); }
+.pipeline a:focus-visible { outline: none; }
+.pipeline a:focus-visible .node rect { stroke-width: 4; }
+.pipeline .edge { fill: none; stroke: var(--rule); stroke-width: 2; }
+.pipeline .head { fill: var(--rule); }
+.pipeline .edge.all, .pipeline .edge.done { stroke: var(--muted); }
+.pipeline .head.all, .pipeline .head.done { fill: var(--muted); }
+.pipeline .edge.now { stroke: var(--accent); }
+.pipeline .head.now { fill: var(--accent); }
+.pipeline .tag { font: 600 14px var(--mono); fill: var(--muted); }
+.pipeline .tag.all, .pipeline .tag.done { fill: var(--secondary); }
+.pipeline .tag.now { fill: var(--accent); }
+.pipeline .bracket { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.pipeline .bracket.now { stroke: var(--accent); }
+.pipeline .bracket-label { font: 600 14px var(--mono); fill: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.pipeline .bracket-label.now { fill: var(--accent); }
+.pipeline .loop-bg { fill: var(--sheet); }
 .compare blockquote { margin: 0 0 .5rem; padding: .35rem .75rem; border-left: 3px solid var(--rule); background: var(--paper); }
 .compare blockquote p { margin: 0; }
 .compare blockquote p + p { margin-top: .25rem; }
@@ -241,10 +273,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .compare figcaption { color: var(--secondary); font: 600 .8125rem/1.5 var(--mono); margin-bottom: .25rem; }
 .compare .false { border-left-color: var(--red); }
 .compare .question { border-left-color: var(--accent); }
-.objective pre { margin-bottom: .5rem; padding: .6rem .9rem; font-size: clamp(.9375rem, 1.6vw, 1.25rem); white-space: pre-wrap; overflow-x: visible; }
-.objective pre code { overflow-wrap: anywhere; }
-.objective .right { border-left: 3px solid var(--accent); }
-.objective .wrong { border-left: 3px solid var(--red); }
 .speaker-notes { margin: .75rem 0 0; padding: 0; border-top: 1px dashed var(--rule); border-bottom: 0; font-size: .9375rem; line-height: 1.55; }
 .speaker-notes > summary { min-height: 44px; padding-block: .6rem 0; color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; }
 .speaker-notes[open] > summary { margin-bottom: .5rem; }
@@ -257,17 +285,23 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   [data-deck-paged] [data-slide] p, [data-deck-paged] [data-slide] ul, [data-deck-paged] [data-slide] ol { margin-bottom: .6rem; }
   [data-deck-paged] [data-slide] > .callout { margin-block: .5rem; padding-block: .5rem; }
   [data-deck-paged] [data-slide] > .speaker-notes { margin-top: auto; }
+  [data-deck-paged] [data-slide] .callout { margin-block: 0; }
 }
 @media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
   [data-deck-paged] [data-slide] { font-size: .96875rem; line-height: 1.5; }
   [data-deck-paged] [data-slide] h2 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); }
   [data-deck-paged] .formula { font-size: 1.6rem; }
   [data-deck-paged] .formula.small { font-size: 1.2rem; }
-  [data-deck-paged] [data-prob-row] + [data-prob-row] { margin-top: .25rem; }
-  [data-deck-paged] figure:has(> [data-prob-chart]) > figcaption { margin-bottom: .5rem; }
+  [data-deck-paged] [data-prob-row] + [data-prob-row] { margin-top: .125rem; }
+  [data-deck-paged] figure:has(> [data-prob-chart]) > figcaption { margin-bottom: .25rem; }
+  [data-deck-paged] [data-slide] h2 { margin-bottom: .4rem; }
+  [data-deck-paged] .pipeline-wrap { margin-bottom: .25rem; }
+  [data-deck-paged] .cite { margin-block: .5rem 0; }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .4rem; }
 }
 @media print {
   .notes-body { max-height: none; overflow: visible; color: inherit; }
+  .pipeline { min-width: 0; }
 }
 </style>
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
@@ -279,150 +313,230 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     <header class="masthead">
       <p class="eyebrow">Session 1 · Act I · 45 minutes</p>
       <h1 id="deck-title">The sampler</h1>
-      <p class="lede">From one equation to a correct picture of what a language model is, with a widget after each idea. The act ends on a single forward pass so that Act II can open on the loop.</p>
+      <p class="lede">Follow one token through a language model: one forward pass, one draw. Each stage has its lab.</p>
     </header>
     <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
-      <section id="title" data-slide data-minutes="1" tabindex="-1" aria-labelledby="title-title">
+      <!-- The pipeline SVG is repeated on each stage slide; only the classes on its nodes, edges and
+           labels differ (done, now, next; all on the overview). Edit every copy together. -->
+      <section id="pipeline" data-slide data-minutes="4" tabindex="-1" aria-labelledby="pipeline-title">
         <p class="eyebrow">Act I · The sampler</p>
-        <h2 id="title-title">What is a language model, exactly?</h2>
-        <p class="lede">One equation, then everything an agent is built on: tokens, a distribution, attention, how the model is made, and what it cannot know.</p>
-        <ol class="steps">
-          <li>One conditional distribution, written on the board.</li>
-          <li>Tokens and IDs; the strawberry demo and the pivot to code.</li>
-          <li>A forward pass gives probabilities; sampling picks one token.</li>
-          <li>Attention as a soft lookup.</li>
-          <li>Pretraining, post-training, RL with verifiable rewards.</li>
-          <li>Cutoff, hallucination and what is at stake in OR.</li>
-        </ol>
-        <p class="takeaway">Four labs along the way. Open them when the slide says so.</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 1 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: by the end of this act everyone should hold a correct, unglamorous picture: a model is a function that returns a probability for the next token, and a sampler that draws one. Everything clever happens around that loop, which is Act II.</p>
-            <p>Say that each idea is followed by a widget they use on their own laptop, and that the four labs work offline from the course folder.</p>
-            <p>Background for you, not for the slides: Andrej Karpathy, <a href="https://www.youtube.com/watch?v=7xTGNNLPyMI">Deep Dive into LLMs like ChatGPT</a> (YouTube) covers the same arc from pretraining data to RL at greater length.</p>
-            <p>Transition: “Let us start with the only equation of the session.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="factorization" data-slide data-minutes="3" tabindex="-1" aria-labelledby="factorization-title">
-        <p class="eyebrow">01 · One equation</p>
-        <h2 id="factorization-title">A language model is one conditional distribution, used again and again.</h2>
-        <div class="cols wide-left">
-          <div>
-            <p class="formula">p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
-            <p>x<sub>t</sub> is the token at position t. x<sub>&lt;t</sub> is every token before it, x<sub>1</sub> … x<sub>t−1</sub>: the whole context, not just the last word.</p>
-            <p class="formula small">p(x<sub>1</sub>, …, x<sub>T</sub>) = ∏<sub>t=1</sub><sup>T</sup> p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
-            <p>The chain rule factorizes the joint distribution of a whole sequence into these conditionals, exactly. <strong>Autoregression</strong> is the modelling choice: one network computes every factor, and generation draws x<sub>1</sub>, then x<sub>2</sub> given x<sub>1</sub>, and so on.</p>
-          </div>
-          <div class="callout">
-            <p class="label">Boundaries</p>
-            <p>At t = 1 the context x<sub>&lt;1</sub> is empty; in practice the model sees a beginning-of-sequence token there.</p>
-            <p>An end-of-sequence token is part of the vocabulary, so “stop here” is one more outcome and the length T is modelled too.</p>
-          </div>
-        </div>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Write p(x_t | x_&lt;t) on the board before you show the slide and leave it there all session; Act II and the labs come back to it.</p>
-            <p>Talk track: read it aloud as “the probability of the next token given everything before it”. Then write the product underneath: the probability of a whole text is the product of these conditionals. This is the chain rule of probability, a factorization that holds for any joint distribution, so it is not an approximation. The approximation is the network that computes each factor.</p>
-            <p>Mention the two boundary conventions: an empty context, or a BOS token, at t = 1; and an EOS token so the model can choose to stop.</p>
-            <p>Predict question: “Is writing a text one token at a time a simplification that loses something?” Answer: no, the factorization is exact; what limits the model is how well it learns each conditional.</p>
-            <p>Transition: “What exactly is an x_t? Not a letter, and not quite a word.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="tokens" data-slide data-minutes="2" tabindex="-1" aria-labelledby="tokens-title">
-        <p class="eyebrow">02 · Tokens</p>
-        <h2 id="tokens-title">The model reads integer IDs, not letters.</h2>
-        <figure class="process-figure">
-          <figcaption>What GPT-2 receives for the text “ strawberry”, leading space included</figcaption>
-          <ol class="process compact">
-            <li><span class="label">Text</span> <code class="process-value">" strawberry"</code> <span>10 letters and a space</span></li>
-            <li><span class="label">GPT-2 tokenizer</span> <strong>One vocabulary lookup</strong> <span>50,257 entries</span></li>
-            <li><span class="label">Model input</span> <strong class="accent">ID 41236</strong> <span>one integer, no letters</span></li>
-          </ol>
+        <h2 id="pipeline-title">Each token is one forward pass, then one draw.</h2>
+        <figure class="pipeline-wrap" role="group" aria-labelledby="pipeline-caption">
+          <svg class="pipeline" viewBox="-2 0 1074 126">
+          <path class="bracket all" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label all" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node all"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge all" d="M140 52 L163 52"/><path class="head all" d="M172 52 l-9 -5 v10 z"/>
+          <a href="#tokenize"><g class="node all"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g></a>
+          <text class="tag all" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge all" d="M312 52 L335 52"/><path class="head all" d="M344 52 l-9 -5 v10 z"/>
+          <a href="#transformer"><g class="node all"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g></a>
+          <text class="tag all" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge all" d="M554 52 L577 52"/><path class="head all" d="M586 52 l-9 -5 v10 z"/>
+          <a href="#logits"><g class="node all"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g></a>
+          <text class="tag all" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge all" d="M726 52 L749 52"/><path class="head all" d="M758 52 l-9 -5 v10 z"/>
+          <a href="#sample"><g class="node all"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g></a>
+          <text class="tag all" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge all" d="M898 52 L921 52"/><path class="head all" d="M930 52 l-9 -5 v10 z"/>
+          <a href="#append"><g class="node all"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g></a>
+          <path class="edge all" d="M1000 78 V114 H70 V87"/>
+          <path class="head all" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag all" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+          <figcaption id="pipeline-caption" class="visually-hidden">The pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then the token is appended to the context and the pass runs again. Each stage after the context links to its slide.</figcaption>
         </figure>
-        <p>A token is a word, a piece of one, a few digits or a character. Each becomes its integer ID: a sentence is a list of numbers.</p>
-        <div class="callout hedge">
-          <p>The ID carries no spelling. A model can only pick up which letters a token contains indirectly, from training text, so spelling and letter counting are hard for it, not impossible.</p>
+        <div class="cols wide-left">
+          <p class="formula">p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
+          <div class="callout">
+            <p class="label">Running example</p>
+            <p>GPT-2 small, after <code>The capital of France is</code>.</p>
+          </div>
         </div>
-        <p class="cite">Token ID recorded in <code>fixtures/next_token.json</code> with the GPT-2 tokenizer, <code>openai-community/gpt2</code> at revision 607a30d783dfa663caf39e06633721c8d4cfcd7e, 2026-10-10.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
+          <summary>Speaker notes · 4 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: point at the x_t on the board. Each x_t is an integer ID. For GPT-2, “ strawberry” with its leading space is a single token, ID 41236. The model never sees s, t, r: it sees 41236.</p>
-            <p>Qualification to keep: models do learn some spelling facts about tokens from text that spells words out, so they can sometimes count letters. It is unreliable rather than impossible.</p>
-            <p>Predict question for the lab: “How many tokens is ‘ strawberry’?” Let them guess before they open it.</p>
-            <p>Transition: “Open the tokenizer lab and lock in your two predictions.”</p>
+            <p>Write p(x_t | x_&lt;t) on the board before you show the slide and leave it there: “the probability of the next token given everything before it”. The product of these conditionals is the probability of the whole text; that is the chain rule, so writing one token at a time loses nothing. What limits a model is how well the network learns each conditional.</p>
+            <p>Predict question: “Is writing a text one token at a time a simplification that loses something?” No: the factorization is exact.</p>
+            <p>Talk track: this graph is the whole act. The pass computes the next-token distribution given everything before it; the sampler draws x_t, appends it, and the pass runs again. Walk it once from left to right, then say that each box is one of the next slides, with its lab or demo named under it, on their own laptops. The bracket marks the forward pass, the network itself; the tokenizer and the sampler sit outside it.</p>
+            <p>Background for you, not for the slides: Andrej Karpathy, <a href="https://www.youtube.com/watch?v=7xTGNNLPyMI">Deep Dive into LLMs like ChatGPT</a> (YouTube), covers the same arc at greater length.</p>
+            <p>Transition: “First box: what does the model actually read?”</p>
           </div>
         </details>
       </section>
 
-      <section id="tokenizer-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="tokenizer-lab-title">
-        <p class="eyebrow">Lab · 3 minutes</p>
-        <h2 id="tokenizer-lab-title">Tokens, not letters: predict, then look.</h2>
-        <p class="go"><a href="labs/tokenizer.html">Open the tokenizer lab</a> <span class="muted">(<code>labs/tokenizer.html</code>, works offline)</span></p>
-        <ol class="steps">
-          <li>Answer both predict questions and lock in before you scroll.</li>
-          <li>Reveal, then read the worked examples: a French word and a long number.</li>
-          <li>Find the line that says what an ID tells you about the letters inside it.</li>
-        </ol>
-        <div class="callout hedge">
-          <p class="label">Read the label</p>
-          <p>The lab’s splits and IDs are illustrative, written by hand (“␣straw” + “berry”). The real GPT-2 tokenizer keeps “ strawberry” as one token, 41236. Every model family splits differently, and Claude’s tokenizer is not public.</p>
+      <section id="tokenize" data-slide data-minutes="5" tabindex="-1" aria-labelledby="tokenize-title">
+        <p class="eyebrow">Stage 1 · Tokenizer</p>
+        <h2 id="tokenize-title">The model reads integer IDs, not letters.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; stage 1 of 5, the tokenizer, is highlighted">
+          <path class="bracket next" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label next" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node done"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge now" d="M140 52 L163 52"/><path class="head now" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag now" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge next" d="M312 52 L335 52"/><path class="head next" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag next" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge next" d="M554 52 L577 52"/><path class="head next" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag next" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge next" d="M726 52 L749 52"/><path class="head next" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag next" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge next" d="M898 52 L921 52"/><path class="head next" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge next" d="M1000 78 V114 H70 V87"/>
+          <path class="head next" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag next" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
         </div>
+        <div class="cols">
+          <div>
+            <dl class="io">
+              <dt>In</dt><dd><code>The capital of France is</code></dd>
+              <dt>Out</dt><dd><code>464 3139 286 4881 318</code>: five IDs</dd>
+            </dl>
+            <p><code>␣strawberry</code> is one GPT-2 token, ID <strong>41236</strong>. The ID carries no spelling.</p>
+          </div>
+          <div class="callout lab">
+            <p class="label">Lab · 4 minutes</p>
+            <p class="go"><a href="labs/tokenizer.html">Open the tokenizer lab</a></p>
+            <p>Predict, lock in, reveal.</p>
+          </div>
+        </div>
+        <p class="cite">IDs from the GPT-2 tokenizer, <code>openai-community/gpt2</code> at 607a30d, recorded in <code>fixtures/next_token.json</code>, 2026-10-10. ␣ marks a leading space.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
+          <summary>Speaker notes · 5 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Activity: two minutes in the lab, one minute of debrief. Everyone locks in both answers before revealing; a show of hands for 1, 2, 3 or 11 tokens.</p>
-            <p>Debrief: the number of pieces depends on the tokenizer, and the lab says its splits are hand-written. Whatever the split, the model receives IDs. The second question’s answer, “none directly”, is the point.</p>
-            <p>If someone asks for a real tokenizer: the lab’s last section names one to try online. Do not open it during class; the deck stays offline.</p>
+            <p>Talk track: point at the x_t on the board. Each x_t is an integer ID from a vocabulary of 50,257 entries. A token is a word, a piece of one, a few digits or a character. The model never sees s, t, r: it sees 41236.</p>
+            <p>Qualification to keep: models learn some spelling facts about tokens from text that spells words out, so letter counting is unreliable rather than impossible.</p>
+            <p>Activity: three minutes in the lab, one of debrief. Show of hands for 1, 2, 3 or 11 tokens before the reveal; the second question’s answer, “none directly”, is the point. The lab’s splits are illustrative (“␣straw” + “berry”): real GPT-2 keeps “␣strawberry” whole, and Claude’s tokenizer is not public.</p>
             <p>Transition: “So let us ask a model to count letters, and watch what happens.”</p>
           </div>
         </details>
       </section>
 
-      <section id="strawberry" data-slide data-minutes="4" tabindex="-1" aria-labelledby="strawberry-title">
-        <p class="eyebrow">Demo · 4 minutes · Strawberry pivot</p>
+      <section id="strawberry" data-slide data-minutes="5" tabindex="-1" aria-labelledby="strawberry-title">
+        <p class="eyebrow">Stage 1 · Demo · Strawberry pivot</p>
         <h2 id="strawberry-title">Counting letters is a guess. Code that counts is not.</h2>
         <div class="cols">
           <div>
             <ol class="steps">
-              <li><strong>Predict.</strong> Same model, same question, five times, no tools: how many right?</li>
-              <li><strong>Ask.</strong> How many r’s in a 300-letter invented word? True count: 146.</li>
-              <li><strong>Pivot to code.</strong> The agent writes <code>work/count_r.py</code>, runs it, and prints 146, every run.</li>
+              <li><strong>Predict:</strong> five tries, no tools. How many right?</li>
+              <li><strong>Ask:</strong> r’s in a 300-letter word. True count: 146.</li>
+              <li><strong>Pivot:</strong> the agent writes and runs code. 146, every run.</li>
             </ol>
             <p>Recorded 2026-10-11, tools off: <code>claude-haiku-5-5</code> wrong 2 of 5, <code>gpt-6-luna</code> wrong 4 of 5, off by up to 32.</p>
           </div>
-          <div class="callout activity">
+          <div class="callout">
             <p class="label">Runbook</p>
             <p><a href="demos/model/strawberry.md"><code>demos/model/strawberry.md</code></a></p>
             <p><code>uv run strawberry.py</code><br><code>uv run strawberry.py --pivot</code></p>
-            <p>Claude Code or Codex, whichever is logged in. Fallback: <code>uv run --offline strawberry.py --replay</code></p>
           </div>
         </div>
-        <p class="takeaway">When a question has a mechanical answer, the agent should write and run code. The rest of the course does that with solvers.</p>
+        <p class="takeaway">When a question has a mechanical answer, make the agent write and run code.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 4 min</summary>
+          <summary>Speaker notes · 5 min</summary>
           <div class="notes-body" tabindex="0">
             <p>Run the runbook as written, from <code>sessions/01-fundamentals/cursus/demos/model</code>. It uses the longer invented word, not “strawberry” itself, because current models have seen the strawberry question many times. The script picks Claude Code or Codex, whichever is installed and logged in; <code>--via codex</code> or <code>--via claude</code> forces one.</p>
             <p>Predict question (runbook): “I will ask the same model the same question five times, with no tools. How many of the five answers will be the right count?” Hands for 0, 1–2, 3–4 and 5. Then: “And if it may write code?”</p>
-            <p>If all five live answers are right, say so, replay the recording, and pivot anyway: a correct guess is still a guess. If there is no login or network, go straight to the replay.</p>
-            <p>Debrief: tokens, not letters, plus a sampled answer, give a number that moves between runs. The pivot is the course thesis: the model does not count, it writes the program that counts. Reset with the runbook’s reset step after class.</p>
-            <p>Transition: “Why did the answer move between runs? Because one pass gives a distribution.”</p>
+            <p>If all five live answers are right, say so, replay the recording, and pivot anyway: a correct guess is still a guess. If there is no login or network, go straight to the replay: <code>uv run --offline strawberry.py --replay</code>, then the same with <code>--pivot</code>. The pivot writes <code>work/count_r.py</code>.</p>
+            <p>Debrief: tokens, not letters, plus a sampled answer, give a number that moves between runs. The pivot is the course thesis: the model does not count, it writes the program that counts; the rest of the course does that with solvers. Reset with the runbook’s reset step after class.</p>
+            <p>Transition: “Back to the graph: what happens to the five IDs inside the network?”</p>
           </div>
         </details>
       </section>
 
-      <section id="distribution" data-slide data-minutes="3" tabindex="-1" aria-labelledby="distribution-title">
-        <p class="eyebrow">03 · One forward pass</p>
-        <h2 id="distribution-title">One forward pass gives a distribution, not an answer.</h2>
+      <section id="transformer" data-slide data-minutes="6" tabindex="-1" aria-labelledby="transformer-title">
+        <p class="eyebrow">Stage 2 · Transformer</p>
+        <h2 id="transformer-title">Attention: each token looks up the tokens before it.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; stage 2 of 5, the transformer, is highlighted">
+          <path class="bracket now" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label now" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node done"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge done" d="M140 52 L163 52"/><path class="head done" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag done" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge now" d="M312 52 L335 52"/><path class="head now" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag now" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge next" d="M554 52 L577 52"/><path class="head next" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag next" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge next" d="M726 52 L749 52"/><path class="head next" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag next" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge next" d="M898 52 L921 52"/><path class="head next" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge next" d="M1000 78 V114 H70 V87"/>
+          <path class="head next" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag next" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+        </div>
+        <div class="cols">
+          <div>
+            <dl class="io">
+              <dt>In</dt><dd>five IDs, each looked up as a vector</dd>
+              <dt>Out</dt><dd>five vectors; the last one scores the next token</dd>
+            </dl>
+            <p class="formula small">softmax(QK<sup>T</sup>/√d)·V</p>
+            <p>A <strong>query</strong> matched against earlier <strong>keys</strong> returns a mix of their <strong>values</strong>.</p>
+          </div>
+          <div class="callout lab">
+            <p class="label">Lab · 4 minutes</p>
+            <p class="go"><a href="labs/attention.html">Open the attention lab</a></p>
+            <p>Drag the query. Then GPT-2: “it” → “animal”.</p>
+          </div>
+        </div>
+        <p class="cite">GPT-2 small: 12 layers of 12 heads; weights recorded in <code>fixtures/attention.json</code> (<code>openai-community/gpt2</code> at 607a30d, 2026-10-10). The lab’s toy panel is illustrative.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes · 6 min</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: a dictionary lookup is hard: exact key, one value. Attention makes it soft and differentiable: every key gets a similarity score, softmax turns the scores into weights that sum to 1, and the output is the weighted average of the values. d is the key dimension; dividing by √d keeps the scores from growing with it. Causal: a token looks only at itself and earlier tokens, which is what keeps each factor p(x_t | x_&lt;t).</p>
+            <p>Each head runs its own lookup in parallel; an MLP follows, and GPT-2 small stacks 12 such layers, so later lookups use earlier results. In the lab, layer 5, head 4, “it” puts 84.7% on “animal”. Keep the words key and value: Act III comes back to them with the KV cache.</p>
+            <p>Activity: two minutes on the toy, two on GPT-2 (layer 5, head 4). Predict question before they drag: “If the query points exactly at one key, does the output equal that key’s value?” Only as the scale grows; at the default scale the other values still pull the output. Most heads do nothing human-readable; the lab opens on the one that links “it” to “animal” most.</p>
+            <p>Transition: “After the last layer, the network gives one number per vocabulary entry.”</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="logits" data-slide data-minutes="7" tabindex="-1" aria-labelledby="logits-title">
+        <p class="eyebrow">Stage 3 · Logits</p>
+        <h2 id="logits-title">One forward pass gives a distribution, not an answer.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; stage 3 of 5, the logits, is highlighted">
+          <path class="bracket now" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label now" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node done"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge done" d="M140 52 L163 52"/><path class="head done" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag done" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge done" d="M312 52 L335 52"/><path class="head done" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag done" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge now" d="M554 52 L577 52"/><path class="head now" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag now" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge next" d="M726 52 L749 52"/><path class="head next" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag next" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge next" d="M898 52 L921 52"/><path class="head next" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge next" d="M1000 78 V114 H70 V87"/>
+          <path class="head next" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag next" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+        </div>
         <div class="cols">
           <figure>
-            <figcaption>GPT-2’s top 5 after “The capital of France is” (recorded; ␣ = space)</figcaption>
+            <figcaption>GPT-2’s top 5, at T = 1</figcaption>
             <ol data-prob-chart>
               <li data-prob-row data-value="0.0846"><span data-prob-label><code>␣the</code></span> <span data-prob-value>8.5%</span></li>
               <li data-prob-row data-value="0.0479"><span data-prob-label><code>␣now</code></span> <span data-prob-value>4.8%</span></li>
@@ -432,157 +546,136 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             </ol>
           </figure>
           <div>
-            <p>The network returns one score z<sub>i</sub> per vocabulary entry. Then:</p>
-            <p class="formula small">p = softmax(z/T)</p>
-            <p>A <strong>sampler</strong> draws one token from p and appends it. Temperature T&nbsp;&lt;&nbsp;1 sharpens towards the top token (argmax as T&nbsp;→&nbsp;0); T&nbsp;&gt;&nbsp;1 flattens.</p>
+            <p><span class="formula small">p = softmax(z/T)</span>, T the temperature.</p>
+            <div class="callout lab">
+              <p class="label">Lab · 6 minutes</p>
+              <p class="go"><a href="labs/next-token.html">Open the next-token lab</a></p>
+              <p>Bet, reveal, then move T.</p>
+            </div>
           </div>
         </div>
-        <p class="callout"><strong>Name it: System 1.</strong> Each token costs one fixed pass through the network, with no extra passes for a harder token.</p>
-        <p class="cite">Probabilities at T = 1 over the full vocabulary, from the logits and log-sum-exp recorded in <code>fixtures/next_token.json</code> (GPT-2 small, 2026-10-10). The top 20 hold 45.7% of the mass.</p>
+        <p class="cite">Recorded: T = 1 over the full vocabulary, from the logits and log-sum-exp in <code>fixtures/next_token.json</code> (GPT-2 small, 2026-10-10). The top 20 hold 45.7% of the mass.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
+          <summary>Speaker notes · 7 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: GPT-2 does not answer “Paris”. It returns probabilities, and “ Paris” is fifth at 3.2%, behind “ the” at 8.5%, because “The capital of France is the city of Paris” is also a good continuation. The answer appears only when a sampler draws.</p>
+            <p>Talk track: after the last layer there are 50,257 scores z, one per vocabulary entry. GPT-2 does not answer “Paris”. It returns probabilities, and “ Paris” is fifth at 3.2%, behind “ the” at 8.5%, because “The capital of France is the city of Paris” is also a good continuation. The answer appears only when the sampler draws.</p>
             <p>Write softmax(z/T) next to the equation on the board: divide the scores by T, exponentiate, normalize. Low T piles mass on the top token; T → 0 is argmax, the same token every time; high T spreads it out.</p>
-            <p>Name System 1 now: one pass, fixed compute per token for a given model, context and configuration. It does not mean constant latency: a longer context makes each pass slower. It means there is no step where the model decides to think longer about a hard token.</p>
-            <p>Transition: “Bet against GPT-2 in the next-token lab.”</p>
+            <p>Activity: on a shared screen, collect three or four guesses and lock each; the tally is local to the browser. Reveal, then compare the class’s top guess with GPT-2’s. In the sandbox, move T from 1 to 0.3, then to 2, and set top-p to 0.5: which candidates can never be drawn? Point out the honesty note: only the top 20 logits are stored, so the sandbox renormalizes among them.</p>
+            <p>Transition: “A distribution is not a token yet. Something has to draw.”</p>
           </div>
         </details>
       </section>
 
-      <section id="next-token-lab" data-slide data-minutes="4" tabindex="-1" aria-labelledby="next-token-lab-title">
-        <p class="eyebrow">Lab · 4 minutes</p>
-        <h2 id="next-token-lab-title">Bet on the next token, then reshape the distribution.</h2>
-        <p class="go"><a href="labs/next-token.html">Open the next-token lab</a> <span class="muted">(<code>labs/next-token.html</code>, real GPT-2 data)</span></p>
-        <ol class="steps">
-          <li>On “minimize total”, type a guess and lock it. Then reveal what GPT-2 assigned.</li>
-          <li>In the sandbox, move T from 1 to 0.3, then to 2. Watch the top bar.</li>
-          <li>Set top-p to 0.5: which candidates can never be drawn?</li>
-          <li>Press Sample ×100 twice. Switch to Argmax and press it again.</li>
-        </ol>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 4 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Activity: on a shared screen, collect three or four guesses from the room and lock each; the tally is local to the browser. Reveal, then compare the class’s top guess with GPT-2’s top token. Move to a second prompt if there is time.</p>
-            <p>Predict question before Sample ×100: “Will two batches of 100 give the same counts?” No in Sample mode; yes in Argmax mode, because the top token is chosen every time.</p>
-            <p>Point out the sandbox’s honesty note: only the top 20 logits are stored, so it renormalizes among them.</p>
-            <p>Transition: “That was one step. Now watch a real model take forty of them.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="tiny-lm-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="tiny-lm-lab-title">
-        <p class="eyebrow">Lab · 3 minutes</p>
-        <h2 id="tiny-lm-lab-title">Run a real model one forward pass at a time.</h2>
-        <p class="go"><a href="labs/tiny-lm.html">Open the tiny language model lab</a> <span class="muted">(<code>labs/tiny-lm.html</code>, 260,000 parameters, in the page)</span></p>
-        <ol class="steps">
-          <li>Press Step five times: one forward pass, one draw, one new token each.</li>
-          <li>Press Run 40 tokens. Click a token in the middle to rewind and resample.</li>
-          <li>Reset with the same seed and run again: same text. Change the seed: new text.</li>
-        </ol>
-        <p class="muted">Trained on TinyStories only: it shows the mechanism, not the capability.</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Activity: everyone generates a story. Ask two people with different seeds to read their first line aloud: same prompt, same model, different stories.</p>
-            <p>Talk track: each Step is the loop on the board. One forward pass computes p(x_t | x_&lt;t), the seeded sampler draws, the token is appended, repeat. A chat model’s answer is this loop with a much larger model.</p>
-            <p>Predict question before the reset: “Same seed, same settings, same clicks: same text?” Yes, which sets up the next slide.</p>
-            <p>Transition: “So why can you not get the same answer twice from a chatbot?”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="reproducibility" data-slide data-minutes="3" tabindex="-1" aria-labelledby="reproducibility-title">
-        <p class="eyebrow">04 · Why outputs differ</p>
-        <h2 id="reproducibility-title">Same prompt, different answer: sampling, not a bug.</h2>
+      <section id="sample" data-slide data-minutes="5" tabindex="-1" aria-labelledby="sample-title">
+        <p class="eyebrow">Stage 4 · Sampler</p>
+        <h2 id="sample-title">The sampler draws: same prompt, different answer.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; stage 4 of 5, the sampler, is highlighted">
+          <path class="bracket next" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label next" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node done"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge done" d="M140 52 L163 52"/><path class="head done" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag done" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge done" d="M312 52 L335 52"/><path class="head done" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag done" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge done" d="M554 52 L577 52"/><path class="head done" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag done" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge now" d="M726 52 L749 52"/><path class="head now" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag now" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge next" d="M898 52 L921 52"/><path class="head next" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node next"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge next" d="M1000 78 V114 H70 V87"/>
+          <path class="head next" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag next" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+        </div>
         <div class="cols">
           <ul class="tight">
-            <li>Each answer is a draw. A flat distribution gives different outputs; a peaked one can repeat itself. Sampling allows a difference; it does not guarantee one.</li>
-            <li>A fixed seed or argmax reproduces locally, as in the tiny-LM lab.</li>
-            <li>Neither agent CLI lets you fix a seed, and even greedy decoding on shared GPU servers can drift: batching can change the order of floating-point additions.</li>
+            <li>Each answer is a draw.</li>
+            <li>A seed or argmax reproduces locally; the agent CLIs expose no seed.</li>
+            <li>Judge an agent on several runs.</li>
           </ul>
-          <div class="callout activity">
+          <div class="callout">
             <p class="label">Demo · 3 minutes</p>
-            <p><a href="demos/model/sampling.md"><code>demos/model/sampling.md</code></a>: one prompt, five runs, count the distinct answers.</p>
+            <p><a href="demos/model/sampling.md"><code>demos/model/sampling.md</code></a></p>
             <p>Recorded 2026-10-11: <code>claude-haiku-5-5</code> 5 of 5 distinct; <code>gpt-6-luna</code> 4 of 5.</p>
           </div>
         </div>
-        <p class="cite">As of 2026-10-18, neither CLI exposes a temperature, top-p or seed option: <a href="https://code.claude.com/docs/en/cli-reference">Claude Code CLI reference</a>, <a href="https://developers.openai.com/codex/cli/reference">Codex CLI reference</a>, and the <code>--help</code> of Claude Code 2.1.302 and codex-cli 0.162.1, as in the sampling runbook.</p>
+        <p class="cite">As of 2026-10-18, neither CLI exposes a temperature, top-p or seed option: <a href="https://code.claude.com/docs/en/cli-reference">Claude Code</a> and <a href="https://developers.openai.com/codex/cli/reference">Codex</a> CLI references; <code>--help</code> of Claude Code 2.1.302, codex-cli 0.162.1.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
+          <summary>Speaker notes · 5 min</summary>
           <div class="notes-body" tabindex="0">
             <p>Run the sampling runbook: predict question “Same prompt, same model, same settings, five times. How many different names do we get?”, hands for 1, 2–3 and 4–5, then <code>uv run sampling.py</code> (or <code>--via codex</code>). Fallback: <code>uv run --offline sampling.py --replay</code>.</p>
-            <p>Report whatever count you get. A live run can repeat a favourite name; that is a peaked distribution, not determinism.</p>
-            <p>Talk track for reproducibility: local and seeded, outputs reproduce; hosted, you cannot fix the seed and should not rely on even temperature-0 outputs being bit-identical. For the course this means: do not judge an agent from one run, and keep what you need to reproduce (code, data, solver logs) in files.</p>
-            <p>Transition: “What happens inside that one pass? One mechanism matters most: attention.”</p>
+            <p>One prompt, five runs, count the distinct answers. Report whatever count you get. A live run can repeat a favourite name; that is a peaked distribution, not determinism.</p>
+            <p>Talk track for reproducibility: local and seeded, outputs reproduce; hosted, you cannot fix the seed and should not rely on even temperature-0 outputs being bit-identical, because batching on shared GPU servers can change the order of floating-point additions. Keep what you need to reproduce (code, data, solver logs) in files.</p>
+            <p>If there is time, back in the next-token lab: Sample ×100 twice, then Argmax. Predict first: “Will two batches of 100 give the same counts?” No in Sample mode; yes in Argmax mode.</p>
+            <p>Transition: “One token drawn. What happens to it?”</p>
           </div>
         </details>
       </section>
 
-      <section id="attention" data-slide data-minutes="2" tabindex="-1" aria-labelledby="attention-title">
-        <p class="eyebrow">05 · Inside the pass</p>
-        <h2 id="attention-title">Attention is a soft database lookup.</h2>
-        <p>A database matches a query against keys and returns the one value whose key matches. In attention, the current token’s <strong>query</strong> q is scored against the <strong>key</strong> k<sub>i</sub> of every earlier token and itself; softmax turns the scores into weights that sum to 1, and the output is the weighted average of their <strong>values</strong> v<sub>i</sub>.</p>
-        <ol class="process compact">
-          <li><span class="label">Query</span> <strong>What am I looking for?</strong> <span>one vector per token</span></li>
-          <li><span class="label">Match keys</span> <strong>Score q·k<sub>i</sub>/√d</strong> <span>softmax turns scores into weights</span></li>
-          <li><span class="label">Blend values</span> <strong>Σ<sub>i</sub> w<sub>i</sub> v<sub>i</sub></strong> <span>a soft, not exact, lookup</span></li>
-        </ol>
-        <p class="formula small">softmax(qK<sup>T</sup>/√d)·V</p>
-        <p>Causal: a token looks only at itself and earlier tokens, which is what keeps each factor p(x<sub>t</sub> | x<sub>&lt;t</sub>). GPT-2 small runs 12 heads in each of 12 layers.</p>
+      <section id="append" data-slide data-minutes="6" tabindex="-1" aria-labelledby="append-title">
+        <p class="eyebrow">Stage 5 · Append and repeat</p>
+        <h2 id="append-title">Append the token, run the pass again.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; stage 5 of 5, append the next token and run again, is highlighted">
+          <path class="bracket next" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label next" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node done"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge done" d="M140 52 L163 52"/><path class="head done" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag done" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge done" d="M312 52 L335 52"/><path class="head done" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag done" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge done" d="M554 52 L577 52"/><path class="head done" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag done" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge done" d="M726 52 L749 52"/><path class="head done" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node done"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag done" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge now" d="M898 52 L921 52"/><path class="head now" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge now" d="M1000 78 V114 H70 V87"/>
+          <path class="head now" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag now" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+        </div>
+        <div class="cols">
+          <div>
+            <dl class="io">
+              <dt>In</dt><dd><code>The capital of France is</code> + <code>␣the</code></dd>
+              <dt>Out</dt><dd>a context one token longer: the next pass</dd>
+            </dl>
+            <p>Stops at an end-of-sequence token or a length limit.</p>
+          </div>
+          <div class="callout lab">
+            <p class="label">Lab · 5 minutes</p>
+            <p class="go"><a href="labs/tiny-lm.html">Open the tiny language model lab</a></p>
+            <p>Step ×5, Run 40. Same seed, same text.</p>
+          </div>
+        </div>
+        <p class="cite">The lab runs Andrej Karpathy’s stories260K, 260,000 parameters, in the page. Trained on TinyStories only: it shows the mechanism, not the capability.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
+          <summary>Speaker notes · 6 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: a dictionary lookup is hard: exact key, one value. Attention makes it soft and differentiable: every key gets a similarity score, softmax turns the scores into a probability measure, and the output is the expectation of the values under it. d is the key dimension; dividing by √d keeps the scores from growing with it.</p>
-            <p>This is the only mechanism slide of the act. Each head learns its own queries, keys and values, and stacking layers lets later lookups use earlier results. The lab shows a real GPT-2 head linking “it” to “animal”.</p>
-            <p>Transition: “Drag a query and watch the weights move.”</p>
+            <p>Talk track: each Step is the whole graph once. One forward pass computes p(x_t | x_&lt;t), the seeded sampler draws, the token is appended, repeat. A chat model’s answer is this loop with a much larger model. The lab’s list “What one Step computes” walks the same stages.</p>
+            <p>Activity: everyone generates a story. Ask two people with different seeds to read their first line aloud: same prompt, same model, different stories. Then click a token in the middle to rewind and resample.</p>
+            <p>Predict question before the reset: “Same seed, same settings, same clicks: same text?” Yes. That is the local reproducibility the hosted agents do not give you.</p>
+            <p>Transition: “The graph is the same for every model. What differs is the weights. Where do they come from?”</p>
           </div>
         </details>
       </section>
 
-      <section id="attention-lab" data-slide data-minutes="3" tabindex="-1" aria-labelledby="attention-lab-title">
-        <p class="eyebrow">Lab · 3 minutes</p>
-        <h2 id="attention-lab-title">Move the query; watch the weights and the output.</h2>
-        <p class="go"><a href="labs/attention.html">Open the attention lab</a> <span class="muted">(<code>labs/attention.html</code>, keyboard sliders included)</span></p>
-        <ol class="steps">
-          <li>Toy panel: drag the query, or use the sliders, towards one key. Watch its weight rise and the output move to its value.</li>
-          <li>Raise the scale s until one record takes nearly all the mass: a hard lookup. Set s to 0: a plain average.</li>
-          <li>GPT-2 panel: focus “it”, then change layer and head. Which heads look back at “animal”?</li>
-        </ol>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Activity: two minutes on the toy, one on GPT-2. The toy’s four records are invented; the GPT-2 weights are recorded from the real model on one sentence.</p>
-            <p>Predict question before they drag: “If the query points exactly at one key, does the output equal that key’s value?” Only as s grows; at the default scale the other values still pull the output.</p>
-            <p>Debrief: most heads do not do anything human-readable; the lab opens on the one that puts the most weight from “it” on “animal”.</p>
-            <p>Transition: “Where do these weights come from? Three stages of training.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="pretraining" data-slide data-minutes="2" tabindex="-1" aria-labelledby="pretraining-title">
-        <p class="eyebrow">06 · How a model is made · 1/3</p>
-        <h2 id="pretraining-title">Pretraining: predict the next token of a vast amount of text.</h2>
-        <ul class="tight">
-          <li>Training minimizes −log p(x<sub>t</sub> | x<sub>&lt;t</sub>) over the corpus. That quantity is a code length: with arithmetic coding, a better predictor is a better <strong>lossless</strong> compressor.</li>
-          <li>The weights are far smaller than the text they read, so they cannot keep it verbatim. What survives is what helps predict. Think of the model as a <strong>lossy compression</strong> of its training text.</li>
-          <li>The result is a <strong>base model</strong>: a document continuer, not an assistant.</li>
-        </ul>
-        <div class="callout hedge"><p>The paper is about prediction as lossless compression of a sequence. “Lossy compression” of the corpus is our metaphor for what the weights keep, not a result of the paper.</p></div>
-        <p class="cite">Source: Grégoire Delétang et al., <cite>Language Modeling Is Compression</cite>, <a href="https://arxiv.org/abs/2309.10668">arXiv 2309.10668</a> (2023), abstract.</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: the loss on the board is the number of bits the model would need to encode the text. Delétang et al. state in their abstract that predictive models and lossless compressors are equivalent, and that a large language model trained mostly on text is also a strong general-purpose compressor.</p>
-            <p>Our framing on top: the weights are a lossy compression of the training text, Karpathy’s “lossy zip file of the internet” in the deep-dive video. Frequent regularities survive; rare facts may survive partially or not at all, and the model cannot tell which.</p>
-            <p>Transition: “A base model continues documents. Ask it a question and see what you get.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="post-training" data-slide data-minutes="3" tabindex="-1" aria-labelledby="post-training-title">
-        <p class="eyebrow">06 · How a model is made · 2/3</p>
-        <h2 id="post-training-title">Post-training turns a document continuer into an assistant.</h2>
+      <section id="weights" data-slide data-minutes="5" tabindex="-1" aria-labelledby="weights-title">
+        <p class="eyebrow">Where the weights come from</p>
+        <h2 id="weights-title">Pretraining makes a document continuer. Post-training makes an assistant.</h2>
         <div class="compare" data-fixture-id="factual">
           <figure class="ask">
             <figcaption>Shared user question</figcaption>
@@ -590,101 +683,26 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </figure>
           <div class="cols">
             <figure>
-              <figcaption>Base model · SmolLM2-135M · excerpt, its first three lines</figcaption>
+              <figcaption>Base · SmolLM2-135M · excerpt</figcaption>
               <blockquote class="false"><p>The capital of Australia is Canberra.</p><p>What is the capital of New Zealand?</p><p>New Zealand is the second largest country in the world, with a population of 5.1 million people.</p></blockquote>
             </figure>
-            <figure>
-              <figcaption>Assistant · SmolLM2-135M-Instruct · complete, stopped itself</figcaption>
-              <blockquote><p>The capital of Australia is Canberra.</p></blockquote>
-            </figure>
+            <div>
+              <figure>
+                <figcaption>Assistant · SmolLM2-135M-Instruct · complete</figcaption>
+                <blockquote><p>The capital of Australia is Canberra.</p></blockquote>
+              </figure>
+              <p class="takeaway">Neither checks facts: the false line reads as fluently.</p>
+            </div>
           </div>
         </div>
-        <p>Fine-tuning on conversations, then on preferences, teaches the format: answer, then stop. It changes behaviour; it adds no fact checker.</p>
-        <p class="cite">Recorded 2026-10-10 by <code>fixtures/build_fixtures.py</code> into <code>fixtures/base_vs_instruct.json</code>: HuggingFaceTB/SmolLM2-135M at 93efa2f097d58c2a74874c7e644dbc9b0cee75a2 and HuggingFaceTB/SmolLM2-135M-Instruct at 12fd25f77366fa6b3b4b768ec3050bf629380bac, greedy decoding, max 48 new tokens, CPU; the instruct input used its chat template.</p>
+        <p class="cite">Recorded 2026-10-10 by <code>fixtures/build_fixtures.py</code> into <code>fixtures/base_vs_instruct.json</code>: HuggingFaceTB/SmolLM2-135M at 93efa2f097d58c2a74874c7e644dbc9b0cee75a2 and HuggingFaceTB/SmolLM2-135M-Instruct at 12fd25f77366fa6b3b4b768ec3050bf629380bac, greedy decoding, max 48 new tokens.</p>
         <details class="speaker-notes">
-          <summary>Speaker notes · 3 min</summary>
+          <summary>Speaker notes · 5 min</summary>
           <div class="notes-body" tabindex="0">
             <p>Predict question, before you reveal the right column: “Same question, a model of the same size. What does the base model write after it?” Many will expect a plain answer.</p>
-            <p>Talk track: the base model gets the capital right, then keeps going because the most likely document is a quiz page: it invents the next question and a false answer about New Zealand. The base excerpt shown is the first three lines of its 48 tokens; it was still writing when the limit cut it off. The instruct model, the same architecture after post-training, answers and emits end-of-sequence.</p>
-            <p>Post-training is supervised fine-tuning on conversations in a chat template, then preference tuning. It teaches the role and the format. It does not make the model check facts: the same weights could still produce the New Zealand line in another context.</p>
-            <p>Transition: “The newest stage adds a reward that can be checked by a program.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="rlvr" data-slide data-minutes="2" tabindex="-1" aria-labelledby="rlvr-title">
-        <p class="eyebrow">06 · How a model is made · 3/3</p>
-        <h2 id="rlvr-title">RL with verifiable rewards: the reward comes from a checker.</h2>
-        <ol class="process compact">
-          <li><span class="label">Task</span> <strong>A checkable problem</strong> <span>maths with a known answer, code with tests</span></li>
-          <li><span class="label">Sample</span> <strong>Many attempts</strong> <span>drawn from the model</span></li>
-          <li><span class="label">Verify</span> <strong>A program scores each</strong> <span>reward 1 if it passes, else 0</span></li>
-          <li><span class="label">Update</span> <strong>Reinforce what passed</strong> <span>those tokens get more likely</span></li>
-        </ol>
-        <div class="callout hedge"><p>The model learns to pass the checker, not to be right. A weak checker gets gamed; Act V shows how.</p></div>
-        <p class="cite">Term from Nathan Lambert et al., <cite>Tülu 3: Pushing Frontiers in Open Language Model Post-Training</cite>, <a href="https://arxiv.org/abs/2411.15124">arXiv 2411.15124</a> (2024). Rule-based rewards at scale: DeepSeek-AI, <cite>DeepSeek-R1</cite>, <a href="https://arxiv.org/abs/2501.12948">arXiv 2501.12948</a> (2025).</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: preference tuning needs a judge, human or model. RLVR replaces the judge with a verifiable reward: a program that checks the final answer or runs the tests. The model samples many attempts, the passing ones are reinforced, and over many rounds the model gets better at producing answers that pass.</p>
-            <p>Link to OR: our problems are unusually checkable. Feasibility of a plan and its objective value can be recomputed without trusting whoever produced them. That is why agents can be trusted more here, and why our checks must be honest.</p>
-            <p>Transition: “Three things no training stage fixes.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="cutoff" data-slide data-minutes="1" tabindex="-1" aria-labelledby="cutoff-title">
-        <p class="eyebrow">07 · Limits · 1/3</p>
-        <h2 id="cutoff-title">Knowledge cutoff: the weights stop at a date.</h2>
-        <ul class="tight">
-          <li>The training text was collected up to a cutoff. After it, the weights hold nothing, and the model may not know its own cutoff precisely.</li>
-          <li>Ask about a newer library version and you get a fluent answer about an older one.</li>
-          <li><strong>Context can carry newer facts.</strong> What the agent reads at run time (your files, the docs, a search result, a tool’s output) is part of x<sub>&lt;t</sub>.</li>
-        </ul>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 1 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: no vendor cutoff date on the slide on purpose; they change with every model and a date here would age badly. The point is structural: the weights are frozen at training time.</p>
-            <p>The practical fix is the context: an agent that reads the installed package’s docs or runs <code>--help</code> gets the current API, because those tokens are part of x_&lt;t.</p>
-            <p>Transition: “Even before the cutoff, nothing guarantees an answer is true.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="hallucination" data-slide data-minutes="2" tabindex="-1" aria-labelledby="hallucination-title">
-        <p class="eyebrow">07 · Limits · 2/3</p>
-        <h2 id="hallucination-title">No truth oracle, so hallucination is structural.</h2>
-        <ul class="tight">
-          <li>Pretraining rewards likely text, not true text. Nothing in p(x<sub>t</sub> | x<sub>&lt;t</sub>) consults the world: there is no truth oracle inside the model.</li>
-          <li>So a false continuation is produced the same way as a true one, and reads the same. Recall the base model: “New Zealand is the second largest country in the world.”</li>
-          <li>Structural does not mean always wrong. Models often get common facts right, and post-training can teach them to say “I don’t know”. It means any single answer can be wrong.</li>
-        </ul>
-        <p class="takeaway">The check has to come from outside the model: tests, a source, a solver’s feasibility check.</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: hallucination is not a bug that a later version removes. The objective is likelihood, and likelihood is not truth. Fluency is evidence of a good language model, not of a correct answer.</p>
-            <p>Predict question: “Can you tell the hallucinated line from the true one by how it reads?” Show the post-training slide again if needed: the Canberra line and the New Zealand line read the same.</p>
-            <p>Transition: “In our field, a wrong line reads just as well and still runs.”</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="or-stake" data-slide data-minutes="2" tabindex="-1" aria-labelledby="or-stake-title">
-        <p class="eyebrow">07 · Limits · 3/3 · <span class="tag">Illustrative</span></p>
-        <h2 id="or-stake-title">The OR stake: a flipped objective reads as fluently as a correct one.</h2>
-        <p>Stated problem: open plants and ship to meet every customer’s demand at <strong>least total cost</strong>.</p>
-        <div class="objective">
-          <pre class="right"><code>h.changeObjectiveSense(highspy.ObjSense.kMinimize)</code></pre>
-          <pre class="wrong"><code>h.changeObjectiveSense(highspy.ObjSense.kMaximize)</code></pre>
-        </div>
-        <p>Both lines are equally fluent, both run, and the solver calls both results optimal. Only the first, minimize, matches the stated problem.</p>
-        <p class="takeaway">Read the model, not the status: check the objective sense against the problem statement.</p>
-        <details class="speaker-notes">
-          <summary>Speaker notes · 2 min</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: these two lines are invented for the slide, but the trap is real and you will meet it. In P00 the model sets the sense with <code>h.changeObjectiveSense(highspy.ObjSense.kMinimize)</code>; the P00 lab’s flipped-sense variant changes only that to kMaximize, and HiGHS still reports “optimal”, with an objective of 1085 instead of 485.</p>
-            <p>Predict question: “Which line would a model write if it had seen many profit-maximizing examples?” Either, with similar fluency: nothing in the text tells you which one is right except the problem statement.</p>
+            <p>Talk track: pretraining minimizes −log p(x_t | x_&lt;t) over a vast amount of text; the result is a <strong>base model</strong>, a document continuer. Prediction is compression (Delétang et al., <a href="https://arxiv.org/abs/2309.10668">Language Modeling Is Compression</a>, 2023); Karpathy’s “lossy zip file of the internet” is the image for what the weights keep. Post-training, supervised fine-tuning on conversations then preference tuning, teaches the role and the format: answer, then stop. The third stage, RL with verifiable rewards (term from Lambert et al., <a href="https://arxiv.org/abs/2411.15124">Tülu 3</a>; at scale in <a href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a>), is Act II’s.</p>
+            <p>The base model gets the capital right, then keeps going because the most likely document is a quiz page: it invents the next question and a false answer about New Zealand. The excerpt is the first three lines of its 48 tokens; the assistant’s answer is complete, it stopped itself. The instruct input used its chat template. The instruct model answers and emits end-of-sequence: the loop’s stop token.</p>
+            <p>Hallucination is structural: the objective is likelihood, not truth, so a false continuation is produced the same way as a true one. The weights also stop at a training cutoff; an agent that reads the installed docs or runs <code>--help</code> gets the current API, because those tokens are part of x_&lt;t. The check has to come from outside the model: tests, a source, a solver.</p>
             <p>Transition: “Let us name what we have seen all act.”</p>
           </div>
         </details>
@@ -692,35 +710,62 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section id="system-1" data-slide data-minutes="2" tabindex="-1" aria-labelledby="system-1-title">
         <p class="eyebrow">Close · System 1</p>
-        <h2 id="system-1-title">Everything in this act was one forward pass: System 1.</h2>
+        <h2 id="system-1-title">Every token came from one forward pass: System 1.</h2>
+        <div class="pipeline-wrap" role="region" aria-label="Pipeline diagram" tabindex="0">
+          <svg class="pipeline" viewBox="-2 0 1074 126" role="img" aria-label="Pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then back to the context; the forward pass, transformer and logits, is highlighted">
+          <path class="bracket now" d="M344 22 V14 H726 V22"/>
+          <text class="bracket-label now" x="535" y="11" text-anchor="middle">one forward pass</text>
+          <g class="node all"><rect x="0" y="26" width="140" height="52" rx="4"/><text class="t" x="70" y="48" text-anchor="middle">Context</text><text class="s" x="70" y="67" text-anchor="middle">the text so far</text></g>
+          <path class="edge all" d="M140 52 L163 52"/><path class="head all" d="M172 52 l-9 -5 v10 z"/>
+          <g class="node all"><rect x="172" y="26" width="140" height="52" rx="4"/><text class="t" x="242" y="48" text-anchor="middle">Tokenizer</text><text class="s" x="242" y="67" text-anchor="middle">text → IDs</text></g>
+          <text class="tag all" x="242" y="97" text-anchor="middle">▸ tokenizer lab</text>
+          <path class="edge now" d="M312 52 L335 52"/><path class="head now" d="M344 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="344" y="26" width="210" height="52" rx="4"/><text class="t" x="449" y="48" text-anchor="middle">Transformer</text><text class="s" x="449" y="67" text-anchor="middle">attention + MLP, ×N layers</text></g>
+          <text class="tag now" x="449" y="97" text-anchor="middle">▸ attention lab</text>
+          <path class="edge now" d="M554 52 L577 52"/><path class="head now" d="M586 52 l-9 -5 v10 z"/>
+          <g class="node now"><rect x="586" y="26" width="140" height="52" rx="4"/><text class="t" x="656" y="48" text-anchor="middle">Logits</text><text class="s" x="656" y="67" text-anchor="middle">a score per token</text></g>
+          <text class="tag now" x="656" y="97" text-anchor="middle">▸ next-token lab</text>
+          <path class="edge all" d="M726 52 L749 52"/><path class="head all" d="M758 52 l-9 -5 v10 z"/>
+          <g class="node all"><rect x="758" y="26" width="140" height="52" rx="4"/><text class="t" x="828" y="48" text-anchor="middle">Sampler</text><text class="s" x="828" y="67" text-anchor="middle">softmax(z/T), draw</text></g>
+          <text class="tag all" x="828" y="97" text-anchor="middle">▸ sampling demo</text>
+          <path class="edge all" d="M898 52 L921 52"/><path class="head all" d="M930 52 l-9 -5 v10 z"/>
+          <g class="node all"><rect x="930" y="26" width="140" height="52" rx="4"/><text class="t" x="1000" y="48" text-anchor="middle">Next token</text><text class="s" x="1000" y="67" text-anchor="middle">xₜ</text></g>
+          <path class="edge all" d="M1000 78 V114 H70 V87"/>
+          <path class="head all" d="M70 78 l-5 9 h10 z"/>
+          <rect class="loop-bg" x="385" y="103" width="300" height="22"/>
+          <text class="tag all" x="535" y="119" text-anchor="middle">append xₜ, run again ▸ tiny-LM lab</text>
+          </svg>
+        </div>
         <div class="cols">
           <ul class="tight">
-            <li>One pass maps x<sub>&lt;t</sub> to p(x<sub>t</sub> | x<sub>&lt;t</sub>); a sampler draws one token.</li>
-            <li><strong>Fixed compute per token</strong>: for a given model, context and configuration, the same layers run once per token, however hard the question.</li>
-            <li>Longer context makes a pass slower; it does not make the model think longer.</li>
+            <li><strong>Fixed compute per token</strong>, however hard the question.</li>
+            <li>Not zero reasoning: the depth caps the steps.</li>
+            <li>Longer context: slower, not deeper.</li>
           </ul>
           <div class="callout">
             <p class="label">Next · Act II</p>
-            <p>Put the pass in a loop: let the model write tokens it then reads, call tools, run code and check results. That is how an agent spends more compute on a hard problem.</p>
+            <p>Run the pass in a loop.</p>
           </div>
         </div>
+        <p class="cite">In-pass multi-step reasoning: Jack Lindsey et al., <cite>On the Biology of a Large Language Model</cite>, “Multi-step Reasoning”, <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">transformer-circuits.pub</a>, 2025-03-27.</p>
         <details class="speaker-notes">
           <summary>Speaker notes · 2 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: point at the board one last time. The model is p(x_t | x_&lt;t) plus a sampler. Each token gets a fixed amount of computation, System 1, fast and fluent, with no step where it decides to think harder about a hard token.</p>
-            <p>Be precise about “fixed”: a longer context costs more time per pass, but that is reading more, not reasoning more. For a given model, context and settings, the work per token does not adapt to difficulty.</p>
+            <p>Talk track: point at the bracket. The model is p(x_t | x_&lt;t) plus a sampler. For a given model, context and configuration, each token gets a fixed amount of computation: System 1, fast and fluent, with no step where it decides to think harder about a hard token. The label is Kahneman’s, used as a metaphor; Act II says so.</p>
+            <p>Be precise. A pass is not empty of reasoning: Lindsey et al. trace a two-hop chain (Dallas, then Texas, then Austin) inside one forward pass. But the number of such steps is bounded by the depth and does not grow with difficulty. A longer context costs more time per pass; that is reading more, not reasoning more.</p>
+            <p>Next: in Act II the model writes tokens it then reads; that loop is how it spends more compute on a hard problem.</p>
             <p>Transition into Act II: “If one pass cannot think longer, how do reasoning models and agents solve hard problems? They run this pass in a loop. That is the next act.”</p>
           </div>
         </details>
       </section>
       <nav data-deck-nav hidden aria-label="Slide navigation">
         <button type="button" data-prev>Previous</button>
-        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 18</span>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 9</span>
         <button type="button" data-next>Next</button>
         <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
       </nav>
     </main>
-    <footer>Recorded numbers come from this session’s fixtures and demo recordings, dated on each slide. The objective-sense code on the OR-stake slide is illustrative.</footer>
+    <footer>Recorded numbers come from this session’s fixtures and demo recordings, dated on each slide.</footer>
   </div>
   <!-- shared-script:begin -->
   <script>/* Classic script; each enhancement is optional and scoped to its own root. */
@@ -1093,5 +1138,28 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 })();
 </script>
   <!-- shared-script:end -->
+  <script>/* Page-specific: on narrow screens each pipeline scrolls sideways; keep its current stage in view. */
+(function () {
+  'use strict';
+  function centre(wrap) {
+    var now = wrap.querySelector('.node.now');
+    if (!now || wrap.scrollWidth <= wrap.clientWidth) return;
+    var box = now.getBoundingClientRect();
+    var frame = wrap.getBoundingClientRect();
+    wrap.scrollLeft += box.left - frame.left - (frame.width - box.width) / 2;
+  }
+  function init() {
+    var wraps = Array.from(document.querySelectorAll('.pipeline-wrap'));
+    if (!('ResizeObserver' in window)) return wraps.forEach(centre);
+    // A size change covers first layout, rotation, resizing and a hidden slide being shown.
+    var observer = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) { centre(entry.target); });
+    });
+    wraps.forEach(function (wrap) { observer.observe(wrap); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
 </body>
 </html>
