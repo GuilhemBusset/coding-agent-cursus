@@ -153,7 +153,7 @@ instructor's minute-by-minute plan, with demo commands and fallbacks, is
 | --- | --- | --- |
 | Before | Pre-work | [`exercises/00-prework.html`](exercises/00-prework.html) |
 | 0:00–0:15 | Opening | Deck [`cursus/00-opening.html`](cursus/00-opening.html); the cold open demo, [`cursus/demos/cold-open/`](cursus/demos/cold-open/README.md) |
-| 0:15–1:00 | Act I · The sampler | Deck [`cursus/01-sampler.html`](cursus/01-sampler.html); labs [`tokenizer`](cursus/labs/tokenizer.html), [`next-token`](cursus/labs/next-token.html), [`tiny-lm`](cursus/labs/tiny-lm.html), [`attention`](cursus/labs/attention.html); demos [`cursus/demos/model/`](cursus/demos/model/README.md) |
+| 0:15–1:00 | Act I · The sampler | Deck [`cursus/01-sampler.html`](cursus/01-sampler.html); labs [`tokenizer`](cursus/labs/tokenizer.html), [`attention`](cursus/labs/attention.html), [`next-token`](cursus/labs/next-token.html), [`tiny-lm`](cursus/labs/tiny-lm.html); demos [`cursus/demos/model/`](cursus/demos/model/README.md) |
 | 1:00–1:10 | Break | |
 | 1:10–1:55 | Act II · Thinking | Deck [`cursus/02-thinking.html`](cursus/02-thinking.html); labs [`test-time-compute`](cursus/labs/test-time-compute.html), [`world-model`](cursus/labs/world-model.html); demo [`cursus/demos/effort/`](cursus/demos/effort/README.md) |
 | 1:55–2:35 | Act III · Agent = model + harness | Deck [`cursus/03-agent.html`](cursus/03-agent.html); labs [`context`](cursus/labs/context.html), [`agent-loop`](cursus/labs/agent-loop.html); demos [`cursus/demos/agent/`](cursus/demos/agent/README.md) |
