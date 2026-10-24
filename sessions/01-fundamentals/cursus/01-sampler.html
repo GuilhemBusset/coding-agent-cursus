@@ -348,13 +348,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <figcaption id="pipeline-caption" class="visually-hidden">The pipeline for one token: context, tokenizer, transformer, logits, sampler, next token, then the token is appended to the context and the pass runs again. Each stage after the context links to its slide.</figcaption>
         </figure>
         <div class="cols wide-left">
-          <div>
-            <p class="formula">p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
-            <p>The pass computes the next-token distribution given everything before it. The sampler draws x<sub>t</sub>, appends it, and the pass runs again.</p>
-          </div>
+          <p class="formula">p(x<sub>t</sub> | x<sub>&lt;t</sub>)</p>
           <div class="callout">
             <p class="label">Running example</p>
-            <p>GPT-2 small, after <code>The capital of France is</code>. One lab per stage, on your laptop.</p>
+            <p>GPT-2 small, after <code>The capital of France is</code>.</p>
           </div>
         </div>
         <details class="speaker-notes">
@@ -362,7 +359,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="notes-body" tabindex="0">
             <p>Write p(x_t | x_&lt;t) on the board before you show the slide and leave it there: “the probability of the next token given everything before it”. The product of these conditionals is the probability of the whole text; that is the chain rule, so writing one token at a time loses nothing. What limits a model is how well the network learns each conditional.</p>
             <p>Predict question: “Is writing a text one token at a time a simplification that loses something?” No: the factorization is exact.</p>
-            <p>Talk track: this graph is the whole act. Walk it once from left to right, then say that each box is one of the next slides, with its lab or demo named under it. The bracket marks the forward pass, the network itself; the tokenizer and the sampler sit outside it.</p>
+            <p>Talk track: this graph is the whole act. The pass computes the next-token distribution given everything before it; the sampler draws x_t, appends it, and the pass runs again. Walk it once from left to right, then say that each box is one of the next slides, with its lab or demo named under it, on their own laptops. The bracket marks the forward pass, the network itself; the tokenizer and the sampler sit outside it.</p>
             <p>Background for you, not for the slides: Andrej Karpathy, <a href="https://www.youtube.com/watch?v=7xTGNNLPyMI">Deep Dive into LLMs like ChatGPT</a> (YouTube), covers the same arc at greater length.</p>
             <p>Transition: “First box: what does the model actually read?”</p>
           </div>
@@ -408,7 +405,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="callout lab">
             <p class="label">Lab · 4 minutes</p>
             <p class="go"><a href="labs/tokenizer.html">Open the tokenizer lab</a></p>
-            <p>Lock in both predictions, then reveal. The lab’s splits are hand-written.</p>
+            <p>Predict, lock in, reveal.</p>
           </div>
         </div>
         <p class="cite">IDs from the GPT-2 tokenizer, <code>openai-community/gpt2</code> at 607a30d, recorded in <code>fixtures/next_token.json</code>, 2026-10-10. ␣ marks a leading space.</p>
@@ -429,9 +426,9 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <div class="cols">
           <div>
             <ol class="steps">
-              <li><strong>Predict.</strong> Same model, same question, five times, no tools: how many right?</li>
-              <li><strong>Ask.</strong> How many r’s in a 300-letter invented word? True count: 146.</li>
-              <li><strong>Pivot to code.</strong> The agent writes <code>work/count_r.py</code>, runs it, and prints 146, every run.</li>
+              <li><strong>Predict:</strong> five tries, no tools. How many right?</li>
+              <li><strong>Ask:</strong> r’s in a 300-letter word. True count: 146.</li>
+              <li><strong>Pivot:</strong> the agent writes and runs code. 146, every run.</li>
             </ol>
             <p>Recorded 2026-10-11, tools off: <code>claude-haiku-5-5</code> wrong 2 of 5, <code>gpt-6-luna</code> wrong 4 of 5, off by up to 32.</p>
           </div>
@@ -439,7 +436,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <p class="label">Runbook</p>
             <p><a href="demos/model/strawberry.md"><code>demos/model/strawberry.md</code></a></p>
             <p><code>uv run strawberry.py</code><br><code>uv run strawberry.py --pivot</code></p>
-            <p>Fallback: <code>uv run --offline strawberry.py --replay</code></p>
           </div>
         </div>
         <p class="takeaway">When a question has a mechanical answer, make the agent write and run code.</p>
@@ -448,7 +444,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="notes-body" tabindex="0">
             <p>Run the runbook as written, from <code>sessions/01-fundamentals/cursus/demos/model</code>. It uses the longer invented word, not “strawberry” itself, because current models have seen the strawberry question many times. The script picks Claude Code or Codex, whichever is installed and logged in; <code>--via codex</code> or <code>--via claude</code> forces one.</p>
             <p>Predict question (runbook): “I will ask the same model the same question five times, with no tools. How many of the five answers will be the right count?” Hands for 0, 1–2, 3–4 and 5. Then: “And if it may write code?”</p>
-            <p>If all five live answers are right, say so, replay the recording, and pivot anyway: a correct guess is still a guess. If there is no login or network, go straight to the replay.</p>
+            <p>If all five live answers are right, say so, replay the recording, and pivot anyway: a correct guess is still a guess. If there is no login or network, go straight to the replay: <code>uv run --offline strawberry.py --replay</code>, then the same with <code>--pivot</code>. The pivot writes <code>work/count_r.py</code>.</p>
             <p>Debrief: tokens, not letters, plus a sampled answer, give a number that moves between runs. The pivot is the course thesis: the model does not count, it writes the program that counts; the rest of the course does that with solvers. Reset with the runbook’s reset step after class.</p>
             <p>Transition: “Back to the graph: what happens to the five IDs inside the network?”</p>
           </div>
@@ -489,12 +485,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               <dt>In</dt><dd>five IDs, each looked up as a vector</dd>
               <dt>Out</dt><dd>five vectors; the last one scores the next token</dd>
             </dl>
-            <p><span class="formula small">softmax(QK<sup>T</sup>/√d)·V</span>: each token’s <strong>query</strong> is matched against the <strong>keys</strong> of itself and earlier tokens, and returns a mix of their <strong>values</strong>. Then an MLP; ×12 layers.</p>
+            <p class="formula small">softmax(QK<sup>T</sup>/√d)·V</p>
+            <p>A <strong>query</strong> matched against earlier <strong>keys</strong> returns a mix of their <strong>values</strong>.</p>
           </div>
           <div class="callout lab">
             <p class="label">Lab · 4 minutes</p>
             <p class="go"><a href="labs/attention.html">Open the attention lab</a></p>
-            <p>Drag the query to one key. Then GPT-2: “it” puts 84.7% on “animal”.</p>
+            <p>Drag the query. Then GPT-2: “it” → “animal”.</p>
           </div>
         </div>
         <p class="cite">GPT-2 small: 12 layers of 12 heads; weights recorded in <code>fixtures/attention.json</code> (<code>openai-community/gpt2</code> at 607a30d, 2026-10-10). The lab’s toy panel is illustrative.</p>
@@ -502,7 +499,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <summary>Speaker notes · 6 min</summary>
           <div class="notes-body" tabindex="0">
             <p>Talk track: a dictionary lookup is hard: exact key, one value. Attention makes it soft and differentiable: every key gets a similarity score, softmax turns the scores into weights that sum to 1, and the output is the weighted average of the values. d is the key dimension; dividing by √d keeps the scores from growing with it. Causal: a token looks only at itself and earlier tokens, which is what keeps each factor p(x_t | x_&lt;t).</p>
-            <p>Each head runs its own lookup in parallel; stacking layers lets later lookups use earlier results. Keep the words key and value: Act III comes back to them with the KV cache.</p>
+            <p>Each head runs its own lookup in parallel; an MLP follows, and GPT-2 small stacks 12 such layers, so later lookups use earlier results. In the lab, layer 5, head 4, “it” puts 84.7% on “animal”. Keep the words key and value: Act III comes back to them with the KV cache.</p>
             <p>Activity: two minutes on the toy, two on GPT-2 (layer 5, head 4). Predict question before they drag: “If the query points exactly at one key, does the output equal that key’s value?” Only as the scale grows; at the default scale the other values still pull the output. Most heads do nothing human-readable; the lab opens on the one that links “it” to “animal” most.</p>
             <p>Transition: “After the last layer, the network gives one number per vocabulary entry.”</p>
           </div>
@@ -539,7 +536,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
         <div class="cols">
           <figure>
-            <figcaption>GPT-2’s top 5 after “The capital of France is”, at T = 1</figcaption>
+            <figcaption>GPT-2’s top 5, at T = 1</figcaption>
             <ol data-prob-chart>
               <li data-prob-row data-value="0.0846"><span data-prob-label><code>␣the</code></span> <span data-prob-value>8.5%</span></li>
               <li data-prob-row data-value="0.0479"><span data-prob-label><code>␣now</code></span> <span data-prob-value>4.8%</span></li>
@@ -549,11 +546,11 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             </ol>
           </figure>
           <div>
-            <p><span class="formula small">p = softmax(z/T)</span> over 50,257 scores z, at temperature T.</p>
+            <p><span class="formula small">p = softmax(z/T)</span>, T the temperature.</p>
             <div class="callout lab">
               <p class="label">Lab · 6 minutes</p>
               <p class="go"><a href="labs/next-token.html">Open the next-token lab</a></p>
-              <p>Bet, lock in, reveal. Then move T and top-p.</p>
+              <p>Bet, reveal, then move T.</p>
             </div>
           </div>
         </div>
@@ -561,7 +558,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes · 7 min</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: GPT-2 does not answer “Paris”. It returns probabilities, and “ Paris” is fifth at 3.2%, behind “ the” at 8.5%, because “The capital of France is the city of Paris” is also a good continuation. The answer appears only when the sampler draws.</p>
+            <p>Talk track: after the last layer there are 50,257 scores z, one per vocabulary entry. GPT-2 does not answer “Paris”. It returns probabilities, and “ Paris” is fifth at 3.2%, behind “ the” at 8.5%, because “The capital of France is the city of Paris” is also a good continuation. The answer appears only when the sampler draws.</p>
             <p>Write softmax(z/T) next to the equation on the board: divide the scores by T, exponentiate, normalize. Low T piles mass on the top token; T → 0 is argmax, the same token every time; high T spreads it out.</p>
             <p>Activity: on a shared screen, collect three or four guesses and lock each; the tally is local to the browser. Reveal, then compare the class’s top guess with GPT-2’s. In the sandbox, move T from 1 to 0.3, then to 2, and set top-p to 0.5: which candidates can never be drawn? Point out the honesty note: only the top 20 logits are stored, so the sandbox renormalizes among them.</p>
             <p>Transition: “A distribution is not a token yet. Something has to draw.”</p>
@@ -599,13 +596,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
         <div class="cols">
           <ul class="tight">
-            <li>Each answer is a draw; a peaked distribution can still repeat.</li>
-            <li>A seed or argmax reproduces locally. The agent CLIs expose no seed.</li>
-            <li>Do not judge an agent from one run.</li>
+            <li>Each answer is a draw.</li>
+            <li>A seed or argmax reproduces locally; the agent CLIs expose no seed.</li>
+            <li>Judge an agent on several runs.</li>
           </ul>
           <div class="callout">
             <p class="label">Demo · 3 minutes</p>
-            <p><a href="demos/model/sampling.md"><code>demos/model/sampling.md</code></a>: one prompt, five runs.</p>
+            <p><a href="demos/model/sampling.md"><code>demos/model/sampling.md</code></a></p>
             <p>Recorded 2026-10-11: <code>claude-haiku-5-5</code> 5 of 5 distinct; <code>gpt-6-luna</code> 4 of 5.</p>
           </div>
         </div>
@@ -614,7 +611,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <summary>Speaker notes · 5 min</summary>
           <div class="notes-body" tabindex="0">
             <p>Run the sampling runbook: predict question “Same prompt, same model, same settings, five times. How many different names do we get?”, hands for 1, 2–3 and 4–5, then <code>uv run sampling.py</code> (or <code>--via codex</code>). Fallback: <code>uv run --offline sampling.py --replay</code>.</p>
-            <p>Report whatever count you get. A live run can repeat a favourite name; that is a peaked distribution, not determinism.</p>
+            <p>One prompt, five runs, count the distinct answers. Report whatever count you get. A live run can repeat a favourite name; that is a peaked distribution, not determinism.</p>
             <p>Talk track for reproducibility: local and seeded, outputs reproduce; hosted, you cannot fix the seed and should not rely on even temperature-0 outputs being bit-identical, because batching on shared GPU servers can change the order of floating-point additions. Keep what you need to reproduce (code, data, solver logs) in files.</p>
             <p>If there is time, back in the next-token lab: Sample ×100 twice, then Argmax. Predict first: “Will two batches of 100 give the same counts?” No in Sample mode; yes in Argmax mode.</p>
             <p>Transition: “One token drawn. What happens to it?”</p>
@@ -656,12 +653,12 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               <dt>In</dt><dd><code>The capital of France is</code> + <code>␣the</code></dd>
               <dt>Out</dt><dd>a context one token longer: the next pass</dd>
             </dl>
-            <p>The loop stops at an end-of-sequence token or a length limit.</p>
+            <p>Stops at an end-of-sequence token or a length limit.</p>
           </div>
           <div class="callout lab">
             <p class="label">Lab · 5 minutes</p>
             <p class="go"><a href="labs/tiny-lm.html">Open the tiny language model lab</a></p>
-            <p>Step five times, then Run 40 tokens. Same seed: same text.</p>
+            <p>Step ×5, Run 40. Same seed, same text.</p>
           </div>
         </div>
         <p class="cite">The lab runs Andrej Karpathy’s stories260K, 260,000 parameters, in the page. Trained on TinyStories only: it shows the mechanism, not the capability.</p>
@@ -686,15 +683,15 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </figure>
           <div class="cols">
             <figure>
-              <figcaption>Base model · SmolLM2-135M · excerpt, its first three lines</figcaption>
+              <figcaption>Base · SmolLM2-135M · excerpt</figcaption>
               <blockquote class="false"><p>The capital of Australia is Canberra.</p><p>What is the capital of New Zealand?</p><p>New Zealand is the second largest country in the world, with a population of 5.1 million people.</p></blockquote>
             </figure>
             <div>
               <figure>
-                <figcaption>Assistant · SmolLM2-135M-Instruct · complete, stopped itself</figcaption>
+                <figcaption>Assistant · SmolLM2-135M-Instruct · complete</figcaption>
                 <blockquote><p>The capital of Australia is Canberra.</p></blockquote>
               </figure>
-              <p class="takeaway">Neither stage checks facts: the false line reads as fluently as the true one.</p>
+              <p class="takeaway">Neither checks facts: the false line reads as fluently.</p>
             </div>
           </div>
         </div>
@@ -704,7 +701,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="notes-body" tabindex="0">
             <p>Predict question, before you reveal the right column: “Same question, a model of the same size. What does the base model write after it?” Many will expect a plain answer.</p>
             <p>Talk track: pretraining minimizes −log p(x_t | x_&lt;t) over a vast amount of text; the result is a <strong>base model</strong>, a document continuer. Prediction is compression (Delétang et al., <a href="https://arxiv.org/abs/2309.10668">Language Modeling Is Compression</a>, 2023); Karpathy’s “lossy zip file of the internet” is the image for what the weights keep. Post-training, supervised fine-tuning on conversations then preference tuning, teaches the role and the format: answer, then stop. The third stage, RL with verifiable rewards (term from Lambert et al., <a href="https://arxiv.org/abs/2411.15124">Tülu 3</a>; at scale in <a href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a>), is Act II’s.</p>
-            <p>The base model gets the capital right, then keeps going because the most likely document is a quiz page: it invents the next question and a false answer about New Zealand. The excerpt is the first three lines of its 48 tokens; the instruct input used its chat template. The instruct model answers and emits end-of-sequence: the loop’s stop token.</p>
+            <p>The base model gets the capital right, then keeps going because the most likely document is a quiz page: it invents the next question and a false answer about New Zealand. The excerpt is the first three lines of its 48 tokens; the assistant’s answer is complete, it stopped itself. The instruct input used its chat template. The instruct model answers and emits end-of-sequence: the loop’s stop token.</p>
             <p>Hallucination is structural: the objective is likelihood, not truth, so a false continuation is produced the same way as a true one. The weights also stop at a training cutoff; an agent that reads the installed docs or runs <code>--help</code> gets the current API, because those tokens are part of x_&lt;t. The check has to come from outside the model: tests, a source, a solver.</p>
             <p>Transition: “Let us name what we have seen all act.”</p>
           </div>
@@ -741,13 +738,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
         <div class="cols">
           <ul class="tight">
-            <li><strong>Fixed compute per token</strong>: the same layers run once, however hard the question.</li>
-            <li>Not zero reasoning: a pass can chain a few steps, but its depth caps how many.</li>
-            <li>A longer context makes a pass slower, not deeper.</li>
+            <li><strong>Fixed compute per token</strong>, however hard the question.</li>
+            <li>Not zero reasoning: the depth caps the steps.</li>
+            <li>Longer context: slower, not deeper.</li>
           </ul>
           <div class="callout">
             <p class="label">Next · Act II</p>
-            <p>Run the pass in a loop: the model writes tokens it then reads, and spends more compute on a hard problem.</p>
+            <p>Run the pass in a loop.</p>
           </div>
         </div>
         <p class="cite">In-pass multi-step reasoning: Jack Lindsey et al., <cite>On the Biology of a Large Language Model</cite>, “Multi-step Reasoning”, <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">transformer-circuits.pub</a>, 2025-03-27.</p>
@@ -756,6 +753,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="notes-body" tabindex="0">
             <p>Talk track: point at the bracket. The model is p(x_t | x_&lt;t) plus a sampler. For a given model, context and configuration, each token gets a fixed amount of computation: System 1, fast and fluent, with no step where it decides to think harder about a hard token. The label is Kahneman’s, used as a metaphor; Act II says so.</p>
             <p>Be precise. A pass is not empty of reasoning: Lindsey et al. trace a two-hop chain (Dallas, then Texas, then Austin) inside one forward pass. But the number of such steps is bounded by the depth and does not grow with difficulty. A longer context costs more time per pass; that is reading more, not reasoning more.</p>
+            <p>Next: in Act II the model writes tokens it then reads; that loop is how it spends more compute on a hard problem.</p>
             <p>Transition into Act II: “If one pass cannot think longer, how do reasoning models and agents solve hard problems? They run this pass in a loop. That is the next act.”</p>
           </div>
         </details>
