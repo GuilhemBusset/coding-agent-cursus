@@ -145,7 +145,7 @@ taught live, and `exercises/` holds only what students do on their own time.
 
 Students start from [`index.html`](index.html), which links everything below in this order.
 Times are hours and minutes from the start, from the Session 1 plan
-(`docs/cursus-narrative.md`) and the opening deck's map of the day, as of 2026-10-10. The
+(`docs/cursus-narrative.md`), as of 2026-10-10. The
 instructor's minute-by-minute plan, with demo commands and fallbacks, is
 [`cursus/run-of-show.html`](cursus/run-of-show.html).
 
