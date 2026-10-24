@@ -443,17 +443,30 @@ for (const viewport of viewports) {
   });
 }
 
-test('D1: on a phone the graph scrolls sideways, starting at the current stage', async t => {
-  const page = await pageFor(t, { viewport: viewports[2] });
+async function currentStagesInView(page) {
   for (const stage of stages) {
     const wrap = topic(page, stage.id).locator('.pipeline-wrap');
-    const state = await wrap.evaluate(el => {
-      const now = el.querySelector('.node.now').getBoundingClientRect();
-      const frame = el.getBoundingClientRect();
-      return { scrolls: el.scrollWidth > el.clientWidth, visible: now.left >= frame.left - 1 && now.right <= frame.right + 1 };
-    });
-    assert.deepEqual(state, { scrolls: true, visible: true }, `${stage.id}: current stage in view`);
+    await eventually(async () => {
+      const state = await wrap.evaluate(el => {
+        const now = el.querySelector('.node.now').getBoundingClientRect();
+        const frame = el.getBoundingClientRect();
+        return { scrolls: el.scrollWidth > el.clientWidth, visible: now.left >= frame.left - 1 && now.right <= frame.right + 1 };
+      });
+      assert.deepEqual(state, { scrolls: true, visible: true }, `${stage.id}: current stage in view`);
+    }, `${stage.id}: current stage in view`);
   }
+}
+
+test('D1: on a phone the graph scrolls sideways, starting at the current stage', async t => {
+  await currentStagesInView(await pageFor(t, { viewport: viewports[2] }));
+});
+
+test('D1: after a wide page is narrowed, each graph scrolls to its current stage', async t => {
+  // Loaded paged, where the other slides' graphs are hidden; then rotated or resized to a phone.
+  const page = await pageFor(t, { viewport: viewports[0] });
+  await goTo(page, 'logits');
+  await page.setViewportSize(viewports[2]);
+  await currentStagesInView(page);
 });
 
 test('D1: print reveals all talk tracks without scroll clipping', async t => {

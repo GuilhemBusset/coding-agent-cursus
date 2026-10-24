@@ -600,7 +600,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <div class="cols">
           <ul class="tight">
             <li>Each answer is a draw; a peaked distribution can still repeat.</li>
-            <li>A seed or argmax reproduces locally. Hosted, you cannot fix the seed.</li>
+            <li>A seed or argmax reproduces locally. The agent CLIs expose no seed.</li>
             <li>Do not judge an agent from one run.</li>
           </ul>
           <div class="callout">
@@ -1140,20 +1140,27 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 })();
 </script>
   <!-- shared-script:end -->
-  <script>/* Page-specific: on narrow screens each pipeline scrolls sideways; start it at the current stage. */
+  <script>/* Page-specific: on narrow screens each pipeline scrolls sideways; keep its current stage in view. */
 (function () {
   'use strict';
-  function centre() {
-    document.querySelectorAll('.pipeline-wrap').forEach(function (wrap) {
-      var now = wrap.querySelector('.node.now');
-      if (!now || wrap.scrollWidth <= wrap.clientWidth) return;
-      var box = now.getBoundingClientRect();
-      var frame = wrap.getBoundingClientRect();
-      wrap.scrollLeft += box.left - frame.left - (frame.width - box.width) / 2;
-    });
+  function centre(wrap) {
+    var now = wrap.querySelector('.node.now');
+    if (!now || wrap.scrollWidth <= wrap.clientWidth) return;
+    var box = now.getBoundingClientRect();
+    var frame = wrap.getBoundingClientRect();
+    wrap.scrollLeft += box.left - frame.left - (frame.width - box.width) / 2;
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', centre);
-  else centre();
+  function init() {
+    var wraps = Array.from(document.querySelectorAll('.pipeline-wrap'));
+    if (!('ResizeObserver' in window)) return wraps.forEach(centre);
+    // A size change covers first layout, rotation, resizing and a hidden slide being shown.
+    var observer = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) { centre(entry.target); });
+    });
+    wraps.forEach(function (wrap) { observer.observe(wrap); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 </script>
 </body>
