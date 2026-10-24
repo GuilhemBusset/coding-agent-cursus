@@ -61,10 +61,10 @@ synced the export, and Codex's `workspace-write` sandbox cannot write uv's own c
 | loop, plan | `claude-opus-5-5` | `gpt-6-astra` | medium |
 | bomb | `claude-haiku-5-5` | `gpt-6-luna` | low |
 
-Loop and plan use the models the lab-ladder rehearsal already proved on P00
-([`lab-ladder-rehearsal.md`](../../labs/lab-ladder-rehearsal.md)), at medium effort instead of
-that rehearsal's xhigh, because the room is waiting. The bomb only needs a one-word answer, so it
-uses the small models of the Act I demos. The pins are constants at the top of `agent_demo.py`.
+Loop and plan use the models the lab-ladder rehearsal already proved on P00, at medium effort
+instead of that rehearsal's xhigh, because the room is waiting. The bomb only needs a one-word
+answer, so it uses the small models of the Act I demos. The pins are constants at the top of
+`agent_demo.py`.
 
 Every recording in [`recorded/`](recorded/) was made on 2026-10-16 with **Claude Code 2.1.301**
 and **codex-cli 0.162.1**. The CLI version and the model (as the CLI reported it, or as requested

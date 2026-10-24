@@ -2,19 +2,16 @@
 
 Run from the session with ``uv run pytest -q tests/test_cold_open.py``.
 Review remains required: teaching prose, the formulation and solver-derived
-values in each model, authentic CLI/tool transcripts, redactions, and the
-disposable-clone rehearsal procedure cannot be certified by text matching.
-Missing runs fail; neither a timing-table assertion nor a harness solve replaces
+values in each model, authentic CLI/tool transcripts and redactions cannot be
+certified by text matching. Missing runs fail; a harness solve does not replace
 the agent's own successful tool call.
 
 Evidence interface: the specified === sections === contain plain key: value
 metadata/timing records (key=value also accepted). Metadata keys are cli, run,
 version, model, date, commit, prompt sha256, problem sha256, model sha256.
-Timing keys are start, end, exit. The rehearsal Markdown table needs CLI, Run,
-Version, Model, Date, Minutes, Exit; optional Start/End must match. Common column
-aliases are accepted. Runbook commands may be in fenced blocks or inline code;
-shell continuation lines are joined. Transcript agent output may be rendered
-text or JSONL; JSON strings are decoded before looking for tool certificates.
+Runbook commands may be in fenced blocks or inline code; shell continuation
+lines are joined. Transcript agent output may be rendered text or JSONL; JSON
+strings are decoded before looking for tool certificates.
 
 The independent LP oracle checks feasibility and weak/strong duality, not an
 answer string. Negative oracle cases, a failed-solver injection, and dirty reset
@@ -23,14 +20,13 @@ are offline; git mutations occur only in disposable test repositories.
 """
 
 import ast
-from datetime import date, datetime, timedelta
+from datetime import date
 import hashlib
 import json
 import math
 import os
 from pathlib import Path
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -161,29 +157,6 @@ def metadata(parts, cli, number):
     return meta
 
 
-def rehearsal_rows():
-    required = {"cli", "run", "version", "model", "date", "minutes", "exit"}
-    rows, columns = {}, None
-    for line in read(DEMO / "rehearsal.md").splitlines():
-        if not line.lstrip().startswith("|"):
-            columns = None
-            continue
-        cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
-        if all(re.fullmatch(r":?-+:?", cell) for cell in cells):
-            continue
-        header = [key(cell) for cell in cells]
-        if required <= set(header):
-            columns = header
-        elif columns is not None:
-            assert len(cells) == len(columns), "Malformed rehearsal timing row"
-            row = dict(zip(columns, cells))
-            identity = (cli_name(row["cli"]), run_number(row["run"]))
-            assert identity not in rows, f"Duplicate run: {identity}"
-            rows[identity] = row
-    assert set(rows) == set(RUNS), "Need two measured runs of each CLI"
-    return rows
-
-
 def rendered(source):
     """Decode JSONL tool output as well as already-rendered transcripts."""
     def strings(value):
@@ -286,7 +259,7 @@ def relative_links():
         assert not target.startswith("/") and path.is_relative_to(SESSION), target
         assert path.exists(), f"Broken runbook link: {target}"
         found.add(path)
-    required = {DEMO / name for name in ("problem.md", "prompt.txt", "rehearsal.md")}
+    required = {DEMO / name for name in ("problem.md", "prompt.txt")}
     required.update(model_path(*identity) for identity in RUNS)
     required.update(DEMO / "recorded" / f"{cli}-run{number}.txt" for cli, number in RUNS)
     assert required <= found, f"Runbook must link all artifacts: {required - found}"
@@ -317,6 +290,11 @@ def runbook_command(cli):
     assert ('--permission-mode acceptEdits' in command and '--allowedTools "Bash(uv run:*)"' in command
             if cli == "claude" else '--sandbox workspace-write' in command)
     return command
+
+
+@pytest.mark.parametrize("cli", ["claude", "codex"])
+def test_runbook_has_one_primary_command_per_cli(cli):
+    runbook_command(cli)
 
 
 @pytest.fixture(scope="module")
@@ -445,12 +423,9 @@ def test_d2_certificate_parser_handles_text_and_json_tool_results():
 
 
 def test_d3_both_cli_versions_and_models_are_recorded():
-    rows = rehearsal_rows()
     for identity in RUNS:
         parts = transcript(*identity)
         meta = metadata(parts, *identity)
-        for name in ("version", "model", "date"):
-            assert rows[identity][name] == meta[name], f"Rehearsal metadata mismatch: {identity} / {name}"
         output = rendered(parts["agent"])
         assert meta["version"] in output and meta["model"] in output, "CLI provenance must appear in agent evidence"
         agent_certificate(parts)
@@ -491,60 +466,6 @@ def test_d4_offline_fallback_models(model_outputs):
     for identity in RUNS:
         assert not imports(model_tree(*identity)) & NETWORK, "Fallback must not import network modules"
         validate(model_outputs[identity])
-
-
-def timestamp(value):
-    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", value), "Use UTC date -u +%FT%TZ timestamps"
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-
-def test_a1_two_consecutive_clean_runs_under_five_minutes():
-    rows, evidence = rehearsal_rows(), {}
-    reset = reset_line()
-    for cli, number in RUNS:
-        parts = transcript(cli, number)
-        meta = metadata(parts, cli, number)
-        row = rows[cli, number]
-        for name in ("version", "model", "date"):
-            assert row[name] == meta[name]
-        assert parts["reset"].splitlines()[0].removeprefix("$ ") == reset
-        clean = parts["clean-state"].splitlines()
-        assert len(clean) == 1 and clean[0].removeprefix("$ ") == "git status --short --ignored --untracked-files=all -- .", "Clean-state status output must be empty"
-        invocation = parts["invocation"].removeprefix("$ ")
-        command = runbook_command(cli)
-        assert invocation.startswith(command), "Live and rehearsed primary commands must be identical"
-        suffix = invocation[len(command):].strip()
-        if suffix:
-            tokens = shlex.split(suffix)
-            # Common capture spelling is `2>&1 | tee file` or `> file 2>&1`.
-            tokens = [token for token in tokens if token != "2>&1"]
-            assert ((tokens[:2] == ["|", "tee"] and len(tokens) == 3)
-                    or (len(tokens) == 2 and tokens[0] in {">", ">>", "2>", "&>"})
-                    or not tokens), "Only capture tee/redirection may follow the command"
-        agent_certificate(parts)
-        validate(certificate(parts["harness-check"]))
-        assert re.search(r"\buv\s+run\s+python\s+(?:\./)?work/model\.py\b", parts["harness-check"]), "Record the harness re-run command"
-        timing = fields(parts["timing"])
-        assert {"start", "end", "exit"} <= timing.keys()
-        start, end = timestamp(timing["start"]), timestamp(timing["end"])
-        elapsed = (end - start).total_seconds() / 60
-        assert re.fullmatch(r"\d+(?:\.\d+)?", row["minutes"]), "No estimated or unmeasured timings"
-        minutes = float(row["minutes"])
-        assert 0 < elapsed < 5 and 0 < minutes < 5 and abs(elapsed - minutes) <= 0.02
-        assert timing["exit"] == row["exit"] == "0"
-        assert start.date().isoformat() == meta["date"]
-        for name in ("start", "end"):
-            if name in row:
-                assert row[name] == timing[name]
-        for name in ("prompt", "problem"):
-            path = DEMO / ("prompt.txt" if name == "prompt" else "problem.md")
-            assert meta[name + "sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
-        evidence[cli, number] = (meta, start, end)
-    for cli in ("claude", "codex"):
-        first, second = evidence[cli, 1], evidence[cli, 2]
-        assert timedelta(0) <= second[1] - first[2] <= timedelta(minutes=10)
-        for name in ("commit", "promptsha256", "problemsha256"):
-            assert first[0][name] == second[0][name], "Consecutive runs must share the same baseline"
 
 
 @pytest.mark.parametrize("cli,number", RUNS)

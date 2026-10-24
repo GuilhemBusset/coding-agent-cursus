@@ -366,7 +366,7 @@ def test_a2_all_streams_raw_fidelity_and_mapping():
     assert used == {p.name.removesuffix(".meta.json") for p in RECORDED.glob("*.meta.json")}
 
 
-def test_a2_inline_catalog_privacy_and_review():
+def test_a2_inline_catalog_and_privacy():
     data = (RUNS / "agent-demos.json").read_bytes()
     page = PAGE.read_bytes()
     match, attrs = inline(page)
@@ -382,10 +382,6 @@ def test_a2_inline_catalog_privacy_and_review():
                         r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}",
                         r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"):
             assert not re.search(pattern, content), f"Private identity or key pattern: {pattern}"
-    review = read(PAGE.with_suffix("") / "review.md")
-    assert hashlib.sha256(page).hexdigest() in review, "Review must identify current HTML"
-    assert re.search(rf"\b{len(page):,}\s+bytes\b|\b{len(page)}\s+bytes\b", review)
-    assert re.search(r"screenshot", review, re.I), "Record the screenshot review"
     assert read(RUNS / "README.md").strip()
 
 

@@ -12,7 +12,6 @@ Like every demo, this runs on the instructor's Linux machine only (ADR 0010). St
 | --- | --- |
 | [`problem.md`](problem.md) | The word problem, shown to the room and read by the agent |
 | [`prompt.txt`](prompt.txt) | The exact prompt both commands send, and nothing else |
-| [`rehearsal.md`](rehearsal.md) | Two timed runs per CLI from a clean state, with versions and models |
 | [`recorded/claude-run1.txt`](recorded/claude-run1.txt), [`recorded/claude-run2.txt`](recorded/claude-run2.txt) | Scrubbed Claude Code transcripts |
 | [`recorded/codex-run1.txt`](recorded/codex-run1.txt), [`recorded/codex-run2.txt`](recorded/codex-run2.txt) | Scrubbed Codex transcripts |
 | [`recorded/claude_run1_model.py`](recorded/claude_run1_model.py), [`recorded/claude_run2_model.py`](recorded/claude_run2_model.py) | The models Claude Code wrote, verbatim |
@@ -36,8 +35,8 @@ removes it.
 ## Run
 
 From this folder (`sessions/01-fundamentals/cursus/demos/cold-open/`), run one of the two
-commands. These are the exact commands timed in [`rehearsal.md`](rehearsal.md). Run them as
-written, so the live run matches the rehearsed one.
+commands. These are the exact commands of the recorded runs. Run them as written, so the live
+run matches the recorded one.
 
 Claude Code:
 

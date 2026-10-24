@@ -118,7 +118,7 @@ The pass still re-read the time-sensitive claims.
 | --- | --- | --- |
 | CLI commands "as of 2026-10" on Claude Code 2.1.291 and Codex CLI 0.160.0. These are `--permission-mode plan`, `-p --permission-mode acceptEdits`, `--sandbox read-only`, `exec --sandbox workspace-write`, `/plan`, `/permissions`, and the skill paths and invocations | `--help` of Claude Code 2.1.302 and codex-cli 0.162.1; code.claude.com cli-reference, common-workflows, skills; learn.chatgpt.com developer-commands, build-skills | updated: as-of 2026-10-18 with the current versions, and the first-check versions kept in brackets |
 | Anthropic coding-skills RCT: 52 developers, 50% against 67%, largest gap on debugging | https://www.anthropic.com/research/AI-assistance-coding-skills (modified 2026-09-09, figures unchanged) | kept, accessed 2026-10-05 to 2026-10-18 |
-| Codex's "Implement this plan?" prompt | interactive UI only, not in the docs; evidence in `cursus/labs/lab-ladder-evidence/` | not rechecked live. The page already hedges it ("If it does not ask, type /plan again") and gives it no date |
+| Codex's "Implement this plan?" prompt | interactive UI only, not in the docs; seen in the lab ladder rehearsal | not rechecked live. The page already hedges it ("If it does not ask, type /plan again") and gives it no date |
 
 ### Act V (`cursus/05-failure.html`, verifier-gaming lab)
 
