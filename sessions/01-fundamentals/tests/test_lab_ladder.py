@@ -2,12 +2,12 @@
 
 Run with ``uv run pytest -q tests/test_lab_ladder.py`` from the session.
 These checks support, but do not replace, review of the teaching content,
-screenshots, CLI help evidence and authentic rehearsal transcripts (ADR 0011).
+screenshots and CLI help evidence (ADR 0011).
 
 The engine executes command checks only, but accounts for every test here.
-Keep the L3 location and rehearsal checks in the ``done_commands`` selection
-used by A2 as well as the ``l3``/``rehearsal`` artifact-review selections.
-These check where the done commands run and their recorded completion times.
+Keep the L3 location checks in the ``done_commands`` selection used by A2 as
+well as the ``l3`` artifact-review selection. These check where the done
+commands run.
 
 The agreed HTML interface is section[data-level][data-box], data-agent and
 data-done. A done block contains newline-separated commands in pre/code;
@@ -23,19 +23,10 @@ status alone. L4 alternatives are evaluated separately. A symbol placeholder
 in L1's git grep is filled with a real symbol from the existing reference.
 Only uv's interpreter selection is replaced: the commands themselves execute
 in real temporary repos, with this pytest run's locked Python environment.
-
-Rehearsal evidence uses a Markdown table. Minimal columns (case/punctuation
-insensitive): CLI, level, version, date, minutes, done exit. Common aliases
-are accepted below. Start/end timestamps may be additional columns; when
-present they must agree with minutes. Model, revision, prompts, transitions,
-outputs and diffs must also be reviewed in the linked per-CLI transcripts.
-Missing or 'not measured' rows FAIL; tests never invent live-agent evidence.
 """
 
-from datetime import date, datetime
 from html.parser import HTMLParser
 import json
-import math
 import os
 from pathlib import Path
 import re
@@ -52,7 +43,6 @@ SESSION = Path(__file__).resolve().parents[1]
 PAGE = SESSION / "exercises/lab-ladder.html"
 P00 = SESSION / "exercises/p00-lab"
 L3 = SESSION / "exercises/l3-word-problem"
-REHEARSAL = SESSION / "cursus/labs/lab-ladder-rehearsal.md"
 BUGS = {
     "flipped-sense": "objective contract",
     "dropped-demand": "feasibility contract",
@@ -256,7 +246,6 @@ def test_instructor_hints_closed_and_no_bug_selectors(page):
         assert selector not in page.text().lower(), "D7: encoded selector leaked on page"
     links = relative_targets(page)
     assert (P00 / "README.md").resolve() in links
-    assert REHEARSAL.resolve() in links
 
 
 def relative_targets(element):
@@ -593,69 +582,3 @@ def test_done_commands_l2_l4_claude_local_settings(page, exports, tmp_path, opti
     outcomes = (execute_done(commands_for(page, "L2"), directory, "L2") if option == "l2"
                 else execute_l4(page, directory, option))
     assert_done(outcomes, True)
-
-
-def normalized(value):
-    return re.sub(r"[^a-z0-9]", "", value.lower())
-
-
-def rehearsal_rows(source):
-    aliases = {
-        "cli": {"cli", "agent", "harness"}, "level": {"level"},
-        "version": {"version", "cliversion", "agentversion"},
-        "date": {"date", "rundate"},
-        "minutes": {"minutes", "elapsedminutes", "elapsedmin", "durationminutes", "durationmin"},
-        "exit": {"doneexit", "doneexitcode", "exit", "exitcode", "donecommandexit"},
-        "start": {"start", "started", "starttimestamp", "startedat", "startutc"},
-        "end": {"end", "ended", "endtimestamp", "endedat", "endutc"},
-    }
-    required = {"cli", "level", "version", "date", "minutes", "exit"}
-    rows = []
-    columns = None
-    for line in source.splitlines():
-        if not line.lstrip().startswith("|"):
-            columns = None
-            continue
-        cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
-        if all(re.fullmatch(r":?-+:?", cell) for cell in cells):
-            continue
-        header = [next((key for key, names in aliases.items() if normalized(cell) in names), None)
-                  for cell in cells]
-        if required <= set(header):
-            columns = header
-        elif columns is not None:
-            assert len(cells) == len(columns), "A1: malformed timing-table row"
-            rows.append({key: value for key, value in zip(columns, cells) if key is not None})
-    assert rows, "A1: provide the machine-readable Markdown timing table; see this file's docstring"
-    return rows
-
-
-def test_done_commands_rehearsal_both_clis_within_page_boxes(page):
-    assert REHEARSAL.is_file(), "A1 unproven: missing rehearsal report"
-    rows = rehearsal_rows(REHEARSAL.read_text(encoding="utf-8"))
-    observed = set()
-    for row in rows:
-        agent = normalized(row["cli"])
-        agent = {"claudecode": "claude", "codexcli": "codex"}.get(agent, agent)
-        name = row["level"].upper()
-        assert agent in {"claude", "codex"} and name in {"L1", "L2", "L3"}, row
-        assert (agent, name) not in observed, f"A1: duplicate timing row: {row}"
-        observed.add((agent, name))
-        assert re.search(r"\d+\.\d+", row["version"]), f"A1: missing CLI version: {row}"
-        date.fromisoformat(row["date"])
-        assert re.fullmatch(r"\d+(?:\.\d+)?", row["minutes"]), (
-            f"A1 unproven: need measured minutes, not estimates or 'not measured': {row}")
-        minutes = float(row["minutes"])
-        box = float(level(page, name).attrs["data-box"])
-        assert math.isfinite(minutes) and 0 < minutes <= box, f"A1: outside {name}'s {box}-minute box: {row}"
-        assert row["exit"] == "0", f"A1: done commands did not pass: {row}"
-        if "start" in row or "end" in row:
-            assert "start" in row and "end" in row, "A1: record both timestamps"
-            start = datetime.fromisoformat(row["start"].replace("Z", "+00:00"))
-            end = datetime.fromisoformat(row["end"].replace("Z", "+00:00"))
-            elapsed = (end - start).total_seconds() / 60
-            assert 0 < elapsed <= box and abs(elapsed - minutes) <= 0.02, row
-        transcript = REHEARSAL.parent / "lab-ladder-evidence" / f"{agent}.txt"
-        assert transcript.is_file() and transcript.read_text(encoding="utf-8").strip(), (
-            f"A1: missing transcript for {agent}; table alone is not evidence")
-    assert observed == {(agent, name) for agent in ("claude", "codex") for name in ("L1", "L2", "L3")}

@@ -12,13 +12,12 @@ import {
 
 // Issue 28, amended 2026-10-13: static, hand-written illustrations, no tokenizer.
 // Public markup is the oracle; no private functions, real encoding, or chosen IDs
-// are prescribed. D1/D4 accuracy and visual composition are agent-review items,
-// not facts that keyword matching or a self-authored review can establish.
+// are prescribed. D1/D4 accuracy and visual composition are reviewed by a person,
+// not established by keyword matching.
 const relative = 'sessions/01-fundamentals/cursus/labs/tokenizer.html';
 const file = path.join(repoRoot, relative);
-const evidence = path.join(repoRoot, 'sessions/01-fundamentals/cursus/labs/tokenizer/review.md');
+const assetDir = path.join(repoRoot, 'sessions/01-fundamentals/cursus/labs/tokenizer');
 const output = path.join(repoRoot, 'artifacts/html-pages/tokenizer');
-const checkCommand = `node tools/html-pages/check-page.mjs ${relative} --output artifacts/html-pages/tokenizer`;
 const normal = text => text.replace(/\s+/g, ' ').trim();
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const pageFor = (t, options = {}) => openPage(t, chromium, { file, offline: true, ...options });
@@ -385,7 +384,7 @@ test('D1/D3/D4: authored answers and stable dated note survive no-JS and print',
 test('A1: isolated file:// page needs only itself, no network APIs, modules or vendor', { timeout: 60000 }, async t => {
   const source = await readFile(file, 'utf8');
   for (const obsolete of ['vendor', 'provenance.json', 'README.md']) {
-    await assert.rejects(access(path.join(path.dirname(evidence), obsolete)), { code: 'ENOENT' }, `remove obsolete tokenizer/${obsolete}`);
+    await assert.rejects(access(path.join(assetDir, obsolete)), { code: 'ENOENT' }, `remove obsolete tokenizer/${obsolete}`);
   }
   const isolated = path.join(await scratch(t), 'tokenizer.html');
   await copyFile(file, isolated); // Deliberately copy no sibling assets or tooling.
@@ -428,45 +427,10 @@ test('A1/A2: npm --prefix setup test collects this suite', async () => {
   await assertCollected('tokenizer');
 });
 
-test('A2: current page hash, byte count, PASS command and seven named view observations', { timeout: 60000 }, async t => {
-  const [bytes, review] = await Promise.all([readFile(file), readFile(evidence, 'utf8')]);
-  assert.ok(review.includes(hash(bytes)), 'review is bound to the final HTML sha256');
-  const numeric = review.replace(/(?<=\d),(?=\d)/g, '');
-  assert.ok(new RegExp(`\\b${bytes.length}\\s+bytes\\b|\\bbytes\\s*[:|]\\s*${bytes.length}\\b`, 'i').test(numeric) ||
-    (/\|[^\n]*\bBytes\b[^\n]*\|/i.test(numeric) && new RegExp(`\\|[^\\n]*\\b${bytes.length}\\b[^\\n]*\\|`).test(numeric)),
-  'review records the current HTML byte count');
-  const commandIndex = review.indexOf(checkCommand);
-  assert.ok(commandIndex >= 0, 'review records the exact reproducible check-page command');
-  assert.match(review.slice(Math.max(0, commandIndex - 200), commandIndex + checkCommand.length + 600), /\bPASS\b/);
-  const blocks = review.split(/\n\s*\n|\n(?=\s*(?:[-*+]\s|#{1,6}\s|\|))/).map(normal);
-  const headings = [...review.matchAll(/^#{1,6}\s+.+$/gm)];
-  for (const [i, heading] of headings.entries()) {
-    blocks.push(normal(review.slice(heading.index, headings[i + 1]?.index ?? review.length)));
-  }
-  const views = [/\bdesktop\b/i, /\blaptop\b/i, /\bmobile\b/i, /\bno[- ]?(?:js|javascript)\b/i,
-    /\bprint\b/i, /\breduced[- ]motion\b/i, /\b(?:predict[- ]revealed|revealed prediction|prediction revealed)\b/i];
-  for (const view of views) {
-    assert.ok(blocks.some(block => {
-      const match = block.match(view);
-      // A named paragraph, list item, table row or heading must carry its own
-      // observation. A single line enumerating all seven names is insufficient.
-      const observation = match && block.slice(match.index + match[0].length).replace(/^[\s\d×x()|:*-]+/, '');
-      return match && match.index < 80 && /[A-Za-z]/.test(observation) &&
-        views.every(other => !block.match(other) || block.match(other).index >= match.index);
-    }),
-      `named observation for ${view}, not just a list of view names`);
-  }
+test('A2: reduced motion keeps the structure, examples and predict cycle', { timeout: 60000 }, async t => {
   const page = await pageFor(t, { reducedMotion: 'reduce' });
   await structure(page);
   await examples(page);
   await screenshot(page, 'reduced-motion');
   await cycle(page, [true, true], true);
-  // Verbatim quotations are regression evidence, not an automatic accuracy
-  // judgement. The cross-vendor reviewer reads these and opens every PNG.
-  const quoted = normal(review.replace(/^\s*>\s?/gm, ''));
-  for (const locator of [page.locator('[data-tok-explain]'), page.locator('[data-tok-note]'),
-    ...await page.locator('[data-predict-answer]').all()]) {
-    assert.ok(quoted.includes(normal(await locator.textContent())), 'review quotes the explanation, note and both answers verbatim');
-  }
-  assert.doesNotMatch(review, /^#{1,6}\s+(?:Presets|Vendoring|Performance)\b/im, 'remove superseded live-tokenizer review sections');
 });

@@ -1,6 +1,6 @@
 """Issue 48: structure of the Act III deck, cursus/03-agent.html.
 
-Prose accuracy is reviewed (cursus/03-agent/review.md), not keyword-matched here.
+Prose accuracy is reviewed by a person, not keyword-matched here.
 These tests check the timing plan, that every demo and lab link sits on its slide
 and resolves inside the session, and that the landscape slides carry a date and a
 source.

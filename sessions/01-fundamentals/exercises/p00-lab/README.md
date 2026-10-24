@@ -77,7 +77,6 @@ variant; write one name on the board for the whole room just before L2.
 
 - **Use `dropped-demand` or `relaxed-binary`.** Both fail visibly in `uv run pytest`, name a
   contract in their first failure message, and are fixed by one line in `p00_model.py`.
-  The [rehearsal](../../cursus/labs/lab-ladder-rehearsal.md) used `dropped-demand`.
 - **Avoid `flipped-sense` for L2.** L1 has just trained everyone's attention on where the
   objective sense is set, so the bug is found by memory, not by reading the failure.
 - **Avoid `timelimit-as-optimal` for a first run.** Its only symptom is the status-mapping

@@ -81,8 +81,7 @@ uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
   its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
   plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
   the repository root, `node tools/html-pages/tests/run-suite.mjs
-  tools/html-pages/tests/attention.test.mjs`, and re-review the page
-  (`cursus/labs/attention/review.md` records the reviewed page hash).
+  tools/html-pages/tests/attention.test.mjs`.
 
 ## Opening pages
 
@@ -122,7 +121,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `cursus/instructor-notes.html` | Instructor page: misconceptions and expected questions per act (starting from the 2025 primer's list), and every peer-instruction question with its answer |
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
-| `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, timed rehearsal, recorded fallback and a one-line reset |
+| `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, recorded fallback and a one-line reset |
 | `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `cursus/sources.html` | The session bibliography, grouped by act, with the date each source was last read |

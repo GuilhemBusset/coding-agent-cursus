@@ -23,7 +23,6 @@ the base64 weights. Each data block's `data-sha256` is the sha256 of its decoded
 | `embed_weights.py` | Re-embeds both files into the page (standard library only). |
 | `reference/run.c`, `reference/LICENSE` | llama2.c at the pinned commit, unchanged. |
 | `reference/logits_driver.c` | Test oracle: compiles `run.c` with `TESTING` defined and prints per-position logits. |
-| `review.md` | Review evidence: screenshots, caption, attribution, timings. |
 
 ## Regenerate the embedded data
 
@@ -35,8 +34,7 @@ It downloads both files from the immutable `resolve/<revision>/` URLs in `proven
 refuses anything whose length or sha256 differs, and rewrites only the two data blocks. With
 `--source-dir DIR` it reads `stories260K.bin` and `tok512.bin` from `DIR` instead, with the same
 checks. To move to another revision, update `provenance.json` first (revision, URLs, lengths,
-hashes), re-run the script, then re-run the test below and re-review the page (`review.md`
-records the page's sha256).
+hashes), re-run the script, then re-run the test below.
 
 ## Test
 
