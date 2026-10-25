@@ -225,20 +225,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .loop > li:last-child { padding-right: 2.5rem; }
 .process.loop > li > span.loop-mark, [data-deck-paged] [data-slide] .loop > li > span.loop-mark { position: absolute; right: .25rem; top: 50%; transform: translateY(-50%); color: var(--muted); font: 1.5rem/1 var(--mono); }
 @media (max-width: 599px) { .loop > li:last-child { padding-right: .5rem; } .process.loop > li > span.loop-mark { position: static; transform: none; } }
-.legs { list-style: none; padding: 0; margin: 0 0 1.25rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.legs > li { margin: 0; padding: 1rem 1.25rem; border: 1px solid var(--rule); background: var(--paper); }
-.legs strong { display: block; font-size: clamp(1.35rem, 2.4vw, 1.95rem); line-height: 1.3; }
-.legs span { color: var(--secondary); }
-@media (max-width: 799px) { .legs { grid-template-columns: minmax(0, 1fr); } }
-/* Sticky-note chips, as the lab ladder's signals (exercises/lab-ladder.html). */
-.signals { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
-.signals > .label { margin: 0; }
-.signals ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .75rem; }
-.signals li { margin: 0; }
-.signal { display: inline-block; padding: .25rem .6rem; border: 1px solid var(--rule); border-left: 6px solid var(--muted); background: var(--paper); font: 600 .875rem/1.5 var(--mono); white-space: nowrap; }
-.signal-done { border-left-color: var(--accent); }
-.signal-stuck { border-left-color: var(--amber); }
-.signal-claim { border-left-color: var(--red); }
+/* How we work: one band under the whole loop, because questions are welcome at every step. */
+.band { margin: 0; padding: .75rem 1.25rem; border: 1px solid var(--accent); border-left-width: 6px; color: var(--accent); font-size: clamp(1.25rem, 2.2vw, 1.75rem); font-weight: 700; line-height: 1.3; }
 .choice-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem 1rem; }
 .choice-row .choice + .choice { margin-top: 0; }
 @media (max-width: 799px) { .choice-row { grid-template-columns: minmax(0, 1fr); } }
@@ -371,28 +359,20 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section id="how-we-work" data-slide tabindex="-1" aria-labelledby="how-we-work-title">
         <p class="eyebrow">How we work</p>
-        <h2 id="how-we-work-title">We alternate theory, questions and practice.</h2>
-        <ul class="legs" aria-label="Theory, questions and practice">
-          <li><strong>Theory</strong><span>Short talks, live demos</span></li>
-          <li><strong>Questions</strong><span>Lock in before the reveal</span></li>
-          <li><strong>Practice</strong><span>Your own agent, in pairs</span></li>
-        </ul>
-        <div class="signals">
-          <p class="label">Sticky notes</p>
-          <ul aria-label="Sticky notes">
-            <li><span class="signal signal-done">Green · DONE</span></li>
-            <li><span class="signal signal-stuck">Yellow · STUCK</span></li>
-            <li><span class="signal signal-claim">Pink · CLAIM ≠ EVIDENCE</span></li>
-          </ul>
-        </div>
-        <details class="notes" data-minutes="2.5"><summary>Speaker notes</summary>
-          <p><strong>Do:</strong> hand out sticky notes and form pairs; this is also slack time for the agent.</p>
-          <p>We have two hours today, and theory never runs long before you answer or try something.</p>
-          <p><strong>Questions:</strong> you commit before anything is revealed, by a show of hands or the Lock in button. The gap between your guess and the result is where you learn, and the next slide is the first one.</p>
-          <p>Questions run the other way too: ask anything, any time.</p>
-          <p><strong>Practice:</strong> you drive your own agent. Form mixed pairs now, one Claude Code user and one Codex user where you can; same-agent pairs work too. You only need the agent you already have, and every instruction works in either.</p>
-          <p><strong>Sticky notes:</strong> green when your level’s checks pass, yellow when you need help, pink when the agent claims success but the evidence disagrees.</p>
-          <p>Say when the break is.</p>
+        <h2 id="how-we-work-title">Explain, show, discuss, on repeat.</h2>
+        <figure class="process-figure">
+          <ol class="process loop" aria-label="The rhythm of the session, repeated">
+            <li><span class="label">Explain</span><strong>The idea, briefly</strong></li>
+            <li><span class="label">Show</span><strong>A real agent, live</strong></li>
+            <li><span class="label">Discuss</span><strong>What it did, and why</strong><span class="loop-mark" aria-hidden="true">↺</span></li>
+          </ol>
+        </figure>
+        <p class="band">Interrupt any time.</p>
+        <details class="notes" data-minutes="1.5"><summary>Speaker notes</summary>
+          <p>We have two hours today. The rhythm: I explain an idea briefly, show it on a real agent, live, then we discuss what it did and why.</p>
+          <p>Interrupt any time. If something is unclear to you, it is unclear to someone else too, and a question in the middle beats one at the end.</p>
+          <p>You drive your own agent in the homework.</p>
+          <p>Say when the break is. This slide is also slack time for the agent.</p>
         </details>
       </section>
 
@@ -419,7 +399,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </div>
           <p data-predict-status role="status"></p>
         </section>
-        <details class="notes" data-minutes="5"><summary>Speaker notes</summary>
+        <details class="notes" data-minutes="6"><summary>Speaker notes</summary>
           <ol>
             <li>Glance at the terminal: did the run finish? Claude Code: the last line is the JSON <code>result</code> event with <code>"subtype":"success"</code>. Codex: after the file diff, a <code>tokens used</code> line and its count, then the final answer printed once more. Still running, an error, or neither: use the fallback below.</li>
             <li>Hands up for each choice; press Lock in with the majority. Do not reveal yet.</li>
