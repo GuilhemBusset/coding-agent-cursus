@@ -120,7 +120,7 @@ test('D1: opening slides, presenter and goal, launch and return, cursus, format 
   assert.equal(sessions.length, arc.length, 'one step per session');
   arc.forEach((pattern, i) => assert.match(sessions[i], pattern, `session ${i + 1} of the cursus`));
   const work = await onSlide(page, 'how-we-work');
-  for (const pattern of [/theory/, /questions/, /practice/, /pairs?/, /green/, /yellow/, /pink/]) assert.match(work, pattern);
+  for (const pattern of [/explain/, /show/, /discuss/, /interrupt any time/]) assert.match(work, pattern);
   await predictContract(page);
   const result = openingSlide(page, 'cold-open-result');
   await count(result.locator('[data-predict]'), 1);
@@ -138,7 +138,7 @@ test('D1: opening slides, presenter and goal, launch and return, cursus, format 
     copy.querySelectorAll('script, style').forEach(node => node.remove());
     return copy.textContent;
   }));
-  for (const pattern of [/\bmetr\b/, /\bslower\b/, /jagged/, /invisible edge/, /map of the day/, /\bact (?:i|ii|iii|iv|v)\b/]) {
+  for (const pattern of [/\bmetr\b/, /\bslower\b/, /jagged/, /invisible edge/, /map of the day/, /\bact (?:i|ii|iii|iv|v)\b/, /sticky/]) {
     assert.doesNotMatch(whole, pattern);
   }
   for (const id of openingSlides) {
