@@ -55,8 +55,8 @@ async function face(slide) {
 }
 async function running() {
   const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/next_token.json'), 'utf8'));
-  const item = fixture.prompts.find(prompt => prompt.id === 'factual-capital');
-  assert.ok(item, 'the running example is the factual-capital prompt');
+  const item = fixture.prompts.find(prompt => prompt.id === 'factual-everyone-knows');
+  assert.ok(item, 'the running example is the factual-everyone-knows prompt');
   return { fixture, item, p: record => Math.exp(record.logit - item.logsumexp) };
 }
 async function chips(locator) {
