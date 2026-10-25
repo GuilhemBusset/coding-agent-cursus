@@ -49,7 +49,7 @@ NEXT_TOKEN_PROMPTS = [
     ("or-constraints", "or", "x + y <= 10, x >= 0, y >=", " 0"),
     ("strawberry", "tokenization", " strawberry", None),
     ("strawberry-count", "tokenization", "The number of times the letter r appears in the word strawberry is", None),
-    ("factual-capital", "factual", "The capital of France is", " Paris"),
+    ("factual-everyone-knows", "factual", "Everyone knows the capital of France is", " Paris"),
     ("factual-landmark", "factual", "The Eiffel Tower is located in the city of", " Paris"),
     ("factual-analogy", "factual", "Paris is to France as Berlin is to", " Germany"),
     ("numeric-sequence", "numeric", "2, 4, 6, 8,", " 10"),

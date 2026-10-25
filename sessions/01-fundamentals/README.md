@@ -82,6 +82,10 @@ uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
   plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
   the repository root, `node tools/html-pages/tests/run-suite.mjs
   tools/html-pages/tests/attention.test.mjs`.
+- `cursus/labs/next-token.html` embeds `next_token.json` the same way, in its
+  `<script id="next-token-data">` block, without the file's trailing newline. After a rebuild
+  that changes `next_token.json`, paste the new contents there;
+  `tools/html-pages/tests/next-token.test.mjs` fails until the two match.
 
 ## Opening pages
 

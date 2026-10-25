@@ -214,6 +214,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 /* Page-specific layout for the attention lab; shared tokens and components above. */
 .attn-panel + .attn-panel { margin-top: 2.5rem; }
 .attn-panel h2 { margin-bottom: .75rem; }
+.attn-sentence { font: 600 1.25rem/1.4 var(--mono); margin-bottom: .5rem; }
 .attn-formula { font: .9375rem/1.7 var(--mono); padding: .75rem 1rem; background: var(--paper); border: 1px solid var(--rule); border-radius: .2rem; overflow-wrap: anywhere; }
 .attn-toy-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space); align-items: start; }
 .attn-toy-grid > * { min-width: 0; }
@@ -292,17 +293,19 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
       <noscript><p class="callout attn-noscript">The draggable query, the sliders and the GPT-2 arcs need JavaScript. Without it this page is a static snapshot: the toy's default weights and output are in the table, the recorded sentence is listed below, and the raw data is <a href="../fixtures/attention.json">attention.json</a>.</p></noscript>
 
       <section id="toy" class="panel attn-panel" data-panel aria-labelledby="toy-title">
-        <h2 id="toy-title">Toy: four records in two dimensions</h2>
-        <p class="callout" data-illustrative><strong>Illustrative:</strong> four invented records, each a key k<sub>i</sub> and a value v<sub>i</sub> in the plane, chosen so the lookup is easy to see. No model produced these numbers.</p>
+        <h2 id="toy-title">Toy: where does “is” look?</h2>
+        <p class="attn-sentence"><span class="muted">Everyone knows</span> the capital of France <strong class="accent">▸ is</strong></p>
+        <p>The new token “is” sends a query <strong>q</strong>: what it looks for. Each earlier token offers a key k<sub>i</sub> and a value v<sub>i</sub>. The output <strong>o</strong> is the new vector for “is”.</p>
+        <p class="callout" data-illustrative><strong>Illustrative:</strong> the keys and values of the, capital, of and France are invented points in the plane, chosen so the lookup is easy to see. No model produced these numbers. In a real model, “is” also looks at itself.</p>
         <p class="attn-formula" data-attn-formula>w<sub>i</sub> = softmax<sub>i</sub>(s · q·k<sub>i</sub>) = exp(s · q·k<sub>i</sub>) / Σ<sub>j</sub> exp(s · q·k<sub>j</sub>)<br>o = Σ<sub>i</sub> w<sub>i</sub> v<sub>i</sub> = E<sub>w</sub>[v], &nbsp; with s = 1/√d</p>
         <div class="attn-toy-grid">
           <figure class="attn-plot">
-            <figcaption>Keys k<sub>i</sub> and the query q. Drag the teal handle, or use the sliders.</figcaption>
-            <svg id="attn-key-plot" viewBox="0 0 340 340" role="img" aria-labelledby="attn-key-plot-desc" hidden><desc id="attn-key-plot-desc">Key plot: four fixed keys and a draggable query vector, axes from −2 to 2.</desc></svg>
+            <figcaption>Keys k<sub>i</sub> of the earlier tokens and the query q of “is”. Drag the teal handle, or use the sliders.</figcaption>
+            <svg id="attn-key-plot" viewBox="0 0 340 340" role="img" aria-labelledby="attn-key-plot-desc" hidden><desc id="attn-key-plot-desc">Key plot: fixed keys for the, capital, of and France, and a draggable query vector for “is”, axes from −2 to 2.</desc></svg>
           </figure>
           <figure class="attn-plot">
-            <figcaption>Values v<sub>i</sub>. Disc area is the weight w<sub>i</sub>; the amber point is the output o, their expectation.</figcaption>
-            <svg id="attn-value-plot" viewBox="0 0 340 340" role="img" aria-labelledby="attn-value-plot-desc" hidden><desc id="attn-value-plot-desc">Value plot: four values, each with a disc whose area is its weight, and the output point at the weighted mean.</desc></svg>
+            <figcaption>Values v<sub>i</sub>. Disc area is the weight w<sub>i</sub>; the amber point is the output o, their expectation: the new vector for “is”.</figcaption>
+            <svg id="attn-value-plot" viewBox="0 0 340 340" role="img" aria-labelledby="attn-value-plot-desc" hidden><desc id="attn-value-plot-desc">Value plot: the values of the, capital, of and France, each with a disc whose area is its weight, and the output point for “is” at the weighted mean.</desc></svg>
           </figure>
           <div class="attn-controls">
             <div>
@@ -323,19 +326,19 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <div><button type="button" data-attn-reset disabled>Reset query and scale</button></div>
           </div>
           <div>
-            <div class="table-wrap">
+            <div class="table-wrap" role="region" aria-label="Weights per earlier token" tabindex="0">
               <table class="attn-table">
-                <caption>The measure: one row per record, updated live.</caption>
-                <thead><tr><th scope="col">i</th><th scope="col">Key k<sub>i</sub></th><th scope="col">Value v<sub>i</sub></th><th scope="col" class="attn-score-col">Score s·q·k<sub>i</sub></th><th scope="col">Weight w<sub>i</sub></th></tr></thead>
+                <caption>The measure: one row per earlier token, updated live.</caption>
+                <thead><tr><th scope="col">Token</th><th scope="col">Key k<sub>i</sub></th><th scope="col">Value v<sub>i</sub></th><th scope="col" class="attn-score-col">Score s·q·k<sub>i</sub></th><th scope="col">Weight w<sub>i</sub></th></tr></thead>
                 <tbody id="attn-rows">
-                  <tr><th scope="row">1</th><td>(1.5, 0.5)</td><td>(1.5, −1.0)</td><td class="attn-score-col" data-attn-score data-index="0">1.24</td><td data-attn-weight data-index="0">59.9%</td></tr>
-                  <tr><th scope="row">2</th><td>(−0.5, 1.5)</td><td>(1.0, 1.5)</td><td class="attn-score-col" data-attn-score data-index="1">0.18</td><td data-attn-weight data-index="1">20.6%</td></tr>
-                  <tr><th scope="row">3</th><td>(−1.5, −0.5)</td><td>(−1.5, 1.0)</td><td class="attn-score-col" data-attn-score data-index="2">−1.24</td><td data-attn-weight data-index="2">5.0%</td></tr>
-                  <tr><th scope="row">4</th><td>(0.5, −1.5)</td><td>(−1.0, −1.5)</td><td class="attn-score-col" data-attn-score data-index="3">−0.18</td><td data-attn-weight data-index="3">14.5%</td></tr>
+                  <tr><th scope="row">the</th><td>(−1.5, 0.5)</td><td>(−1.5, 1.0)</td><td class="attn-score-col" data-attn-score data-index="0">−0.89</td><td data-attn-weight data-index="0">6.0%</td></tr>
+                  <tr><th scope="row">capital</th><td>(0.5, 1.5)</td><td>(1.0, 1.5)</td><td class="attn-score-col" data-attn-score data-index="1">0.89</td><td data-attn-weight data-index="1">35.1%</td></tr>
+                  <tr><th scope="row">of</th><td>(−1.0, −1.5)</td><td>(−0.5, −1.5)</td><td class="attn-score-col" data-attn-score data-index="2">−1.24</td><td data-attn-weight data-index="2">4.2%</td></tr>
+                  <tr><th scope="row">France</th><td>(1.75, 0.25)</td><td>(1.5, −1.0)</td><td class="attn-score-col" data-attn-score data-index="3">1.33</td><td data-attn-weight data-index="3">54.7%</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="attn-output" data-attn-output-readout aria-live="polite">Output <strong>o</strong> = (0.89, −0.46)</p>
+            <p class="attn-output" data-attn-output-readout aria-live="polite">Output <strong>o</strong> = (1.06, −0.02)</p>
             <p class="muted attn-help">Try it: point q at one key and raise s until nearly all the mass sits on that key's value. That is a hard lookup. Lower s and the output slides towards the plain average of the values.</p>
           </div>
         </div>
@@ -795,11 +798,12 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   }
   function pair(p) { return '(' + fixed(p[0], 2) + ', ' + fixed(p[1], 2) + ')'; }
   function pct(w) { return (100 * w).toFixed(1) + '%'; }
-  function subscript(n) { return String(n).replace(/\d/g, function (d) { return '₀₁₂₃₄₅₆₇₈₉'[d]; }); }
 
   /* ---------- Toy panel ---------- */
-  var KEYS = [[1.5, 0.5], [-0.5, 1.5], [-1.5, -0.5], [0.5, -1.5]];
-  var VALUES = [[1.5, -1], [1, 1.5], [-1.5, 1], [-1, -1.5]];
+  // Invented points for the toy sentence; the query is the new token "is".
+  var TOKENS = ['the', 'capital', 'of', 'France'];
+  var KEYS = [[-1.5, 0.5], [0.5, 1.5], [-1, -1.5], [1.75, 0.25]];
+  var VALUES = [[-1.5, 1], [1, 1.5], [-0.5, -1.5], [1.5, -1]];
   var SIZE = 340, MARGIN = 30, DOMAIN = 2.5;
   var UNIT = (SIZE - 2 * MARGIN) / (2 * DOMAIN);
   var MASS_RADIUS = 0.62 * UNIT; // disc radius at w = 1; area ∝ w
@@ -849,11 +853,11 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     var queryVector = svgEl('line', { class: 'vector s-accent', x1: px(0), y1: py(0) }, keyPlot);
     KEYS.forEach(function (k, i) {
       var g = svgEl('g', { 'data-attn-key': '', 'data-index': i, 'data-x': k[0], 'data-y': k[1],
-        'aria-label': 'key ' + (i + 1) + ' at ' + pair(k) }, keyPlot);
+        'aria-label': 'key of ' + TOKENS[i] + ' at ' + pair(k) }, keyPlot);
       svgEl('circle', { class: 'key-dot', cx: px(k[0]), cy: py(k[1]), r: 5 }, g);
-      svgEl('text', { class: 'mark-label', x: px(k[0]) + 9, y: py(k[1]) - 9 }, g).textContent = 'k' + subscript(i + 1);
+      svgEl('text', { class: 'mark-label', x: px(k[0]) + 9, y: py(k[1]) - 9 }, g).textContent = TOKENS[i];
     });
-    var handle = svgEl('g', { 'data-attn-query': '', 'aria-label': 'query q (drag me)' }, keyPlot);
+    var handle = svgEl('g', { 'data-attn-query': '', 'aria-label': 'query q of is (drag me)' }, keyPlot);
     var hit = svgEl('circle', { class: 'hit', r: 22 }, handle);
     var dot = svgEl('circle', { class: 'handle', r: 9 }, handle);
     var qLabel = svgEl('text', { class: 'mark-label f-accent' }, handle);
@@ -862,12 +866,12 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     var masses = [];
     VALUES.forEach(function (v, i) {
       var g = svgEl('g', { 'data-attn-value': '', 'data-index': i, 'data-x': v[0], 'data-y': v[1],
-        'aria-label': 'value ' + (i + 1) + ' at ' + pair(v) }, valuePlot);
+        'aria-label': 'value of ' + TOKENS[i] + ' at ' + pair(v) }, valuePlot);
       masses.push(svgEl('circle', { 'data-attn-mass': '', cx: px(v[0]), cy: py(v[1]) }, g));
       svgEl('circle', { class: 'value-dot', cx: px(v[0]), cy: py(v[1]), r: 4 }, g);
-      svgEl('text', { class: 'mark-label', x: px(v[0]) + 9, y: py(v[1]) - 9 }, g).textContent = 'v' + subscript(i + 1);
+      svgEl('text', { class: 'mark-label', x: px(v[0]) + 9, y: py(v[1]) - 9 }, g).textContent = TOKENS[i];
     });
-    var output = svgEl('g', { 'data-attn-output': '', 'aria-label': 'output o' }, valuePlot);
+    var output = svgEl('g', { 'data-attn-output': '', 'aria-label': 'output o, the new vector for is' }, valuePlot);
     var outDot = svgEl('circle', { r: 7 }, output);
     var outLabel = svgEl('text', { class: 'mark-label f-amber' }, output);
     outLabel.textContent = 'o';

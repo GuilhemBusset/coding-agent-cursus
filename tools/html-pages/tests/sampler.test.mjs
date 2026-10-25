@@ -7,9 +7,9 @@ import { chromium } from '../browser.mjs';
 import { openPage, repoRoot, count, eventually, assertCollected } from './component-helpers.mjs';
 
 // Issue 46, restructured around the one-pass pipeline: the act opens on the graph
-// and walks it stage by stage, each stage with its lab. These are structural and
-// behavioural floors, complemented by check-page and a person's review of the
-// prose and maths. A keyword match is not a correctness review.
+// and walks it stage by stage, each stage with the data structure it passes on and
+// its lab. These are structural and behavioural floors, complemented by check-page
+// and a person's review of the prose and maths. A keyword match is not a correctness review.
 // npm --prefix setup test collects this suite by discovery: there is no list to edit.
 const cursus = path.join(repoRoot, 'sessions/01-fundamentals/cursus');
 const file = path.join(cursus, '01-sampler.html');
@@ -19,20 +19,24 @@ const viewports = [
   { width: 1280, height: 720 },
   { width: 390, height: 844 },
 ];
-// Slide id, highlighted pipeline node(s), and the activity linked from that slide.
+const order = ['pipeline', 'tokenize', 'strawberry', 'embed', 'transformer', 'attention', 'logits', 'sample', 'append', 'weights', 'system-1'];
+// Slide id, highlighted pipeline node(s), and the activity linked from that slide, if any.
 const stages = [
   { id: 'tokenize', nodes: ['Tokenizer'], activity: 'labs/tokenizer.html', tag: 'tokenizer lab' },
-  { id: 'transformer', nodes: ['Transformer'], activity: 'labs/attention.html', tag: 'attention lab' },
+  { id: 'embed', nodes: ['Embedding'] },
+  { id: 'transformer', nodes: ['12 layers'], tag: 'attention lab' },
+  { id: 'attention', nodes: ['12 layers'], activity: 'labs/attention.html', tag: 'attention lab' },
   { id: 'logits', nodes: ['Logits'], activity: 'labs/next-token.html', tag: 'next-token lab' },
   { id: 'sample', nodes: ['Sampler'], activity: 'demos/model/sampling.md', tag: 'sampling demo' },
   { id: 'append', nodes: ['Next token'], activity: 'labs/tiny-lm.html', tag: 'tiny-LM lab' },
 ];
-const graphOrder = ['Context', 'Tokenizer', 'Transformer', 'Logits', 'Sampler', 'Next token'];
+const graphOrder = ['Context', 'Tokenizer', 'Embedding', '12 layers', 'Logits', 'Sampler', 'Next token'];
 const norm = value => value.normalize('NFKC').replace(/[‘’]/g, "'")
   .replace(/[−–]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 // Quoted fixture text remains case-sensitive; normalize whitespace only.
 const quoteNorm = value => value.replace(/\s+/g, ' ').trim();
 const math = value => norm(value).replace(/[\s_]/g, '');
+const piece = text => text.replace(/ /g, '␣');
 const topic = (page, id) => page.locator(`section[data-slide]#${id}`);
 const slides = page => page.locator('main[data-deck] section[data-slide]');
 const notes = slide => slide.locator('details.speaker-notes');
@@ -48,6 +52,16 @@ async function face(slide) {
     copy.querySelectorAll('details.speaker-notes, script, svg, [hidden], [aria-hidden="true"]').forEach(el => el.remove());
     return copy.textContent;
   }));
+}
+async function running() {
+  const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/next_token.json'), 'utf8'));
+  const item = fixture.prompts.find(prompt => prompt.id === 'factual-everyone-knows');
+  assert.ok(item, 'the running example is the factual-everyone-knows prompt');
+  return { fixture, item, p: record => Math.exp(record.logit - item.logsumexp) };
+}
+async function chips(locator) {
+  return locator.locator('[data-token-id]').evaluateAll(els => els.map(el => ({
+    id: Number(el.dataset.tokenId), text: el.querySelector('code').textContent, shown: el.querySelector('.id').textContent })));
 }
 async function pageFor(t, options = {}) {
   return openPage(t, chromium, { file, ...options });
@@ -93,7 +107,7 @@ async function noHorizontalOverflow(page, disclosure) {
   assert.deepEqual(problems, [], 'open notes have no horizontal overflow');
 }
 
-test('D1 / A1 automated part: authored deck, one disclosure per slide, and a 45-minute plan', async t => {
+test('D1: authored deck, one collapsed disclosure per slide, and no minutes anywhere', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
   assert.equal(await page.locator('html').getAttribute('data-page-kind'), 'deck');
   assert.equal(await page.locator('html').getAttribute('data-design-system'), 'cursus');
@@ -101,49 +115,53 @@ test('D1 / A1 automated part: authored deck, one disclosure per slide, and a 45-
   await count(page.locator('main[data-deck] nav[data-deck-nav]'), 1);
   await count(page.locator('script[src], script[type="module"]'), 0);
   const ids = await idsOf(page);
-  assert.ok(ids.length > 1 && ids.every(Boolean), 'multiple named slides');
   assert.equal(new Set(ids).size, ids.length, 'slide ids are unique');
-  await count(page.locator('section[data-slide]'), ids.length);
   await count(page.locator('details.speaker-notes'), ids.length);
-  let total = 0;
   for (const slide of await slides(page).all()) {
     assert.equal(await slide.isVisible(), true, 'no-JS readers can read every slide');
-    const minutes = await slide.getAttribute('data-minutes');
-    assert.match(minutes ?? '', /^[1-9]\d*$/, `${await slide.getAttribute('id')}: positive integer data-minutes`);
-    total += Number(minutes);
     const disclosure = notes(slide);
     await count(disclosure, 1);
     assert.equal(await disclosure.evaluate(el => el.open), false, 'notes are authored collapsed');
-    await count(disclosure.locator(':scope > summary'), 1);
-    assert.equal(norm(await disclosure.locator(':scope > summary').textContent()), `speaker notes · ${minutes} min`);
+    assert.equal(norm(await disclosure.locator(':scope > summary').textContent()), 'speaker notes');
     assert.ok((await notesText(slide)).split(/\s+/).filter(Boolean).length >= 20,
       'notes contain a talk track and transition, not only a label');
   }
-  assert.equal(total, 45, 'planned minutes total 45; this does not certify an observed rehearsal');
-  assert.ok(norm(await page.locator('.masthead').innerText()).includes('session 1 · act i · 45 minutes'));
+  // Timing lives in the run of show, not in the deck.
+  await count(page.locator('[data-minutes]'), 0);
+  const text = await page.locator('body').evaluate(el => el.textContent);
+  assert.doesNotMatch(text, /\bminutes?\b|\b\d+\s?min\b/i, 'no minutes on slides or in notes');
+  assert.match(norm(await page.locator('.masthead').innerText()), /act i/);
   await assertCollected('sampler');
+});
+
+test('D1: slide faces carry no recording artefacts', async t => {
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  await count(page.locator('footer'), 0);
+  for (const slide of await slides(page).all()) {
+    assert.doesNotMatch(await face(slide), /\brecorded\b|fixtures\/|\.json\b/, `#${await slide.getAttribute('id')}: no provenance on the face`);
+  }
+  // The one source left on a face is the research behind the System 1 qualification.
+  assert.deepEqual(await page.locator('main .cite').evaluateAll(els => els.map(el => el.closest('section').id)), ['system-1']);
 });
 
 test('D2: the act opens on the pipeline and walks it in order, ending on System 1', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const ids = await idsOf(page);
-  assert.equal(ids[0], 'pipeline', 'the pipeline graph opens the act');
-  const order = ['tokenize', 'strawberry', 'transformer', 'logits', 'sample', 'append', 'weights'];
-  const positions = order.map(id => ids.indexOf(id));
-  assert.ok(positions.every(index => index > 0), `every stage slide exists: ${order}`);
-  assert.deepEqual(positions, [...positions].sort((a, b) => a - b), 'stages follow the graph');
-  assert.equal(ids.at(-1), 'system-1', 'the last slide closes on System 1');
+  assert.deepEqual(await idsOf(page), order);
 });
 
-test('D2: the opening graph names every stage, links each stage slide, and carries the board equation', async t => {
+test('D2: the opening graph names every stage and its output shape, and links each stage slide', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
   const slide = topic(page, 'pipeline');
   const graph = slide.locator('svg.pipeline');
   await count(graph, 1);
   assert.deepEqual(await graph.locator('.node .t').allTextContents(), graphOrder);
+  const shapes = await graph.locator('.node .s').allTextContents();
+  for (const shape of ['7 IDs', '7 × 768', '50,257 scores', '1 ID']) {
+    assert.ok(shapes.some(text => text.includes(shape)), `a node shows its output: ${shape}`);
+  }
   await count(graph.locator('.node.now'), 0);
   const links = await graph.locator('a').evaluateAll(els => els.map(el => el.getAttribute('href')));
-  assert.deepEqual(links, stages.map(stage => `#${stage.id}`), 'each stage box opens its slide');
+  assert.deepEqual(links, ['#tokenize', '#embed', '#transformer', '#logits', '#sample', '#append'], 'each stage box opens its slide');
   assert.match(norm(await graph.textContent()), /one forward pass/);
   assert.match(norm(await graph.textContent()), /append/);
   const text = await face(slide);
@@ -155,84 +173,132 @@ test('D2: the opening graph names every stage, links each stage slide, and carri
   assert.match(talk, /chain[ -]rule|factoriz|factoris/);
 });
 
-test('D2: each stage slide repeats the graph with its own stage highlighted and its activity named', async t => {
+test('D2: each stage slide repeats the same graph with its own stage highlighted', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const close = { id: 'system-1', nodes: ['Transformer', 'Logits'] };
+  const geometry = el => [...el.querySelectorAll('rect, path')].map(node => node.getAttribute('x') + node.getAttribute('d'));
+  const reference = await topic(page, 'pipeline').locator('svg.pipeline').evaluate(geometry);
+  const close = { id: 'system-1', nodes: ['Embedding', '12 layers', 'Logits'] };
   for (const stage of [...stages, close]) {
     const slide = topic(page, stage.id);
     const graph = slide.locator('svg.pipeline');
     await count(graph, 1);
+    assert.deepEqual(await graph.evaluate(geometry), reference, `${stage.id}: the copy has the same geometry`);
     assert.deepEqual(await graph.locator('.node .t').allTextContents(), graphOrder, `${stage.id}: same graph`);
     assert.deepEqual(await graph.locator('.node.now .t').allTextContents(), stage.nodes, `${stage.id}: highlighted stage`);
     assert.equal(await graph.getAttribute('role'), 'img');
     assert.match(norm(await graph.getAttribute('aria-label')), /highlighted/);
-    if (!stage.activity) continue;
+    if (stage === close) continue;
     // Earlier stages read as done, later ones as still to come.
     const at = graphOrder.indexOf(stage.nodes[0]);
     const states = await graph.locator('.node').evaluateAll(els => els.map(el =>
       ['done', 'now', 'next'].find(name => el.classList.contains(name))));
     assert.deepEqual(states, graphOrder.map((_, index) => index < at ? 'done' : index === at ? 'now' : 'next'));
-    assert.ok((await graph.locator('.tag.now').allTextContents()).some(text => text.includes(stage.tag)),
-      `${stage.id}: the highlighted label names ${stage.tag}`);
-    assert.ok((await hrefsOf(slide.locator(':scope > :not(details)'))).some(href => isTarget(href, stage.activity)),
-      `${stage.id}: the slide links ${stage.activity}`);
+    if (stage.tag) {
+      assert.ok((await graph.locator('.tag.now').allTextContents()).some(text => text.includes(stage.tag)),
+        `${stage.id}: the highlighted label names ${stage.tag}`);
+    }
+    if (stage.activity) {
+      assert.ok((await hrefsOf(slide.locator(':scope > :not(details)'))).some(href => isTarget(href, stage.activity)),
+        `${stage.id}: the slide links ${stage.activity}`);
+    }
   }
 });
 
-test('D3: real integer token IDs and a strawberry-to-code demo slot', async t => {
-  const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/next_token.json'), 'utf8'));
-  const strawberry = fixture.prompts.find(item => item.prompt === ' strawberry');
-  const france = fixture.prompts.find(item => item.prompt === 'The capital of France is');
-  assert.ok(strawberry?.prompt_tokens.length && france?.prompt_tokens.length, 'fixture holds both prompts');
+test('D3: the tokenizer shows the running example as its recorded list of integers', async t => {
+  const { item } = await running();
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const tokenText = await face(topic(page, 'tokenize'));
-  for (const term of [/integer/, /\bids?\b/, /strawberry/, /gpt-2/]) assert.match(tokenText, term);
-  for (const token of strawberry.prompt_tokens) assert.match(tokenText, new RegExp(`\\b${token.id}\\b`),
-    'token ID comes from prompt_tokens, not from a next-token candidate');
-  assert.ok(tokenText.includes(france.prompt_tokens.map(token => token.id).join(' ')),
-    'the running example shows its recorded IDs in order');
+  const slide = topic(page, 'tokenize');
+  const expected = item.prompt_tokens.map(token => ({ id: token.id, text: piece(token.text), shown: String(token.id) }));
+  assert.deepEqual(await chips(slide), expected);
+  const text = await face(slide);
+  for (const term of [/integer/, /\bids?\b/, /gpt-2/, /leading space/]) assert.match(text, term);
+  assert.match(text, new RegExp(`\\b${item.prompt_tokens.length} integers\\b`));
+});
+
+test('D3: strawberry is one ID, and the demo slot pivots to code', async t => {
+  const { fixture } = await running();
+  const strawberry = fixture.prompts.find(item => item.prompt === ' strawberry');
+  assert.equal(strawberry?.prompt_tokens.length, 1, 'fixture holds the real leading-space strawberry prompt');
+  const page = await pageFor(t, { javaScriptEnabled: false });
   const demo = topic(page, 'strawberry');
   const text = await face(demo);
   assert.match(text, /strawberry/);
+  assert.match(text, new RegExp(`\\b${strawberry.prompt_tokens[0].id}\\b`), 'the ID comes from prompt_tokens');
   assert.match(text, /code/);
-  const slots = await demo.locator('a[href], code').evaluateAll(els => els.map(el =>
-    el.tagName === 'A' ? el.getAttribute('href') : el.textContent));
-  assert.ok(slots.some(value => value.includes('demos/model/strawberry.md')), 'runbook link or code-path slot');
+  assert.ok((await demo.locator('a[href]').evaluateAll(els => els.map(el => el.getAttribute('href'))))
+    .includes('demos/model/strawberry.md'), 'runbook link');
   await access(path.join(cursus, 'demos/model/strawberry.md'));
+  assert.match(await notesText(demo), /146/);
 });
 
-test('D4: a recorded distribution, temperature, sampling, reproducibility and the System 1 close', async t => {
-  const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/next_token.json'), 'utf8'));
-  const france = fixture.prompts.find(item => item.prompt === 'The capital of France is');
+test('D4: embedding and layers keep a 7 × 768 matrix, one row per token, in order', async t => {
+  const { item } = await running();
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  const embed = topic(page, 'embed');
+  const rows = await embed.locator('.matrix').evaluate(el => [...el.querySelectorAll('.id')].map(node => Number(node.textContent)));
+  assert.deepEqual(rows, item.prompt_tokens.map(token => token.id), 'one row per recorded ID');
+  await count(embed.locator('.matrix .row'), item.prompt_tokens.length);
+  const embedText = await face(embed);
+  for (const term of [/7 × 768/, /768 numbers/, /position/]) assert.match(embedText, term);
+  assert.match(await notesText(embed), /50,257 × 768/);
+  const layers = await face(topic(page, 'transformer'));
+  for (const term of [/layer 1\b/, /layer 12\b/, /7 × 768/, /attention/, /mlp/, /in order/]) assert.match(layers, term);
+});
+
+test('D5: inside a layer, one head is a causal 7 × 7 table of query, key and value', async t => {
+  const { item } = await running();
+  const n = item.prompt_tokens.length;
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  const slide = topic(page, 'attention');
+  const grid = slide.locator('.attn-grid');
+  await count(grid.locator('.c'), n * n);
+  await count(grid.locator('.c.off'), n * (n - 1) / 2);
+  const masked = await grid.evaluate((el, n) => [...el.querySelectorAll('.c')].map((cell, index) =>
+    cell.classList.contains('off') === (index % n > Math.floor(index / n))), n);
+  assert.ok(masked.every(Boolean), 'exactly the cells above the diagonal are empty');
+  const text = await face(slide);
+  for (const term of [/attention/, /look/, /query/, /key/, /value/, /softmax/, /7 × 7/, /12 heads/]) assert.match(text, term);
+  assert.ok(math(text).includes('softmax(qkt/√d)·v'), 'scaled attention formula is readable HTML');
+  assert.match(await notesText(slide), /13-token/, 'the notes tie the table to the lab’s GPT-2 panel');
+});
+
+test('D6: the last row becomes the recorded distribution, and one draw is appended', async t => {
+  const { item, p } = await running();
   const page = await pageFor(t, { javaScriptEnabled: false });
   const logits = topic(page, 'logits');
   const text = await face(logits);
-  for (const term of [/distribution/, /softmax/, /temperature/]) assert.match(text, term);
+  for (const term of [/distribution/, /softmax/, /temperature/, /768/, /50,257/]) assert.match(text, term);
   assert.ok(math(text).includes('softmax(z/t)'), 'temperature formula is readable HTML');
   const rows = await logits.locator('[data-prob-row]').evaluateAll(els => els.map(el => ({
-    label: el.querySelector('[data-prob-label]').textContent, value: Number(el.dataset.value) })));
+    label: el.querySelector('[data-prob-label] code').textContent, value: Number(el.dataset.value),
+    highlight: el.hasAttribute('data-highlight') })));
   assert.equal(rows.length, 5);
   for (const [index, row] of rows.entries()) {
-    const top = france.top[index];
-    assert.equal(row.label.replace(/\s*\(highlighted\)\s*$/, '').trim(), top.text.replace(/^ /, '␣'));
-    assert.ok(Math.abs(row.value - Math.exp(top.logit - france.logsumexp)) < 5e-4, `${top.text}: recorded probability`);
+    const top = item.top[index];
+    assert.equal(row.label, piece(top.text));
+    assert.ok(Math.abs(row.value - p(top)) < 5e-4, `${top.text}: recorded probability`);
+    assert.equal(row.highlight, index === 0, 'the top token is the highlighted one');
   }
-  const sample = await face(topic(page, 'sample'));
-  for (const term of [/draw/, /reproduc/, /seed/]) assert.match(sample, term);
-  const close = topic(page, 'system-1');
-  const closeText = await face(close);
-  assert.match(closeText, /system 1/);
-  assert.match(closeText, /fixed compute per token/);
-  assert.ok((await close.locator('.cite a[href]').evaluateAll(els => els.map(el => el.href)))
-    .some(url => url.startsWith('https://transformer-circuits.pub/2025/attribution-graphs/biology')),
-  'the in-pass reasoning qualification is sourced');
+  assert.equal(item.top[0].text, item.expect, 'the expected answer is the most likely next token');
+  const drawn = { id: item.top[0].id, text: piece(item.top[0].text), shown: String(item.top[0].id) };
+  const sample = topic(page, 'sample');
+  assert.deepEqual(await chips(sample), [drawn]);
+  assert.match(await face(sample), /draw/);
+  const append = topic(page, 'append');
+  const expected = item.prompt_tokens.map(token => ({ id: token.id, text: piece(token.text), shown: String(token.id) }));
+  assert.deepEqual(await chips(append), [...expected, drawn]);
+  assert.match(await face(append), new RegExp(`\\b${item.prompt_tokens.length + 1} ids\\b`));
 });
 
-test('D5: attention on the transformer stage, with query, key and value', async t => {
+test('D6: the sampler notes keep reproducibility and the dated CLI claim with its sources', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const text = await face(topic(page, 'transformer'));
-  for (const term of [/attention/, /query/, /key/, /value/, /softmax/, /look/]) assert.match(text, term);
-  assert.ok(math(text).includes('softmax(qkt/√d)·v'), 'scaled attention formula is readable HTML');
+  const slide = topic(page, 'sample');
+  const talk = await notesText(slide);
+  for (const term of [/seed/, /reproduc/, /as of 2026-10-18/, /neither cli exposes a temperature, top-p or seed option/]) assert.match(talk, term);
+  const links = await notes(slide).locator('a[href]').evaluateAll(els => els.map(el => el.href));
+  for (const url of ['https://code.claude.com/docs/en/cli-reference', 'https://developers.openai.com/codex/cli/reference']) {
+    assert.ok(links.includes(url), `notes cite ${url}`);
+  }
 });
 
 // A quotation can use semantic quote elements, literal quotation marks, or
@@ -256,7 +322,7 @@ function validateQuotes(candidates, item) {
     'the base excerpt preserves the fixture line about New Zealand');
 }
 
-test('D6: base versus assistant from the static fixture, with recorded decoding provenance', async t => {
+test('D7: base versus assistant from the static fixture, with its sources in the notes', async t => {
   const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/base_vs_instruct.json'), 'utf8'));
   const item = fixture.items.find(item => item.id === 'factual');
   assert.ok(item, 'factual comparison is available');
@@ -277,18 +343,12 @@ test('D6: base versus assistant from the static fixture, with recorded decoding 
     return copy.textContent;
   }));
   validateQuotes(quotes.filter(quote => quoteNorm(quote) !== quoteNorm(item.prompt)), item);
-  const citation = quoteNorm((await weights.locator('.cite').allTextContents()).join(' '));
-  for (const model of fixture.meta.models) {
-    assert.ok(citation.includes(model.id), 'citation names the model');
-    assert.ok(citation.includes(model.revision), 'citation names the full pinned revision');
-  }
-  assert.ok(citation.includes(fixture.meta.date), 'citation names the recording date');
-  assert.match(citation, /greedy/i);
-  assert.match(citation, new RegExp(`\\b${fixture.max_new_tokens}\\b`));
-  assert.match(citation, /(?:max|up to)[\s\S]*new tokens|new tokens[\s\S]*(?:max|limit)/i);
-  // Pretraining, RLVR and the cutoff are spoken, with their sources in the notes.
+  // Pretraining, RLVR, decoding and the cutoff are spoken, with their sources in the notes.
   const talk = await notesText(weights);
-  for (const term of [/base model/, /cutoff/, /hallucination/, /verifiable reward/]) assert.match(talk, term);
+  for (const term of [/base model/, /cutoff/, /hallucination/, /verifiable reward/, /greedy/, new RegExp(`\\b${fixture.max_new_tokens}\\b`)]) {
+    assert.match(talk, term);
+  }
+  for (const model of fixture.meta.models) assert.ok(talk.includes(model.id.split('/')[1].toLowerCase().replace('-instruct', '')), `notes name ${model.id}`);
   const sources = await notes(weights).locator('a[href]').evaluateAll(els => els.map(el => el.href));
   for (const id of ['2309.10668', '2411.15124', '2501.12948']) {
     assert.ok(sources.some(url => url.includes(`arxiv.org/abs/${id}`)), `notes cite arXiv ${id}`);
@@ -298,7 +358,7 @@ test('D6: base versus assistant from the static fixture, with recorded decoding 
   'Karpathy reference is in the speaker notes');
 });
 
-test('D6 oracle rejects a fluent alteration and a splice, rather than just a model label', async () => {
+test('D7 oracle rejects a fluent alteration and a splice, rather than just a model label', async () => {
   const fixture = JSON.parse(await readFile(path.join(cursus, 'fixtures/base_vs_instruct.json'), 'utf8'));
   const item = fixture.items.find(item => item.id === 'factual');
   validateQuotes([item.base.text, item.instruct.text], item);
@@ -307,6 +367,17 @@ test('D6 oracle rejects a fluent alteration and a splice, rather than just a mod
   const pieces = item.base.text.trim().split(/\n\n+/);
   assert.ok(pieces.length > 2);
   assert.throws(() => validateQuotes([`${pieces[0]} ${pieces.at(-1)}`, item.instruct.text], item));
+});
+
+test('D7: the close names System 1, its fixed compute, and the source of its qualification', async t => {
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  const close = topic(page, 'system-1');
+  const text = await face(close);
+  assert.match(text, /system 1/);
+  assert.match(text, /fixed compute per token/);
+  assert.ok((await close.locator('.cite a[href]').evaluateAll(els => els.map(el => el.href)))
+    .some(url => url.startsWith('https://transformer-circuits.pub/2025/attribution-graphs/biology')),
+  'the in-pass reasoning qualification is sourced');
 });
 
 async function localLinks(page) {
@@ -349,7 +420,7 @@ async function localLinks(page) {
 test('D8: relative links resolve and each lab is linked from its own stage', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
   const links = await localLinks(page);
-  for (const stage of stages) {
+  for (const stage of stages.filter(stage => stage.activity)) {
     const matching = links.filter(link => !link.inNotes && link.target === path.join(cursus, stage.activity));
     assert.ok(matching.some(link => link.slide === stage.id), `${stage.activity} is linked from #${stage.id}`);
   }
@@ -358,7 +429,7 @@ test('D8: relative links resolve and each lab is linked from its own stage', asy
 test('D8: all four file:// labs load offline and Back restores their originating slides', { timeout: 120000 }, async t => {
   const page = await pageFor(t);
   const links = await localLinks(page);
-  for (const stage of stages.filter(stage => stage.activity.startsWith('labs/'))) {
+  for (const stage of stages.filter(stage => stage.activity?.startsWith('labs/'))) {
     const destination = path.join(cursus, stage.activity);
     const link = links.find(link => !link.inNotes && link.target === destination && link.slide === stage.id);
     assert.ok(link, `${stage.activity} has a slide-local activity link`);
