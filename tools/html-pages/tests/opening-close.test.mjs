@@ -20,6 +20,26 @@ const normalize = value => value.normalize('NFKC').replace(/[‘’]/g, "'")
   .replace(/[−–]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
 const topic = (page, id) => page.locator(`section[data-slide][id^="${id}"]`);
 const topicText = async (page, id) => normalize((await topic(page, id).allTextContents()).join(' '));
+// The opening's slides, in order. Its launch (#cold-open) and return (#cold-open-result) share
+// a prefix, so opening assertions select one slide by its exact id instead of topic().
+const openingSlides = ['title', 'cold-open', 'cursus-arc', 'discovery', 'how-we-work', 'cold-open-result', 'discipline'];
+const openingSlide = (page, id) => page.locator(`section[data-slide][id="${id}"]`);
+// What the room reads: a slide's text, always without its speaker notes, optionally without
+// other parts. Counting words joins text nodes with spaces, so a label and its value stay two words.
+const onSlide = async (page, id, { joiner = '', without = [] } = {}) => normalize(await openingSlide(page, id).evaluate((el, { joiner, without }) => {
+  const copy = el.cloneNode(true);
+  copy.querySelectorAll(['details.notes', ...without].join(', ')).forEach(node => node.remove());
+  const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+  const parts = [];
+  while (walker.nextNode()) parts.push(walker.currentNode.data);
+  return parts.join(joiner);
+}, { joiner, without }));
+const words = text => (text.match(/[\p{L}\p{N}]+(?:['.\-/][\p{L}\p{N}]+)*/gu) || []).length;
+// Sparse slides, body words only: not the headline, the source line, the poll's buttons and
+// status, or the title slide's byline. Eyebrows, labels and the revealed answer count.
+// The densest slide, #cursus-arc, has 42.
+const notBody = ['h2', '.cite', '.predict-actions', '[data-predict-status]', '.byline'];
+const openingBodyCeiling = 45;
 
 async function deckContract(page) {
   assert.equal(await page.locator('html').getAttribute('data-page-kind'), 'deck');
@@ -84,37 +104,50 @@ async function predictContract(page) {
   }
 }
 
-test('D1: opening topics, canonical discipline, poll and teaching structure', async t => {
+test('D1: opening slides, presenter and goal, launch and return, cursus, format and discipline', async t => {
   const page = await openPage(t, chromium, { file: decks.opening, javaScriptEnabled: false });
-  await deckContract(page);
-  for (const id of ['title', 'cold-open', 'metr-poll', 'metr-follow-up', 'jagged-frontier', 'discipline', 'day-map', 'how-we-work']) {
-    assert.ok(await topic(page, id).count() > 0, `missing topic ${id}`);
+  assert.deepEqual(await deckContract(page), openingSlides, 'the opening slides, in order');
+  const title = await onSlide(page, 'title');
+  for (const phrase of ['guilhem busset', 'sr sdm', 'amazon', 'transportation network design',
+    'give you all the tools and knowledge to become an effective research or applied scientist']) {
+    assert.ok(title.includes(phrase), `the title slide shows ${phrase}`);
   }
-  assert.ok((await topicText(page, 'discipline')).includes(
-    "never raise an agent's autonomy past your ability to verify the solution, not just the code"));
-  const cold = await topicText(page, 'cold-open');
-  assert.match(cold, /highs|certificate/);
-  await codePath(topic(page, 'cold-open'), 'cursus/demos/cold-open/');
+  const launch = await onSlide(page, 'cold-open');
+  for (const pattern of [/highs/, /certificate/]) assert.match(launch, pattern);
+  await codePath(openingSlide(page, 'cold-open'), 'cursus/demos/cold-open/');
+  const sessions = (await openingSlide(page, 'cursus-arc').locator('ol > li').allTextContents()).map(normalize);
+  const arc = [/fundamentals/, /research agents/, /remote agents/, /deploying/, /arena/];
+  assert.equal(sessions.length, arc.length, 'one step per session');
+  arc.forEach((pattern, i) => assert.match(sessions[i], pattern, `session ${i + 1} of the cursus`));
+  const work = await onSlide(page, 'how-we-work');
+  for (const pattern of [/theory/, /questions/, /practice/, /pairs?/, /green/, /yellow/, /pink/]) assert.match(work, pattern);
   await predictContract(page);
-  const poll = topic(page, 'metr-poll');
-  await count(poll.locator('[data-predict]'), 1);
-  await count(poll.locator('fieldset[data-predict-question]'), 1);
-  const pollText = await topicText(page, 'metr-poll');
-  assert.match(pollText, /24\s*%/);
-  assert.match(pollText, /19\s*%/);
-  const followUp = await topicText(page, 'metr-follow-up');
-  for (const pattern of [/2026/, /-\s*18\s*%/, /-\s*4\s*%/, /selection|opt[- ]?out/]) assert.match(followUp, pattern);
-  const timeline = topic(page, 'day-map').locator('ol');
-  assert.ok(await timeline.count() > 0, 'day map is an ordered timeline');
-  const rows = (await timeline.locator('li').allTextContents()).map(normalize);
-  let previous = -1;
-  for (const pattern of [/\bopening\b/, /\bact i\b/, /\bact ii\b/, /\bact iii\b/, /\bact iv\b/, /\bact v\b/, /\bclose\b/]) {
-    const index = rows.findIndex((text, i) => i > previous && pattern.test(text));
-    assert.ok(index > previous, `timeline contains ${pattern} in order`);
-    previous = index;
+  const result = openingSlide(page, 'cold-open-result');
+  await count(result.locator('[data-predict]'), 1);
+  await count(result.locator('fieldset[data-predict-question]'), 1);
+  assert.match(normalize(await result.locator('input[data-correct]').evaluate(el => [...el.labels].map(l => l.textContent).join(' '))),
+    /mix/, 'the correct choice is a mix of both');
+  const answer = normalize(await textOf(result.locator('[data-predict-answer]')));
+  for (const pattern of [/20 tables/, /20 chairs/, /1400/, /zero gap/]) assert.match(answer, pattern);
+  assert.ok((await onSlide(page, 'discipline')).includes(
+    "never raise an agent's autonomy past your ability to verify the solution, not just the code"));
+  // Removed by the owner: none of it returns, anywhere in the document (masthead, slides,
+  // speaker notes, footer and title).
+  const whole = normalize(await page.evaluate(() => {
+    const copy = document.documentElement.cloneNode(true);
+    copy.querySelectorAll('script, style').forEach(node => node.remove());
+    return copy.textContent;
+  }));
+  for (const pattern of [/\bmetr\b/, /\bslower\b/, /jagged/, /invisible edge/, /map of the day/, /\bact (?:i|ii|iii|iv|v)\b/]) {
+    assert.doesNotMatch(whole, pattern);
   }
-  const work = await topicText(page, 'how-we-work');
-  for (const pattern of [/watch/, /predict/, /drive/, /sticky/, /pair/]) assert.match(work, pattern);
+  for (const id of openingSlides) {
+    const notes = await openingSlide(page, id).evaluate(el => [...el.children].filter(child => child.matches('details.notes'))
+      .map(details => [...details.children].filter(child => child.tagName !== 'SUMMARY').map(child => child.textContent).join(' ').trim()));
+    assert.ok(notes.length === 1 && notes[0].length > 0, `#${id} carries its explanation in speaker notes`);
+    const n = words(await onSlide(page, id, { joiner: ' ', without: notBody }));
+    assert.ok(n <= openingBodyCeiling, `#${id}: ${n} body words (at most ${openingBodyCeiling})`);
+  }
 });
 
 test('D2: five valid exit questions, homework for either agent and Session 2', async t => {
@@ -292,6 +325,9 @@ test('A1: every quantitative slide has a dated source, including no-JS answers',
     await deckContract(page);
     for (const answer of await page.locator('[data-predict-answer]').all()) assert.equal(await answer.isVisible(), true);
     for (const slide of await page.locator('[data-slide]').all()) {
+      // The cold-open return's numbers solve the problem on screen, and the room checks them by
+      // hand; they are not an external figure, so the owner dropped its answer-key line.
+      if (name === 'opening' && await slide.getAttribute('id') === 'cold-open-result') continue;
       const text = await slide.evaluate(el => {
         const copy = el.cloneNode(true);
         copy.querySelectorAll('code, .cite, script').forEach(node => node.remove());
@@ -309,18 +345,8 @@ test('A1: every quantitative slide has a dated source, including no-JS answers',
       assert.ok(datedSource, `${name} #${await slide.getAttribute('id')}: numbers require a .cite containing a source and date`);
     }
     if (name === 'opening') {
-      for (const [id, url] of [
-        ['metr-poll', 'https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/'],
-        ['metr-follow-up', 'https://metr.org/blog/2026-02-24-uplift-update/'],
-      ]) {
-        const links = await topic(page, id).locator('.cite a[href]').evaluateAll(els => els.map(el => el.href.replace(/\/$/, '')));
-        assert.ok(links.includes(url.replace(/\/$/, '')), `${id} cites its METR source`);
-      }
-      const frontier = topic(page, 'jagged-frontier').locator('.cite');
-      const sources = normalize((await frontier.allTextContents()).join(' ') + ' ' +
-        (await frontier.locator('a[href]').evaluateAll(els => els.map(el => el.href))).join(' '));
-      assert.match(sources, /10\.1287\/orsc\.2025\.21838|4573321|(?:hbs|working paper)[\s\S]*24-013/,
-        'jagged frontier cites the journal DOI or the identified working paper');
+      const links = await openingSlide(page, 'discovery').locator('.cite a[href]').evaluateAll(els => els.map(el => el.href));
+      assert.ok(links.includes('https://arxiv.org/abs/2511.02864'), 'discovery cites the AlphaEvolve paper on arXiv');
     }
   }
 });
@@ -342,7 +368,7 @@ for (const [name, file] of Object.entries(decks)) {
     await blurToBody(page);
     await page.keyboard.press('Home');
     await activeSlide(page, ids[0]);
-    const root = topic(page, name === 'opening' ? 'metr-poll' : 'exit-ticket').locator('[data-predict]').first();
+    const root = (name === 'opening' ? openingSlide(page, 'cold-open-result') : topic(page, 'exit-ticket')).locator('[data-predict]').first();
     const pollId = await root.evaluate(el => el.closest('[data-slide]').id);
     const index = ids.indexOf(pollId);
     assert.ok(index >= 0 && index < ids.length - 1, 'predict slide has a following slide');
