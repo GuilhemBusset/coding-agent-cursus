@@ -452,7 +452,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <div class="notes-body" tabindex="0">
             <p>Talk track: point at the x_t on the board. Each x_t is an integer ID from a vocabulary of 50,257 entries. A token is a word, a piece of one, a few digits or a character. “Everyone” has no leading space; “␣knows” has one, and the space belongs to the token. The model never sees letters: it sees 16190, 4206, and so on.</p>
             <p>Qualification to keep: models learn some spelling facts about tokens from text that spells words out, so letter counting is unreliable rather than impossible.</p>
-            <p>Activity: the tokenizer lab, then a short debrief. Show of hands for 1, 2, 3 or 11 tokens before the reveal; the second question’s answer, “none directly”, is the point. The lab’s splits are illustrative (“␣straw” + “berry”): real GPT-2 keeps “␣strawberry” whole, and Claude’s tokenizer is not public.</p>
+            <p>Activity: the tokenizer lab, then a short debrief. Show of hands for 1, 2, 3 or 10 tokens before the reveal; the second question’s answer, “none directly”, is the point. The lab shows real GPT-2 splits, the same tokenizer as this act: “␣blueberry” is two tokens (“␣blue” + “berry”), while the next slide’s “␣strawberry” is one. Claude’s tokenizer is not public.</p>
             <p>Transition: “So the model never sees letters. Let us ask one to count some.”</p>
           </div>
         </details>

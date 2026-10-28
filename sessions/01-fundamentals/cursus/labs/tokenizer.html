@@ -263,26 +263,26 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <p>Answer both questions and lock in before you scroll to the worked examples: they give the first answer away.</p>
         <div data-predict>
           <fieldset data-predict-question>
-            <legend>In this page’s illustrative tokenizer, how many tokens is “ strawberry”, with its leading space?</legend>
+            <legend>In GPT-2’s tokenizer, how many tokens is “ blueberry”, with its leading space?</legend>
             <div class="choice"><input type="radio" id="tok-q1-a" name="tok-q1"><label for="tok-q1-a">1 token</label></div>
             <div class="choice"><input type="radio" id="tok-q1-b" name="tok-q1" data-correct><label for="tok-q1-b">2 tokens</label></div>
             <div class="choice"><input type="radio" id="tok-q1-c" name="tok-q1"><label for="tok-q1-c">3 tokens</label></div>
-            <div class="choice"><input type="radio" id="tok-q1-d" name="tok-q1"><label for="tok-q1-d">11 tokens, one per character</label></div>
+            <div class="choice"><input type="radio" id="tok-q1-d" name="tok-q1"><label for="tok-q1-d">10 tokens, one per character</label></div>
             <p data-predict-result></p>
             <div data-predict-answer>
-              <p>Two tokens in this illustration: “<span class="tok-ws-text"> straw</span>” with ID 14812 and “berry” with ID 6052. The leading space travels with the first piece.</p>
-              <p>A real tokenizer may cut the word into one, two or more pieces, depending on its vocabulary and on that leading space.</p>
+              <p>Two tokens in GPT-2: “<span class="tok-ws-text"> blue</span>” with ID 4171 and “berry” with ID 8396. The leading space travels with the first piece.</p>
+              <p>How a word splits depends on the tokenizer’s vocabulary and on that leading space. The same tokenizer keeps “<span class="tok-ws-text"> strawberry</span>” whole, one token with ID 41236, but cuts “strawberry” without its space into three: “st”, “raw” and “berry”.</p>
             </div>
           </fieldset>
           <fieldset data-predict-question>
-            <legend>How many r’s in “ strawberry” can the model see?</legend>
+            <legend>How many b’s in “ blueberry” can the model see?</legend>
             <div class="choice"><input type="radio" id="tok-q2-a" name="tok-q2"><label for="tok-q2-a">Three</label></div>
             <div class="choice"><input type="radio" id="tok-q2-b" name="tok-q2"><label for="tok-q2-b">Two</label></div>
             <div class="choice"><input type="radio" id="tok-q2-c" name="tok-q2"><label for="tok-q2-c">One</label></div>
             <div class="choice"><input type="radio" id="tok-q2-d" name="tok-q2" data-correct><label for="tok-q2-d">None directly: it receives integer IDs, not letters</label></div>
             <p data-predict-result></p>
             <div data-predict-answer>
-              <p>A reader sees three r’s in s-t-r-a-w-b-e-r-r-y. The model receives two integer IDs, 14812 and 6052, and no characters at all.</p>
+              <p>A reader sees two b’s in b-l-u-e-b-e-r-r-y, one in each piece. The model receives two integer IDs, 4171 and 8396, and no characters at all.</p>
               <p>It can only pick up spelling facts associated with those IDs from training text, so counting letters is unreliable rather than impossible. The dependable move is to have the model write code that counts them.</p>
             </div>
           </fieldset>
@@ -297,39 +297,42 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section class="tok-examples" aria-labelledby="tok-examples-title">
         <h2 id="tok-examples-title">Worked examples</h2>
-        <p class="tok-qualifier"><strong>Illustrative splits and IDs, written by hand: not a real model’s tokenizer.</strong> Real tokenizers split differently and use different IDs.</p>
+        <p class="tok-qualifier"><strong>Real splits and IDs from GPT-2’s tokenizer</strong>, the model behind the numbers in this act. They are written into the page, so nothing runs here. Other tokenizers split the same text differently and use different IDs.</p>
         <p>Each chip is one token: the piece of text on top, its integer ID below. The mark ␣ stands for a space that belongs to the token.</p>
         <div class="tok-figures">
-          <figure data-tok-example="strawberry">
-            <figcaption>Text: <code data-tok-text> strawberry</code> (an English word with its leading space)</figcaption>
-            <ol class="tok-chips" aria-label="Tokens of “ strawberry”">
-              <li data-tok-chip aria-label='piece " straw", ID 14812'><span class="tok-piece">␣straw</span><span data-tok-id>14812</span></li>
-              <li data-tok-chip aria-label='piece "berry", ID 6052'><span class="tok-piece">berry</span><span data-tok-id>6052</span></li>
+          <figure data-tok-example="blueberry">
+            <figcaption>Text: <code data-tok-text> blueberry</code> (an English word with its leading space)</figcaption>
+            <ol class="tok-chips" aria-label="Tokens of “ blueberry”">
+              <li data-tok-chip aria-label='piece " blue", ID 4171'><span class="tok-piece">␣blue</span><span data-tok-id>4171</span></li>
+              <li data-tok-chip aria-label='piece "berry", ID 8396'><span class="tok-piece">berry</span><span data-tok-id>8396</span></li>
             </ol>
-            <p class="tok-model-input">The model receives: <code>[14812, 6052]</code></p>
+            <p class="tok-model-input">The model receives: <code>[4171, 8396]</code></p>
           </figure>
           <figure data-tok-example="bonjour">
-            <figcaption>Text: <code data-tok-text>Bonjour</code> (French: a word that is rarer in the training text gets cut up)</figcaption>
+            <figcaption>Text: <code data-tok-text>Bonjour</code> (French: rarer in GPT-2’s mostly English training text, so it gets cut up, and not at its syllables)</figcaption>
             <ol class="tok-chips" aria-label="Tokens of “Bonjour”">
-              <li data-tok-chip aria-label='piece "Bon", ID 8170'><span class="tok-piece">Bon</span><span data-tok-id>8170</span></li>
-              <li data-tok-chip aria-label='piece "jour", ID 23544'><span class="tok-piece">jour</span><span data-tok-id>23544</span></li>
+              <li data-tok-chip aria-label='piece "Bon", ID 20682'><span class="tok-piece">Bon</span><span data-tok-id>20682</span></li>
+              <li data-tok-chip aria-label='piece "j", ID 73'><span class="tok-piece">j</span><span data-tok-id>73</span></li>
+              <li data-tok-chip aria-label='piece "our", ID 454'><span class="tok-piece">our</span><span data-tok-id>454</span></li>
             </ol>
-            <p class="tok-model-input">The model receives: <code>[8170, 23544]</code></p>
+            <p class="tok-model-input">The model receives: <code>[20682, 73, 454]</code></p>
           </figure>
           <figure data-tok-example="number">
-            <figcaption>Text: <code data-tok-text>123456789012345678</code> (a long number, cut into chunks of digits)</figcaption>
+            <figcaption>Text: <code data-tok-text>123456789012345678</code> (a long number, cut into uneven chunks of digits)</figcaption>
             <ol class="tok-chips" aria-label="Tokens of 123456789012345678">
-              <li data-tok-chip aria-label='piece "123", ID 4518'><span class="tok-piece">123</span><span data-tok-id>4518</span></li>
-              <li data-tok-chip aria-label='piece "456", ID 9302'><span class="tok-piece">456</span><span data-tok-id>9302</span></li>
-              <li data-tok-chip aria-label='piece "789", ID 11647'><span class="tok-piece">789</span><span data-tok-id>11647</span></li>
-              <li data-tok-chip aria-label='piece "012", ID 2207'><span class="tok-piece">012</span><span data-tok-id>2207</span></li>
-              <li data-tok-chip aria-label='piece "345", ID 7731'><span class="tok-piece">345</span><span data-tok-id>7731</span></li>
-              <li data-tok-chip aria-label='piece "678", ID 15096'><span class="tok-piece">678</span><span data-tok-id>15096</span></li>
+              <li data-tok-chip aria-label='piece "123", ID 10163'><span class="tok-piece">123</span><span data-tok-id>10163</span></li>
+              <li data-tok-chip aria-label='piece "45", ID 2231'><span class="tok-piece">45</span><span data-tok-id>2231</span></li>
+              <li data-tok-chip aria-label='piece "67", ID 3134'><span class="tok-piece">67</span><span data-tok-id>3134</span></li>
+              <li data-tok-chip aria-label='piece "89", ID 4531'><span class="tok-piece">89</span><span data-tok-id>4531</span></li>
+              <li data-tok-chip aria-label='piece "01", ID 486'><span class="tok-piece">01</span><span data-tok-id>486</span></li>
+              <li data-tok-chip aria-label='piece "23", ID 1954'><span class="tok-piece">23</span><span data-tok-id>1954</span></li>
+              <li data-tok-chip aria-label='piece "45", ID 2231'><span class="tok-piece">45</span><span data-tok-id>2231</span></li>
+              <li data-tok-chip aria-label='piece "678", ID 30924'><span class="tok-piece">678</span><span data-tok-id>30924</span></li>
             </ol>
-            <p class="tok-model-input">The model receives: <code>[4518, 9302, 11647, 2207, 7731, 15096]</code></p>
+            <p class="tok-model-input">The model receives: <code>[10163, 2231, 3134, 4531, 486, 1954, 2231, 30924]</code></p>
           </figure>
         </div>
-        <p>Notice that an ID says nothing about the letters or digits inside its piece: 4518 is not “123”, and nothing in 6052 spells b-e-r-r-y. To watch a real tokenizer split your own text, try <a href="https://tiktokenizer.vercel.app/">tiktokenizer</a> (online).</p>
+        <p>Notice that an ID says nothing about the letters or digits inside its piece: 10163 is not “123”, and nothing in 8396 spells b-e-r-r-y. The same piece always gets the same ID: both “45” chunks are 2231. To watch a real tokenizer split your own text, try <a href="https://tiktokenizer.vercel.app/">tiktokenizer</a> (online).</p>
       </section>
 
       <aside class="callout tok-note" data-tok-note aria-labelledby="tok-note-title">
