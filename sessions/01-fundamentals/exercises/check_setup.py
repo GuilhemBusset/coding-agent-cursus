@@ -453,6 +453,31 @@ def origin_url(git):
     return origin, (ORIGIN.match(trimmed) if code == 0 else None)
 
 
+def tracking_refs(git, branch):
+    """The clone's remote-tracking refs for the probe branch, as {refname: tip}."""
+    code, out = run([git, "for-each-ref", "--format=%(refname) %(objectname)", "refs/remotes"], cwd=HERE)
+    refs = {}
+    if code == 0:
+        for line in out.splitlines():
+            name, _, tip = line.partition(" ")
+            remote, _, rest = name.removeprefix("refs/remotes/").partition("/")
+            if remote and rest == branch:
+                refs[name] = tip
+    return refs
+
+
+def restore_tracking(git, branch, before, commit):
+    """Undo any remote-tracking ref the probe pushes left at this run's commit. The old-value
+    check makes each update atomic: a ref that has moved since is never touched."""
+    for name, tip in tracking_refs(git, branch).items():
+        if tip != commit:
+            continue
+        if name in before:
+            run([git, "update-ref", name, before[name], commit], cwd=HERE)
+        else:
+            run([git, "update-ref", "-d", name, commit], cwd=HERE)
+
+
 def check_push(report, auth_job):
     git, gh = shutil.which("git"), shutil.which("gh")
     origin, match, jobs = "", None, None
@@ -504,43 +529,49 @@ def check_push(report, auth_job):
     if not commit:
         report.fail("push", "git could not create the probe commit")
         return
-    # Never forced: if the branch already exists, the push of this parentless commit is
-    # refused and the branch is left as it was.
-    code, _ = run([git, "push", "--quiet", url, f"{commit}:{ref}"], cwd=HERE, env=env, timeout=180)
-    if code != 0:
-        existing = remote_tip()
-        if existing is None:
-            report.fail("push", f"git could not reach {repo}; {access_hint}")
-        elif existing:
-            report.fail("push", f"{branch} already exists on {repo}; delete that branch on GitHub, then rerun")
+    # Git 2.56 and later also move the remote-tracking ref of a configured remote whose
+    # URL matches the one pushed to; put the student's refs back however the probe ends.
+    before = tracking_refs(git, branch)
+    try:
+        # Never forced: if the branch already exists, the push of this parentless commit is
+        # refused and the branch is left as it was.
+        code, _ = run([git, "push", "--quiet", url, f"{commit}:{ref}"], cwd=HERE, env=env, timeout=180)
+        if code != 0:
+            existing = remote_tip()
+            if existing is None:
+                report.fail("push", f"git could not reach {repo}; {access_hint}")
+            elif existing:
+                report.fail("push", f"{branch} already exists on {repo}; delete that branch on GitHub, then rerun")
+            else:
+                report.fail("push", f"git could not push {where}; {access_hint}")
+            return
+        tip = remote_tip()
+        arrived = tip == commit
+        if arrived:
+            report.ok("push", where)
         else:
-            report.fail("push", f"git could not push {where}; {access_hint}")
-        return
-    tip = remote_tip()
-    arrived = tip == commit
-    if arrived:
-        report.ok("push", where)
-    else:
-        report.fail("push", f"pushed {where} but could not confirm the branch arrived; {access_hint}")
-    not_ours = (f"the branch {branch} on {repo} holds a different commit, one this check did "
-                "not push, so the check left it alone")
-    if tip and not arrived:
-        report.note(not_ours)
-    elif arrived or tip is None:
-        # The lease makes the deletion atomic: git deletes the branch only while it still
-        # holds this run's commit, so a branch someone else moved is never deleted.
-        run([git, "push", "--quiet", f"--force-with-lease={ref}:{commit}", url, f":{ref}"],
-            cwd=HERE, env=env, timeout=180)
-        left = remote_tip()
-        if left == commit:
-            report.note(f"the temporary branch {branch} is still on {repo}; delete it on GitHub "
-                        f"or run gh api -X DELETE repos/{repo}/git/{ref}")
-        elif left is None:
-            report.note(f"the temporary branch {branch} may still be on {repo}; delete it only if "
-                        f"it still points at commit {commit[:12]}")
-        elif left:
+            report.fail("push", f"pushed {where} but could not confirm the branch arrived; {access_hint}")
+        not_ours = (f"the branch {branch} on {repo} holds a different commit, one this check did "
+                    "not push, so the check left it alone")
+        if tip and not arrived:
             report.note(not_ours)
+        elif arrived or tip is None:
+            # The lease makes the deletion atomic: git deletes the branch only while it still
+            # holds this run's commit, so a branch someone else moved is never deleted.
+            run([git, "push", "--quiet", f"--force-with-lease={ref}:{commit}", url, f":{ref}"],
+                cwd=HERE, env=env, timeout=180)
+            left = remote_tip()
+            if left == commit:
+                report.note(f"the temporary branch {branch} is still on {repo}; delete it on GitHub "
+                            f"or run gh api -X DELETE repos/{repo}/git/{ref}")
+            elif left is None:
+                report.note(f"the temporary branch {branch} may still be on {repo}; delete it only if "
+                            f"it still points at commit {commit[:12]}")
+            elif left:
+                report.note(not_ours)
 
+    finally:
+        restore_tracking(git, branch, before, commit)
 
 def check_agent(report, name):
     """Version and smoke test for one agent, or 'not installed (fine)'."""
