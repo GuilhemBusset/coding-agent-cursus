@@ -500,7 +500,7 @@ PRIVACY_PATTERNS = {
     "openai_key": re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{8,}"),
     "github_key": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,})"),
     "aws_key": re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
-    "slack_key": re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{8,}"),
+    "slack_key": re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{8,}"),
     "bearer": re.compile(r"\bBearer\s+(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.I),
     "assignment": re.compile(r"\b(?:api[_-]?key|token|secret|password)\s*[=:]\s*(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.I),
     "private_key": re.compile(r"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )?PRIVATE KEY-----"),
@@ -587,8 +587,10 @@ def test_d3_scan_positive_controls_and_no_secret_in_report(tmp_path, category):
     value = secret_controls()[category]
     path = tmp_path / "seeded.txt"
     path.write_text("safe line\n" + value + "\n", encoding="utf-8")
+    before = path.read_bytes()
     result = invoke("sanitize.py", "--scan", path, success=False)
     assert result.returncode == 1, f"Scanner missed {category}"
+    assert path.read_bytes() == before, "--scan changed the file"
     report = result.stdout + result.stderr
     assert re.search(r"seeded\.txt:\d+:[^\s]+", report), "Expected file:line:category"
     assert value not in report, "Scanner echoed secret"
@@ -659,7 +661,7 @@ def test_a1_independent_scanner_positive_controls():
     assert "assignment" in privacy_categories("password=<redacted>suffix")
     for prefix in ("gho_", "ghu_", "ghs_", "ghr_"):
         assert "github_key" in privacy_categories(prefix + "A" * 24)
-    for prefix in ("xoxa-", "xoxp-", "xoxr-"):
+    for prefix in ("xoxa-", "xoxp-", "xoxr-", "xoxs-"):
         assert "slack_key" in privacy_categories(prefix + "A" * 24)
 
 
