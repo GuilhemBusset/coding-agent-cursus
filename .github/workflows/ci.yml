@@ -40,6 +40,9 @@ jobs:
   repo-checks:
     uses: ./.github/workflows/checks.yml
 
+  engine-tests:
+    uses: ./.github/workflows/engine-tests.yml
+
   # Every session's pytest suite, on every pull request: those tests read more of the repo
   # than their session folder, so no path filter could tell when they are safe to skip.
   session-tests:
@@ -52,7 +55,7 @@ jobs:
 
   required:
     if: always()
-    needs: [changes, repo-checks, session-tests, html-pages]
+    needs: [changes, repo-checks, engine-tests, session-tests, html-pages]
     runs-on: ubuntu-latest
     steps:
       - name: Every applicable check passed
@@ -67,6 +70,7 @@ jobs:
           echo "$NEEDS" | jq -e --arg html "$HTML" '
             (.changes.result == "success")
             and (."repo-checks".result == "success")
+            and (."engine-tests".result == "success")
             and (."session-tests".result == "success")
             and ((."html-pages".result == "success")
                  or (."html-pages".result == "skipped" and $html == "false"))
