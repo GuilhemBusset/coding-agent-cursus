@@ -3,7 +3,9 @@ name: Session tests
 # Called by ci.yml on every pull request; its result feeds the single required check. Runs
 # each session's pytest suite (every sessions/<NN>-*/ with a tests/ folder) in that session's
 # pinned environment: the Python and uv versions in its mise.toml and the packages in its
-# uv.lock, with the command its README documents. This is a Linux check of instructor-side
+# uv.lock, with the command its README documents. The suite runs on every core through
+# pytest-xdist, from the session's non-default `parallel` dependency group (students' `uv sync`
+# never installs it). This is a Linux check of instructor-side
 # work; exercise portability across Linux, macOS and Windows is a separate concern
 # (docs/adr/0010-platform-support.md).
 #
@@ -62,8 +64,15 @@ jobs:
           done
           python3 - <<'EOF'
           import os
+          import sys
           import tomllib
 
+          with open("pyproject.toml", "rb") as f:
+              groups = tomllib.load(f).get("dependency-groups", {})
+          if not any(str(dep).startswith("pytest-xdist") for dep in groups.get("parallel", [])):
+              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::The session's tests run "
+                       "in parallel; add pytest-xdist to a `parallel` dependency group "
+                       "(uv add --group parallel pytest-xdist)")
           with open("mise.toml", "rb") as f:
               tools = tomllib.load(f)["tools"]
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
@@ -76,7 +85,7 @@ jobs:
       - name: pytest
         env:
           UV_PYTHON: ${{ steps.pins.outputs.python }}
-        run: uv run --locked pytest -q -m "not live" --junitxml="$RUNNER_TEMP/pytest.xml"
+        run: uv run --locked --group parallel pytest -q -m "not live" -n auto --junitxml="$RUNNER_TEMP/pytest.xml"
       - name: Every collected test ran, none skipped
         run: |
           python3 - "$RUNNER_TEMP/pytest.xml" <<'EOF'

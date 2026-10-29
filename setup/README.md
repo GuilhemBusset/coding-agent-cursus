@@ -120,11 +120,14 @@ own pinned environment: `astral-sh/setup-uv` installs the uv version in the sess
 then, from the session folder and with that file's Python version,
 
 ```sh
-uv run --locked pytest -q -m "not live"
+uv run --locked --group parallel pytest -q -m "not live" -n auto
 ```
 
-installs the packages in its `uv.lock` and runs the same suite as the README's `uv run pytest`.
-The run fails if it collects nothing or skips anything. A test that needs what CI lacks (a
+installs the packages in its `uv.lock`, including its non-default `parallel` group
+([pytest-xdist](https://pypi.org/project/pytest-xdist/), locked in `uv.lock`; `uv sync` does not
+install it), and runs the same suite as the README's `uv run pytest`, spread over every core. Each
+session's `pyproject.toml` must define that group; the workflow stops with an error if it does
+not. The run fails if it collects nothing or skips anything. A test that needs what CI lacks (a
 logged-in `claude` or `codex`, network access to a vendor API, credentials, a real laptop,
 Windows or macOS) gets `@pytest.mark.live`, with the marker registered under `markers` in that
 session's `[tool.pytest.ini_options]`, so CI deselects it; it never skips itself. No test needs
