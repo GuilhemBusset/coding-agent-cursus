@@ -192,7 +192,7 @@ class ProbeTests(EnvironmentTestCase):
         environment.probe(self.root, self.state, host)
         uv = next(c for c in host.commands() if c[0] == "uv")
         self.assertEqual(uv, ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "python", "-m", "pytest", "--version"])
-        workflow = (REPO_ROOT / ".github" / "workflows" / "checks.yml").read_text()
+        workflow = (REPO_ROOT / ".github" / "workflows" / "engine-tests.yml").read_text()
         self.assertIn(environment.PYTEST_PIN, workflow)
 
     def test_failures_are_parsed_per_probe(self):
