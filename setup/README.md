@@ -62,7 +62,9 @@ compiles llama2.c's `run.c`, vendored at a pinned commit in
 `sessions/01-fundamentals/cursus/labs/tiny-lm/reference/`, as the reference for the page's
 logits. `node setup/doctor.mjs` reports the compiler and fails without it.
 
-Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. CI runs this
+Check existing Cursus teaching pages with `npm --prefix setup run check-repo`. It runs
+`check-page.mjs` on several pages at once, one per core but one and at most 8 (set
+`CURSUS_CHECK_JOBS` to choose), and prints each page's report path as it finishes. CI runs this
 same setup and test sequence on Linux, the only platform teaching pages need (ADR 0010).
 
 ## Session 1: set up the session
