@@ -209,14 +209,8 @@ test('geometry oracle catches crossed obstacles, tangency, stationary points and
   assert.equal(geometricOutcome([[4, 0], [5, 0]], world), 'Missed goal', 'the final point matters');
 });
 
-test('D8: actual deck planner href opens the offline planner panel', async t => {
-  await deckActivity(t);
-});
-
-test('D7: recipe on a fresh lab gives the promised geometric outcomes', { timeout: 30000 }, async t => {
-  const { page, recipe } = await deckActivity(t);
-  await demonstrate(page, recipe);
-});
+// D8 (the deck's planner link opens the offline planner panel) is deckActivity, which every D7
+// test below runs first. D7 on a fresh lab is the first half of the Reset-and-replay test.
 
 test('D7: recipe recovers after a different seed and maximum-error run', { timeout: 45000 }, async t => {
   const { page, recipe } = await deckActivity(t);
