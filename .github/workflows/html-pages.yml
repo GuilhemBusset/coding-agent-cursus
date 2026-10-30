@@ -19,7 +19,7 @@ on:
       shards:
         description: JSON list of shard numbers for the suites
         type: string
-        default: '[1, 2]'
+        default: '[1, 2, 3]'
       pages:
         description: Space-separated teaching pages, `all`, or `none`
         type: string
@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(inputs.shards || '[1, 2]') }}
+        shard: ${{ fromJSON(inputs.shards || '[1, 2, 3]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

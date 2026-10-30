@@ -257,7 +257,9 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
 
 
 def github_output(plan: Plan, path: str) -> None:
-    shards = [1, 2] if len(plan.suites) > 1 else [1]
+    # A shard costs about 25 s of setup; the longest suite file takes about 130 s on CI.
+    count = 3 if len(plan.suites) >= 6 else 2 if len(plan.suites) >= 2 else 1
+    shards = list(range(1, count + 1))
     every = plan.everything
     values = {
         "everything": str(plan.everything).lower(),

@@ -57,7 +57,7 @@ no merge queue, so a full run can only follow a merge, never gate it.
      students' `uv sync` is unchanged.
    - The engine tests run in their own job under pytest-xdist.
    - `check-repo` checks several pages at once.
-   - The HTML job is three jobs side by side: two Node-suite shards and the pages.
+   - The HTML job is several jobs side by side: up to three Node-suite shards and the pages.
 6. **Fixed waits become condition waits** where the wait stood in for a condition. The pre-work
    test server polls for shutdown every 10 ms, not 0.5 s. `check-page.mjs` waits for fonts and
    two animation frames, or for the target slide.
