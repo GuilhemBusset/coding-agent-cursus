@@ -29,6 +29,11 @@ on:
 permissions:
   contents: read
 
+# A cache restore that GitHub throttles ("Egress is over the account limit") gives up after a
+# minute and the job installs without it, instead of waiting the default 10 minutes.
+env:
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+
 jobs:
   suites:
     # Teaching pages and their tooling only need Linux; exercises are the cross-platform
@@ -48,12 +53,6 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: setup/package-lock.json
-      # Playwright's browser download, keyed by the locked Playwright version. The setup below
-      # still runs in full; it skips the download when the browser is already there.
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('setup/package-lock.json') }}
       - name: Reproduce the documented Linux setup
         run: node setup/html-pages.mjs --with-system-deps
       - name: Node suites
@@ -87,10 +86,6 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: setup/package-lock.json
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('setup/package-lock.json') }}
       - name: Reproduce the documented Linux setup
         run: node setup/html-pages.mjs --with-system-deps
       - name: Teaching pages
