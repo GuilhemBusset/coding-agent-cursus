@@ -86,6 +86,8 @@ def local_change(base: str) -> Change:
     merge_base = git("merge-base", base, "HEAD").strip()
     change = parse_name_status(git("diff", "--name-status", "-M", merge_base))
     change.paths.update(git("ls-files", "--others", "--exclude-standard").splitlines())
+    # A path deleted from the index and recreated as an untracked file is back, not gone.
+    change.gone = {path for path in change.gone if not (ROOT / path).exists()}
     return change
 
 

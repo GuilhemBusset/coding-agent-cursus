@@ -129,6 +129,17 @@ def test_name_status_counts_both_sides_of_a_rename_and_marks_deletions():
     assert change.gone == {"old.html", "gone.py"}
 
 
+def test_a_path_recreated_after_its_deletion_is_not_gone(tmp_path, monkeypatch):
+    (tmp_path / "back.html").write_text("again")
+    outputs = {("merge-base", "origin/main", "HEAD"): "abc\n",
+               ("diff", "--name-status", "-M", "abc"): "D\tback.html\nD\tgone.html\n",
+               ("ls-files", "--others", "--exclude-standard"): "back.html\n"}
+    monkeypatch.setattr(impact, "ROOT", tmp_path)
+    monkeypatch.setattr(impact, "git", lambda *args: outputs[args])
+    change = impact.local_change("origin/main")
+    assert change.paths == {"back.html", "gone.html"} and change.gone == {"gone.html"}
+
+
 # The real map.
 
 def test_the_map_names_only_suites_that_exist():
