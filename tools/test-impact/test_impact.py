@@ -160,6 +160,16 @@ def test_references_split_loaded_files_from_links():
     assert not any(p.startswith(("http", "/")) for p in loads | links)
 
 
+def test_references_are_decoded_like_urls(tmp_path, monkeypatch):
+    page = tmp_path / "sessions/01-x/page.html"
+    page.parent.mkdir(parents=True)
+    page.write_text('<img src="plot%20one.svg"><a href="next&amp;more.html">n</a><link rel="stylesheet" href="../a%2Bb.css">')
+    monkeypatch.setattr(impact, "ROOT", tmp_path)
+    loads, links = impact.references("sessions/01-x/page.html")
+    assert loads == {"sessions/01-x/plot one.svg", "sessions/a+b.css"}
+    assert links == {"sessions/01-x/next&more.html"}
+
+
 def test_the_real_map_on_known_changes():
     deck = impact.select(Change({"sessions/01-fundamentals/cursus/02-thinking.html"}))
     assert not deck.everything and "engine" not in deck.units

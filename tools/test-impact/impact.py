@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import html
 import json
 import os
 import re
@@ -24,6 +25,7 @@ import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 MAP = Path(__file__).with_name("impact.toml")
@@ -136,7 +138,8 @@ def resolve(page: str, values: set[str]) -> set[str]:
     for value in values:
         if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.I) or value.startswith("//"):
             continue
-        target = os.path.normpath(folder / value)
+        # As check-page.mjs resolves it: the attribute's text, then the URL's path, decoded.
+        target = os.path.normpath(folder / unquote(html.unescape(value)))
         try:
             found.add(Path(target).relative_to(ROOT).as_posix())
         except ValueError:
