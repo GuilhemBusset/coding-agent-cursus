@@ -231,7 +231,7 @@ async function meterAt(page, run, index) {
   const want = expectedUsage(run, index);
   if (!want) return;
   assert.ok(text.includes(String(want.context)), `${run.id} step ${index + 1}: context ${want.context}`);
-  assert.ok(text.includes(String(want.sent)), `${run.id} step ${index + 1}: input so far ${want.sent}`);
+  assert.ok(text.includes(`Input sent so far: ${want.sent} tokens`), `${run.id} step ${index + 1}: input so far ${want.sent}`);
   assert.equal(Number(await meter.locator('meter').getAttribute('value')), Number(await meter.locator('meter').evaluate(el => el.value)));
   assert.equal(await meter.locator('meter').evaluate(el => el.value), want.context);
 }
@@ -380,6 +380,13 @@ test('D4: side by side shows the same task in Claude Code and Codex, each steppi
       assert.equal((await byCli[first].locator('[data-step-status]').innerText()).trim(), `Step 1 of ${pair[first].steps.length}`);
       const boxes = await Promise.all(['claude', 'codex'].map(cli => byCli[cli].boundingBox()));
       assert.ok(boxes[0].x + boxes[0].width <= boxes[1].x + 1, `${task}: Claude Code left of Codex at desktop width`);
+      if (task === TASKS[0] && first === 'claude') {
+        await page.setViewportSize({ width: 390, height: 844 });
+        const [left, right] = await Promise.all(['claude', 'codex'].map(cli => byCli[cli].boundingBox()));
+        assert.ok(right.y >= left.y + left.height, `${task}: Codex stacks below Claude Code on a phone`);
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${task}: no horizontal overflow at 390px`);
+        await page.setViewportSize({ width: 1440, height: 900 });
+      }
       await toggle.uncheck();
       assert.equal(await page.locator('[data-stepper]:visible').count(), 1, 'off again: one stepper');
     }
