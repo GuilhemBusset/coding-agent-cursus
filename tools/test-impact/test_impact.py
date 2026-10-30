@@ -61,6 +61,11 @@ def test_a_path_in_no_rule_runs_everything_and_says_why():
     assert result.everything and result.reasons == ["somewhere/new.txt is in no rule of impact.toml"]
 
 
+def test_deleting_a_path_in_no_rule_also_runs_everything():
+    result = plan(gone=["somewhere/old.txt"])
+    assert result.everything and result.reasons == ["somewhere/old.txt is in no rule of impact.toml"]
+
+
 def test_prose_in_none_runs_nothing_but_unmapped_suites():
     result = plan("LICENSE", "docs/notes.md")
     assert not result.everything
@@ -150,6 +155,9 @@ def test_the_real_map_on_known_changes():
     assert "sessions/01-fundamentals/cursus/02-thinking.html" in deck.pages
     assert "tools/html-pages/tests/thinking.test.mjs" in deck.suites
     assert "tools/html-pages/tests/world-model.test.mjs" not in deck.suites
+    fixture = impact.select(Change({"sessions/01-fundamentals/cursus/fixtures/next_token.json"}))
+    for suite in ("next-token", "tokenizer", "sampler"):
+        assert f"tools/html-pages/tests/{suite}.test.mjs" in fixture.suites, suite
     engine = impact.select(Change({"tools/implementation-loop/implement_loop/engine.py"}))
     assert engine.units == {"engine"} and not engine.sessions and not engine.pages
     assert impact.select(Change({".github/workflows/ci.yml"})).everything

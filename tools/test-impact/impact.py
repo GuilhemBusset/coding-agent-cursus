@@ -205,9 +205,6 @@ def select(change: Change, rules: dict | None = None, suites: list[str] | None =
             if path == page or path in loads or (path in change.gone and path in links):
                 chosen_pages.add(page)
                 hit = True
-        if path in change.gone:
-            # A deleted page is no longer checked; pages that pointed at it are, above.
-            hit = True
         if not hit:
             plan.reasons.append(f"{path} is in no rule of impact.toml")
     if plan.reasons:
