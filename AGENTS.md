@@ -23,6 +23,26 @@ cheap; prefer Python over shell in them. Everything else (decks, teaching pages,
 HTML tooling, instructor and repo tooling, the implement loop) only needs to work on Linux,
 where it is built and presented. See ADR 0010.
 
+## Validating a change
+
+Before pushing, run only what the change can affect, once: `scripts/check-changed.sh`. The change
+is everything since the merge base with `origin/main`: commits, staged, unstaged and untracked
+files. The script maps those paths to checks through `tools/test-impact/impact.toml` and runs
+them. `scripts/check-changed.sh plan` shows what it selects and why. A one-deck change takes
+about a minute. A change to CI, the selector or `setup/package*.json`, or to a path the map does
+not know, runs everything.
+
+While iterating, run the narrowest check directly, and do not rerun the full suites after every
+edit:
+
+- a page or deck: `node tools/html-pages/check-page.mjs <file>`;
+- one Node suite: `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`;
+- a session's tests: `uv run --group parallel pytest -n auto [tests/<file>]` in its folder;
+- the engine tests: the command in `tools/implementation-loop/README.md`.
+
+When a test starts reading a file that its entry in `impact.toml` does not name, add the file
+there. See `setup/README.md#validating-a-change` and ADR 0013.
+
 ## Branching & merging
 
 - `main` is **protected**. Every change lands via a pull request — no direct commits, no direct

@@ -136,6 +136,38 @@ session's `[tool.pytest.ini_options]`, so CI deselects it; it never skips itself
 the marker yet, so no session registers it. Files that are not named `test_*.py`, such as
 `tests/fixture_replay_checks.py`, are not collected, in CI or locally.
 
+## Validating a change
+
+`scripts/check-changed.sh` (Linux; Python 3.11 or newer, plus whatever the selected checks need
+from the sections above) runs the checks a change can affect, and nothing else. The change is
+everything since the merge base with `origin/main`: commits, staged, unstaged and untracked
+files. `tools/test-impact/impact.py` maps it through
+[`tools/test-impact/impact.toml`](../tools/test-impact/impact.toml) (ADR 0013).
+
+```sh
+scripts/check-changed.sh plan       # what would run, and why
+scripts/check-changed.sh            # run it
+scripts/check-changed.sh --base REF # measure the change against REF instead of origin/main
+scripts/check-changed.sh --all      # run everything
+```
+
+| You changed | It runs | Local time, 24 cores |
+| --- | --- | --- |
+| one deck | `check-page.mjs` on the deck, the Node suites that read it, the session's pytest suite | about 50 s |
+| a session's exercises or tests | that session's pytest suite, in parallel | about 25 s |
+| `tools/implementation-loop/` | the engine tests, in parallel | about 11 s |
+| `scripts/turn-in.sh`, the hooks or a skill | the turn-in tests, `test-ship.sh` and the static repo checks, plus what reads them | seconds to a minute |
+| a workflow, the selector, `setup/package*.json`, or a path the map does not know | everything | a few minutes |
+
+The rules err wide:
+- a Node suite with no entry in the map runs on every change;
+- a deleted or renamed file counts under its old path;
+- a page is checked when it changes, when a file it loads changes, or when a file it links to is
+  deleted or renamed.
+
+The selector's own tests: `uv run --no-project --with pytest==8.3.5 pytest -q tools/test-impact`.
+When a test starts reading a file that its map entry does not name, add the file to the map.
+
 ## Claude Code and Codex
 
 Use your installed, configured agent from the cloned repository. The repository supplies
@@ -303,6 +335,7 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | uv, Python and packages for the session test suites in CI | `astral-sh/setup-uv` installs the uv version pinned in each session's `mise.toml` on the CI runner; `uv run --locked` uses that file's Python version (the runner's, or one uv fetches into its cache) and installs the session's `uv.lock` packages into the session's `.venv/` |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
 | Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
+| Change-based check selection | Checked-in `tools/test-impact/` (standard-library Python) and `scripts/check-changed.sh`; installs nothing, runs the checks above with their own tools |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 
 When adding another repository-wide tool, put its installer, manifests/lockfiles and diagnostic
