@@ -120,7 +120,11 @@ def test_github_outputs(tmp_path):
     out.write_text("")
     impact.github_output(select(Change(), RULES, SUITES, SESSIONS, PAGES, everything=True, refs=REFS), out)
     values = dict(line.split("=", 1) for line in out.read_text().splitlines())
-    assert (values["suites"], values["pages"], values["shards"]) == ("all", "all", "[1, 2]")
+    assert (values["suites"], values["pages"], values["shards"]) == ("all", "all", "[1, 2]"), "3 suites, 2 shards"
+    many = impact.Plan(suites=[f"s{i}.test.mjs" for i in range(6)])
+    out.write_text("")
+    impact.github_output(many, out)
+    assert dict(line.split("=", 1) for line in out.read_text().splitlines())["shards"] == "[1, 2, 3]"
 
 
 def test_name_status_counts_both_sides_of_a_rename_and_marks_deletions():
