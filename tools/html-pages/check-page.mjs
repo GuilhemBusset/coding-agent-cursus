@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Dependencies and browser installation: setup/README.md.
-import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -63,6 +63,25 @@ async function checkSnapshots(page) {
   }
 }
 
+// Waits for a condition, not a fixed time. page.js renders synchronously in its event handlers and
+// the pages are offline, so after fonts load and two animation frames the page has settled; a lab
+// that defers its first render does so by one frame (world-model's prepare()). Capped at 2 s so a
+// page that never paints cannot hang the run. Needs page scripts: no-JS contexts skip it.
+const settle = page => {
+  let timer;
+  return Promise.race([
+    page.evaluate(() => document.fonts.ready.then(() =>
+      new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))),
+    new Promise(resolve => { timer = setTimeout(resolve, 2000); }),
+  ]).finally(() => clearTimeout(timer));
+};
+// The active slide once navigation has been handled. Gives up after 500 ms (five times the fixed
+// wait this replaced) and returns, so the checks that follow record whatever state the deck is in.
+const shown = (page, id) => page.waitForFunction(id => {
+  const visible = [...document.querySelectorAll('[data-deck] [data-slide]')].filter(el => el.checkVisibility());
+  return decodeURIComponent(location.hash.slice(1)) === id && visible.length === 1 && visible[0].id === id;
+}, id, { timeout: 500 }).catch(() => {});
+
 // All contexts remain on real file URLs. Routing supplements offline mode and records attempts.
 async function openContext(viewport, scope, options = {}) {
   const context = await browser.newContext({ viewport, colorScheme: 'light', offline: true, serviceWorkers: 'block', ...options });
@@ -101,21 +120,24 @@ async function openContext(viewport, scope, options = {}) {
   });
   const page = await context.newPage();
   await page.goto(url, { waitUntil: 'load' });
-  await page.waitForTimeout(200);
+  if (options.javaScriptEnabled !== false) await settle(page);
   return { context, page };
 }
 
 async function screenshot(page, name) {
   // Audits can focus scrollable regions; capture the initial view consistently.
-  await page.evaluate(() => {
+  const fits = await page.evaluate(() => {
     window.scrollTo(0, 0);
     document.querySelectorAll('[data-slide]').forEach(el => { el.scrollTop = 0; });
+    const root = document.documentElement;
+    return root.scrollHeight <= innerHeight && root.scrollWidth <= innerWidth;
   });
-  for (const fullPage of [false, true]) {
-    const target = path.join(output, `${name}${fullPage ? '' : '-viewport'}.png`);
-    await page.screenshot({ path: target, fullPage, animations: 'disabled', timeout: 15000 });
-    report.screenshots.push(target);
-  }
+  const viewport = path.join(output, `${name}-viewport.png`), full = path.join(output, `${name}.png`);
+  await page.screenshot({ path: viewport, animations: 'disabled', timeout: 15000 });
+  // A document that fits the viewport (a paged slide) gives the same image either way.
+  if (fits) await copyFile(viewport, full);
+  else await page.screenshot({ path: full, fullPage: true, animations: 'disabled', timeout: 15000 });
+  report.screenshots.push(viewport, full);
 }
 
 async function inspect(page, scope) {
@@ -215,8 +237,9 @@ async function axeCheck(page, scope, AxeBuilder) {
 }
 
 async function deckState(page, scope, id) {
+  await shown(page, id);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(100);
+  await settle(page);
   const state = await page.evaluate(() => ({
     hash: decodeURIComponent(location.hash.slice(1)),
     slides: [...document.querySelectorAll('[data-deck] [data-slide]')].filter(el => {
@@ -242,7 +265,7 @@ async function testDeck(page, scope, slides, AxeBuilder) {
   const controls = await next.count() === 1 && await prev.count() === 1 && await page.locator('[data-slide-status]').count() === 1;
   check(scope, 'deck controls', controls);
   if (!slides.length || slides.some(s => !s.id)) return;
-  const navigate = async id => { await page.evaluate(id => { location.hash = id; }, id); await page.waitForTimeout(100); };
+  const navigate = async id => { await page.evaluate(id => { location.hash = id; }, id); await shown(page, id); };
   await navigate(slides[0].id);
   if (controls && slides.length > 1) {
     const originalStatus = await page.locator('[data-slide-status]').textContent();
@@ -315,13 +338,13 @@ async function testLab(page, scope) {
   for (const key of ['Home', 'End']) {
     await range.focus();
     await range.press(key);
-    await page.waitForTimeout(100);
+    await settle(page);
     changed ||= await range.inputValue() !== initial && await value.textContent() !== initialOutput;
     await invariant(key);
   }
   check(scope, 'budget changes output', changed);
   await reset.click();
-  await page.waitForTimeout(100);
+  await settle(page);
   check(scope, 'budget reset restores value and output', await range.inputValue() === initial && await value.textContent() === initialOutput);
   await invariant('reset');
 }
@@ -330,7 +353,7 @@ async function testPrint(page) {
   const before = await page.locator('details').evaluateAll(items => items.map(el => el.open));
   await page.emulateMedia({ media: 'print' });
   await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
-  await page.waitForTimeout(100);
+  await settle(page);
   const state = await page.evaluate(() => {
     const visible = el => el.checkVisibility({ checkVisibilityCSS: true, checkOpacity: true }) && el.getClientRects().length > 0;
     return {
@@ -348,7 +371,7 @@ async function testPrint(page) {
   await screenshot(page, 'print');
   await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
   await page.emulateMedia({ media: 'screen' });
-  await page.waitForTimeout(100);
+  await settle(page);
   const after = await page.locator('details').evaluateAll(items => items.map(el => el.open));
   check('print', 'disclosure state restored', JSON.stringify(before) === JSON.stringify(after), { before, after });
 }
