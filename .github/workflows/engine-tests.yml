@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# A cache restore that GitHub throttles ("Egress is over the account limit") gives up after a
+# minute and the job installs without it, instead of waiting the default 10 minutes.
+env:
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+
 jobs:
   engine:
     runs-on: ubuntu-latest
