@@ -156,3 +156,19 @@ test('checker rejects broken deck navigation, overflow, fallback, motion and pri
     'all deck slides readable and navigation hidden',
   ]) assert.ok(report.checks.some(item => !item.passed && item.name === name), `Did not catch ${name}`);
 });
+
+test('checker still catches an accessibility failure on one slide of a deck', { timeout: 120000 }, async () => {
+  const out = path.join(scratch, 'slide-a11y-deck.html');
+  await createPage({ kind: 'deck', title: 'Slide accessibility fixture', out });
+  const html = await readFile(out, 'utf8');
+  const marker = '<section id="review" data-slide';
+  assert.ok(html.includes(marker), 'the deck template still has a #review slide');
+  // A nameless button only on the third slide, which is hidden while slide 1 is active.
+  await writeFile(out, html.replace(/(<section id="review" data-slide[^>]*>)/, '$1<button></button>'));
+  const { code, report } = await check(out, 'slide-a11y-review');
+  assert.equal(code, 1);
+  const axe = scope => report.checks.find(item => item.scope === scope && item.name === 'axe serious/critical');
+  assert.equal(axe('laptop/slide-3')?.passed, false, 'per-slide axe at laptop catches it');
+  assert.equal(axe('mobile')?.passed, false, 'the mobile run, with every slide shown, catches it');
+  assert.equal(axe('desktop/slide-3'), undefined, 'per-slide axe runs once, at laptop');
+});

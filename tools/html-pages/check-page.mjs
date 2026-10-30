@@ -293,7 +293,9 @@ async function testDeck(page, scope, slides, AxeBuilder) {
     const slideScope = `${scope}/slide-${index + 1}`;
     await deckState(page, slideScope, slide.id);
     await inspect(page, slideScope);
-    await axeCheck(page, slideScope, AxeBuilder);
+    // Per-slide axe once, at laptop: its smaller type is the stricter contrast case, and the mobile
+    // run already analyses every slide at once (docs/adr/0013-test-tiers-and-selection.md).
+    if (scope === 'laptop') await axeCheck(page, slideScope, AxeBuilder);
     await screenshot(page, `${scope}-slide-${String(index + 1).padStart(2, '0')}`);
   }
 }
