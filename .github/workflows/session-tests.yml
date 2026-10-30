@@ -15,6 +15,11 @@ name: Session tests
 # never skip itself instead: a run with skipped tests fails below.
 on:
   workflow_call:
+    inputs:
+      sessions:
+        description: JSON list of session folders to test; empty tests every session with a tests/ folder
+        type: string
+        default: ''
   workflow_dispatch:
 
 permissions:
@@ -29,9 +34,18 @@ jobs:
       - uses: actions/checkout@v4
       - id: find
         name: Sessions with a pytest suite
+        env:
+          CHOSEN: ${{ inputs.sessions }}
         run: |
           set -euo pipefail
           sessions="$(find sessions -mindepth 2 -maxdepth 2 -type d -name tests -printf '%h\n' | sort)"
+          if [ -n "$CHOSEN" ]; then
+            # Only the sessions ci.yml's `changes` selected, each of which must have a suite.
+            chosen="$(jq -r '.[]' <<<"$CHOSEN" | sort)"
+            missing="$(comm -23 <(printf '%s\n' "$chosen") <(printf '%s\n' "$sessions"))"
+            [ -z "$missing" ] || { echo "::error::Selected sessions without a tests/ folder: $missing"; exit 1; }
+            sessions="$chosen"
+          fi
           if [ -z "$sessions" ]; then
             echo "::error::No session has a tests/ folder; an empty run is not evidence"
             exit 1

@@ -117,7 +117,9 @@ uv run --no-project --with shellcheck-py==0.10.0.1 shellcheck sessions/01-fundam
 ## Session test suites in CI
 
 The required CI check runs the pytest suite of every session that has a `tests/` folder
-(`.github/workflows/session-tests.yml`), on Linux, on every pull request. Each session runs in its
+(`.github/workflows/session-tests.yml`), on Linux: on every pull request that changes the session's
+folder, `scripts/turn-in.sh` or the hooks, and on every push to `main` and nightly ([Validating a
+change](#validating-a-change)). Each session runs in its
 own pinned environment: `astral-sh/setup-uv` installs the uv version in the session's `mise.toml`,
 then, from the session folder and with that file's Python version,
 
@@ -164,6 +166,12 @@ The rules err wide:
 - a deleted or renamed file counts under its old path;
 - a page is checked when it changes, when a file it loads changes, or when a file it links to is
   deleted or renamed.
+
+CI makes the same selection: on a pull request, ci.yml's `changes` job runs `impact.py github`
+on the pull request's `BASE...HEAD`, and only the selected jobs, Node suites and pages run.
+`required` accepts a skipped job only when `changes` succeeded and said the job does not apply.
+Every push to `main`, the nightly run (03:17 UTC) and a manual dispatch run everything. A full run
+that is not green opens the issue "CI: the full run on main is failing", or comments on it.
 
 The selector's own tests: `uv run --no-project --with pytest==8.3.5 pytest -q tools/test-impact`.
 When a test starts reading a file that its map entry does not name, add the file to the map.
