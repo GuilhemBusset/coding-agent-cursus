@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// `npm --prefix setup run check-repo`: check-page.mjs on every Cursus teaching page. Pages are
+// `npm --prefix setup run check-repo`: check-page.mjs on every Cursus teaching page, or only on
+// the pages named as arguments (repo-relative, as scripts/check-changed.sh passes them). Pages are
 // independent (each run launches its own browser and writes its own mkdtemp report), so several
 // run at once: one per core but one, like `node --test`, capped at 8, or CURSUS_CHECK_JOBS.
 // Decks with the most slides go first (check-page's cost grows with slides), so a long deck never
@@ -11,14 +12,19 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const files = [...new Set(execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\0'))]
-  .filter(file => /^(docs|sessions)\/.*\.html?$/i.test(file));
+const named = process.argv.slice(2);
+const files = named.length ? [...new Set(named)]
+  : [...new Set(execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\0'))]
+    .filter(file => /^(docs|sessions)\/.*\.html?$/i.test(file));
 const pages = [];
 for (const file of files) {
   let html;
   try { html = await readFile(path.join(root, file), 'utf8'); }
-  catch (error) { if (error.code === 'ENOENT') continue; throw error; }
-  if (!/data-design-system\s*=\s*["']cursus["']/i.test(html)) continue;
+  catch (error) { if (error.code === 'ENOENT' && !named.length) continue; throw error; }
+  if (!/data-design-system\s*=\s*["']cursus["']/i.test(html)) {
+    if (named.length) { console.error(`Not a Cursus teaching page: ${file}`); process.exit(2); }
+    continue;
+  }
   pages.push({ file, slides: html.match(/\bdata-slide\b/g)?.length ?? 0 });
 }
 pages.sort((a, b) => b.slides - a.slides || a.file.localeCompare(b.file));

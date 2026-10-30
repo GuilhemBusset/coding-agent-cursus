@@ -62,4 +62,8 @@ jobs:
       - name: Turn-in tests
         run: uv run --no-project --with pytest==8.3.5 pytest -q tests/turn_in
 
+      # The change-based check selection (tools/test-impact/, ADR 0013).
+      - name: Check selector tests
+        run: uv run --no-project --with pytest==8.3.5 pytest -q tools/test-impact
+
       # The implement loop engine tests run in their own job, beside this one (engine-tests.yml).
