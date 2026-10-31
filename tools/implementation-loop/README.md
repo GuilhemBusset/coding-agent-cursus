@@ -183,6 +183,13 @@ plan the same issue are not supported: the second one's worktree for it cannot b
 python3 -m unittest discover -s tools/implementation-loop/tests -t tools/implementation-loop/tests
 ```
 
+That runs them one at a time (about 2 minutes). CI spreads them over every core with
+pytest-xdist (`.github/workflows/engine-tests.yml`); the same locally, with nothing installed:
+
+```sh
+uv run --no-project --python 3.12 --with pytest==8.3.5 --with pytest-xdist==3.8.0 python -m pytest -q -n auto tools/implementation-loop/tests
+```
+
 The end-to-end tests drive the real engine, real git, `scripts/ship.sh`, the verifier and real
 squash merges into a throwaway bare remote; only the agents and GitHub are fakes.
 `tests/fixtures/epic10.json` is a recording of epic #10 (`scripts/implement.sh record-fixture 10 <file>`).

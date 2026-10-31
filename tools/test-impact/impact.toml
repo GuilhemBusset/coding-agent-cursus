@@ -1,0 +1,137 @@
+# Which checks a change can affect (docs/adr/0013-test-tiers-and-selection.md).
+#
+# scripts/check-changed.sh and CI's `changes` job run only the checks whose paths a change
+# touches; every push to main and a nightly run still run everything. Patterns are matched
+# against repo-relative paths: `*` stays inside one directory, `**` crosses directories.
+#
+# The map can only err by being too narrow, so it errs wide: a changed path that no pattern
+# below matches runs everything, a Node suite with no entry runs on every change, and a
+# deleted or renamed file counts under its old path too. When a test starts reading a new
+# file, add that file here (tools/test-impact/test_select.py checks the map's shape).
+
+[all]
+# A change here runs every check.
+paths = [
+  ".github/workflows/**",
+  ".gitignore",
+  "tools/test-impact/**",
+  "scripts/check-changed.sh",
+  "setup/package.json",
+  "setup/package-lock.json",
+  "setup/html-pages.mjs",
+]
+
+[none]
+# Read by no check: prose, and loose probe or examiner scripts nothing runs.
+paths = [
+  "CLAUDE.md",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "SECURITY.md",
+  "docs/*.md",
+  "docs/tests/**",
+  "setup/turn-in-owner-checks.md",
+  "checks/**",
+  "tests/probe_*.py",
+  "tests/test_examiner_103*.py",
+  "tests/loop_probes/**",
+  "tools/html-pages/research.md",
+  "tools/html-pages/examiner-*.mjs",
+  "tools/html-pages/probe-*.mjs",
+]
+
+# The skill copies, shell syntax and JSON steps of checks.yml: seconds, and always run in CI.
+[units.repo-config]
+paths = [".agents/skills/**", ".claude/skills/**", "scripts/*.sh", "setup/*.sh", "setup/*.json", ".githooks/**"]
+
+[units.ship]
+paths = ["scripts/ship.sh", "scripts/test-ship.sh", ".githooks/**"]
+
+# tests/turn_in reads the turn-in script, hooks, rulesets, skills, ADR numbers and the
+# homework sections of README.md and AGENTS.md, and re-runs the checks.yml steps above.
+[units.turn-in]
+paths = [
+  "tests/turn_in/**",
+  "scripts/**",
+  "setup/*.sh",
+  "setup/*.json",
+  ".githooks/**",
+  ".agents/skills/**",
+  ".claude/skills/**",
+  "docs/adr/**",
+  "AGENTS.md",
+  "README.md",
+  "sessions/*/exercises/turn-in-check.sh",
+]
+
+# The implement loop engine tests run ship.sh, the loop guard and the hooks for real, check
+# setup/browser-libs.py against Playwright's package list, and plan against a few repo files.
+[units.engine]
+paths = [
+  "tools/implementation-loop/**",
+  "scripts/ship.sh",
+  "scripts/check-loop-guard.sh",
+  ".githooks/**",
+  "setup/browser-libs.py",
+  ".claude/skills/ship/SKILL.md",
+  "docs/adr/0001-*",
+  "docs/adr/0003-*",
+  "tools/html-pages/GUIDE.md",
+]
+
+# Each session's pytest suite (sessions/<NN>-*/tests) runs when anything in its session folder
+# changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks.
+[sessions]
+shared = ["scripts/turn-in.sh", ".githooks/**"]
+
+# check-page.mjs runs on a teaching page when the page changes or a file it references (src,
+# href, data) changes, is deleted or renamed; on every page when one of these changes.
+[pages]
+shared = [
+  "tools/html-pages/check-page.mjs",
+  "tools/html-pages/check-repo-pages.mjs",
+  "tools/html-pages/browser.mjs",
+]
+
+# Node suites (tools/html-pages/tests/<name>.test.mjs). A suite runs when its own file, one of
+# its paths, or a shared path changes. A suite with no entry runs on every change.
+[node]
+shared = [
+  "tools/html-pages/browser.mjs",
+  "tools/html-pages/create-page.mjs",
+  "tools/html-pages/tests/component-helpers.mjs",
+  "tools/html-pages/tests/suites.mjs",
+  "tools/html-pages/tests/run-all.mjs",
+  "tools/html-pages/tests/run-suite.mjs",
+  "setup/doctor.mjs",
+]
+
+[node.suites]
+# Decks: the deck, and the labs, demos and fixtures it links to or quotes.
+sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
+thinking = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
+thinking-planner = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "tools/html-pages/tests/thinking.test.mjs"]
+opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**"]
+examiner48-deck-links = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/labs/*.html"]
+# Labs: the lab and the files it is built from.
+agent-loop = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**", "sessions/01-fundamentals/cursus/demos/agent/**"]
+examiner-agent-loop-d3 = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**"]
+attention = ["sessions/01-fundamentals/cursus/labs/attention.html", "sessions/01-fundamentals/cursus/fixtures/attention.json", "sessions/01-fundamentals/README.md"]
+context = ["sessions/01-fundamentals/cursus/labs/context.html", "sessions/01-fundamentals/cursus/demos/effort/**"]
+next-token = ["sessions/01-fundamentals/cursus/labs/next-token.html", "sessions/01-fundamentals/cursus/fixtures/next_token.json"]
+test-time-compute = ["sessions/01-fundamentals/cursus/labs/test-time-compute.html"]
+tiny-lm = ["sessions/01-fundamentals/cursus/labs/tiny-lm.html", "sessions/01-fundamentals/cursus/labs/tiny-lm/**", "setup/README.md"]
+tokenizer = ["sessions/01-fundamentals/cursus/labs/tokenizer.html", "sessions/01-fundamentals/cursus/labs/tokenizer/**", "sessions/01-fundamentals/cursus/fixtures/next_token.json"]
+verifier-gaming = ["sessions/01-fundamentals/cursus/labs/verifier-gaming.html"]
+world-model = ["sessions/01-fundamentals/cursus/labs/world-model.html", "tools/html-pages/tests/world-model-helpers.mjs"]
+world-model-replay = ["sessions/01-fundamentals/cursus/labs/world-model.html", "tools/html-pages/tests/world-model-helpers.mjs"]
+# The shared components page, and the page tooling itself.
+components-a11y = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/assets/**"]
+components-tooling = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/tests/**", "tools/html-pages/templates/**", "tools/html-pages/assets/**", "tools/html-pages/GUIDE.md"]
+formula-slider = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
+predict = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/assets/**"]
+probability-chart = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
+stepper = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
+pages = ["tools/html-pages/check-page.mjs", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
+browser-env = ["setup/browser-libs.py"]

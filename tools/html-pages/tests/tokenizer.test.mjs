@@ -10,12 +10,25 @@ import {
   repoRoot, assertCollected, scratch, openPage, count, enabled, focused, initialPredict, textOf, escapeRegExp,
 } from './component-helpers.mjs';
 
-// Issue 28, amended 2026-10-13: static, hand-written illustrations, no tokenizer.
-// Public markup is the oracle; no private functions, real encoding, or chosen IDs
-// are prescribed. D1/D4 accuracy and visual composition are reviewed by a person,
+// Issue 28, amended 2026-10-13: static markup, no tokenizer at runtime. Amended
+// 2026-10-28: the examples are real GPT-2 tokenizations, written into the page.
+// Public markup is checked against GPT2 below; no private functions are
+// prescribed. Prose accuracy and visual composition are reviewed by a person,
 // not established by keyword matching.
 const relative = 'sessions/01-fundamentals/cursus/labs/tokenizer.html';
 const file = path.join(repoRoot, relative);
+const fixture = path.join(repoRoot, 'sessions/01-fundamentals/cursus/fixtures/next_token.json');
+// openai-community/gpt2 at the fixtures' pinned revision; tiktoken's gpt2
+// encoding gives the same pieces and IDs.
+const GPT2 = {
+  blueberry: { source: ' blueberry', pieces: [' blue', 'berry'], ids: [4171, 8396] },
+  bonjour: { source: 'Bonjour', pieces: ['Bon', 'j', 'our'], ids: [20682, 73, 454] },
+  number: {
+    source: '123456789012345678',
+    pieces: ['123', '45', '67', '89', '01', '23', '45', '678'],
+    ids: [10163, 2231, 3134, 4531, 486, 1954, 2231, 30924],
+  },
+};
 const assetDir = path.join(repoRoot, 'sessions/01-fundamentals/cursus/labs/tokenizer');
 const output = path.join(repoRoot, 'artifacts/html-pages/tokenizer');
 const normal = text => text.replace(/\s+/g, ' ').trim();
@@ -98,13 +111,10 @@ async function examples(page) {
   const byKey = {}, vocabulary = new Map();
   for (const figure of await figures.all()) {
     const key = await figure.getAttribute('data-tok-example');
-    assert.ok(['strawberry', 'bonjour', 'number'].includes(key), 'three named worked examples');
+    assert.ok(Object.hasOwn(GPT2, key), 'three named worked examples');
     assert.ok(!byKey[key], 'example keys are unique');
     await visibleNonempty(figure.locator('[data-tok-text]'));
     const source = await figure.locator('[data-tok-text]').textContent();
-    if (key === 'strawberry') assert.equal(source, ' strawberry', 'preserve the leading space');
-    if (key === 'bonjour') assert.equal(source, 'Bonjour');
-    if (key === 'number') assert.match(source, /^\d{10,}$/, 'a long number');
     await count(figure.locator('ol'), 1);
     const chips = figure.locator('ol > li[data-tok-chip]');
     assert.ok(await chips.count() >= 2, 'show the split as several ordered chips');
@@ -117,7 +127,7 @@ async function examples(page) {
       const id = visibleInteger(await chip.locator('[data-tok-id]').innerText());
       let piece = await chipPiece(chip);
       assert.ok(piece, 'chip has visible piece text in addition to its ID');
-      if (key === 'strawberry' && !pieces.length) {
+      if (key === 'blueberry' && !pieces.length) {
         const marker = [...piece][0];
         assert.match(marker, /[^\p{L}\p{N}\s]/u, 'leading space is a visible marker');
         // The convention must be explained outside the examples, not only in a
@@ -150,6 +160,7 @@ async function examples(page) {
         'each chip has a visible border in addition to colour');
     }
     assert.equal(pieces.join(''), source, `${key}: rendered pieces reconstruct the exact source`);
+    assert.deepEqual({ source, pieces, ids }, GPT2[key], `${key}: GPT-2's real pieces and IDs`);
     byKey[key] = { source, pieces, ids };
   }
   // Require a shared, visible qualification before all the worked examples.
@@ -158,12 +169,11 @@ async function examples(page) {
     const text = el.innerText || '';
     const first = document.querySelector('figure[data-tok-example]');
     const style = getComputedStyle(el);
-    return /illustrative/i.test(text) && /splits?/i.test(text) && /\bIDs?\b/i.test(text) &&
-      /(?:written\s+by\s+hand|hand[- ]written)/i.test(text) &&
+    return /\breal\b/i.test(text) && /GPT-2/.test(text) && /splits?/i.test(text) && /\bIDs?\b/i.test(text) &&
       !el.closest('figure[data-tok-example]') && !el.contains(first) && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0 &&
       el.getClientRects().length > 0 && !!(el.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING);
   }));
-  assert.equal(qualified, true, 'one visible hand-written illustrative qualification covers all examples');
+  assert.equal(qualified, true, 'one visible qualification names GPT-2 as the source of all examples');
   return byKey;
 }
 
@@ -190,28 +200,32 @@ async function predictContract(page) {
     await questions.nth(1).locator('input').first().getAttribute('name'), 'questions are independent radio groups');
   const q1 = questions.nth(0), q2 = questions.nth(1);
   const legend1 = await textOf(q1.locator('legend')), legend2 = await textOf(q2.locator('legend'));
-  assert.match(legend1, /strawberry/i);
+  assert.match(legend1, /blueberry/i);
   assert.match(legend1, /tokens?/i);
   assert.match(legend1, /how\s+many|(?:number|count)\s+of|token\s+count/i);
-  assert.match(legend1, /illustrative/i, 'prediction is scoped to the fictional illustration');
-  assert.match(legend1, /(?:leading|initial)\s+(?:space|blank)|["'“‘] strawberry|[␣␠]strawberry/i,
+  assert.match(legend1, /GPT-2/, 'prediction is scoped to the tokenizer the examples come from');
+  assert.match(legend1, /(?:leading|initial)\s+(?:space|blank)|["'“‘] blueberry|[␣␠]blueberry/i,
     'question preserves or explicitly mentions the leading space');
-  assert.match(legend2, /\br(?:['’]s|s)?\b/i);
+  assert.match(legend2, /\bb(?:['’]s|s)?\b/i);
   assert.match(legend2, /model/i);
   assert.match(legend2, /see/i);
   assert.match(legend2, /how\s+many|number|count/i);
-  const n = await page.locator('figure[data-tok-example="strawberry"] [data-tok-chip]').count();
+  const n = await page.locator('figure[data-tok-example="blueberry"] [data-tok-chip]').count();
   const label1 = normal(await labelOf(q1.locator('input[data-correct]')));
   const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
   const counts = [...label1.matchAll(new RegExp(`\\b(?:\\d+|${words.join('|')})\\b`, 'gi'))]
     .map(match => /^\d+$/.test(match[0]) ? Number(match[0]) : words.indexOf(match[0].toLowerCase()));
   assert.deepEqual(counts, [n], 'correct token-count choice equals the displayed chip count');
-  assert.match(normal(await q1.locator('[data-predict-answer]').textContent()),
-    new RegExp(`\\b(?:${n}${words[n] ? `|${words[n]}` : ''})\\b`, 'i'), 'revealed token-count answer accompanies the correct choice');
+  const answer1 = normal(await q1.locator('[data-predict-answer]').textContent());
+  assert.match(answer1, new RegExp(`\\b(?:${n}${words[n] ? `|${words[n]}` : ''})\\b`, 'i'), 'revealed token-count answer accompanies the correct choice');
+  const strawberry = JSON.parse(await readFile(fixture, 'utf8')).prompts.find(item => item.prompt === ' strawberry');
+  assert.equal(strawberry?.prompt_tokens.length, 1, 'the fixture keeps the leading-space strawberry whole');
+  assert.match(answer1, new RegExp(`\\b${strawberry.prompt_tokens[0].id}\\b`), 'the strawberry contrast uses the deck\'s fixture ID');
   assert.match(await labelOf(q2.locator('input[data-correct]')), /\b(?:none|zero|0)\b/i);
   const explanation = normal(await q2.locator('[data-predict-answer]').textContent());
   assert.match(explanation, /\b(?:integer\s+IDs?|IDs?)\b/i);
-  assert.match(explanation, /\b(?:3|three)\b.{0,80}\br(?:['’]s|s)?\b/i, 'distinguish the three letters a reader sees from IDs');
+  assert.match(explanation, /\b(?:2|two)\b.{0,80}\bb(?:['’]s|s)?\b/i, 'distinguish the two letters a reader sees from IDs');
+  for (const id of GPT2.blueberry.ids) assert.match(explanation, new RegExp(`\\b${id}\\b`), 'the answer names the IDs shown in the chips');
   return { root, questions };
 }
 
@@ -311,7 +325,7 @@ async function staticRuntime(page, source) {
   }
 }
 
-test('D1/D2: visible explanation and lossless illustrative chips with IDs, JS and no-JS', { timeout: 60000 }, async t => {
+test('D1/D2: visible explanation and lossless GPT-2 chips with IDs, JS and no-JS', { timeout: 60000 }, async t => {
   let baseline;
   for (const javaScriptEnabled of [true, false]) {
     const page = await pageFor(t, { javaScriptEnabled });

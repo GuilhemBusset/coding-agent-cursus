@@ -70,7 +70,9 @@ def local_http(status=200, delay=0):
             pass
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    # shutdown() waits for serve_forever's next poll; the default 0.5 s poll made every test's
+    # teardown that long (about 47 s over the prework tests).
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
     thread.start()
     try:
         yield f"http://127.0.0.1:{server.server_port}/probe"

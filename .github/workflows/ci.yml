@@ -5,69 +5,138 @@ name: CI
 # the required status check. Path-filtered checks are decided here, inside the run, so a
 # PR that does not need them still gets a `required` result instead of waiting forever for
 # a check that never starts. See docs/adr/0007-required-ci-gate-and-merge-forward-shipping.md.
+# A pull request runs the checks its changed paths can affect, chosen by `changes` from
+# tools/test-impact/impact.toml, the map scripts/check-changed.sh uses locally.
+#
+# Every push to main, a nightly schedule and a manual dispatch run everything, whatever changed:
+# the backstop for path-filtered pull requests and the canary for runner and toolchain drift
+# (docs/adr/0013-test-tiers-and-selection.md). They cannot block a merge; a failure opens or
+# updates one issue instead.
 
 on:
   pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  # Which checks this run needs: on a pull request, what its changed paths can affect
+  # (tools/test-impact/impact.toml); on every other event, everything.
   changes:
     runs-on: ubuntu-latest
     outputs:
-      html: ${{ steps.diff.outputs.html }}
+      engine: ${{ steps.select.outputs.engine }}
+      session_tests: ${{ steps.select.outputs.session_tests }}
+      sessions: ${{ steps.select.outputs.sessions }}
+      html: ${{ steps.select.outputs.html }}
+      suites: ${{ steps.select.outputs.suites }}
+      shards: ${{ steps.select.outputs.shards }}
+      pages: ${{ steps.select.outputs.pages }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - id: diff
-        name: Decide which path-filtered checks apply
+      - name: Toolchain
+        run: git --version && python3 --version && node --version && bash --version | head -1
+      - id: select
+        name: Decide which checks apply
         env:
+          EVENT: ${{ github.event_name }}
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          files="$(git diff --name-only "$BASE...$HEAD")"
-          printf '%s\n' "$files"
-          html_paths='^(tools/html-pages/|setup/|\.agents/skills/html-page/|\.claude/skills/html-page/|\.github/workflows/(ci|html-pages)\.yml$|(docs|sessions)/.*\.html?$)'
-          if grep -Eq "$html_paths" <<<"$files"; then
-            echo "html=true" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = pull_request ]; then
+            python3 tools/test-impact/impact.py github --base "$BASE" --head "$HEAD"
           else
-            echo "html=false" >> "$GITHUB_OUTPUT"
+            echo "A $EVENT run checks everything."
+            python3 tools/test-impact/impact.py github --all --base HEAD --head HEAD
           fi
 
+  # The static checks, the turn-in tests and test-ship.sh take seconds: always.
   repo-checks:
     uses: ./.github/workflows/checks.yml
 
-  # Every session's pytest suite, on every pull request: those tests read more of the repo
-  # than their session folder, so no path filter could tell when they are safe to skip.
+  engine-tests:
+    needs: changes
+    if: needs.changes.outputs.engine == 'true'
+    uses: ./.github/workflows/engine-tests.yml
+
+  # A session's suite runs when its folder changes, or the turn-in script or hooks it runs.
   session-tests:
+    needs: changes
+    if: needs.changes.outputs.session_tests == 'true'
     uses: ./.github/workflows/session-tests.yml
+    with:
+      sessions: ${{ needs.changes.outputs.sessions }}
 
   html-pages:
     needs: changes
     if: needs.changes.outputs.html == 'true'
     uses: ./.github/workflows/html-pages.yml
+    with:
+      suites: ${{ needs.changes.outputs.suites }}
+      shards: ${{ needs.changes.outputs.shards }}
+      pages: ${{ needs.changes.outputs.pages }}
 
   required:
     if: always()
-    needs: [changes, repo-checks, session-tests, html-pages]
+    needs: [changes, repo-checks, engine-tests, session-tests, html-pages]
     runs-on: ubuntu-latest
     steps:
       - name: Every applicable check passed
         env:
           NEEDS: ${{ toJSON(needs) }}
+          ENGINE: ${{ needs.changes.outputs.engine }}
+          SESSIONS: ${{ needs.changes.outputs.session_tests }}
           HTML: ${{ needs.changes.outputs.html }}
         run: |
           set -euo pipefail
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
-          # Missing, cancelled or failed results never count as green. The HTML checks may be
-          # skipped only when no HTML-related path changed.
-          echo "$NEEDS" | jq -e --arg html "$HTML" '
+          # Missing, cancelled or failed results never count as green. A check may be skipped
+          # only when `changes` succeeded and said it does not apply.
+          echo "$NEEDS" | jq -e --arg engine "$ENGINE" --arg sessions "$SESSIONS" --arg html "$HTML" '
+            def ran_or_not_needed(job; needed):
+              (.[job].result == "success") or (.[job].result == "skipped" and needed == "false");
             (.changes.result == "success")
             and (."repo-checks".result == "success")
-            and (."session-tests".result == "success")
-            and ((."html-pages".result == "success")
-                 or (."html-pages".result == "skipped" and $html == "false"))
+            and ran_or_not_needed("engine-tests"; $engine)
+            and ran_or_not_needed("session-tests"; $sessions)
+            and ran_or_not_needed("html-pages"; $html)
           ' > /dev/null
+
+  # A full run (push to main, nightly, manual) that is not green opens an issue, or comments on the
+  # open one, so drift and too-narrow pull request filters reach a person.
+  report:
+    if: always() && github.event_name != 'pull_request' && needs.required.result != 'success'
+    needs: [required]
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the failing-main issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: 'CI: the full run on main is failing'
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          body="The full CI run ($EVENT) failed on \`${SHA:0:7}\`: $RUN"
+          number="$(gh issue list --state open --search "in:title \"$TITLE\"" --json number,title \
+            --jq "map(select(.title == env.TITLE)) | .[0].number // empty")"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$TITLE" --label bug --body "$body
+
+          Every push to main and the nightly run check everything (ADR 0013). Fix forward or revert
+          through a pull request, then close this issue."
+          fi

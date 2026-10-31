@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# A cache restore that GitHub throttles ("Egress is over the account limit") gives up after a
+# minute and the job installs without it, instead of waiting the default 10 minutes.
+env:
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+
 jobs:
   config:
     runs-on: ubuntu-latest
@@ -62,12 +67,8 @@ jobs:
       - name: Turn-in tests
         run: uv run --no-project --with pytest==8.3.5 pytest -q tests/turn_in
 
-      # The implement loop engine: standard library only; pytest is needed only for the tests
-      # that check how the verifier treats pytest results.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Implement loop engine tests
-        run: |
-          python -m pip install --quiet pytest==8.3.5
-          python -m unittest discover -s tools/implementation-loop/tests -t tools/implementation-loop/tests
+      # The change-based check selection (tools/test-impact/, ADR 0013).
+      - name: Check selector tests
+        run: uv run --no-project --with pytest==8.3.5 pytest -q tools/test-impact
+
+      # The implement loop engine tests run in their own job, beside this one (engine-tests.yml).
