@@ -209,66 +209,157 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 </style>
   <!-- shared-style:end -->
   <style>/* Page-specific layout for the Act II deck; uses the shared tokens. */
-.cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem var(--space); align-items: start; }
-.cols.even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem var(--space); align-items: start; }
 .cols > * { min-width: 0; }
-@media (max-width: 799px) { .cols, .cols.even { grid-template-columns: minmax(0, 1fr); } }
-.tight { padding-left: 1.25rem; }
-.tight li + li { margin-top: .35rem; }
-.cols > .callout { margin-block: 0; }
-.cite { color: var(--muted); font-size: .8125rem; line-height: 1.45; margin: .5rem 0 0; padding-top: .4rem; border-top: 1px solid var(--rule); }
+.cols > figure { margin: 0; }
+@media (min-width: 800px) { .cols.wide-left { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
+@media (max-width: 799px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.cite { color: var(--muted); font-size: .8125rem; line-height: 1.45; margin: .75rem 0 0; padding-top: .5rem; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
 .cite cite { font-style: normal; color: var(--secondary); }
-.drive { border-left: 3px solid var(--accent); background: var(--paper); padding: .45rem 1rem; margin: .6rem 0 0; }
-.hedge { border-left-color: var(--amber); }
-.hedge .label { color: var(--amber); }
-.contested { display: inline-block; margin-right: .5rem; padding: 0 .4rem; border: 1px solid var(--amber); color: var(--amber); font: 600 .75rem/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.qualify { color: var(--secondary); }
-.agenda { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; }
-.agenda > li, .legs > li { margin: 0; padding: .6rem .9rem; border: 1px solid var(--rule); background: var(--paper); }
-.agenda strong, .legs strong { display: block; font-size: 1.1rem; line-height: 1.3; }
-.agenda span:not(.label), .legs span:not(.label) { color: var(--secondary); }
-.legs { list-style: none; padding: 0; margin: 0 0 .75rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.go { font-size: 1.125rem; font-weight: 650; }
+.callout > .label { margin-bottom: .25rem; }
+.callout .go { margin-bottom: .5rem; }
+.callout > :last-child { margin-bottom: 0; }
+.callout code { overflow-wrap: anywhere; }
+.callout.hedge { border-left-color: var(--amber); }
+.callout.hedge > .label { color: var(--amber); }
+.callout dl { margin: 0; }
+.callout dt { font-weight: 650; color: var(--ink); }
+.callout dd { margin: 0 0 .4rem; color: var(--secondary); }
+/* Data visuals: the running example's real reply and the cited studies' numbers. */
+.viz { margin: 0; }
+.viz > figcaption { color: var(--secondary); margin-top: .5rem; }
+.viz > figcaption.lead { margin: 0 0 .4rem; }
+.viz > figcaption strong { color: var(--ink); }
+.viz .table-wrap { margin-bottom: 0; }
+.parcels { width: auto; margin: 0; font: 600 1.1875rem/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+.parcels th, .parcels td { padding: .35rem .6rem; text-align: center; }
+.parcels th[scope="row"] { text-align: left; color: var(--muted); font-weight: 600; }
+.parcels thead th[scope="col"] { color: var(--accent); }
+/* One reply as three zones: the prompt, the hidden thinking, the visible answer. */
+.reply { margin: 0; border: 1px solid var(--rule); background: var(--paper); font-size: .9375rem; line-height: 1.45; }
+.reply > div { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; align-items: baseline; padding: .4rem .75rem; }
+.reply > div + div { border-top: 1px solid var(--rule); }
+.reply .zone { color: var(--muted); font: 600 .75rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.reply .hidden-run { color: var(--secondary); font-family: var(--mono); }
+.reply .hidden-run span { display: inline-block; width: 7rem; max-width: 40%; height: .7rem; margin-right: .5rem; background: repeating-linear-gradient(90deg, var(--muted) 0 6px, transparent 6px 9px); vertical-align: middle; }
+.reply blockquote { margin: 0; }
+.reply blockquote p { margin: 0; }
+.reply blockquote p + p { margin-top: .2rem; }
+.reply mark { background: none; color: var(--accent); font-weight: 650; border-bottom: 2px solid var(--accent); }
+.chain { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.4rem; font: 600 .9375rem/1.2 var(--mono); }
+.chain li { position: relative; margin: 0; padding: .4rem .6rem; border: 1px solid var(--muted); background: var(--paper); }
+.chain li + li::before { content: "→"; position: absolute; left: -1.15rem; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.chain small { display: block; margin-top: .2rem; color: var(--muted); font: 500 .75rem/1.2 var(--mono); }
+.chain li.data { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.chain li.bad { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+.chain li.good { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.runs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .6rem 1rem; align-items: center; margin: 0; }
+.runs > dt { color: var(--secondary); font: 600 .8125rem/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.runs > dd { margin: 0; }
+.bars { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, auto) minmax(5rem, 1fr) auto; gap: .3rem .75rem; align-items: center; }
+.bars li { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; margin: 0; }
+.bars .k { color: var(--secondary); font-size: .9375rem; line-height: 1.3; }
+.bars .track { height: 1rem; background: var(--faint); border: 1px solid var(--rule); display: flex; }
+.bars .fill { display: block; height: 100%; background: var(--muted); }
+.bars .fill.range { background: repeating-linear-gradient(45deg, var(--muted) 0 3px, transparent 3px 6px); }
+.bars .hi .fill { background: var(--accent); }
+.bars .hi .fill.range { background: repeating-linear-gradient(45deg, var(--accent) 0 3px, transparent 3px 6px); }
+.bars .hi .k { color: var(--ink); font-weight: 650; }
+.bars .v { font: 650 1rem/1.2 var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.bars .group { contain: inline-size; grid-column: 1 / -1; color: var(--ink); font: 600 .8125rem/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; margin-top: .25rem; }
+.bet { width: auto; margin: 0; border-collapse: separate; border-spacing: .4rem .35rem; }
+.bet th, .bet td { padding: 0; border: 0; }
+.bet th[scope="row"] { color: var(--ink); font-weight: 600; text-align: left; padding-right: .75rem; white-space: nowrap; }
+.bet td span { display: inline-block; min-width: 3.25rem; padding: .3rem .5rem; border: 1px solid var(--muted); background: var(--paper); font: 650 1rem/1.2 var(--mono); text-align: center; }
+.puzzle { margin: 0 0 .5rem; padding: .4rem .75rem; border-left: 3px solid var(--rule); background: var(--paper); }
+.puzzle p { margin: 0; }
+.law { margin: 0 0 .5rem; padding: .35rem .75rem; border-left: 3px solid var(--accent); background: var(--paper); }
+.law.bad { border-left-color: var(--red); }
+.law .label { display: block; color: var(--muted); }
+.law .f { font: 600 clamp(1rem, 1.6vw, 1.25rem)/1.4 var(--mono); overflow-wrap: anywhere; }
+.quote { margin: 0 0 .5rem; padding-left: 1rem; border-left: 3px solid var(--amber); }
+.merge { display: grid; grid-template-columns: minmax(0, max-content) 2rem max-content; gap: .5rem .25rem; align-items: center; }
+.merge .in { grid-column: 1; padding: .4rem .7rem; border: 1px solid var(--muted); background: var(--paper); font: 650 1.0625rem/1.3 var(--mono); }
+.merge .in .label { display: block; }
+.merge small { display: block; color: var(--secondary); font: 500 .875rem/1.3 var(--sans); }
+.merge .to { grid-column: 2; color: var(--muted); font-size: 1.4rem; line-height: 1.5; text-align: center; }
+.merge .to:first-of-type { grid-row: 1; }
+.merge .to:last-of-type { grid-row: 2; }
+.merge .out { grid-column: 3; grid-row: 1 / span 2; padding: .5rem 1.1rem; border: 2px solid var(--accent); background: var(--accent-soft); text-align: center; }
+.merge .out strong { display: block; color: var(--accent); font: 700 2rem/1.1 var(--mono); }
+.reveal { margin: .3rem 0 0; padding: 0; border: 0; }
+.reveal > summary { min-height: 44px; padding-block: .6rem 0; color: var(--accent); font-weight: 650; cursor: pointer; }
+.reveal > p { margin: 0; }
+.lead-line { color: var(--secondary); font-size: 1.125rem; margin: 0 0 .5rem; }
+.legs { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
 @media (max-width: 799px) { .legs { grid-template-columns: minmax(0, 1fr); } }
-.compact { font-size: .9375rem; line-height: 1.45; }
-.compact th, .compact td { padding: .4rem .6rem; }
-.compact td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.compact caption { padding-bottom: .4rem; }
-@media (max-width: 599px) { .table-wrap > .compact { min-width: 34rem; } }
-.quote { margin: 0 0 .75rem; padding-left: 1rem; border-left: 3px solid var(--amber); }
-.reveal { padding-block: .25rem; margin-block: .5rem 0; }
-.reveal summary { font-weight: 600; }
-.notes { margin: .5rem 0 0; padding: 0; border: 0; }
-.notes summary { color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-.notes > :not(summary) { color: var(--secondary); font-size: .9375rem; line-height: 1.5; }
-.notes > p { margin-bottom: .5rem; }
-.notes .recipe { margin-bottom: .5rem; }
-.notes .recipe div { display: flex; flex-wrap: wrap; gap: 0 .5rem; }
-.notes .recipe dt { font-weight: 600; color: var(--ink); }
-.notes .recipe dt::after { content: ":"; }
-.notes .recipe dd { flex: 1 1 12rem; }
-@media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
-  [data-deck-paged] [data-slide] { font-size: .98rem; line-height: 1.5; }
-}
+.legs > li { margin: 0; padding: .55rem .85rem; border: 1px solid var(--rule); background: var(--paper); }
+.legs > li.now { border: 2px solid var(--accent); background: var(--accent-soft); }
+.legs strong { display: block; font-size: 1.1rem; line-height: 1.3; }
+.legs span:not(.label) { color: var(--secondary); }
+.answers { list-style: none; padding: 0; margin: 0; display: grid; gap: .45rem; }
+.answers li { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); gap: .25rem 1.25rem; align-items: baseline; margin: 0; padding: .6rem 1rem; border-left: 3px solid var(--accent); background: var(--paper); }
+@media (max-width: 599px) { .answers li { grid-template-columns: minmax(0, 1fr); } }
+.answers .q { color: var(--secondary); font: 600 1rem/1.4 var(--mono); }
+.answers strong { font-size: clamp(1.15rem, 2vw, 1.5rem); line-height: 1.35; }
+/* The Act II question strip: one static SVG per slide; the class on each question marks done, now and next. */
+.spine-wrap { overflow-x: auto; margin: 0 0 .5rem; }
+.spine { display: block; width: 100%; min-width: 50rem; }
+.spine .q rect { fill: var(--paper); stroke: var(--rule); stroke-width: 1.5; }
+.spine .q .t { font-size: 16px; font-weight: 650; fill: var(--muted); }
+.spine .q .a { font-size: 15px; fill: var(--secondary); visibility: hidden; }
+.spine .q.all rect, .spine .q.done rect { stroke: var(--muted); }
+.spine .q.all .t, .spine .q.now .t { fill: var(--ink); }
+.spine .q.done .t { fill: var(--secondary); }
+.spine .q.done .a { visibility: visible; fill: var(--ink); font-weight: 600; }
+.spine .q.now rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+.spine a:hover .q rect, .spine a:focus-visible .q rect { stroke: var(--accent); }
+.spine a:focus-visible { outline: none; }
+.spine a:focus-visible .q rect { stroke-width: 4; }
+.spine .head { fill: var(--rule); }
+.spine .head.all, .spine .head.done, .spine .head.now { fill: var(--muted); }
+.spine .tag { font: 600 14px var(--mono); fill: var(--muted); }
+.spine .tag.all, .spine .tag.done { fill: var(--secondary); }
+.spine .tag.now { fill: var(--accent); }
+.speaker-notes { margin: .75rem 0 0; padding: 0; border-top: 1px dashed var(--rule); border-bottom: 0; font-size: .9375rem; line-height: 1.55; }
+.speaker-notes > summary { min-height: 44px; padding-block: .6rem 0; color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; }
+.speaker-notes[open] > summary { margin-bottom: .5rem; }
+.notes-body { max-height: min(40vh, 22rem); overflow-y: auto; overflow-wrap: anywhere; padding: .25rem .75rem .25rem 0; color: var(--secondary); }
+.notes-body p, .notes-body ul, .notes-body dl { margin-bottom: .6rem; }
+.notes-body > :last-child { margin-bottom: 0; }
+.notes-body li + li { margin-top: .2rem; }
+.notes-body strong { color: var(--ink); }
+.recipe div { display: flex; flex-wrap: wrap; gap: 0 .5rem; }
+.recipe dt { font-weight: 600; color: var(--ink); }
+.recipe dt::after { content: ":"; }
+.recipe dd { flex: 1 1 12rem; margin: 0; }
 @media screen and (min-width: 800px) and (min-height: 600px) {
   [data-deck-paged] .masthead .lede { display: none; }
-  [data-deck-paged] [data-slide] { position: relative; }
-  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.5rem, 2.5vw, 2.25rem); margin-bottom: .6rem; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); margin-bottom: .6rem; }
   [data-deck-paged] [data-slide] p, [data-deck-paged] [data-slide] ul, [data-deck-paged] [data-slide] ol { margin-bottom: .6rem; }
-  [data-deck-paged] [data-slide] .table-wrap { margin-bottom: .5rem; }
-  [data-deck-paged] [data-slide] .process-figure { margin-block: .25rem .5rem; }
-  [data-deck-paged] [data-slide] .process-figure figcaption { margin-bottom: .25rem; }
-  [data-deck-paged] [data-slide] .process { gap: .75rem; margin-bottom: .25rem; }
-  [data-deck-paged] [data-slide] .process > li { flex-basis: 9rem; padding-block: .5rem; gap: .25rem; }
-  [data-deck-paged] [data-slide] .process strong { font-size: clamp(1.1rem, 1.7vw, 1.4rem); }
-  [data-deck-paged] [data-slide] .process > li > span:last-child:not(.label) { font-size: .9375rem; }
-  /* Presenting: once the bets are in, the recorded results replace the predict prompt. */
-  [data-deck-paged] [data-slide]:has(> .reveal[open]) > .cols { display: none; }
-  /* Presenting: the collapsed notes sit in the top corner; opened, they overlay the slide. */
-  [data-deck-paged] [data-slide] > .notes { position: absolute; top: .5rem; right: 1rem; z-index: 2; margin: 0; max-width: min(40rem, calc(100% - 2rem)); }
-  [data-deck-paged] [data-slide] > .notes[open] { max-height: calc(100% - 1rem); overflow: auto; padding: 0 1rem .75rem; background: var(--sheet); border: 1px solid var(--rule); }
+  [data-deck-paged] [data-slide] > .speaker-notes { margin-top: auto; }
+  [data-deck-paged] [data-slide] .callout { margin-block: 0; padding-block: .5rem; }
+  [data-deck-paged] [data-slide] .chain, [data-deck-paged] [data-slide] .bars, [data-deck-paged] [data-slide] .answers { margin-bottom: 0; }
+  [data-deck-paged] [data-slide] .reply p, [data-deck-paged] [data-slide] .puzzle p { margin-bottom: 0; }
+  [data-deck-paged] [data-slide] .viz > .chain + .bars { margin-top: .6rem; }
+  [data-deck-paged] [data-slide] .reveal > p { margin-bottom: 0; }
+}
+@media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
+  [data-deck-paged] [data-slide] { font-size: .96875rem; line-height: 1.5; }
+  [data-deck-paged] [data-slide] h2 { font-size: clamp(1.4rem, 2.3vw, 1.9rem); margin-bottom: .4rem; }
+  [data-deck-paged] [data-slide] > .eyebrow { margin-bottom: .4rem; }
+  [data-deck-paged] .spine-wrap { margin-bottom: .25rem; }
+  [data-deck-paged] .cite { margin-block: .5rem 0; }
+  [data-deck-paged] .viz > figcaption { margin-top: .3rem; }
+  [data-deck-paged] .bars { gap: .2rem .75rem; }
+  [data-deck-paged] .bars .track { height: .85rem; }
+  [data-deck-paged] .reply > div { padding-block: .3rem; }
+  [data-deck-paged] .answers li { padding-block: .35rem; }
 }
 @media print {
-  .notes { border-top: 1px solid var(--rule); padding-top: .5rem; }
+  .notes-body { max-height: none; overflow: visible; color: inherit; }
+  .spine { min-width: 0; }
 }
 </style>
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
@@ -278,457 +369,621 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   <a class="skip-link" href="#content">Skip to slides</a>
   <div class="shell">
     <header class="masthead">
-      <p class="eyebrow">Session 1 · Act II · 45 minutes</p>
-      <h1 id="deck-title">Act II · Thinking</h1>
-      <p class="lede">What the loop buys, what it costs, whether the written reasoning is the real reasoning, and what a world model is.</p>
+      <p class="eyebrow">Fundamentals · Act II</p>
+      <h1 id="deck-title">Thinking</h1>
+      <p class="lede">One puzzle, five questions: how a model thinks, whether its answer is right, how much it should think, whether to trust what it wrote, and what it knows.</p>
     </header>
     <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
-      <section id="title" data-slide tabindex="-1" aria-labelledby="title-title">
-        <p class="eyebrow">Act II · Thinking</p>
-        <h2 id="title-title">More tokens can buy more thinking. Up to a point.</h2>
-        <ol class="agenda" aria-label="The five parts of Act II">
-          <li><span class="label">Part 1</span><strong>The loop</strong><span>From one forward pass to System 2</span></li>
-          <li><span class="label">Part 2</span><strong>Search and RL</strong><span>Sample, verify, learn to reason</span></li>
-          <li><span class="label">Part 3</span><strong>The effort dial</strong><span>What it buys, live, and when it hurts</span></li>
-          <li><span class="label">Part 4</span><strong>Is the trace the reasoning?</strong><span>Hints, 36 + 59, tool output</span></li>
-          <li><span class="label">Part 5</span><strong>World models</strong><span>Three meanings, one of them your repo</span></li>
-        </ol>
-        <p class="qualify">Every concept slide ends with a <strong>Driving</strong> line: what it changes when you drive an agent.</p>
-        <details class="notes" data-minutes="0.5"><summary>Speaker notes · 0.5 min</summary>
-          <p>Open where Act I stopped: one forward pass, one token. Question for the room: what changes when the model may keep writing before it answers?</p>
-          <p>Point at the Driving line convention. Two labs and one live demo are in this act.</p>
-        </details>
-      </section>
-
-      <section id="forward-pass" data-slide tabindex="-1" aria-labelledby="forward-pass-title">
-        <p class="eyebrow">01 · Where Act I stopped</p>
-        <h2 id="forward-pass-title">One forward pass: a fixed depth per token.</h2>
-        <figure class="process-figure">
-          <figcaption>A single forward pass, as in Act I</figcaption>
-          <ol class="process">
-            <li><span class="label">Input</span><strong>The context</strong><span>Every token so far</span></li>
-            <li><span class="label">Fixed depth</span><strong>The same stack of layers</strong><span>Same serial steps, easy or hard</span></li>
-            <li><span class="label">Output</span><strong>One next-token distribution</strong><span>Then a single token is sampled</span></li>
-          </ol>
-        </figure>
-        <p>Fixed depth is not fixed work: attention reads every earlier token, so a longer context costs more per pass. At equal context length, easy and hard questions get the same pass. Theory shows simple problems (are two graph nodes connected?) that a transformer answering immediately cannot solve, under standard complexity assumptions.</p>
-        <p class="cite">Sources: Vaswani et al., <cite>Attention Is All You Need</cite>, §3.2.1 and Table 1, <a href="https://arxiv.org/html/1706.03762v7">arXiv 1706.03762v7</a>, 2023-08-02; Merrill and Sabharwal, <cite>The Expressive Power of Transformers with Chain of Thought</cite>, <a href="https://arxiv.org/abs/2310.07923">arXiv 2310.07923</a>, v1 2023-10-11, abstract.</p>
-        <p class="drive"><strong>Driving:</strong> an answer given in one shot got one fixed-depth pass per token. For a hard problem, ask for the work before the answer.</p>
-        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>Recap only, no new material. The depth of the network is fixed when it is trained. Whether the question is 2 + 2 or a scheduling problem, one token gets one pass through the same layers. Do not say “same work”: a longer context makes each pass more expensive, because the new token attends to every earlier one. It makes the pass wider, not deeper.</p>
-          <p>Bridge: so where could extra thinking come from? From the next slide's loop.</p>
-        </details>
-      </section>
-
+      <!-- The question strip is repeated on each part's slides; only the classes on its questions
+           differ (done, now, next; all on the opening overview). Edit every copy together. -->
       <section id="loop" data-slide tabindex="-1" aria-labelledby="loop-title">
-        <p class="eyebrow">02 · The autoregressive loop</p>
-        <h2 id="loop-title">Each sampled token is fed back in. More tokens, more serial compute.</h2>
-        <figure class="process-figure">
-          <figcaption>The loop that runs one pass per token</figcaption>
-          <ol class="process">
-            <li><span class="label">1</span><strong>Forward pass</strong><span>Over the whole context</span></li>
-            <li><span class="label">2</span><strong>Sample a token</strong><span>From the distribution</span></li>
-            <li><span class="label">3</span><strong>Append it</strong><span>It becomes input</span></li>
-            <li><span class="label">4 · Repeat</span><strong>Back to step 1</strong><span>Until the answer ends</span></li>
-          </ol>
+        <p class="eyebrow">Act II · Thinking</p>
+        <h2 id="loop-title">One forward pass is a glance. This puzzle needs steps.</h2>
+        <figure class="spine-wrap" role="group" aria-labelledby="loop-caption">
+          <svg class="spine" viewBox="-2 0 1142 96">
+          <a href="#cot-depth"><g class="q all"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g></a>
+          <path class="head all" d="M228 37 l-6 -4 v8 z"/>
+          <a href="#search"><g class="q all"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g></a>
+          <text class="tag all" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head all" d="M458 37 l-6 -4 v8 z"/>
+          <a href="#effort-demo"><g class="q all"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g></a>
+          <text class="tag all" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head all" d="M688 37 l-6 -4 v8 z"/>
+          <a href="#cot-faithfulness"><g class="q all"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g></a>
+          <path class="head all" d="M918 37 l-6 -4 v8 z"/>
+          <a href="#world-models"><g class="q all"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g></a>
+          <text class="tag all" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+          <figcaption id="loop-caption" class="visually-hidden">Act II in five questions, one per part: 1, how does it think? 2, is it right? 3, how much thinking? 4, trust what it wrote? 5, what does it know? Each question links to its part.</figcaption>
         </figure>
-        <p>A 2,000-token answer is 2,000 passes in a row, each able to read what the earlier passes wrote. That is serial compute a single pass cannot have.</p>
-        <p class="cite">Source: Ashish Vaswani et al., <cite>Attention Is All You Need</cite>, §3: “the model is auto-regressive, consuming the previously generated symbols as additional input when generating the next”. <a href="https://arxiv.org/abs/1706.03762">arXiv 1706.03762</a>, v1 2017-06-12.</p>
-        <p class="drive"><strong>Driving:</strong> the tokens an agent writes before it acts are compute you pay for. Budget them like compute.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Draw the loop with your hand: pass, sample, append, repeat. The key word is serial. Pass 500 can use the result of pass 499 because that result is now text in the context.</p>
-          <p>This is the whole mechanism behind “thinking” models: they write more tokens before the final answer. Nothing else changes in the network.</p>
-          <p>Cost link: on the demo’s price list an output token costs 5 times an input token, for both models (claude-opus-5-5: $4 in, $20 out; gpt-6-astra: $10 in, $50 out, per million tokens). Thinking is output.</p>
-          <p class="cite">Prices as of 2026-10-11, rechecked 2026-10-18 and unchanged: <code>cursus/demos/effort/prices.json</code>, copied from Anthropic, <cite>Pricing</cite>, <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com</a>, and OpenAI, <cite>Pricing</cite>, <a href="https://platform.openai.com/docs/pricing">platform.openai.com</a>. List prices change; recheck before quoting.</p>
-        </details>
-      </section>
-
-      <section id="system-1-2" data-slide tabindex="-1" aria-labelledby="system-1-2-title">
-        <p class="eyebrow">03 · A metaphor, not a mechanism</p>
-        <h2 id="system-1-2-title">System 1 and System 2: one network, run longer.</h2>
-        <div class="cols">
-          <ul class="tight">
-            <li><strong>Kahneman:</strong> System 1 is fast and intuitive, System 2 slow and deliberate.</li>
-            <li><strong>Bengio, 2019:</strong> deep learning had mostly done System 1 tasks; System 2 means reasoning, planning, causality.</li>
-            <li><strong>LeCun, 2022:</strong> Mode-1 acts from a single pass through a policy; Mode-2 plans through a world model. Both named “by analogy” with Kahneman.</li>
-          </ul>
-          <div class="callout hedge">
-            <p class="label">Caveat</p>
-            <p>In a language model it is the same network in both modes. “System 2” is the same forward pass, run for many more tokens, not a second module. Use the words as a metaphor.</p>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <figcaption id="puzzle-caption" class="lead">A delivery van carries at most 63 kg. Pick the parcels worth the most in total; each goes whole or stays behind.</figcaption>
+            <div class="table-wrap" role="region" tabindex="0" aria-label="The puzzle’s parcels">
+              <table class="parcels" aria-labelledby="puzzle-caption">
+                <thead><tr><th scope="row">Parcel</th><th scope="col">A</th><th scope="col">B</th><th scope="col">C</th><th scope="col">D</th><th scope="col">E</th><th scope="col">F</th><th scope="col">G</th><th scope="col">H</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Weight, kg</th><td>28</td><td>9</td><td>6</td><td>10</td><td>27</td><td>27</td><td>16</td><td>30</td></tr>
+                  <tr><th scope="row">Value, EUR</th><td>67</td><td>52</td><td>20</td><td>64</td><td>68</td><td>29</td><td>45</td><td>61</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </figure>
+          <div class="callout">
+            <p class="label">Try it</p>
+            <p>Find the best load at a glance, without writing. Then take a pencil.</p>
           </div>
         </div>
-        <p class="cite">Sources: Yoshua Bengio, <cite>From System 1 Deep Learning to System 2 Deep Learning</cite>, NeurIPS Posner lecture, <a href="https://neurips.cc/virtual/2019/invited-talk/15488">neurips.cc</a>, December 2019. Yann LeCun, <cite>A Path Towards Autonomous Machine Intelligence</cite>, v0.9.2, §3.1, <a href="https://openreview.net/forum?id=BZ5a1r-kVsf">openreview.net</a>, 2022-06-27. Daniel Kahneman, <cite>Thinking, Fast and Slow</cite>, 2011.</p>
-        <p class="drive"><strong>Driving:</strong> “think harder” is not a mode switch. Give the agent room to work (effort, steps) and judge the outcome, not its description of itself.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Kahneman’s labels are useful and everyone knows them. Bengio’s 2019 NeurIPS talk put them on the deep-learning agenda. LeCun’s 2022 position paper gives the Mode-1 and Mode-2 names; his Mode-2 plans through a world model, which we come back to at the end of the act.</p>
-          <p>Stress the caveat. LeCun’s design has separate modules. A language model does not: fast and slow are the same weights, the difference is how many tokens it writes. Do not say the model “switches to System 2”.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> students feel that some answers need several steps, meet the puzzle the whole act runs on, and see the five questions the act answers.</p>
+            <p>Talk track: Act I ended on one forward pass per token: the same 12 layers in GPT-2 small, the same amount of work however hard the question. Call that a glance. Now the puzzle: eight parcels, each with a weight and a value, and a van that carries 63 kg. Which load is worth the most?</p>
+            <p>Activity: give them a moment to answer at a glance, with no writing. Then let them use a pencil. Ask: “Who was sure at a glance? Who wanted to write something down?” Most reach for sums: B and D are light and valuable, so start there, then fill what is left. Do not give the answer: part 1 shows a model’s answer, and part 3 runs the demo and the check that settles it.</p>
+            <p>The strip at the top is the act: five questions, one per part. Read them aloud. Each part ends with its answer, the strip fills in as you go, and the close lists all five.</p>
+            <p>Transition: “You reached for a pencil. A model does the same: it writes. That is the first question.”</p>
+          </div>
         </details>
       </section>
 
       <section id="cot-depth" data-slide tabindex="-1" aria-labelledby="cot-depth-title">
-        <p class="eyebrow">04 · Why chain of thought helps</p>
-        <h2 id="cot-depth-title">Chain of thought adds depth: serial decoding steps the fixed network lacks.</h2>
-        <div class="cols">
-          <ul class="tight">
-            <li>The number of layers bounds the serial steps in one pass. Each intermediate token buys another pass that reads all the earlier ones.</li>
-            <li>How much power that adds depends on how many decoding steps: a logarithmic number adds little, a linear number recognizes all regular languages, a polynomial number gives exactly the polynomial-time problems.</li>
-          </ul>
-          <div class="callout hedge">
-            <p class="label">Expressive power, not accuracy</p>
-            <p>A theorem about what a chain of thought <em>can</em> compute, under stated assumptions. It does not say a trained model finds the right chain.</p>
+        <p class="eyebrow">Part 1 · How does it think?</p>
+        <h2 id="cot-depth-title">Thinking is writing: more tokens before the answer.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Highlighted: question 1.">
+          <g class="q now"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head next" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag next" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head next" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag next" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head next" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <div class="reply">
+              <div><span class="zone">Thinking</span> <span class="hidden-run"><span aria-hidden="true"></span>286 tokens, hidden</span></div>
+              <div><span class="zone">Answer</span> <blockquote>
+                <p>The best load is B, D, E and G, worth <mark>229 EUR</mark> at 62 kg of the 63 kg limit.</p>
+                <p>B and D together weigh 19 kg and are worth 116 EUR. That leaves <mark>44 kg</mark>.</p>
+                <p>E + G: 43 kg, 113 EUR, so the total is 62 kg and <mark>229 EUR</mark>.</p>
+                <p>A + G: <mark>44 kg</mark>, 112 EUR, so the total is 63 kg and 228 EUR.</p>
+              </blockquote></div>
+            </div>
+            <figcaption>Claude Opus 5.5 on the puzzle. Hidden or shown, the writing is a <strong>chain of thought</strong>, or trace.</figcaption>
+          </figure>
+          <div class="callout">
+            <p class="label">Why it helps</p>
+            <dl>
+              <dt>One pass</dt> <dd>A fixed stack of layers.</dd>
+              <dt>Writing</dt> <dd>Each token feeds every later pass.</dd>
+              <dt>System 2</dt> <dd>This loop, a metaphor.</dd>
+            </dl>
           </div>
         </div>
-        <p class="cite">Source: William Merrill, Ashish Sabharwal, <cite>The Expressive Power of Transformers with Chain of Thought</cite>, <a href="https://arxiv.org/abs/2310.07923">arXiv 2310.07923</a>, v1 2023-10-11, revised 2024-04-11. Results from the abstract.</p>
-        <p class="drive"><strong>Driving:</strong> for multi-step work, let the agent write a plan or intermediate steps before the answer. Length buys capacity, not correctness: still check.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>The cleanest theoretical reason chain of thought helps. Depth of the network is fixed; length of the chain is not. A long chain is a deeper computation unrolled in time.</p>
-          <p>The three regimes come straight from the abstract. Linear steps need a technical assumption (projected pre-norm) and standard complexity conjectures; say “under assumptions”, do not go into them.</p>
-          <p>Close with the caveat: a capacity result. Training decides whether the model uses it well.</p>
+        <p class="cite">Source: William Merrill, Ashish Sabharwal, <cite>The Expressive Power of Transformers with Chain of Thought</cite>, <a href="https://arxiv.org/abs/2310.07923">arXiv</a>, 2023.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> a model thinks by writing tokens it then reads. Each written token buys another pass, so the steps chain beyond the fixed depth of one pass. That writing is the chain of thought.</p>
+            <p>Talk track: this is a real reply to the puzzle, from Claude Opus 5.5 at low effort. It first wrote 286 thinking tokens, billed as output but returned empty by Claude Code: that is where it worked the puzzle out. Then the visible answer: it states 229 first, then shows steps. Point at the highlighted numbers: “That leaves 44 kg”, and A + G is exactly those 44 kg; 116 and 113 make 229. Each step reuses numbers written above, the way they did with a pencil. Hidden or shown, this writing is a chain of thought, also called the trace. Part 4 comes back to the order: the answer came before the steps you can read.</p>
+            <p>Why it helps: one pass climbs a fixed stack of layers, 12 in GPT-2 small (frontier models do not publish their depth). Within a layer, a token reads the earlier tokens at that same layer; only a written token carries the top layer’s result back to the bottom of the next pass. So every written token adds another stack of steps.</p>
+            <p>Background, if asked: earlier work found simple problems (are two nodes of a graph connected?) that a transformer answering immediately cannot solve, under standard complexity assumptions. Merrill and Sabharwal ask how much intermediate tokens add: a logarithmic number of steps adds little; a linear number recognizes all regular languages, under a technical assumption; a polynomial number gives exactly the polynomial-time problems. Say “under assumptions”. It is a result about capacity, not accuracy: training decides whether the model finds the right chain.</p>
+            <p>Say it, as Act I promised, pointing at the last line of the box: “System 2” is Kahneman’s label for slow, deliberate thinking (<cite>Thinking, Fast and Slow</cite>, 2011). Bengio put it on the deep-learning agenda (<a href="https://neurips.cc/virtual/2019/invited-talk/15488">NeurIPS 2019 Posner lecture</a>); LeCun names a Mode-1 and a Mode-2 “by analogy” with Kahneman (<a href="https://openreview.net/forum?id=BZ5a1r-kVsf">A Path Towards Autonomous Machine Intelligence</a>, §3.1). For a language model, System 2 is this loop: the same weights writing more tokens, not a second module. Do not say the model “switches to System 2”.</p>
+            <p>Driving: for multi-step work, let the agent write a plan or intermediate steps before it acts. Length buys steps, not correctness.</p>
+            <p>Transition: “It says 229 is the best, with 228 just below. Is it right, and how would we know?”</p>
+          </div>
         </details>
       </section>
 
       <section id="search" data-slide tabindex="-1" aria-labelledby="search-title">
-        <p class="eyebrow">05 · Reasoning as search · Lab</p>
-        <h2 id="search-title">Test-time search: sample in parallel, revise in sequence, select with a verifier.</h2>
-        <div class="cols">
-          <ul class="tight">
-            <li><strong>Parallel:</strong> N independent attempts, then pick one. Coverage, the share of problems solved by any sample, kept rising over four orders of magnitude of samples.</li>
-            <li><strong>Sequential:</strong> each attempt revises the last. Which mix of the two works best depends on the prompt’s difficulty.</li>
-            <li><strong>The cap is the verifier:</strong> with tests or proofs, coverage turns into results; without them, majority vote and reward models plateau.</li>
-          </ul>
-          <div class="callout">
-            <p class="label">Lab · predict first</p>
-            <p>Open <a href="labs/test-time-compute.html#best-of-n">Test-time compute · Best-of-N</a>. Bet on which curve reaches 100%, then move N and the verifier’s false-positive rate. Illustrative simulation.</p>
+        <p class="eyebrow">Part 2 · Is it right? · Lab</p>
+        <h2 id="search-title">Many tries pay off only when a check can pick.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes. Highlighted: question 2.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head now" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag now" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head next" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag next" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head next" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <ol class="bars" aria-label="MATH problems solved by Llama-3-8B-Instruct, best of N tries, by what picks the answer">
+              <li class="group">An answer key picks</li>
+              <li class="hi"><span class="k">100 tries</span> <span class="track"><span class="fill" style="width: 82.9%"></span></span> <span class="v">82.9%</span></li>
+              <li class="hi"><span class="k">10,000 tries</span> <span class="track"><span class="fill" style="width: 98.4%"></span></span> <span class="v">98.4%</span></li>
+              <li class="group">A vote or a scoring model picks</li>
+              <li><span class="k">100 tries</span> <span class="track"><span class="fill" style="width: 40.5%"></span></span> <span class="v">40.5%</span></li>
+              <li><span class="k">10,000 tries</span> <span class="track"><span class="fill" style="width: 41.4%"></span></span> <span class="v">41.4%</span></li>
+            </ol>
+            <figcaption>Llama-3-8B-Instruct: MATH problems solved, best of N tries.</figcaption>
+          </figure>
+          <div class="callout lab">
+            <p class="label">Lab</p>
+            <p class="go"><a href="labs/test-time-compute.html#best-of-n">Open the Best-of-N panel</a></p>
+            <p>Predict, then move N and the check’s false-positive rate.</p>
           </div>
         </div>
-        <p class="cite">Sources: Bradley Brown et al., <cite>Large Language Monkeys</cite>, <a href="https://arxiv.org/abs/2407.21787">arXiv 2407.21787</a>, 2024-07-31. Charlie Snell et al., <cite>Scaling LLM Test-Time Compute Optimally…</cite>, §6, <a href="https://arxiv.org/abs/2408.03314">arXiv 2408.03314</a>, 2024-08-06.</p>
-        <p class="drive"><strong>Driving:</strong> sampling is cheap, selecting is not. Before asking an agent for five attempts, decide what picks the winner: tests, a checker, or you.</p>
-        <details class="notes" data-minutes="8"><summary>Speaker notes · 8 min</summary>
-          <p>2 min, the slide. Parallel is best-of-N; sequential is revise-your-last-answer. Brown et al.: coverage keeps climbing with samples, but selection without an automatic verifier plateaus. Snell et al.: easier prompts do best with sequential revisions, harder ones with a mix.</p>
-          <p>1 min, predict pause. Before anyone moves a slider, read the panel’s question: with a 10% false-positive verifier, which curve’s limit is 100%? Everyone locks in an answer.</p>
-          <p>4 min, lab. Students open the Best-of-N panel on their laptops. Move N from 1 to 1,024. Then raise the verifier’s false-positive slider and watch the verifier pick fall below coverage. Reveal the predict answer.</p>
-          <p>1 min, debrief: the numbers are illustrative, the shape is from the papers. The gap between coverage and selection is the verifier’s fault.</p>
+        <p class="cite">Source: Bradley Brown et al., <cite>Large Language Monkeys</cite>, <a href="https://arxiv.org/abs/2407.21787">arXiv</a>, 2024.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> more tries help only when something outside the model can recognise a right one. A majority vote cannot; an answer key, a test or a solver can. The session’s exit ticket, in the close deck, asks exactly this.</p>
+            <p>Talk track: the model can answer differently each time (Act I: it samples). So ask it N times and keep the best. Best by what? Brown et al., on MATH with Llama-3-8B-Instruct: when the answer key picks, the share solved rises from 82.9% at 100 tries to 98.44% at 10,000. When a majority vote or a reward model (a second model trained to score answers) picks, the better of the two only moves from 40.50% to 41.41%. A vote keeps the most common answer, even a common wrong one. The paper puts the plateau around 100 tries in its figures and “beyond several hundred samples” in its abstract.</p>
+            <p>Where a program can check, tries become results. SWE-bench Lite: DeepSeek-Coder-V2-Instruct solves 15.9% of issues with one try and 56% with 250, against a 43% single-try state of the art. The catch: that 56% is graded by the benchmark’s own tests, which an agent working on your repo may not have. For the van, the check is cheap: a program can try all 256 loads. The demo in part 3 runs it.</p>
+            <p>This is parallel search. Sequential search revises the last attempt instead; Snell et al. (<a href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute Optimally</a>, §6) find easier prompts do best with revisions, harder ones with a mix.</p>
+            <p>Predict question, before anyone moves a slider: the panel asks “With a 10% false-positive verifier, as N grows without bound, which curve’s limit is 100%?” Everyone locks in. Activity: open the Best-of-N panel, move N from 1 to 1,024, then raise the false-positive rate and watch the check’s pick fall below coverage. Reveal. Debrief: the panel’s numbers are illustrative; its shape follows the paper.</p>
+            <p>Driving: sampling is cheap, selecting is not. Before asking an agent for five attempts, decide what picks the winner: tests, a checker, or you.</p>
+            <p>Transition: “A check can pick an answer. It can also train the model.”</p>
+          </div>
         </details>
       </section>
 
       <section id="rlvr" data-slide tabindex="-1" aria-labelledby="rlvr-title">
-        <p class="eyebrow">06 · Learning to search</p>
-        <h2 id="rlvr-title">RL with verifiable rewards taught a model to reason longer on its own.</h2>
-        <ul class="tight">
-          <li><strong>DeepSeek-R1-Zero:</strong> reinforcement learning straight from the DeepSeek-V3 base, with no supervised fine-tuning first. The rule-based reward checks only the final answer against ground truth, plus format.</li>
-          <li>Its answers grew longer and started to include verification, reflection and alternative approaches. AIME 2024 pass@1 rose from 15.6% to 77.9% during training.</li>
-          <li>R1-Zero was hard to read and mixed languages. <strong>DeepSeek-R1</strong> wraps the RL in a multistage pipeline with rejection sampling and supervised fine-tuning.</li>
-        </ul>
-        <p class="cite">Source: DeepSeek-AI (Daya Guo et al.), <cite>DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning</cite>, Nature 645, 633–638, <a href="https://www.nature.com/articles/s41586-025-09422-z">nature.com</a>, published 2025-09-17.</p>
-        <p class="drive"><strong>Driving:</strong> these models were trained where answers can be checked: maths, code, tests. They are strongest when you hand them a check, so give them one.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>The Nature paper is the peer-reviewed account. Keep R1-Zero and R1 apart: R1-Zero is the pure-RL experiment; R1 is the product, with supervised stages around RL.</p>
-          <p>The point for this course: the reward was a verifier. Nobody showed the model how to reason; it was rewarded for right answers that a rule could check.</p>
-          <p>The 15.6% to 77.9% is pass@1 averaged over samples during RL training, from the paper’s Fig. 1a.</p>
-        </details>
-      </section>
-
-      <section id="sharpen-or-expand" data-slide tabindex="-1" aria-labelledby="sharpen-or-expand-title">
-        <p class="eyebrow">07 · An open debate</p>
-        <h2 id="sharpen-or-expand-title">Does RL sharpen what the base model could already do, or expand it?</h2>
-        <div class="cols even">
-          <div>
-            <p class="label">Sharpen · Yue et al.</p>
-            <p>RL-trained models win at pass@1, but base models score higher pass@k at large k. Coverage analysis: the reasoning is bounded by the base model.</p>
-          </div>
-          <div>
-            <p class="label">Expand · ProRL</p>
-            <p>Prolonged RL, with KL control and policy resets, beats the base model across pass@k, even on tasks where the base fails at any number of attempts.</p>
+        <p class="eyebrow">Part 2 · Is it right? · Training</p>
+        <h2 id="rlvr-title">A check can also train a model to reason.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes. Highlighted: question 2.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head now" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag now" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head next" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag next" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head next" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <ol class="chain" aria-label="One step of reinforcement learning with a check">
+              <li>Question</li> <li>Model writes <small>thinking, answer</small></li> <li class="data">Rule checks <small>the final answer</small></li> <li>Reward ↺ <small>updates weights</small></li>
+            </ol>
+            <ol class="bars" aria-label="DeepSeek-R1-Zero on AIME 2024, average pass@1 during reinforcement learning">
+              <li><span class="k">Start of training</span> <span class="track"><span class="fill" style="width: 15.6%"></span></span> <span class="v">15.6%</span></li>
+              <li class="hi"><span class="k">End of training</span> <span class="track"><span class="fill" style="width: 77.9%"></span></span> <span class="v">77.9%</span></li>
+            </ol>
+            <figcaption>DeepSeek-R1-Zero, AIME 2024: solved on the first try.</figcaption>
+          </figure>
+          <div class="callout hedge">
+            <p class="label">Contested</p>
+            <p>Does training sharpen what the base model could do, or expand it?</p>
+            <p><a href="labs/test-time-compute.html#sharpen-or-expand">Open the sharpen-or-expand panel</a> (illustrative)</p>
           </div>
         </div>
-        <p><span class="contested">Contested</span> Different models, tasks and training lengths; the question is open as of 2026-10-18. See it in <a href="labs/test-time-compute.html#sharpen-or-expand">Test-time compute · Sharpen or expand</a> (illustrative).</p>
-        <p class="cite">Sources: Yang Yue et al., <cite>Does Reinforcement Learning Really Incentivize Reasoning Capacity in LLMs Beyond the Base Model?</cite>, <a href="https://arxiv.org/abs/2504.13837">arXiv 2504.13837</a>, v1 2025-04-18. Mingjie Liu et al., <cite>ProRL</cite>, <a href="https://arxiv.org/abs/2505.24864">arXiv 2505.24864</a>, 2025-05-30.</p>
-        <p class="drive"><strong>Driving:</strong> if the right answer is never among the model’s samples, more attempts or effort will not find it. Change the task: split it, add a tool, supply the missing knowledge.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>pass@k: the chance that at least one of k samples is right. Yue et al. see the curves cross: RL helps at k = 1 and the base model catches up and passes it at large k. ProRL argues that with longer, stabilized RL the RL model stays ahead, including where the base never succeeds.</p>
-          <p>Do not pick a winner. If time allows, show the lab panel’s k slider for 20 seconds; its curves are invented to show the crossing.</p>
-        </details>
-      </section>
-
-      <section id="effort-dials" data-slide tabindex="-1" aria-labelledby="effort-dials-title">
-        <p class="eyebrow">08 · The effort dial</p>
-        <h2 id="effort-dials-title">Every vendor sells a thinking dial. The names differ.</h2>
-        <div class="table-wrap" role="region" tabindex="0" aria-label="Effort settings by vendor">
-          <table class="compact">
-            <thead><tr><th scope="col">Vendor</th><th scope="col">Setting</th><th scope="col">Levels</th><th scope="col">Demo model</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Anthropic · Claude</th><td><a href="https://platform.claude.com/docs/en/build-with-claude/effort"><code>effort</code></a> (<code>--effort</code>)</td><td>low, medium, high, xhigh, max; Opus 5.5 defaults to medium</td><td><code>claude-opus-5-5</code></td></tr>
-              <tr><th scope="row">OpenAI · Codex</th><td><a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a></td><td>Per model and client, such as low, medium, high, xhigh, max</td><td><code>gpt-6-astra</code></td></tr>
-              <tr><th scope="row">Google · Gemini API</th><td><a href="https://ai.google.dev/gemini-api/docs/thinking"><code>thinking_level</code></a></td><td>minimal, low, medium, high, by model</td><td>Not in the demo</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="qualify">Anthropic calls effort “a behavioral signal, not a strict token budget”.</p>
-        <p class="cite">Vendor documentation as of 2026-10-18: Anthropic, <cite>Effort</cite>, <a href="https://platform.claude.com/docs/en/build-with-claude/effort">platform.claude.com</a>; OpenAI, <cite>Codex configuration reference</cite>, <a href="https://developers.openai.com/codex/config-reference">developers.openai.com</a>; Google, <cite>Gemini thinking</cite>, <a href="https://ai.google.dev/gemini-api/docs/thinking">ai.google.dev</a>. Demo models from <code>cursus/demos/effort/prices.json</code>.</p>
-        <p class="drive"><strong>Driving:</strong> the default is a choice someone made for you. Set effort per task: low for lookups and subagents, high when the problem is hard and checkable.</p>
-        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>Read across the table, not down. Three names for one idea: how many tokens the model may spend before answering. Levels and defaults change with each model release, hence the date.</p>
-          <p>Students set it with the setting for their own agent; either works for the demo next.</p>
+        <p class="cite">Source: DeepSeek-AI, <cite>DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning</cite>, <a href="https://www.nature.com/articles/s41586-025-09422-z">Nature</a>, 2025.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> reasoning models were trained where a rule can check the answer, so they are strongest when you hand them a check. Part 2’s answer: only a check can say whether an answer is right.</p>
+            <p>Talk track: walk the loop; this is reinforcement learning (RL). DeepSeek-R1-Zero starts from the DeepSeek-V3 base model, with no supervised fine-tuning first. For each question it writes thinking and an answer; a rule checks the final answer against ground truth, plus the format; the reward updates the weights; repeat. Nobody showed it how to reason. Its average pass@1 on AIME 2024, the share of problems solved on the first try, rose from 15.6% to 77.9% during training (Fig. 1a; 86.7% with self-consistency decoding), and its answers grew longer, with verification, reflection and alternative approaches. One caveat from the Methods: the length limit went from 32,768 to 65,536 tokens at step 8.2k, and both the score and the length jump there.</p>
+            <p>Keep R1-Zero and R1 apart: R1-Zero is the pure-RL experiment, hard to read and mixing languages; DeepSeek-R1 wraps the RL in a multistage pipeline with rejection sampling and supervised fine-tuning. The method’s name, RL with verifiable rewards, comes from Lambert et al. (<a href="https://arxiv.org/abs/2411.15124">Tülu 3</a>); Act I handed it over.</p>
+            <p>The open question, labelled contested: Yue et al. (<a href="https://arxiv.org/abs/2504.13837">Does Reinforcement Learning Really Incentivize Reasoning Capacity…?</a>) find RL models win at pass@1 but base models score higher pass@k at large k: RL sharpens. ProRL (<a href="https://arxiv.org/abs/2505.24864">Liu et al.</a>) finds prolonged RL with KL control and resets ahead across pass@k, even where the base fails at any number of attempts: RL expands. Different models, tasks and training lengths; still open as of 2026-10-18. Do not pick a winner. If time allows, show the panel’s k slider; its curves are invented to show the crossing.</p>
+            <p>Driving: these models were trained on maths, code and tests, where answers can be checked. Give them a check: a test, an oracle, a solver.</p>
+            <p>Transition: “So: only a check can say. Next question: how much should the model think? That is a dial you set.”</p>
+          </div>
         </details>
       </section>
 
       <section id="effort-demo" data-slide tabindex="-1" aria-labelledby="effort-demo-title">
-        <p class="eyebrow">09 · Demo · 6 minutes</p>
-        <h2 id="effort-demo-title">One knapsack, low effort then high effort.</h2>
-        <div class="cols">
-          <div>
-            <p><strong>Predict:</strong> at high effort, how many times more output tokens, seconds and dollars, and will it get right what low gets wrong? Bet 1×, 2×, 5× or 10×.</p>
-            <p>Live: Claude Code with <code>claude-opus-5-5</code>, or Codex with <code>gpt-6-astra</code>. No tools, an empty folder, a brute-force oracle checks the answer.</p>
-          </div>
+        <p class="eyebrow">Part 3 · How much thinking? · Demo</p>
+        <h2 id="effort-demo-title">High effort: a better answer, or just a bigger bill?</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say. Highlighted: question 3.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head now" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag now" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head next" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <figcaption id="bet-caption" class="lead">Effort: how much the model may think first. Bet: high against low.</figcaption>
+            <div class="table-wrap" role="region" tabindex="0" aria-label="Bets">
+              <table class="bet" aria-labelledby="bet-caption">
+                <tbody>
+                  <tr><th scope="row">Thinking tokens</th><td><span>1×</span></td><td><span>2×</span></td><td><span>5×</span></td><td><span>10×</span></td></tr>
+                  <tr><th scope="row">The bill</th><td><span>1×</span></td><td><span>2×</span></td><td><span>5×</span></td><td><span>10×</span></td></tr>
+                  <tr><th scope="row">Right this time?</th><td><span>yes</span></td><td><span>no</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </figure>
           <div class="callout">
-            <p class="label">Runbook</p>
-            <p><code>cursus/demos/effort/</code> (<a href="demos/effort/README.md">README</a>). Fallback with no network: <code>uv run --offline effort.py replay</code> replays the recorded run offline.</p>
+            <p class="label">Demo</p>
+            <p><a href="demos/effort/README.md">Runbook</a>: <code>uv run effort.py live --cli claude</code></p>
+            <p>Then a program tries all 256 loads: the check.</p>
+            <details class="reveal"><summary>The check’s answer</summary><p>B, D, E and G: 62 kg, 229 EUR. 228 fills the van exactly, and is worse.</p></details>
           </div>
         </div>
-        <details class="reveal"><summary>Recorded run, 2026-10-11 (reveal after the bets)</summary>
-          <div class="table-wrap" role="region" tabindex="0" aria-label="Recorded effort demo results">
-            <table class="compact">
-              <thead><tr><th scope="col">Model</th><th scope="col">Effort</th><th scope="col">Output tok</th><th scope="col">Reasoning tok</th><th scope="col">Seconds</th><th scope="col">Cost USD</th><th scope="col">Answer</th></tr></thead>
-              <tbody>
-                <tr><th scope="row"><code>claude-opus-5-5</code></th><td>low</td><td class="num">783</td><td class="num">286</td><td class="num">9.9</td><td class="num">0.0370</td><td>229, correct</td></tr>
-                <tr><th scope="row"><code>claude-opus-5-5</code></th><td>high</td><td class="num">964</td><td class="num">447</td><td class="num">11.2</td><td class="num">0.0406</td><td>229, correct</td></tr>
-                <tr><th scope="row"><code>gpt-6-astra</code></th><td>low</td><td class="num">467</td><td class="num">286</td><td class="num">18.6</td><td class="num">0.0562</td><td>229, correct</td></tr>
-                <tr><th scope="row"><code>gpt-6-astra</code></th><td>high</td><td class="num">705</td><td class="num">516</td><td class="num">30.5</td><td class="num">0.0681</td><td>229, correct</td></tr>
-              </tbody>
-            </table>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> the effort dial sets how much the model writes before it answers. More effort always costs; whether it helps depends on the problem, and only the check can tell.</p>
+            <p>Talk track: every vendor sells this dial. Names and levels as of 2026-10-18:</p>
+            <ul>
+              <li>Anthropic: <a href="https://platform.claude.com/docs/en/build-with-claude/effort"><code>effort</code></a>, <code>--effort</code> in Claude Code; low, medium, high, xhigh, max; Opus 5.5 defaults to medium. Anthropic calls it “a behavioral signal, not a strict token budget”.</li>
+              <li>OpenAI Codex: <a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a>; levels per model and client, such as low, medium, high, xhigh, max.</li>
+              <li>Google Gemini API: <a href="https://ai.google.dev/gemini-api/docs/thinking"><code>thinking_level</code></a>; minimal, low, medium, high, by model. Not in the demo.</li>
+            </ul>
+            <p>Predict question: everyone picks one chip per row on paper: how many times the thinking tokens, how many times the bill, and is each answer right this time? Then run from <code>cursus/demos/effort</code>: <code>uv run effort.py live --cli claude</code>, or <code>uv run effort.py live --cli codex</code> with <code>gpt-6-astra</code>. No tools, an empty folder. Read one row aloud and compare the ratios with the bets.</p>
+            <p>The check: open “The check’s answer” on the slide. The best load is B, D, E and G, 62 kg for 229 EUR. Not because the model says so: the recorded low-effort answer even says it “was checked by hand rather than by trying every possible subset.” The demo’s oracle tries all 256 loads: the check of part 2, outside the model. Note 228 (A, B, D, G) fills the van exactly and is still worse.</p>
+            <p>Fallback: if the network, quota or login fails, or a high run hangs, press Ctrl-C and replay the recorded run offline: <code>uv run --offline effort.py replay</code>. The recorded run, 2026-10-11, Claude Code 2.1.296 and codex-cli 0.162.1, all four answers 229 and correct:</p>
+            <ul>
+              <li>claude-opus-5-5, low: 783 output tokens, 286 of them thinking, 9.9 s, $0.0370.</li>
+              <li>claude-opus-5-5, high: 964 output tokens, 447 thinking, 11.2 s, $0.0406.</li>
+              <li>gpt-6-astra, low: 467 output tokens, 286 reasoning, 18.6 s, $0.0562.</li>
+              <li>gpt-6-astra, high: 705 output tokens, 516 reasoning, 30.5 s, $0.0681.</li>
+            </ul>
+            <p>So thinking grew about 1.6 times (Claude) and 1.8 times (Codex), the bill only 1.1 and 1.2 times: reading the prompt and the harness’s instructions costs the same at both efforts, and it is most of the bill (58% of the Claude low run was writing its 2,666 input tokens to the cache). Costs are at list prices as of 2026-10-11, rechecked 2026-10-18 and unchanged.</p>
+            <p>Debrief: if both efforts are right, say so: on this puzzle high effort bought thinking and cost, not correctness. One run is an anecdote, not a rate; a claim about effort needs many runs and a check.</p>
+            <p>Driving: the default is a choice someone made for you. Set effort per task: low for lookups and subagents, high when the problem is hard and checkable.</p>
+            <p>Transition: “Here more thinking only cost money. Sometimes it costs accuracy.”</p>
           </div>
-        </details>
-        <p><strong>One sample is an anecdote, not a rate.</strong> A claim about effort needs many runs and a verifier.</p>
-        <p class="cite">Source: <cite>Effort-dial demo</cite>, <code>cursus/demos/effort/README.md</code> and <code>recorded/results.json</code>, recorded 2026-10-11 with Claude Code 2.1.296 and codex-cli 0.162.1; list prices as of 2026-10-11, rechecked 2026-10-18 and unchanged.</p>
-        <details class="notes" data-minutes="6"><summary>Speaker notes · 6 min</summary>
-          <p>Run the demo by its runbook timing. 0:00 read the puzzle and take the bets. 1:00 launch <code>uv run effort.py live --cli claude</code> or <code>--cli codex</code>. 2:30 read one row aloud. 3:15 compare the ratios with the bets. 4:15 the fixed input cost, same at both efforts. 5:15 close.</p>
-          <p>If the network, quota or login fails, or the high run passes two minutes: Ctrl-C and replay with <code>uv run --offline effort.py replay</code>, then continue from 2:30.</p>
-          <p>Recorded: both efforts right in both CLIs; high cost about 1.1 to 1.2 times as much. If a live run differs, that is the demo working. Either way it is one sample.</p>
         </details>
       </section>
 
       <section id="overthinking" data-slide tabindex="-1" aria-labelledby="overthinking-title">
-        <p class="eyebrow">10 · When more thinking hurts</p>
-        <h2 id="overthinking-title">Overthinking and inverse scaling: longer reasoning can cost accuracy.</h2>
-        <div class="cols">
-          <ul class="tight">
-            <li><strong>Overthinking:</strong> o1-like models spend many tokens on simple problems (the title’s example is 2 + 3) for little or no gain.</li>
-            <li><strong>Inverse scaling:</strong> on tasks built to test it, longer reasoning lowered accuracy. Models got distracted by irrelevant information, overfit to the problem’s framing, drifted to spurious correlations, or lost track in long deductions.</li>
-            <li>In the recorded demo, high effort bought no correctness, only cost.</li>
-          </ul>
-          <div class="callout">
+        <p class="eyebrow">Part 3 · How much thinking? · Lab</p>
+        <h2 id="overthinking-title">More thinking can cost accuracy, not just money.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say. Highlighted: question 3.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head now" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag now" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head next" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <blockquote class="puzzle"><p>“You have an apple and an orange … 61% probability that they are exactly a Red Delicious apple and a Navel orange. Calculate how many fruits you have.”</p></blockquote>
+            <ol class="bars" aria-label="Accuracy on such questions with short and with long reasoning">
+              <li><span class="k">DeepSeek R1, short</span> <span class="track"><span class="fill" style="width: 70%"></span></span> <span class="v">70%</span></li>
+              <li class="hi"><span class="k">DeepSeek R1, long</span> <span class="track"><span class="fill" style="width: 30%"></span></span> <span class="v">30%</span></li>
+              <li><span class="k">Claude Opus 4, short</span> <span class="track"><span class="fill" style="width: 100%"></span></span> <span class="v">≈100%</span></li>
+              <li class="hi"><span class="k">Claude Opus 4, long</span> <span class="track"><span class="fill" style="width: 85%"></span><span class="fill range" style="width: 5%"></span></span> <span class="v">85–90%</span></li>
+            </ol>
+            <figcaption>The answer is 2. Accuracy on such questions, with short and with long reasoning.</figcaption>
+          </figure>
+          <div class="callout lab">
             <p class="label">Lab</p>
-            <p>Open <a href="labs/test-time-compute.html#effort-dial">Test-time compute · Effort dial</a>, toggle inverse scaling and watch the curve bend down. Illustrative simulation.</p>
+            <p class="go"><a href="labs/test-time-compute.html#effort-dial">Open the effort-dial panel</a></p>
+            <p>Turn on the inverse-scaling task. Illustrative.</p>
           </div>
         </div>
-        <p class="cite">Sources: Xingyu Chen et al., <cite>Do NOT Think That Much for 2+3=? On the Overthinking of o1-Like LLMs</cite>, <a href="https://arxiv.org/abs/2412.21187">arXiv 2412.21187</a>, v1 2024-12-30. Aryo Pradipta Gema et al., <cite>Inverse Scaling in Test-Time Compute</cite>, <a href="https://arxiv.org/abs/2507.14417">arXiv 2507.14417</a>, v1 2025-07-19.</p>
-        <p class="drive"><strong>Driving:</strong> more effort is not monotone. If a high-effort run wanders, rerun lower, strip irrelevant context, and judge by the check, not by the length of the thinking.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Connect to the demo just shown: on an easy, already-solved problem the dial only moves cost.</p>
-          <p>The inverse-scaling paper names its failure modes by model family: Claude models more distracted, OpenAI o-series overfitting to framings. They built the tasks to find the effect, so it is a warning, not an average.</p>
-          <p>Optional 20 seconds in the lab’s effort-dial panel with the toggle on.</p>
+        <p class="cite">Source: Aryo Pradipta Gema et al., <cite>Inverse Scaling in Test-Time Compute</cite>, <a href="https://arxiv.org/abs/2507.14417">arXiv</a>, 2025.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> more thinking is not always better. On some problems it lowers accuracy, and it always costs. Part 3’s answer: effort is a dial you set per task, and more can hurt.</p>
+            <p>Talk track: in the demo, more thinking moved the cost, not the answer. Here it moves accuracy the wrong way. Gema et al. built tasks to look for this: counting with distractors, regression with spurious features, deduction with constraint tracking. In the fruit question (Fig. 1) the answer is always 2; with longer reasoning, models get pulled into the probability. On that task (Misleading Math, Fig. 3), DeepSeek R1 falls from 70% to 30% with five distractors, and Claude Opus 4 from nearly 100% to around 85–90% as reasoning extends. The paper names failure modes by family: Claude models grow more distracted by irrelevant information, OpenAI o-series models overfit to the framing, and all struggle to stay focused on long deductions.</p>
+            <p>One example from the appendix (I.1 in the paper’s second version): Claude Opus 4, asked how many games you have, answers 2 with no reasoning and 26 with a 16,384-token reasoning budget. These tasks were built to find the effect: a warning, not an average.</p>
+            <p>The cost side is overthinking: Chen et al. (<a href="https://arxiv.org/abs/2412.21187">Do NOT Think That Much for 2+3=?</a>) asked “what is the answer of 2 plus 3?”. QwQ-32B-Preview wrote 901 tokens and 13 solutions; its first, 39 tokens in, was already right. GPT-4o answered in 7 tokens.</p>
+            <p>Activity, optional: the effort-dial panel with the inverse-scaling task on; the curve bends down past its peak. Its curves are illustrative.</p>
+            <p>Driving: if a high-effort run wanders, rerun lower, strip irrelevant context, and judge by the check, not by the length of the thinking.</p>
+            <p>Transition: “If the thinking can wander, can we at least read it to see what drove the answer?”</p>
+          </div>
         </details>
       </section>
 
       <section id="cot-faithfulness" data-slide tabindex="-1" aria-labelledby="cot-faithfulness-title">
-        <p class="eyebrow">11 · Is the trace the reasoning?</p>
-        <h2 id="cot-faithfulness-title">Models use hints they do not mention.</h2>
-        <ul class="tight">
-          <li>The setup: slip a hint to the answer into the prompt (a professor’s opinion, fake metadata, an “unauthorized access” note). Keep the cases where the hint changed the answer.</li>
-          <li>How often did the chain of thought mention the hint? Claude 3.7 Sonnet 25% of the time, DeepSeek R1 39%, averaged over hint types.</li>
-          <li>Trained to exploit wrong hints for reward, models did so in over 99% of cases and admitted it in under 2% in most scenarios.</li>
-        </ul>
-        <p><span class="contested">Contested</span> Contrived multiple-choice tests on two model families; the authors note harder tasks may force more of the real reasoning into the trace.</p>
-        <p class="cite">Source: Anthropic, <cite>Reasoning models don’t always say what they think</cite>, <a href="https://www.anthropic.com/research/reasoning-models-dont-say-think">anthropic.com</a>, 2025-04-03.</p>
-        <p class="drive"><strong>Driving:</strong> read the agent’s reasoning as a lead, not as evidence. Check what it did: the diff, the commands, the test run.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Faithful means the written reasoning reflects what actually drove the answer. Here we know a hint drove it, because the answer changed with the hint, so we can count how often the trace admits it.</p>
-          <p>Read the limits aloud: multiple choice, contrived hints, easy enough that the chain of thought was not needed. The conclusion is “check evidence”, not “traces are useless”: traces still help you notice problems.</p>
+        <p class="eyebrow">Part 4 · Trust what it wrote?</p>
+        <h2 id="cot-faithfulness-title">Most traces omit the hint that changed the answer.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt. Highlighted: question 4.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head now" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <ol class="chain" aria-label="The experiment">
+              <li>Hint added <small>to the question</small></li> <li>Answer follows <small>the hint mattered</small></li> <li class="data">Trace says so?</li>
+            </ol>
+            <ol class="bars" aria-label="How often the trace mentioned the hint it used">
+              <li><span class="k">Claude 3.7 Sonnet</span> <span class="track"><span class="fill" style="width: 25%"></span></span> <span class="v">25%</span></li>
+              <li><span class="k">DeepSeek R1</span> <span class="track"><span class="fill" style="width: 39%"></span></span> <span class="v">39%</span></li>
+            </ol>
+            <figcaption>How often the trace mentioned the hint it used.</figcaption>
+          </figure>
+          <div class="callout hedge">
+            <p class="label">Contested</p>
+            <p>Contrived multiple-choice tests on two models; harder tasks may put more of the reasoning in the trace.</p>
+          </div>
+        </div>
+        <p class="cite">Source: Anthropic, <cite>Reasoning models don’t always say what they think</cite>, <a href="https://www.anthropic.com/research/reasoning-models-dont-say-think">anthropic.com</a>, 2025.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> the written reasoning is not a faithful record of what drove the answer. Read it as a lead; check what the agent did.</p>
+            <p>Predict question: “Guess first: when the hint changed the answer, how often does the trace mention it?” Then the talk track: a trace is faithful if it reflects what actually drove the answer. Walk the three steps. Slip a hint to the answer into the question (a professor’s opinion, fake metadata, an “unauthorized access” note). Keep the cases where the answer follows the hint: then we know the hint mattered. Count how often the chain of thought says so: 25% of the time for Claude 3.7 Sonnet, 39% for DeepSeek R1, averaged over hint types. Trained with RL in environments with planted reward hacks, Claude 3.7 Sonnet exploited them on over 99% of prompts and said so under 2% of the time in most environments.</p>
+            <p>Read the limits aloud: multiple choice, contrived hints, tasks easy enough that the chain of thought was not needed. The conclusion is “check the evidence”, not “traces are useless”: a trace still tells you where to look.</p>
+            <p>In an agent, hints arrive through tool output: files, logs, web pages, test results. Measured: instructions planted in retrieved data steer LLM applications (indirect prompt injection, Greshake et al., <a href="https://arxiv.org/abs/2302.12173">Not what you’ve signed up for</a>). Not measured: how often a cue in a tool result goes unmentioned in the trace; that is an extrapolation. Hypothetical illustration: a README says the tests in <code>legacy/</code> are flaky, skip them; the agent skips them and reports “all relevant tests pass”, without naming the README. The transcript of tool calls is better evidence than the reasoning text. Act V returns to injection.</p>
+            <p>Driving: read the agent’s reasoning as a lead, not as evidence. Check what it did: the diff, the commands, the test run.</p>
+            <p>Transition: “Even with no hint at all, the explanation can be about a different process.”</p>
+          </div>
         </details>
       </section>
 
       <section id="addition-36-59" data-slide tabindex="-1" aria-labelledby="addition-36-59-title">
-        <p class="eyebrow">12 · The 36 + 59 example</p>
+        <p class="eyebrow">Part 4 · Trust what it wrote?</p>
         <h2 id="addition-36-59-title">The model computes one way and explains another.</h2>
-        <div class="cols even">
-          <figure class="process-figure">
-            <figcaption>Inside Claude 3.5 Haiku, for 36 + 59</figcaption>
-            <ol class="process">
-              <li><span class="label">In parallel</span><strong>Rough size</strong><span>“the sum is near 92”</span></li>
-              <li><span class="label">In parallel</span><strong>Last digit</strong><span>6 + 9 ends in 5</span></li>
-              <li><span class="label">Combined</span><strong class="accent">95</strong><span>Correct</span></li>
-            </ol>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt. Highlighted: question 4.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head now" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head next" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q next"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag next" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols">
+          <figure class="viz">
+            <figcaption class="lead">Inside Claude 3.5 Haiku, for 36 + 59</figcaption>
+            <div class="merge" role="img" aria-label="Two computations in parallel, rough size near 92 and last digit 5, combine into 95, correct">
+              <div class="in"><span class="label">In parallel</span> Rough size <small>“near 92”</small></div>
+              <div class="in"><span class="label">In parallel</span> Last digit <small>6 + 9 ends in 5</small></div>
+              <span class="to" aria-hidden="true">↘</span><span class="to" aria-hidden="true">↗</span>
+              <div class="out"><strong>95</strong> <small>correct</small></div>
+            </div>
           </figure>
           <div>
             <p class="label">Asked how it did it</p>
             <blockquote class="quote"><p>“I added the ones (6+9=15), carried the 1, then added the tens (3+5+1=9), resulting in 95.”</p></blockquote>
-            <p>The school carry algorithm, which the traced computation did not use. The authors: a capability without “metacognitive” insight into it.</p>
           </div>
         </div>
-        <p class="cite">Source: Jack Lindsey et al. (Anthropic), <cite>On the Biology of a Large Language Model</cite>, §Addition, <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">transformer-circuits.pub</a>, published 2025-03-27.</p>
-        <p class="drive"><strong>Driving:</strong> an agent’s account of how it got a result is a story about the result. When it matters, ask for something you can rerun: the test, the computation, the command.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Attribution graphs trace which internal features drive an output. For 36 + 59 one pathway estimates the size of the sum at low precision, another gets the ones digit exactly, and the two combine into 95.</p>
-          <p>Then they asked the model to explain. It describes carrying the 1, the way people are taught. Nothing is wrong with the answer; the explanation is about a different process. One model, one prompt: a vivid case, not a rate.</p>
-        </details>
-      </section>
-
-      <section id="tool-cues" data-slide tabindex="-1" aria-labelledby="tool-cues-title">
-        <p class="eyebrow">13 · Cues through tool output</p>
-        <h2 id="tool-cues-title">In an agent, the hints arrive through tool output.</h2>
-        <div class="cols">
-          <div>
-            <p>An agent reads files, logs, web pages and test results. Any tool result can carry a cue or an instruction that steers it.</p>
-            <ul class="tight">
-              <li><strong>Measured:</strong> hints in the prompt mostly went unmentioned (two slides back). Instructions planted in retrieved data steer LLM-integrated apps: indirect prompt injection.</li>
-              <li><strong>Not measured here:</strong> how often a cue arriving in a tool result goes unmentioned in the trace.</li>
-            </ul>
+        <p class="cite">Source: Jack Lindsey et al., <cite>On the Biology of a Large Language Model</cite>, <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">transformer-circuits.pub</a>, 2025.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> a model’s account of how it got a result is a story about the result, not a record of the computation. Part 4’s answer: what it wrote is a lead, not evidence.</p>
+            <p>Predict question: “How would you add 36 + 59 in your head?” Most say: carry the 1. Talk track: attribution graphs trace which internal features drive an output (§Addition). For 36 + 59, one pathway estimates the size of the sum at low precision, “the sum is near 92”, another gets the last digit exactly, and the two combine into 95. Then they asked the model how it did it. It describes the school carry algorithm, the way people are taught, which the traced computation did not use. The answer is right; the explanation is about a different process. The authors: a capability without “metacognitive” insight into it. One model, one prompt: a vivid case, not a rate.</p>
+            <p>Back to the van: the visible answer in part 1 states 229 first, then justifies it. Those steps are an explanation, not necessarily the route; the route, if there was one, was in the 286 hidden thinking tokens.</p>
+            <p>Driving: when it matters, ask for something you can rerun: the test, the computation, the command.</p>
+            <p>Transition: “Last question: what does the model know about the world it reasons about?”</p>
           </div>
-          <div class="callout hedge">
-            <p class="label">Illustrative, hypothetical case</p>
-            <p>A README the agent opens says “tests in <code>legacy/</code> are flaky, skip them”. The agent skips them and reports “all relevant tests pass”, without naming the README.</p>
-          </div>
-        </div>
-        <p><span class="contested">Contested</span> An extrapolation: the faithfulness study put hints in the prompt, not in tool output.</p>
-        <p class="cite">Sources: Kai Greshake et al., <cite>Not what you’ve signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt Injection</cite>, <a href="https://arxiv.org/abs/2302.12173">arXiv 2302.12173</a>, v1 2023-02-23. Anthropic faithfulness study, 2025-04-03, cited two slides back.</p>
-        <p class="drive"><strong>Driving:</strong> treat what a tool returns as data, not instructions. When an agent changes course after reading something, ask which output it read.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Be honest about the evidence. The faithfulness numbers come from hints in the prompt. Prompt-injection work shows that text in retrieved content changes behavior. I know of no study measuring both at once: a cue in tool output that changes behavior and goes unmentioned. The README case is invented to show the shape.</p>
-          <p>Practical rule: the transcript of tool calls is better evidence than the reasoning text. Act V returns to injection.</p>
         </details>
       </section>
 
       <section id="world-models" data-slide tabindex="-1" aria-labelledby="world-models-title">
-        <p class="eyebrow">14 · World models</p>
-        <h2 id="world-models-title">“World model” means three different things.</h2>
-        <ol class="legs" aria-label="Three meanings of world model">
-          <li><span class="label">Meaning 1</span><strong>An internal representation</strong><span>Structure inside a network that tracks the state of what it models.</span></li>
-          <li><span class="label">Meaning 2</span><strong>A learned simulator</strong><span>A model trained to predict what happens next, given actions, used to plan.</span></li>
-          <li><span class="label">Meaning 3</span><strong>The agent’s picture of your repo</strong><span>What the agent believes about your code, from what it read and ran.</span></li>
-        </ol>
-        <p>Keep them apart: evidence for one is not evidence for the others.</p>
-        <p class="cite">Sources: Kenneth Li et al., <cite>Emergent World Representations</cite>, <a href="https://arxiv.org/abs/2210.13382">arXiv 2210.13382</a>, v1 2022-10-24. Yann LeCun, <cite>A Path Towards Autonomous Machine Intelligence</cite>, §3, <a href="https://openreview.net/forum?id=BZ5a1r-kVsf">openreview.net</a>, 2022-06-27.</p>
-        <p class="drive"><strong>Driving:</strong> when someone says a model “has a world model”, ask which meaning, and what the evidence is.</p>
-        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>Signpost for the last part. The phrase is used for all three and the arguments get mixed. The next four slides take them in order; the last one is the one you control.</p>
-        </details>
-      </section>
-
-      <section id="internal-representations" data-slide tabindex="-1" aria-labelledby="internal-representations-title">
-        <p class="eyebrow">15 · Meaning 1 · Internal representations</p>
-        <h2 id="internal-representations-title">A board it was never shown, a rhyme planned ahead.</h2>
-        <div class="cols even">
-          <div>
-            <p class="label">Othello-GPT</p>
-            <p>Trained only to predict legal Othello moves, with no rules given. Probes find a nonlinear internal representation of the board state, and editing it changes the predicted moves.</p>
-          </div>
-          <div>
-            <p class="label">Rhyme planning</p>
-            <p>Claude 3.5 Haiku, writing a couplet after “…grab it”: at the line break, features for “rabbit” and “habit” are already active. Suppress “rabbit” and the line is rewritten to end in “habit”.</p>
-          </div>
+        <p class="eyebrow">Part 5 · What does it know?</p>
+        <h2 id="world-models-title">“World model” means three things. Keep them apart.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt; 4, trust what it wrote: a lead, not evidence. Highlighted: question 5.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head done" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head now" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag now" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
         </div>
-        <p class="cite">Sources: Kenneth Li et al., <cite>Emergent World Representations: Exploring a Sequence Model Trained on a Synthetic Task</cite>, <a href="https://arxiv.org/abs/2210.13382">arXiv 2210.13382</a>, v1 2022-10-24. Jack Lindsey et al., <cite>On the Biology of a Large Language Model</cite>, §Planning in Poems, <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">transformer-circuits.pub</a>, 2025-03-27.</p>
-        <p class="drive"><strong>Driving:</strong> the model can track state and plan ahead inside its context. Give it the state up front (files, constraints, the goal) instead of making it reconstruct it.</p>
-        <details class="notes" data-minutes="2"><summary>Speaker notes · 2 min</summary>
-          <p>Othello: the training data is only move sequences, yet the board can be read out of the activations, and editing that internal board changes the moves the network predicts. That intervention is what makes it more than a correlation.</p>
-          <p>Rhyme: planning shows up on the newline token before the line is written; the model then writes towards the planned word. Both are representations inside one network, meaning 1.</p>
+        <p class="lead-line">The van’s whole world was in the prompt. Your repo’s is not.</p>
+        <ol class="legs" aria-label="Three meanings of world model">
+          <li class="now"><span class="label">Meaning 1</span> <strong>Inside the network</strong> <span>Othello-GPT, shown only moves, holds the board inside.</span></li>
+          <li><span class="label">Meaning 2</span> <strong>A simulator</strong> <span>Predicts what comes next, to plan.</span></li>
+          <li><span class="label">Meaning 3</span> <strong>Your repo</strong> <span>The agent’s picture, from what it read and ran.</span></li>
+        </ol>
+        <p class="cite">Source: Kenneth Li et al., <cite>Emergent World Representations</cite>, <a href="https://arxiv.org/abs/2210.13382">arXiv</a>, 2022.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> “world model” is used for three different things; evidence for one is not evidence for the others. The one students control is the third.</p>
+            <p>Talk track: for the van, the whole world was in the prompt: eight parcels, 63 kg. Most problems are not like that. A model reasons from what it learned, and an agent from what it has read about your repo. That is what people mean by a world model, in three senses.</p>
+            <p>Meaning 1, a representation inside the network. Othello-GPT is trained only to predict legal Othello moves, with no rules given. Probes read a nonlinear representation of the board out of its activations, and editing that internal board changes the moves it predicts: the intervention is what makes it more than a correlation. A second case, planning: Claude 3.5 Haiku, writing a couplet after “…grab it”, already has features for “rabbit” and “habit” active at the line break; suppress “rabbit” and the line ends in “habit” (Lindsey et al., <a href="https://transformer-circuits.pub/2025/attribution-graphs/biology.html">On the Biology of a Large Language Model</a>, §Planning in Poems).</p>
+            <p>Meaning 2, a learned simulator: predict what happens next given an action, then plan through it. LeCun’s Mode-2 from part 1 plans through exactly this kind of model. Background, if asked; makers’ claims, not independent evaluations: Meta’s <a href="https://arxiv.org/abs/2506.09985">V-JEPA 2</a> (2025-06-11) plans robot pick-and-place toward image goals; Google DeepMind’s <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3</a> (2025-08-05) turns a text prompt into an interactive world at 24 fps and 720p; NVIDIA’s <a href="https://nvidianews.nvidia.com/news/nvidia-launches-cosmos-3-the-open-frontier-foundation-model-for-physical-ai">Cosmos 3</a> (2026-05-31) is an open world foundation model; AMI Labs, LeCun’s company, launched on 2026-03-10 with a $1.03B round and states this as its aim (<a href="https://amilabs.xyz/updates">launch</a>, <a href="https://amilabs.xyz/">home page</a>). None of them runs inside your coding agent.</p>
+            <p>Meaning 3 is the one you control; it is the last slide of the act.</p>
+            <p>Driving: when someone says a model “has a world model”, ask which meaning, and what the evidence is.</p>
+            <p>Transition: “Tracking state is one thing. Having the law that generates it is another.”</p>
+          </div>
         </details>
       </section>
 
       <section id="kepler" data-slide tabindex="-1" aria-labelledby="kepler-title">
-        <p class="eyebrow">16 · The limit · Lab</p>
+        <p class="eyebrow">Part 5 · What does it know? · Lab</p>
         <h2 id="kepler-title">Kepler without Newton: good predictions, the wrong laws.</h2>
-        <div class="cols">
-          <ul class="tight">
-            <li>A transformer trained on orbital trajectories predicts them well.</li>
-            <li>Adapted to new physics tasks, it fails to apply Newtonian mechanics. It behaves as if it learned task-specific heuristics that do not generalize.</li>
-            <li>Fitting the data is not having the model that generates it.</li>
-          </ul>
-          <div class="callout">
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt; 4, trust what it wrote: a lead, not evidence. Highlighted: question 5.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head done" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head now" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag now" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <p class="law"><span class="label">Newton</span> <span class="f">F ∝ m₁m₂ / r²</span></p>
+            <p class="law bad"><span class="label">Recovered from the model</span> <span class="f">F ∝ (sin(1/sin(r − 0.24)) + 1.45) · 1/(1/r + m₂)</span></p>
+            <figcaption>Trained on orbits, it predicts them well; the law behind its predictions differs per galaxy. Seeing many repos is not knowing yours.</figcaption>
+          </figure>
+          <div class="callout lab">
             <p class="label">Lab</p>
-            <p>Open <a href="labs/world-model.html#kepler">World model · Kepler without Newton</a>. The curve fit matches the orbits until you add a mass. Illustrative simulation.</p>
+            <p class="go"><a href="labs/world-model.html#kepler">Open the Kepler panel</a></p>
+            <p>The fit matches the orbits until you add a mass. Illustrative.</p>
           </div>
         </div>
-        <p class="cite">Source: Keyon Vafa et al., <cite>What Has a Foundation Model Found? Using Inductive Bias to Probe for World Models</cite>, <a href="https://arxiv.org/abs/2507.06952">arXiv 2507.06952</a>, v1 2025-07-09.</p>
-        <p class="drive"><strong>Driving:</strong> an agent that has seen many repos like yours can predict well and still be wrong where yours differs. Watch for confident pattern-matching after something changed.</p>
-        <details class="notes" data-minutes="3"><summary>Speaker notes · 3 min</summary>
-          <p>1 min, the slide. Kepler’s laws predicted orbits; Newton explained them and generalized. Vafa et al. find foundation models that are good Keplers and poor Newtons.</p>
-          <p>2 min, lab. Open the Kepler panel of the world-model lab. Let the fit match the orbits, then move the slider that adds a mass and watch the prediction break while the true orbit changes. Say the panel is a stylized simulation, not the paper’s data.</p>
-        </details>
-      </section>
-
-      <section id="simulators" data-slide tabindex="-1" aria-labelledby="simulators-title">
-        <p class="eyebrow">17 · Meaning 2 · Learned simulators</p>
-        <h2 id="simulators-title">Predict what happens next, then plan.</h2>
-        <div class="table-wrap" role="region" tabindex="0" aria-label="Learned simulators">
-          <table class="compact">
-            <thead><tr><th scope="col">System</th><th scope="col">As announced</th><th scope="col">Date</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">V-JEPA 2 · Meta</th><td>Video model; its action-conditioned version plans robot pick-and-place toward image goals</td><td>2025-06-11</td></tr>
-              <tr><th scope="row">Genie 3 · Google DeepMind</th><td>Text prompt to an interactive world, 24 fps at 720p, consistent for a few minutes</td><td>2025-08-05</td></tr>
-              <tr><th scope="row">Cosmos 3 · NVIDIA</th><td>Open world foundation model: vision reasoning, world generation, action prediction</td><td>2026-05-31</td></tr>
-              <tr><th scope="row">AMI Labs</th><td>Goal, not a product: world models that predict in representation space and plan actions</td><td>2026-03-10</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p><span class="contested">Contested</span> Vendor and startup announcements, not independent evaluations.</p>
-        <p class="cite">Sources: Mido Assran et al., <cite>V-JEPA 2</cite>, <a href="https://arxiv.org/abs/2506.09985">arXiv 2506.09985</a>, 2025-06-11. Google DeepMind, <cite>Genie 3</cite>, <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">deepmind.google</a>, 2025-08-05. NVIDIA, <cite>NVIDIA Launches Cosmos 3</cite>, <a href="https://nvidianews.nvidia.com/news/nvidia-launches-cosmos-3-the-open-frontier-foundation-model-for-physical-ai">nvidianews.nvidia.com</a>, 2026-05-31. AMI Labs, <cite>Official launch</cite>, <a href="https://amilabs.xyz/updates">amilabs.xyz</a>, 2026-03-10, and its <a href="https://amilabs.xyz/">home page</a>.</p>
-        <p class="drive"><strong>Driving:</strong> these simulate physical worlds; your coding agent does not run one. The idea transfers: predict, act, observe, correct.</p>
-        <details class="notes" data-minutes="1"><summary>Speaker notes · 1 min</summary>
-          <p>Meaning 2, quickly. LeCun’s Mode-2, from the System 1 and System 2 slide, plans through exactly this kind of model. AMI Labs is LeCun’s company; it launched in March 2026 with a $1.03B round and states its aims, it has not shipped a simulator we can cite. All four rows are the makers’ own claims.</p>
+        <p class="cite">Source: Keyon Vafa et al., <cite>What Has a Foundation Model Found?</cite>, <a href="https://arxiv.org/abs/2507.06952">arXiv</a>, 2025.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> predicting well is not knowing the law. A model can fit what it has seen and still be wrong where the world differs.</p>
+            <p>Talk track: Kepler’s laws predicted the orbits; Newton’s explained them and carried over to new problems. Vafa et al. train a transformer on orbital trajectories: it predicts them well. Then they fine-tune it to predict forces, and run symbolic regression on its force predictions. The law it recovers is nonsense: for one galaxy sample, the formula on the slide; for each of five samples, a different formula, never the true law. The control: the same procedure on a model given the true state recovers Newton. Their reading: the model behaves as if it learned task-specific heuristics that do not generalize. Fitting the data is not having the model that generates it.</p>
+            <p>Activity: open the Kepler panel of the world-model lab. Let the fit match the orbits, then move the slider that adds a mass and watch the prediction break while the true orbit changes. The panel is a stylized simulation, not the paper’s data.</p>
+            <p>Driving: an agent that has seen many repos like yours can predict well and still be wrong where yours differs. Watch for confident pattern-matching after something changed.</p>
+            <p>Transition: “So what keeps the agent’s picture of your repo right?”</p>
+          </div>
         </details>
       </section>
 
       <section id="repo-model" data-slide tabindex="-1" aria-labelledby="repo-model-title">
-        <p class="eyebrow">18 · Meaning 3 · Your repo · Lab</p>
-        <h2 id="repo-model-title">Your repo, as the agent pictures it: keep it fed.</h2>
-        <figure class="process-figure">
-          <figcaption>Closed loop: replan from what you observe</figcaption>
-          <ol class="process">
-            <li><span class="label">Belief</span><strong>Picture of the repo</strong><span>From files and AGENTS.md</span></li>
-            <li><span class="label">Act</span><strong>Edit, run</strong><span>One step of the plan</span></li>
-            <li><span class="label">Observe</span><strong>Test output</strong><span>Errors, diffs, logs</span></li>
-            <li><span class="label">Replan</span><strong>Update the belief</strong><span>Then act again</span></li>
-          </ol>
-        </figure>
-        <p>Open loop plans once from the picture. Closed loop replans after each observation and can recover from a moderately wrong picture. Try both in <a href="labs/world-model.html#planner">World model · Plan once, or replan</a> (illustrative).</p>
-        <p class="cite">Source: Yann LeCun, <cite>A Path Towards Autonomous Machine Intelligence</cite>, §3 (the world model is adjusted once the next observation is available) and §3.1 (Mode-2 as model-predictive control), <a href="https://openreview.net/forum?id=BZ5a1r-kVsf">openreview.net</a>, 2022-06-27.</p>
-        <p class="drive"><strong>Driving:</strong> make observations cheap and frequent: a fast test command, clear errors, an AGENTS.md that says how to run things. Correct the agent’s picture early.</p>
-        <details class="notes" data-minutes="3"><summary>Speaker notes · 3 min</summary>
-          <p>1 min, the slide. Meaning 3 is the one you control. The agent’s picture comes from what it read; test output is the observation that corrects it.</p>
-          <p>2 min, lab. Open the planner panel of the world-model lab and set it exactly like this; these are also the lab’s defaults:</p>
-          <dl class="recipe" aria-label="Planner demo settings">
-            <div><dt>Seed</dt><dd>20261011</dd></div>
-            <div><dt>Model error</dt><dd>0.50</dd></div>
-            <div><dt>Then</dt><dd>Reset, then Run. Under reduced motion, press Step until both runs show an outcome.</dd></div>
-          </dl>
-          <p>At these settings the open loop hits the obstacle and the closed loop replans and reaches the goal. Map it: dynamics model is the picture of the repo, observation is test output, replanning is the agent loop.</p>
-          <p>Say the limit out loud: this is an illustrative run where feedback corrects a moderate error in the picture; with a much worse model the closed loop can fail too, as the lab’s closing card says.</p>
+        <p class="eyebrow">Part 5 · What does it know? · Meaning 3 · Lab</p>
+        <h2 id="repo-model-title">Your repo, as the agent pictures it: feed it observations.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt; 4, trust what it wrote: a lead, not evidence. Highlighted: question 5.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head done" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head now" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q now"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag now" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <div class="cols wide-left">
+          <figure class="viz">
+            <dl class="runs">
+              <dt>Plan once</dt> <dd><ol class="chain"><li>Picture <small>of the repo</small></li> <li>Act ×3</li> <li class="bad">✗ Obstacle</li></ol></dd>
+              <dt>Replan</dt> <dd><ol class="chain"><li>Picture <small>of the repo</small></li> <li>Act</li> <li class="data">Observe <small>test output</small></li> <li>Replan</li> <li class="good">✓ Goal</li></ol></dd>
+            </dl>
+            <figcaption>The planner lab at its defaults: the same wrong picture, with and without observing. Replanning is model-predictive control.</figcaption>
+          </figure>
+          <div class="callout lab">
+            <p class="label">Lab</p>
+            <p class="go"><a href="labs/world-model.html#planner">Open the planner panel</a></p>
+            <p>Plan once, or replan. Illustrative.</p>
+          </div>
+        </div>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> the agent’s picture of your repo comes from what it read and ran, and it goes stale. Frequent observations, fast tests and clear errors, keep it right. Part 5’s answer: a picture to keep fed.</p>
+            <p>Talk track: meaning 3 is the one you control. The agent’s picture of your repo comes from what it read: files, AGENTS.md, earlier output. Test output is the observation that corrects it. In LeCun’s terms (<a href="https://openreview.net/forum?id=BZ5a1r-kVsf">A Path Towards Autonomous Machine Intelligence</a>, §3 and §3.1), the world model is adjusted once the next observation is available, and Mode-2 replans from it, as model-predictive control does.</p>
+            <p>Activity: open the planner panel of the world-model lab and set it exactly like this; these are also the lab’s defaults:</p>
+            <dl class="recipe" aria-label="Planner demo settings">
+              <div><dt>Seed</dt><dd>20261011</dd></div>
+              <div><dt>Model error</dt><dd>0.50</dd></div>
+              <div><dt>Then</dt><dd>Reset, then Run. Under reduced motion, press Step until both runs show an outcome.</dd></div>
+            </dl>
+            <p>At these settings the open loop hits the obstacle, and the closed loop replans and reaches the goal: the two rows on the slide. Map it: the dynamics model is the picture of the repo, the observation is test output, replanning is the agent loop. Say the limit out loud: this is an illustrative run where feedback corrects a moderate error in the picture; with a much worse model the closed loop can fail too, as the lab’s closing card says.</p>
+            <p>Think-pair-share: “On your own task, what could check the agent’s answer, and how often does the agent see that check?” Listen for pairs with no check to name.</p>
+            <p>Driving: make observations cheap and frequent: a fast test command, clear errors, an AGENTS.md that says how to run things. Correct the agent’s picture early.</p>
+            <p>Transition: “Five questions, five answers.”</p>
+          </div>
         </details>
       </section>
 
       <section id="wrap" data-slide tabindex="-1" aria-labelledby="wrap-title">
-        <p class="eyebrow">Act II · Take away</p>
-        <h2 id="wrap-title">Three habits for driving a thinking agent.</h2>
-        <ul class="legs" aria-label="Three habits from Act II">
-          <li><span class="label">The loop</span><strong>Budget thinking</strong><span>Set effort per task; more is not always better.</span></li>
-          <li><span class="label">The trace</span><strong>Check, don’t trust</strong><span>The reasoning text is a lead; the run is the evidence.</span></li>
-          <li><span class="label">The world model</span><strong>Feed the loop</strong><span>Fast tests and clear errors keep its picture right.</span></li>
-        </ul>
-        <p>Both labs stay open for you: <a href="labs/test-time-compute.html">Test-time compute</a> and <a href="labs/world-model.html">World model</a>.</p>
-        <details class="notes" data-minutes="0.5"><summary>Speaker notes · 0.5 min</summary>
-          <p>Three habits, one per part. Bridge to the next act: these habits only work if the agent has checks to run, which is where we go next.</p>
+        <p class="eyebrow">Close · Five answers, five habits</p>
+        <h2 id="wrap-title">Writing plus a check does what one glance cannot.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act II questions" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 96" role="img" aria-label="Act II in five questions: 1, how does it think; 2, is it right; 3, how much thinking; 4, trust what it wrote; 5, what does it know. Answered so far: 1, how does it think: it writes; 2, is it right: only a check can say; 3, how much thinking: a dial; more can hurt; 4, trust what it wrote: a lead, not evidence; 5, what does it know: a picture to keep fed. All five answered.">
+          <g class="q done"><rect x="0" y="6" width="220" height="62" rx="4"/><text class="t" x="110" y="31" text-anchor="middle">1 · How does it think?</text><text class="a" x="110" y="55" text-anchor="middle">It writes.</text></g>
+          <path class="head done" d="M228 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="230" y="6" width="220" height="62" rx="4"/><text class="t" x="340" y="31" text-anchor="middle">2 · Is it right?</text><text class="a" x="340" y="55" text-anchor="middle">Only a check can say.</text></g>
+          <text class="tag done" x="340" y="88" text-anchor="middle">▸ Best-of-N lab</text>
+          <path class="head done" d="M458 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="460" y="6" width="220" height="62" rx="4"/><text class="t" x="570" y="31" text-anchor="middle">3 · How much thinking?</text><text class="a" x="570" y="55" text-anchor="middle">A dial; more can hurt.</text></g>
+          <text class="tag done" x="570" y="88" text-anchor="middle">▸ effort demo · lab</text>
+          <path class="head done" d="M688 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="690" y="6" width="220" height="62" rx="4"/><text class="t" x="800" y="31" text-anchor="middle">4 · Trust what it wrote?</text><text class="a" x="800" y="55" text-anchor="middle">A lead, not evidence.</text></g>
+          <path class="head done" d="M918 37 l-6 -4 v8 z"/>
+          <g class="q done"><rect x="920" y="6" width="220" height="62" rx="4"/><text class="t" x="1030" y="31" text-anchor="middle">5 · What does it know?</text><text class="a" x="1030" y="55" text-anchor="middle">A picture to keep fed.</text></g>
+          <text class="tag done" x="1030" y="88" text-anchor="middle">▸ Kepler · planner labs</text>
+          </svg>
+        </div>
+        <ol class="answers" aria-label="Five habits, one per answer">
+          <li><span class="q">1 · It writes.</span> <strong>Ask for the steps before the answer.</strong></li>
+          <li><span class="q">2 · A check.</span> <strong>Give it a test, an oracle, a solver.</strong></li>
+          <li><span class="q">3 · A dial.</span> <strong>Set effort per task.</strong></li>
+          <li><span class="q">4 · A lead.</span> <strong>Read the diff, not the story.</strong></li>
+          <li><span class="q">5 · A picture.</span> <strong>Feed it: fast tests, clear errors.</strong></li>
+        </ol>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Goal:</strong> students leave with the act’s five answers, now all filled in on the strip, and the habit each one gives them.</p>
+            <p>Talk track: one forward pass is a glance. Writing lets a model chain steps, and a check outside the model turns many tries, or a training run, into results. Read the strip, then the habit under each answer:</p>
+            <ul>
+              <li>It writes: for multi-step work, let the agent write a plan or steps before it acts.</li>
+              <li>Only a check can say: give the agent a test, an oracle or a solver, and trust that, not its say-so.</li>
+              <li>A dial; more can hurt: set effort per task, low for lookups, high for hard and checkable problems.</li>
+              <li>A lead, not evidence: read the reasoning to know where to look, then check the diff, the commands, the test run.</li>
+              <li>A picture to keep fed: fast tests, clear errors and an AGENTS.md keep the agent’s picture of your repo right.</li>
+            </ul>
+            <p>Both labs stay open after class.</p>
+            <p>Transition into Act III: “The planner was a toy. In Act III the agent runs the check itself, with real tools, every turn: reality answers back.”</p>
+          </div>
         </details>
       </section>
 
       <nav data-deck-nav hidden aria-label="Slide navigation">
         <button type="button" data-prev>Previous</button>
-        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 20</span>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 12</span>
         <button type="button" data-next>Next</button>
         <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
       </nav>
     </main>
-    <footer>Lab charts are illustrative simulations. Recent claims carry a date and a source; contested ones are labeled.</footer>
   </div>
   <!-- shared-script:begin -->
   <script>/* Classic script; each enhancement is optional and scoped to its own root. */
@@ -1101,5 +1356,32 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 })();
 </script>
   <!-- shared-script:end -->
+  <script>/* Page-specific: on narrow screens each graph scrolls sideways; keep its current question in view. */
+(function () {
+  'use strict';
+  function centre(wrap) {
+    var now = Array.from(wrap.querySelectorAll('.q.now'));
+    if (!now.length || wrap.scrollWidth <= wrap.clientWidth) return;
+    var boxes = now.map(function (node) { return node.getBoundingClientRect(); });
+    var left = Math.min.apply(null, boxes.map(function (box) { return box.left; }));
+    var right = Math.max.apply(null, boxes.map(function (box) { return box.right; }));
+    var frame = wrap.getBoundingClientRect();
+    // Centre all highlighted boxes together; if they are wider than the frame, start at the first.
+    var offset = right - left > frame.width ? left - frame.left : left - frame.left - (frame.width - (right - left)) / 2;
+    wrap.scrollLeft += offset;
+  }
+  function init() {
+    var wraps = Array.from(document.querySelectorAll('.spine-wrap'));
+    if (!('ResizeObserver' in window)) return wraps.forEach(centre);
+    // A size change covers first layout, rotation, resizing and a hidden slide being shown.
+    var observer = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) { centre(entry.target); });
+    });
+    wraps.forEach(function (wrap) { observer.observe(wrap); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
 </body>
 </html>
