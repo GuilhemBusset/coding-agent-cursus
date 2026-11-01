@@ -19,6 +19,38 @@ checker or data edits, no hard-coding), run `uv run pytest` again, and name the 
 After the agent stops, the script runs the export's contract suite itself and prints its own
 verdict and the changed files; the agent's word is not the evidence.
 
+## Live in class (#two-harnesses)
+
+The Act III deck (`03-agent.html#two-harnesses`) runs a different version of this demo: interactive,
+in both CLIs, with Act II's short prompt, the one its recorded run used
+(`fixtures/runs/flipped-sense-claude.json`). The slide draws that recording and its Codex twin; the
+scripted `run loop` above, with its longer `LOOP_PROMPT`, is for rehearsing the loop, not for class.
+
+Before class, type each line into its own terminal at the repository root, without pressing Enter.
+Each line resets its own fresh `flipped-sense` export, then starts the CLI in it.
+
+```sh
+cd sessions/01-fundamentals/cursus/demos/agent && uv run agent_demo.py reset loop --work-root /tmp/cursus-s1-agent && cd /tmp/cursus-s1-agent/loop && UV_OFFLINE=1 UV_NO_SYNC=1 UV_NO_CACHE=1 claude --model claude-opus-5-5 --effort medium --permission-mode default --strict-mcp-config --setting-sources project,local
+cd sessions/01-fundamentals/cursus/demos/agent && uv run agent_demo.py reset loop --work-root /tmp/cursus-s1-codex && cd /tmp/cursus-s1-codex/loop && UV_OFFLINE=1 UV_NO_SYNC=1 UV_NO_CACHE=1 codex -m gpt-6-astra -c model_reasoning_effort="medium" --sandbox workspace-write -c approval_policy="never"
+```
+
+In class, after the room's bet: Claude Code first. Its reset prints `1 failed, 29 passed`. Paste the
+prompt, word for word:
+
+```text
+Run `uv run pytest`, find out why it fails and fix it.
+```
+
+Read each permission prompt aloud and press 1 (Yes), never 2: that switches the session to accept
+edits, and part 4 of the deck needs it to keep asking. Expect red, one edit to `p00_model.py`, then
+`30 passed`, about 15 seconds plus your clicks. Then Codex, with the same prompt: it never asks. If a
+CLI asks to trust the folder, accept; if Codex offers an update, press Esc. If nothing moves within a
+minute, press Ctrl-C and open the replays instead:
+[Claude Code](../../labs/agent-loop.html#run=flipped-sense-claude),
+[Codex](../../labs/agent-loop.html#run=flipped-sense-codex). Keep both sessions open: the deck's
+part 3 types `/context` and `/status` in them, and part 4 asks Claude Code for one more edit and
+answers No.
+
 ## Before class
 
 1. Do the shared setup in the [README](README.md#before-class) (warm uv cache, both CLIs logged in).

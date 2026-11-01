@@ -33,9 +33,10 @@ MEASUREMENTS = [
 def test_metr_frontier_points_and_intervals_use_the_published_scale():
     deck = (Path(__file__).resolve().parents[1] / 'cursus/03-agent.html').read_text()
     section = re.search(r'<section\b[^>]*\bid="time-horizons".*?</section>', deck, re.S).group()
-    svg = ET.fromstring(re.search(r'<svg\b.*?</svg>', section, re.S).group())
-    points = [e for e in svg.iter('circle') if e.get('class') == 'pt']
-    intervals = [e for e in svg.iter('line') if e.get('class') == 'ci']
+    # The spine comes first on every slide; the chart is the svg.hz-svg.
+    svg = ET.fromstring(re.search(r'<svg class="hz-svg".*?</svg>', section, re.S).group())
+    points = [e for e in svg.iter('circle') if e.get('class') == 'hz-pt']
+    intervals = [e for e in svg.iter('line') if e.get('class') == 'hz-ci']
     assert len(points) == len(intervals) == len(MEASUREMENTS)
     by_date = {}
     for point, interval in zip(points, intervals):
@@ -44,12 +45,14 @@ def test_metr_frontier_points_and_intervals_use_the_published_scale():
         assert release not in by_date
         by_date[release] = (point, interval, title)
     origin, end = date(2023, 1, 1), date(2026, 7, 1)
+    # The projector chart: 2023-01-01 to 2026-07-01 across, 1 min to 64 h up, log scale.
+    x0, x1, y0, y1, lo_min, hi_min = 92, 900, 36, 212, 1, 3840
     def y(minutes):
-        raw = 192 - 180 * math.log(minutes / 2) / math.log(2400 / 2)
-        return max(12, min(192, raw))
+        assert lo_min <= minutes <= hi_min, 'every interval fits the scale, none is clamped'
+        return y1 - (y1 - y0) * math.log(minutes / lo_min) / math.log(hi_min / lo_min)
     for release, estimate, low, high in MEASUREMENTS:
         point, interval, title = by_date[release]
-        x = 60 + 564 * (date.fromisoformat(release) - origin).days / (end - origin).days
+        x = x0 + (x1 - x0) * (date.fromisoformat(release) - origin).days / (end - origin).days
         assert abs(float(point.get('cx')) - x) <= .1, title
         assert abs(float(point.get('cy')) - y(estimate)) <= .1, title
         assert abs(float(interval.get('x1')) - x) <= .1, title

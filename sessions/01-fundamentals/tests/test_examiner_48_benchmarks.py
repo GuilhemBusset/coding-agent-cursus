@@ -1,46 +1,44 @@
-"""Check that the numerical example in the talk track matches its table."""
+"""The benchmark answer in the instructor notes must not pass off two scores of one model as a gap
+between models (the Act III slide that carried it moved there)."""
 from html.parser import HTMLParser
 from pathlib import Path
 import re
 
 
-class BenchmarkSlide(HTMLParser):
+class Answer(HTMLParser):
+    """The text of the instructor notes' benchmark answer, div#act-3-benchmarks."""
+
     def __init__(self):
         super().__init__()
-        self.active = False
-        self.row = None
-        self.rows = []
+        self.depth = 0
         self.text = []
 
     def handle_starttag(self, tag, attrs):
-        if tag == 'section' and dict(attrs).get('id') == 'benchmarks':
-            self.active = True
-        if self.active and tag == 'tr':
-            self.row = []
+        if self.depth:
+            self.depth += tag == 'div'
+        elif tag == 'div' and dict(attrs).get('id') == 'act-3-benchmarks':
+            self.depth = 1
 
     def handle_endtag(self, tag):
-        if self.active and tag == 'tr':
-            self.rows.append(' '.join(self.row))
-            self.row = None
-        if tag == 'section':
-            self.active = False
+        if self.depth and tag == 'div':
+            self.depth -= 1
 
     def handle_data(self, data):
-        if self.active:
+        if self.depth:
             self.text.append(data)
-            if self.row is not None:
-                self.row.append(data)
 
 
-def test_between_model_example_does_not_compare_two_scores_for_the_same_model():
-    deck = Path(__file__).resolve().parents[1] / 'cursus/03-agent.html'
-    parser = BenchmarkSlide()
-    parser.feed(deck.read_text(encoding='utf-8'))
-    rows = [set(re.findall(r'(\d+(?:\.\d+)?)%', row)) for row in parser.rows]
-    assert any(len(row) >= 2 for row in rows), 'Benchmark slide needs its comparison table'
-    text = ' '.join(parser.text)
-    for a, b in re.findall(r'between models:\s*(\d+(?:\.\d+)?)\s+versus\s+(\d+(?:\.\d+)?)', text):
-        assert not any({a, b} <= row for row in rows), (
-            f'{a} versus {b} comes from the same model row, comparing vendor and '
-            'leaderboard evaluations; it is not a difference between models.'
-        )
+def test_the_same_model_pair_is_named_as_such_and_the_gap_is_between_models():
+    notes = Path(__file__).resolve().parents[1] / 'cursus/instructor-notes.html'
+    parser = Answer()
+    parser.feed(notes.read_text(encoding='utf-8'))
+    text = ' '.join(' '.join(parser.text).split())
+    assert text, 'the instructor notes answer the benchmark question'
+    # The vendor's and the leaderboard's figures for each model, as the answer quotes them.
+    opus = {'66.4', '64.8'}
+    astra = {'57.9', '58.2'}
+    assert opus | astra <= set(re.findall(r'\d+\.\d', text))
+    pairs = re.findall(r'(\d+\.\d) and (\d+\.\d) are two evaluations of the same model', text)
+    assert pairs, 'the answer names the same-model pair'
+    for a, b in pairs:
+        assert {a, b} <= opus or {a, b} <= astra, f'{a} and {b} are not one model’s two scores'
