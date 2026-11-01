@@ -27,18 +27,18 @@ import time
 HERE = Path(__file__).resolve().parent
 
 # The puzzle: (parcel, weight in kg, value in EUR). Greedy by value per kg reaches 181;
-# the optimum is 229 (B, D, E, G at 62 kg), and filling the van exactly (A, B, D, G) gives 228.
+# the optimum is 229 (B, D, E, G at 620 kg), and filling the van exactly (A, B, D, G) gives 228.
 PARCELS = (
-    ("A", 28, 67),
-    ("B", 9, 52),
-    ("C", 6, 20),
-    ("D", 10, 64),
-    ("E", 27, 68),
-    ("F", 27, 29),
-    ("G", 16, 45),
-    ("H", 30, 61),
+    ("A", 280, 67),
+    ("B", 90, 52),
+    ("C", 60, 20),
+    ("D", 100, 64),
+    ("E", 270, 68),
+    ("F", 270, 29),
+    ("G", 160, 45),
+    ("H", 300, 61),
 )
-CAPACITY = 63
+CAPACITY = 630
 
 EFFORTS = ("low", "high")
 CLIS = ("claude", "codex")
