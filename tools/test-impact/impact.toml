@@ -111,7 +111,6 @@ shared = [
 # Decks: the deck, and the labs, demos and fixtures it links to or quotes.
 sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
 thinking = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
-thinking-planner = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "tools/html-pages/tests/thinking.test.mjs"]
 opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**"]
 examiner48-deck-links = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/labs/*.html"]
 # Labs: the lab and the files it is built from.

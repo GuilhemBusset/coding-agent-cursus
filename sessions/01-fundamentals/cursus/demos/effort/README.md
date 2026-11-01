@@ -23,9 +23,9 @@ reset removes it.
 
 ## The puzzle
 
-A van with a 63 kg limit and eight parcels (weight, value): A (28, 67), B (9, 52), C (6, 20),
-D (10, 64), E (27, 68), F (27, 29), G (16, 45), H (30, 61). The best load is B, D, E, G: 62 kg,
-229 EUR. Two traps sit next to it. Filling the van to exactly 63 kg (A, B, D, G) gives 228, one
+A van with a 630 kg limit and eight parcels (weight, value): A (280, 67), B (90, 52), C (60, 20),
+D (100, 64), E (270, 68), F (270, 29), G (160, 45), H (300, 61). The best load is B, D, E, G: 620 kg,
+229 EUR. Two traps sit next to it. Filling the van to exactly 630 kg (A, B, D, G) gives 228, one
 short. Loading by value per kilo (greedy) gives 181. The oracle checks all 256 subsets; the
 script scores a run as correct only when its last `ANSWER:` line is the integer 229.
 
@@ -35,7 +35,7 @@ script scores a run as correct only when its last `ANSWER:` line is the integer 
    `uv sync --locked` inside `sessions/01-fundamentals/`). The script uses only the standard
    library, but `uv run` needs the session's `.venv/`.
 2. Check the CLI you will use and that you are logged in: `claude --version` or `codex --version`,
-   then any one-line prompt. The recording used Claude Code 2.1.296 and codex-cli 0.162.1.
+   then any one-line prompt. The recording used Claude Code 2.1.316 and codex-cli 0.166.0.
 3. Check the fallback works offline: `uv run --offline effort.py replay` must print the table under
    [Expected outcome](#expected-outcome).
 4. Run the [reset](#reset). Open a terminal in this folder (`sessions/01-fundamentals/cursus/demos/effort/`)
@@ -77,7 +77,8 @@ What each run does, so nobody wonders whether the agent "cheated":
   in the table and `pure_reasoning: false` in `results.json`.
 
 The settings are documented here (checked 2026-10-11, rechecked 2026-10-18; the Codex reference
-now lists `max` and `ultra` among the possible levels, and the prices below are unchanged):
+now lists `max` and `ultra` among the possible levels; the prices below were unchanged on
+2026-10-18 and again on 2026-11-01):
 
 - Claude effort parameter: https://platform.claude.com/docs/en/build-with-claude/effort. The levels
   are `low`, `medium`, `high`, `xhigh` and `max`. Opus 5.5 defaults to `medium`.
@@ -91,10 +92,10 @@ now lists `max` and `ultra` among the possible levels, and the prices below are 
 | --- | --- | --- |
 | 0:00 | `prompt.txt` | Read the puzzle. Ask the [predict question](#predict) and have everyone write down three multipliers and a yes or no. |
 | 1:00 | Launch `uv run effort.py live --cli claude` (or `codex`) | "Same prompt, same model, twice. Only the effort setting changes. No tools, empty folder." |
-| 1:30 | Progress lines on stderr | The low run ends in about 10 s (Claude Code) or 20 s (Codex). The high run takes a little longer. |
+| 1:30 | Progress lines on stderr | The low run ends in about 15 s (Claude Code) or 35 s (Codex). The high run takes about as long. |
 | 2:30 | The table | Read one row aloud: output tokens, reasoning tokens, seconds, dollars, answer, correct. |
 | 3:15 | The "High effort divided by low effort" lines | Compare them with the room's bets. If people bet 5× or 10×, that gap is the discussion. |
-| 4:15 | `input tok` and `cache write` columns | The same at both efforts: that is the agent's own system prompt, paid on every call. On a small puzzle it is about half the bill. |
+| 4:15 | `input tok` and `cache write` columns | About the same at both efforts: that is the agent's own system prompt, paid on every call. On a small puzzle it is about half the bill. |
 | 5:15 | Close | "The dial is an allowance, not a guarantee. Turn it up when the problem is hard and checkable, not by default." |
 
 If the high run is still going after about two minutes, press Ctrl-C and switch to the
@@ -112,34 +113,34 @@ not on an average.
 
 ## Expected outcome
 
-The recorded run of 2026-10-11, exactly as `uv run --offline effort.py replay` prints it:
+The recorded run of 2026-11-01, exactly as `uv run --offline effort.py replay` prints it:
 
 ```text
-Effort dial - knapsack, capacity 63 kg - optimum by brute force over all subsets: 229
-Run date 2026-10-11 (UTC) - prices as of 2026-10-11, USD list-price equivalent
+Effort dial - knapsack, capacity 630 kg - optimum by brute force over all subsets: 229
+Run date 2026-11-01 (UTC) - prices as of 2026-10-11, USD list-price equivalent
 
 CLI     effort  model            input tok  output tok  cache read  cache write  reasoning  seconds  cost USD  answer  correct
 ------  ------  ---------------  ---------  ----------  ----------  -----------  ---------  -------  --------  ------  -------
-claude  low     claude-opus-5-5          2         783           0        2,666        286      9.9    0.0370     229  yes
-claude  high    claude-opus-5-5          2         964           0        2,666        447     11.2    0.0406     229  yes
-codex   low     gpt-6-astra         14,348         467      12,288            -        286     18.6    0.0562     229  yes
-codex   high    gpt-6-astra         14,348         705      12,288            -        516     30.5    0.0681     229  yes
+claude  low     claude-opus-5-5          2         820           0        2,646        343     13.3    0.0376     229  yes
+claude  high    claude-opus-5-5          2       1,212           0        2,642        703     14.0    0.0454     229  yes
+codex   low     gpt-6-astra         15,053         591      12,416            -        366     34.4    0.0683     229  yes
+codex   high    gpt-6-astra         15,053         632      12,416            -        448     32.7    0.0704     229  yes
 
 Claude counts input without cache reads/writes; Codex counts cached tokens inside input.
 reasoning = Claude thinking tokens or Codex reasoning tokens, already counted in output.
 High effort divided by low effort, per CLI:
-  claude  output tokens x1.2   reasoning x1.6   seconds x1.1   cost x1.1
-  codex   output tokens x1.5   reasoning x1.8   seconds x1.6   cost x1.2
+  claude  output tokens x1.5   reasoning x2.0   seconds x1.1   cost x1.2
+  codex   output tokens x1.1   reasoning x1.2   seconds x1.0   cost x1.0
 ```
 
 What to draw from it:
 
 - **Both efforts were correct, in both CLIs.** Here high effort bought no correctness. It bought
-  about 1.6 to 1.8 times the reasoning tokens, 1.1 to 1.6 times the time and 1.1 to 1.2 times
+  about 1.2 to 2.0 times the reasoning tokens, 1.0 to 1.1 times the time and 1.0 to 1.2 times
   the cost. The lesson for this puzzle is cost and time, not accuracy.
-- **The fixed cost dominates.** The input side (Claude Code's 2,666-token system prompt written to
-  the 1-hour cache, Codex's 14,348 input tokens) is identical at both efforts and is 48 to 59
-  percent of each bill. The effort dial only moves the output side.
+- **The fixed cost dominates.** The input side (Claude Code's system prompt of about 2,640 tokens
+  written to the 1-hour cache, Codex's 15,053 input tokens) is the same or nearly at both efforts
+  and is 47 to 57 percent of each bill. The effort dial only moves the output side.
 - **If a live run differs,** that is the demo working, not failing. A low run that answers 228
   (the full van) or 181 (greedy) while high gets 229 is the case where thinking bought
   correctness. A high run that is slower and still wrong is the overthinking case from the
@@ -155,8 +156,8 @@ How the cost is computed (USD list-price equivalent: a subscription login is not
   `modelUsage`. `modelUsage` does not say how long a write is cached, so the script reads the
   result's `usage.cache_creation` split (`ephemeral_1h_input_tokens`, `ephemeral_5m_input_tokens`)
   and prices 1-hour writes at the 1-hour rate ($8 per million for Opus 5.5) and 5-minute writes at
-  the 5-minute rate ($5). Both recorded Claude runs wrote their 2,666-token system prompt to the
-  1-hour cache, kept as `cache_write_1h` next to `cache_write` in `results.json`. Without a
+  the 5-minute rate ($5). Both recorded Claude runs wrote their system prompt (2,646 and 2,642
+  tokens) to the 1-hour cache, kept as `cache_write_1h` next to `cache_write` in `results.json`. Without a
   reported split, every write is priced at the 5-minute rate.
 - Codex reports inclusive counters per turn: `input_tokens` includes `cached_input_tokens` and
   `cache_write_input_tokens`, and `output_tokens` includes `reasoning_output_tokens`. Cost =
@@ -165,9 +166,10 @@ How the cost is computed (USD list-price equivalent: a subscription login is not
   tokens exceed input or reasoning exceeds output, and a nonzero cache write for a model with no
   `cache_write` rate in `prices.json`. Both recorded runs report `cache_write_input_tokens` of 0.
 - Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. In both Claude
-  runs it equals the script's cost exactly: low (2 × $4 + 2,666 × $8 + 783 × $20)
-  per million = $0.036996, high (2 × $4 + 2,666 × $8 + 964 × $20) per million = $0.040616, so
-  `cost_delta_usd` = `cost_usd` − `reported_cost_usd` = 0.
+  runs it equals the script's cost: low (2 × $4 + 2,646 × $8 + 820 × $20) per million =
+  $0.037576, high (2 × $4 + 2,642 × $8 + 1,212 × $20) per million = $0.045384, so
+  `cost_delta_usd` = `cost_usd` − `reported_cost_usd` is 0 for low and 7 × 10⁻¹⁸ for high, the
+  floating-point rounding of Claude Code's own sum.
 
 ## Known failure modes
 
@@ -202,17 +204,17 @@ After a live run, `uv run effort.py replay --dir work` prints that run's table a
 
 ## Recording
 
-Four live runs, one per CLI and effort, made on **2026-10-11** on the instructor's Linux machine
+Four live runs, one per CLI and effort, made on **2026-11-01** on the instructor's Linux machine
 (WSL2) with `uv run effort.py live --cli both`, both CLIs logged in with the instructor's accounts.
-The run date is the UTC date of the first run's start. Prices were read from the vendor pages the
-same day (as of 2026-10-11).
+The run date is the UTC date of the first run's start. The prices are the snapshot read from the vendor
+pages on 2026-10-11, rechecked on 2026-10-18 and on the run day, 2026-11-01, unchanged.
 
 | CLI | Version | Model | Effort | Start (UTC) | End (UTC) | Seconds | Exit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude Code | 2.1.296 | claude-opus-5-5 | low | 2026-10-11T12:28:30.107Z | 2026-10-11T12:28:40.010Z | 9.903 | 0 |
-| Claude Code | 2.1.296 | claude-opus-5-5 | high | 2026-10-11T12:28:40.011Z | 2026-10-11T12:28:51.165Z | 11.155 | 0 |
-| Codex | 0.162.1 | gpt-6-astra | low | 2026-10-11T12:28:51.173Z | 2026-10-11T12:29:09.793Z | 18.62 | 0 |
-| Codex | 0.162.1 | gpt-6-astra | high | 2026-10-11T12:29:09.794Z | 2026-10-11T12:29:40.308Z | 30.514 | 0 |
+| Claude Code | 2.1.316 | claude-opus-5-5 | low | 2026-11-01T13:30:59.438Z | 2026-11-01T13:31:12.754Z | 13.316 | 0 |
+| Claude Code | 2.1.316 | claude-opus-5-5 | high | 2026-11-01T13:31:12.755Z | 2026-11-01T13:31:26.776Z | 14.021 | 0 |
+| Codex | 0.166.0 | gpt-6-astra | low | 2026-11-01T13:31:26.856Z | 2026-11-01T13:32:01.232Z | 34.376 | 0 |
+| Codex | 0.166.0 | gpt-6-astra | high | 2026-11-01T13:32:01.232Z | 2026-11-01T13:32:33.935Z | 32.703 | 0 |
 
 Prices used, standard list prices in USD per million tokens (MTok), as of 2026-10-11:
 
@@ -222,22 +224,26 @@ Prices used, standard list prices in USD per million tokens (MTok), as of 2026-1
 | gpt-6-astra | $10 | $50 | $12.50 | n/a | $1 |
 
 Sources: Anthropic, https://platform.claude.com/docs/en/about-claude/pricing (Opus 5.5 row of the
-model pricing table); OpenAI, https://platform.openai.com/docs/pricing (gpt-6-astra, standard tier,
-short context; Codex reported no cache writes in these runs, so their $12.50 rate did not apply).
+model pricing table); OpenAI, https://platform.openai.com/docs/pricing, which now redirects to
+https://developers.openai.com/api/docs/pricing (gpt-6-astra, standard tier, short context; the
+$12.50 cache write is the 30-minute rate; Codex reported no cache writes in these runs, so it did
+not apply).
 `prices.json` also holds the Sonnet 5.5 and Haiku 5.5 rates, for runs where Claude Code calls
 an auxiliary model. The recorded runs used only `claude-opus-5-5`.
 
 Notes on the recording:
 
-- A first full run a few minutes earlier, made before the reasoning column was added to the table,
-  also gave 229 in all four cases with similar counts. It was replaced by this run, not kept.
+- It replaces the recording of 2026-10-11, made when the van held 63 kg. Every weight and the
+  limit were then multiplied by ten, which keeps the same best load and the same traps; that
+  recording also gave 229 in all four runs. It is in the repository's history, not kept here.
 - The raw files are the CLIs' stdout, scrubbed: the temporary folder is shown as `<tmp>`, the home
   folder as `~` and the user name as `<user>`. Session IDs and other UUIDs became `<session-id>`,
   message and request IDs `<message-id>` and `<request-id>`, and the local socket path
-  `<socket>`. No e-mail address appeared. No token, timing, model or answer field was changed,
+  `<socket>`; the working folder appears as `<tmp>` both as `cwd` and `original_cwd`. No e-mail
+  address appeared. No token, timing, model or answer field was changed,
   and `results.json` re-derives from the raw files.
 - `prompt_sha256` in every meta file is the sha256 of the shipped `prompt.txt`
-  (`f5e2a7ab6c6f8c175bae05f6397fdce7ce6766794d58c2448fd064e4f6922163`).
+  (`725863d4eea31e496e15201c2eb2e478717806e5b398ada07edbf13a57892b87`).
 
 ## Reset
 
