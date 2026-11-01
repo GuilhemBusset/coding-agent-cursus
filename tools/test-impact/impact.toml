@@ -112,7 +112,7 @@ shared = [
 sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
 thinking = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
 opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**"]
-examiner48-deck-links = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/labs/*.html"]
+agent = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
 # Labs: the lab and the files it is built from.
 agent-loop = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**", "sessions/01-fundamentals/cursus/demos/agent/**"]
 examiner-agent-loop-d3 = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**"]
