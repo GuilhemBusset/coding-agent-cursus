@@ -316,6 +316,8 @@ git grep -n &lt;symbol the agent cited&gt;</code></pre>
         <h2 id="l2-title">L2 · Fix with a verifier</h2>
         <p>Goal: a copy of P00 with one bug planted in the model. The tests are the verifier. The agent must make them pass by fixing the model, never by touching <code>tests/</code>.</p>
         <h3>1. Export the variant written on the board</h3>
+        <p>Quit the agent first. From <code>p00-explore</code>, go back to your course checkout; replace <code>&lt;your checkout&gt;</code> with its folder name:</p>
+        <pre tabindex="0" aria-label="Back to the session from p00-explore"><code>cd ../&lt;your checkout&gt;/sessions/01-fundamentals</code></pre>
         <p>From <code>sessions/01-fundamentals</code> in your course checkout, replace <code>&lt;variant&gt;</code> with the name on the board:</p>
         <pre tabindex="0" aria-label="L2 export commands"><code>uv run python exercises/p00-lab/export.py --tests-dir --bug &lt;variant&gt; --out ../../../p00-fix
 cd ../../../p00-fix
@@ -327,7 +329,7 @@ uv run pytest</code></pre>
           <div data-agent="claude">
             <p class="label">Claude Code</p>
             <pre tabindex="0" aria-label="Start Claude Code"><code>claude</code></pre>
-            <p>Claude asks before each edit and each command. Read what it wants to run before you approve.</p>
+            <p>Claude asks before it edits a file or runs a command that could change something. Read what it wants to run before you approve.</p>
           </div>
           <div data-agent="codex">
             <p class="label">Codex</p>
@@ -343,6 +345,7 @@ uv run pytest</code></pre>
 uv run pytest
 git status --short</code></pre>
         <p>Expected: the first prints nothing, <code>uv run pytest</code> ends with every test passed, and <code>git status --short</code> prints one line, <code>M p00_model.py</code>. Any other line means the agent touched the contract (the tests, the checker or the data) or left a file behind, even if the tests are green.</p>
+        <p>All three can pass on a fix that only returns a known answer. Then read the change itself with <code>git diff -- p00_model.py</code>: it must repair the model, not type in a plan or a number.</p>
         <details data-instructor>
           <summary>Instructor hints · L2</summary>
           <ul>
@@ -361,6 +364,8 @@ git status --short</code></pre>
         <p>Goal: model the <a href="l3-word-problem/README.md">weekly staffing word problem</a> from scratch, plan first, and prove the answer with its independent checker. The checker never calls a solver; it recomputes coverage and headcount from your <code>solution.json</code> alone.</p>
         <p>L3 happens in your course checkout, in <code>sessions/01-fundamentals/exercises/l3-word-problem</code>, so it is turned in with your homework. Read its README first (2 minutes).</p>
         <h3>1. Plan mode first</h3>
+        <p>Quit the agent first. From <code>p00-fix</code>, go to the L3 folder of your course checkout:</p>
+        <pre tabindex="0" aria-label="Into L3 from p00-fix"><code>cd ../&lt;your checkout&gt;/sessions/01-fundamentals/exercises/l3-word-problem</code></pre>
         <p>From <code>sessions/01-fundamentals/exercises/l3-word-problem</code>:</p>
         <div class="grid">
           <div data-agent="claude">
@@ -418,6 +423,8 @@ git status --short -- check.py data wrong</code></pre>
         <h2 id="l4-title">L4 · Stretch: change how the agent works</h2>
         <p>Pick one option. Both run on P00 again, so your L3 work is not touched.</p>
         <h3>Option A · A rule or a tiny skill</h3>
+        <p>Quit the agent first. From <code>l3-word-problem</code>, go back to your L2 copy:</p>
+        <pre tabindex="0" aria-label="Back to p00-fix from L3"><code>cd ../../../../../p00-fix</code></pre>
         <p>In <code>p00-fix</code>, either add one rule to <code>AGENTS.md</code> (both agents read it; Claude Code through <code>CLAUDE.md</code>), or write a tiny skill: a folder with a <code>SKILL.md</code> whose front matter has a <code>name</code> and a <code>description</code>, followed by a few lines of instructions. Example idea: before saying a fix is done, run the L2 done commands and paste their output.</p>
         <div class="grid">
           <div data-agent="claude">
@@ -440,6 +447,8 @@ git diff --stat -- tests/ data p00_checker.py
 git status --short</code></pre>
         <p>Why the last command: <code>git diff --stat</code> only sees unstaged edits. A change to <code>tests/</code>, <code>data/</code> or <code>p00_checker.py</code> that the agent staged with <code>git add</code>, or a new file it dropped there, shows up only in <code>git status --short</code>. Any line beyond the ones above means the contract was touched.</p>
         <h3>Option B · Rerun L2 headless and compare</h3>
+        <p>Quit the agent first. From <code>l3-word-problem</code>, go back to the session folder:</p>
+        <pre tabindex="0" aria-label="Back to the session from L3"><code>cd ../..</code></pre>
         <p>From <code>sessions/01-fundamentals</code>, export the same variant again to a fresh folder:</p>
         <pre tabindex="0" aria-label="L4 export commands"><code>uv run python exercises/p00-lab/export.py --tests-dir --bug &lt;variant&gt; --out ../../../p00-headless
 cd ../../../p00-headless</code></pre>

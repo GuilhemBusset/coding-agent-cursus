@@ -170,7 +170,6 @@ instructor's minute-by-minute plan, with demo commands and fallbacks, is
 | 1:10–1:55 | Act II · Thinking | Deck [`cursus/02-thinking.html`](cursus/02-thinking.html); labs [`test-time-compute`](cursus/labs/test-time-compute.html), [`world-model`](cursus/labs/world-model.html); demo [`cursus/demos/effort/`](cursus/demos/effort/README.md) |
 | 1:55–2:35 | Act III · Agent = model + harness | Deck [`cursus/03-agent.html`](cursus/03-agent.html); labs [`context`](cursus/labs/context.html), [`agent-loop`](cursus/labs/agent-loop.html); demos [`cursus/demos/agent/`](cursus/demos/agent/README.md) |
 | 2:35–2:45 | Break | |
-| 2:45–3:35 | Act IV · Drive it yourself | [`exercises/lab-ladder.html`](exercises/lab-ladder.html) on P00 ([`exercises/p00-lab/`](exercises/p00-lab/PROBLEM.md)) and L3 ([`exercises/l3-word-problem/`](exercises/l3-word-problem/README.md)) |
-| 3:35–3:55 | Act V · When agents fail | Deck [`cursus/05-failure.html`](cursus/05-failure.html); lab [`verifier-gaming`](cursus/labs/verifier-gaming.html) |
+| 2:45–3:55 | Act IV · Claim versus evidence | Deck [`cursus/04-evidence.html`](cursus/04-evidence.html); [`exercises/lab-ladder.html`](exercises/lab-ladder.html) on P00 ([`exercises/p00-lab/`](exercises/p00-lab/PROBLEM.md)) and L3 ([`exercises/l3-word-problem/`](exercises/l3-word-problem/README.md)); lab [`verifier-gaming`](cursus/labs/verifier-gaming.html) |
 | 3:55–4:00 | Close | Deck [`cursus/99-close.html`](cursus/99-close.html): exit ticket and homework |
 | After | Homework | [`exercises/home.html`](exercises/home.html) and P01, [`exercises/homework-p01/`](exercises/homework-p01/README.md); turn in with `/turn-in 01` or `$turn-in 01` |

@@ -39,6 +39,7 @@ def test_notes_supply_answers_for_each_act_and_reuse_the_primer():
     for topic in ("whole sentences", "sampling is random guessing", "moe", "rag",
                   "multi head attention", "why only one layer"):
         assert topic in notes
-    for act in range(1, 6):
+    # Acts IV and V of the plan run as one act, Act IV.
+    for act in range(1, 5):
         assert f'id="act-{act}-misconceptions"' in raw
         assert f'id="act-{act}-questions"' in raw

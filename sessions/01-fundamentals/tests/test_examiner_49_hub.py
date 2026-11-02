@@ -29,7 +29,8 @@ def test_hub_has_all_student_pages_in_act_order():
         for page in (SESSION / folder).rglob("*.html"):
             assert page.relative_to(SESSION).as_posix() in paths
     assert paths.index("exercises/00-prework.html") < positions[0]
-    assert positions[3] < paths.index("exercises/lab-ladder.html") < positions[4]
+    # Act IV (04-evidence) is a deck now; its lab ladder follows it, before the close.
+    assert positions[4] < paths.index("exercises/lab-ladder.html") < positions[5]
     assert paths.index("exercises/home.html") > positions[-1]
     for deck, start, end in zip(decks, positions, positions[1:] + [len(paths)]):
         labs = [p for p in Anchors(deck).paths if p.startswith("labs/")]

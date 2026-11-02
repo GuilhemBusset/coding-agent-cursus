@@ -112,7 +112,7 @@ The pass still re-read the time-sensitive claims.
 | Agent-loop lab: gather, act, verify; Codex resends the transcript | https://code.claude.com/docs/en/how-claude-code-works; https://openai.com/index/unrolling-the-codex-agent-loop/ (archive copy) | kept |
 | Tool search and `ENABLE_TOOL_SEARCH` values, 4,096 and 16,384 character caps (`demos/agent/context-bomb.md`) | https://code.claude.com/docs/en/mcp | kept (still matches; the runbook's dated findings are a recording) |
 
-### Act IV (`exercises/lab-ladder.html`)
+### Act IV (`exercises/lab-ladder.html`; after this pass, also the Act IV deck `cursus/04-evidence.html`)
 
 | Claim | Primary source | Outcome |
 | --- | --- | --- |
@@ -121,6 +121,13 @@ The pass still re-read the time-sensitive claims.
 | Codex's "Implement this plan?" prompt | interactive UI only, not in the docs; seen in the lab ladder rehearsal | not rechecked live. The page already hedges it ("If it does not ask, type /plan again") and gives it no date |
 
 ### Act V (`cursus/05-failure.html`, verifier-gaming lab)
+
+After this pass, Acts IV and V merged into one act, `cursus/04-evidence.html`, and `05-failure.html` was
+removed. PocketOS, ImpossibleBench and the 2025 workshop are on its slides; the other cases below moved,
+with their sources and dates, to the instructor notes (`instructor-notes.html#act-4-off-slides`).
+The #l1 notes also quote the agent’s own sentence, “I guessed that deleting a staging volume via the API would be
+scoped to staging only.”, as quoted by Tom’s Hardware. ImpossibleBench was re-read then in its v1 full text for the rates the slides draw (see
+`sources.html#act-4`).
 
 | Claim | Primary source | Outcome |
 | --- | --- | --- |

@@ -6,7 +6,7 @@ from urllib.parse import unquote, urlsplit
 
 SESSION = Path(__file__).resolve().parents[1]
 INDEX = SESSION / "index.html"
-DECKS = ["00-opening", "01-sampler", "02-thinking", "03-agent", "05-failure", "99-close"]
+DECKS = ["00-opening", "01-sampler", "02-thinking", "03-agent", "04-evidence", "99-close"]
 
 
 class Page(HTMLParser):
@@ -80,5 +80,5 @@ def test_index_links_decks_labs_and_exercises_in_teaching_order():
             if lab.startswith("cursus/labs/") and lab.endswith(".html"):
                 assert deck_pos[i] < first[lab] < upper, f"{lab} is not listed under {deck}"
     assert first["exercises/00-prework.html"] < deck_pos[0], "pre-work comes before the opening"
-    assert deck_pos[3] < first["exercises/lab-ladder.html"] < deck_pos[4], "the ladder is Act IV"
+    assert deck_pos[4] < first["exercises/lab-ladder.html"] < deck_pos[5], "the ladder is Act IV, after its deck"
     assert first["exercises/home.html"] > deck_pos[-1], "homework comes after the close"

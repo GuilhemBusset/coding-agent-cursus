@@ -406,8 +406,8 @@ test('D4: the act keeps its promises to Act I and the close', async t => {
   assert.match(await face(topic(page, 'cot-faithfulness')), /contested/);
   // Overthinking is a warning, not an average: the tasks were built to find it.
   assert.match(await face(topic(page, 'overthinking')), /built to find/);
-  // Act V returns to injection; Act III adds a check on every turn.
-  assert.match(await notesText(topic(page, 'cot-faithfulness')), /act v/);
+  // Act IV returns to injection; Act III adds a check on every turn.
+  assert.match(await notesText(topic(page, 'cot-faithfulness')), /act iv/);
   assert.match(await notesText(topic(page, 'wrap')), /every turn/);
 });
 
