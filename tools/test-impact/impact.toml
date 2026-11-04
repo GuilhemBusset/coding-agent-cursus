@@ -25,7 +25,6 @@ paths = [
 # Read by no check: prose, editor configuration, and loose probe or examiner scripts nothing runs.
 paths = [
   "CLAUDE.md",
-  "ruff.toml",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "LICENSE",
@@ -92,6 +91,11 @@ paths = [
   "tools/implementation-loop/**",
   "tests/turn_in/**",
 ]
+
+# Ruff's import order over every Python file in the repository (ruff.toml), with the Ruff locked
+# beside ty in setup/.
+[units.imports]
+paths = ["**/*.py", "ruff.toml", "setup/pyproject.toml", "setup/uv.lock"]
 
 # Each session's pytest suite (sessions/<NN>-*/tests) runs when anything in its session folder
 # changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks. Its type

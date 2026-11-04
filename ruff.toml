@@ -1,10 +1,15 @@
-# Ruff (https://docs.astral.sh/ruff/), as editors run it: the rules the repository follows, whatever
-# folder an editor opens. Editors' Ruff extension bundles Ruff 0.17.3; check from the repository root
-# with the same version:
+# Ruff (https://docs.astral.sh/ruff/), as CI and editors run it: the rules the repository follows,
+# whatever folder an editor opens. Check them from the repository root with the Ruff locked in
+# setup/uv.lock (or the same version through uvx, `uvx ruff@0.17.3 check .`):
 #
-#   uvx ruff@0.17.3 check .
+#   uv run --project setup --locked ruff check .
 #
-# Sort import blocks with `uvx ruff@0.17.3 check --select I --fix <files>`.
+# CI's repo checks run the import-order part of it, `--select I`, on every pull request
+# (setup/README.md#import-order); see setup/README.md#lint-rules. Sort with `--select I --fix <files>`.
+
+# The Ruff pinned in setup/pyproject.toml. A Ruff of another version (an editor's bundled one)
+# refuses this file instead of reporting differently; a bump changes both, and setup/uv.lock, at once.
+required-version = "==0.17.3"
 
 # The width the code is written to, so sorting does not re-wrap import lines.
 line-length = 120

@@ -1,13 +1,15 @@
 # The locked environment for the repository's own Python tooling, outside every session: the ty
-# type checker, and the pytest it resolves the tests' imports against (the version CI runs them
-# with). Not a package; nothing imports it. The configuration ty applies is ../ty.toml. See
-# README.md#type-checking and ../docs/adr/0014-type-checking-with-ty.md.
+# type checker, Ruff for the import order, and the pytest ty resolves the tests' imports against
+# (the version CI runs them with). Not a package; nothing imports it. The configuration ty applies
+# is ../ty.toml, Ruff's is ../ruff.toml, whose required-version must equal the Ruff pin here. See
+# README.md#type-checking, README.md#import-order and ../docs/adr/0014-type-checking-with-ty.md.
 [project]
 name = "cursus-repo-tools"
 version = "0"
 requires-python = ">=3.11"
 dependencies = [
     "pytest==8.3.5",
+    "ruff==0.17.3",
     "ty==0.0.95",
 ]
 

@@ -76,4 +76,9 @@ jobs:
       - name: Type check
         run: uv run --project setup --locked ty check
 
+      # The import order (Ruff's isort rules, ruff.toml) anywhere in the repository, from the Ruff
+      # locked beside ty. Sessions carry no Ruff: this root run covers their code too.
+      - name: Import order
+        run: uv run --project setup --locked ruff check --select I .
+
       # The implement loop engine tests run in their own job, beside this one (engine-tests.yml).
