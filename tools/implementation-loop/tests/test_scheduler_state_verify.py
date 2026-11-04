@@ -81,6 +81,7 @@ class LegacyStateTests(unittest.TestCase):
     def test_state_from_the_stop_and_ask_engine_reads_with_the_new_outcomes(self):
         stopped = IssueState.from_dict({"number": 21, "phase": "needs_human", "reason": "a design dispute"})
         self.assertEqual(stopped.phase, Phase.PENDING)
+        assert stopped.wait is not None
         self.assertEqual((stopped.wait["kind"], stopped.wait["park_kind"], stopped.wait["reason"]),
                          ("legacy", "exhausted", "a design dispute"))
         accepted = IssueState.from_dict({"number": 22, "phase": "accepted"})
@@ -109,6 +110,7 @@ class LegacyStateTests(unittest.TestCase):
         st = IssueState.from_dict({"number": 24, "phase": "implement", "design": design,
                                    "locked": {"checks/old.sh": "digest"}})
         self.assertEqual(st.phase, Phase.BUILD)
+        assert st.wait is not None
         self.assertEqual((st.wait["kind"], st.wait["design"], st.wait["locked"]),
                          ("legacy", design, {"checks/old.sh": "digest"}))
         self.assertEqual(st.to_dict()["wait"]["design"], design, "it survives a save until the engine migrates it")

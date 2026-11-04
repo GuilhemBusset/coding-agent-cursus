@@ -4,7 +4,7 @@ verifier and real squash merges into a local bare remote. Only the agents and Gi
 import unittest
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body
+from helpers import SHIP, TempRepo, git, issue_body, present
 
 from implement_loop import engine as engine_mod
 from implement_loop.agents import FakeAgents, Script
@@ -73,14 +73,14 @@ class HappyPathTests(EngineCase):
         self.assertEqual(summary["phases"], {"done": 2})
         self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha")
         self.assertEqual(self.repo.main_file("docs/b.txt"), "beta")
-        self.assertTrue(self.repo.main_file("checks/issue_2.sh").startswith("#!/usr/bin/env bash"))
-        self.assertTrue(self.repo.main_file("checks/probe_2.sh").startswith("#!/usr/bin/env bash"),
+        self.assertTrue(present(self.repo.main_file("checks/issue_2.sh")).startswith("#!/usr/bin/env bash"))
+        self.assertTrue(present(self.repo.main_file("checks/probe_2.sh")).startswith("#!/usr/bin/env bash"),
                         "the examiner's passing probe is adopted as locked evidence")
         self.assertEqual([e["issue"] for e in self.events("merged")], [2, 3])
         first_b = min(e["seq"] for e in self.events("phase", 3) if e["to"] == "plan")
         a_done = min(e["seq"] for e in self.events("phase", 2) if e["to"] == "done")
         self.assertLess(a_done, first_b, "#3 waits until #2 is delivered")
-        pr = self.gh.prs[self.store.issue(2).pr]
+        pr = self.gh.prs[present(self.store.issue(2).pr)]
         self.assertTrue(pr["merged"])
         self.assertTrue(pr["body"].startswith("Refs #2"))
         self.assertIn("## Decisions", pr["body"])
@@ -139,10 +139,10 @@ class RoundTests(EngineCase):
         self.epic(2, 3)
         summary = self.run_engine()
         self.assertEqual(self.phase(2), Phase.FAILED)
-        self.assertEqual(self.store.issue(2).fail["cause"], "no_progress")
+        self.assertEqual(present(self.store.issue(2).fail)["cause"], "no_progress")
         self.assertEqual(len(self.events("replan", 2)), 1)
         self.assertEqual(self.phase(3), Phase.WAITING)
-        self.assertEqual(self.store.issue(3).wait["kind"], "prerequisite")
+        self.assertEqual(present(self.store.issue(3).wait)["kind"], "prerequisite")
         self.assertNotIn("parked", summary["phases"])
         self.assertIsNone(self.repo.main_file("docs/a.txt"), "nothing partial is merged")
 
@@ -163,7 +163,7 @@ class RoundTests(EngineCase):
         self.run_engine()
         self.assertEqual(self.phase(2), Phase.DONE)
         followup = self.store.issue(2).followup
-        self.assertIsNotNone(followup)
+        assert followup is not None
         self.assertIn({"name": "loop:follow-up"}, self.gh.issues[followup]["labels"])
         self.assertEqual(len([c for c in self.agents.calls if c[0] == "build"]), 1, "it never blocked")
 
@@ -180,7 +180,7 @@ class RoundTests(EngineCase):
         self.epic(2)
         self.run_engine()
         self.assertTrue(self.events("locked_changes_reverted", 2))
-        self.assertIn("test", self.repo.main_file("checks/issue_2.sh"))
+        self.assertIn("test", present(self.repo.main_file("checks/issue_2.sh")))
 
     def test_review_items_block_until_met(self):
         self.add_work(2, "docs/a.txt", "alpha", items=["`docs/a.txt` contains `alpha`.",
@@ -212,7 +212,7 @@ class ObligationTests(EngineCase):
                       bad_owner_items=("D2",))
         self.epic(2)
         self.run_engine()
-        plan = self.store.issue(2).plan
+        plan = present(self.store.issue(2).plan)
         self.assertEqual(next(i for i in plan["items"] if i["id"] == "D2")["proof"], "review")
         self.assertFalse(self.store.issue(2).obligations)
 
@@ -243,7 +243,7 @@ class WaitAndFailTests(EngineCase):
         self.epic(2)
         self.run_engine()
         self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(self.store.issue(2).wait["kind"], "outage")
+        self.assertEqual(present(self.store.issue(2).wait)["kind"], "outage")
         self.assertEqual(self.store.issue(2).infra, 0, "an outage is charged to no budget")
         self.run_engine(agents=self.agents)
         self.assertEqual(self.phase(2), Phase.DONE)
@@ -253,7 +253,7 @@ class WaitAndFailTests(EngineCase):
         self.epic(2)
         self.run_engine(caps=Caps(ci_poll_s=0, queue_poll_s=0, infra_budget=3))
         self.assertEqual(self.phase(2), Phase.FAILED)
-        self.assertEqual(self.store.issue(2).fail["cause"], "ceiling")
+        self.assertEqual(present(self.store.issue(2).fail)["cause"], "ceiling")
         self.assertEqual(self.store.issue(2).infra, 3)
 
     def test_a_failed_issue_resumes_once_on_a_new_engine_version(self):
@@ -282,7 +282,7 @@ class WaitAndFailTests(EngineCase):
         self.gh.check_script = [None, None]
         self.run_engine(caps=Caps(ci_poll_s=1, ci_timeout_s=1, queue_poll_s=0))
         self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(self.store.issue(2).wait["kind"], "ci")
+        self.assertEqual(present(self.store.issue(2).wait)["kind"], "ci")
 
     def test_an_engine_fault_is_filed_once_and_its_issue_waits(self):
         self.add_work(2, "docs/a.txt", "alpha")
@@ -297,7 +297,7 @@ class WaitAndFailTests(EngineCase):
         with mock.patch.object(Engine, "_step_verify", broken):
             self.run_engine()
         self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(self.store.issue(2).wait["kind"], "engine")
+        self.assertEqual(present(self.store.issue(2).wait)["kind"], "engine")
         self.assertEqual(self.phase(3), Phase.DONE)
         filed = [i for i in self.gh.issues.values() if {"name": "loop:engine-bug"} in i["labels"]]
         self.assertEqual(len(filed), 1)
@@ -329,7 +329,7 @@ class WaitAndFailTests(EngineCase):
         RepoClaims(self.repo.work).acquire("issue-2", "run-other")
         self.run_engine(caps=Caps(ci_poll_s=0, queue_poll_s=0, queue_wait_s=0))
         self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(self.store.issue(2).wait["kind"], "claim")
+        self.assertEqual(present(self.store.issue(2).wait)["kind"], "claim")
 
 
 class RequirementTests(EngineCase):

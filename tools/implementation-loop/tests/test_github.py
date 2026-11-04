@@ -116,7 +116,7 @@ class GhCliRetryTests(unittest.TestCase):
     def test_the_merge_is_retried_with_the_same_head_bound_body(self):
         gh, fake, _ = self.client(fail(TIMEOUT), ok({"merged": True}))
         gh.merge_pr(7, "abc123")
-        bodies = [json.loads(body) for _, body in fake.calls]
+        bodies = [json.loads(helpers.present(body)) for _, body in fake.calls]
         self.assertEqual(bodies, [{"sha": "abc123", "merge_method": "squash"}] * 2)
 
     def test_a_label_created_before_a_lost_answer_is_fine(self):

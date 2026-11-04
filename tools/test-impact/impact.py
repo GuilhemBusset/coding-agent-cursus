@@ -37,6 +37,8 @@ MARKER = re.compile(r"""data-design-system\s*=\s*["']cursus["']""", re.I)
 # targets, of which only existence matters.
 RUNTIME = re.compile(r"""\s(?:src|data|poster)\s*=\s*["']([^"'#?]+)|<link\b[^>]*?\shref\s*=\s*["']([^"'#?]+)""", re.I)
 LINK = re.compile(r"""\shref\s*=\s*["']([^"'#?]+)""", re.I)
+# The platforms students run the exercises on (ADR 0010), as ty names them.
+PLATFORMS = ("linux", "darwin", "win32")
 
 
 @functools.cache
@@ -151,7 +153,7 @@ def resolve(page: str, values: set[str]) -> set[str]:
 class Plan:
     everything: bool = False
     reasons: list[str] = field(default_factory=list)
-    units: set[str] = field(default_factory=set)        # repo-config, ship, turn-in, engine
+    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, turn-in, engine
     sessions: list[str] = field(default_factory=list)
     suites: list[str] = field(default_factory=list)
     pages: list[str] = field(default_factory=list)
@@ -238,6 +240,8 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         out.append(("repo config", [sys.executable, str(Path(__file__).with_name("repo_config.py"))], ROOT))
     if "ship" in plan.units:
         out.append(("ship", ["bash", "scripts/test-ship.sh"], ROOT))
+    if "typecheck" in plan.units:
+        out.append(("types", ["uv", "run", "--project", "setup", "--locked", "ty", "check"], ROOT))
     if "turn-in" in plan.units:
         out.append(("turn-in", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/turn_in"], ROOT))
     if plan.everything:
@@ -247,6 +251,10 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
                                "--with", "pytest-xdist==3.8.0", "--with", "execnet==2.1.2", "python", "-m", "pytest",
                                "-q", "-n", "auto", "tools/implementation-loop/tests"], ROOT))
     for session in plan.sessions:
+        out.append((f"{session} types", ["uv", "run", "--locked", "--group", "typecheck", "ty", "check"], ROOT / session))
+        for platform in PLATFORMS:   # exercises run on each (ADR 0010); "all" misses an API only one has
+            out.append((f"{session} exercise types ({platform})", ["uv", "run", "--locked", "--group", "typecheck", "ty",
+                                                                 "check", "--python-platform", platform, "exercises"], ROOT / session))
         out.append((session, ["uv", "run", "--locked", "--group", "parallel", "pytest", "-q", "-m", "not live", "-n", "auto"],
                     ROOT / session))
     if plan.suites:

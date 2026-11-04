@@ -66,7 +66,7 @@ def local_http(status=200, delay=0):
             self.send_response(status)
             self.end_headers()
 
-        def log_message(self, *_args):
+        def log_message(self, format, *args):
             pass
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)

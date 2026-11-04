@@ -557,7 +557,7 @@ class Engine:
         return [{"command": c["command"], "cwd": c.get("cwd") or "."} for c in st.commands
                 if c.get("criterion") == item and c.get("author") == "builder"]
 
-    def _set_phase(self, n: int, phase: Phase, **changes) -> IssueState:
+    def _set_phase(self, n: int, phase: Phase, **changes) -> None:
         st = self.store.issue(n)
         previous = st.phase
         st.phase = phase
@@ -570,7 +570,6 @@ class Engine:
             self.store.event("phase", issue=n, frm=previous.value, to=phase.value)
             self.log(f"#{n} {previous.value} -> {phase.value}")
             self._sync(n)
-        return st
 
     def _wait(self, n: int, kind: str, detail: str, resume: Phase | None = None, **extra) -> None:
         """Not terminal: the issue resumes by itself once its condition clears."""
@@ -924,6 +923,8 @@ class Engine:
         """Every round starts from current main: main is merged in first. On a conflict the merge
         stays in progress for the builder to resolve, and is concluded or aborted within this step."""
         st = self.store.issue(n)
+        # set at startup (_reconcile); a prerequisite _depend admits mid-run has none yet and stops here
+        assert st.branch is not None
         wt = self.ws.issue_worktree(n, st.branch)
         if str(wt) != st.worktree:
             st.worktree = str(wt)
@@ -969,6 +970,7 @@ class Engine:
 
     def _build_round(self, n: int, wt: Path, sync: UpdateResult) -> None:
         st = self.store.issue(n)
+        assert st.plan is not None   # an issue without one goes back to pending at startup
         feedback = list(st.feedback) + self._open_feedback(st)
         files = sync.files if sync.status == "conflict" else []
         expected: dict[str, str] = {}
@@ -1068,7 +1070,7 @@ class Engine:
             item = criterion_item(c.criterion, agent)
             why = ("its criterion names no plan item" if item is None else "it is empty" if not c.command
                    else "its cwd is outside the worktree" if not inside(c.cwd or ".") else None)
-            if why:   # said to the builder, never dropped in silence (#24 lost every probe command this way)
+            if item is None or why:   # said to the builder, never dropped in silence (#24 lost every probe command this way)
                 dropped.append(f"`{(c.command or '')[:120]}` (criterion {(c.criterion or '')[:80]!r}): {why}")
                 continue
             given.setdefault(item, []).append(asdict(c) | {
@@ -1217,6 +1219,7 @@ class Engine:
                                                           for x in self._item_commands(st, r["item"])}:
                 st.commands.append(c)
         elif kind == "reclassify":
+            assert st.plan is not None   # requests come from a build, which needs the plan
             st.plan["items"] = [{**i, "proof": "owner", "capability": r.get("capability"),
                                  "agent_part": r.get("detail")} if i["id"] == r["item"] else i for i in st.plan["items"]]
             self._obligate(st, {"item": r["item"], "kind": "capability", "detail": r.get("capability"),
@@ -1395,6 +1398,7 @@ class Engine:
     # ------------------------------------------------------------------ verify
     def _step_verify(self, n: int) -> None:
         st = self.store.issue(n)
+        assert st.worktree is not None   # verify follows a build, which records it
         wt = Path(st.worktree)
         head = self.ws.head(wt)
         problems: list[str] = []
@@ -1565,6 +1569,7 @@ class Engine:
     # ------------------------------------------------------------------ examine
     def _step_examine(self, n: int) -> None:
         st = self.store.issue(n)
+        assert st.worktree is not None and st.plan is not None and st.base_sha is not None   # set by plan and build
         wt = Path(st.worktree)
         head = self.ws.head(wt)
         if head != st.verified_sha:
@@ -1751,6 +1756,8 @@ class Engine:
     def _step_land(self, n: int) -> None:
         try:
             st = self.store.issue(n)
+            # set by startup and build, and only a certified head reaches land
+            assert st.worktree is not None and st.branch is not None and st.certified_sha is not None
             wt = Path(st.worktree)
             issue = self.plan.issues[n]
             if st.certified_sha != st.verified_sha:

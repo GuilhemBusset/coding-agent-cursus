@@ -1,0 +1,24 @@
+# ty (https://docs.astral.sh/ty/) for the repository's own Python: the implement loop engine, the
+# check selector, the turn-in tests and setup/browser-libs.py. Each session checks itself instead, in its
+# own locked environment, from its pyproject.toml's [tool.ty] (ADR 0001). From the repository root:
+#
+#   uv run --project setup --locked ty check
+#
+# ty and the pytest it resolves are pinned in setup/pyproject.toml and setup/uv.lock (ADR 0014).
+
+[environment]
+# The oldest Python the engine and the selector support, on the one platform they run on (ADR 0010).
+python-version = "3.11"
+python-platform = "linux"
+# No `python` here: `uv run` sets VIRTUAL_ENV to setup/.venv, and an editor passes the interpreter
+# selected in it. A fixed environment would override the editor's, and the session code opened from
+# the repository root would lose its packages (highspy, numpy).
+# The folders these programs and tests put on sys.path for their imports.
+root = ["tools/implementation-loop", "tools/implementation-loop/tests", "tools/test-impact", "tests/turn_in"]
+
+[src]
+# Loose probe and examiner scripts that nothing runs (impact.toml's [none]) are left out.
+include = ["tools/implementation-loop", "tools/test-impact", "tests/turn_in", "setup/browser-libs.py"]
+
+[terminal]
+error-on-warning = true

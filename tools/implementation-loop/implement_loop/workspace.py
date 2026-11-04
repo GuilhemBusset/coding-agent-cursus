@@ -355,7 +355,7 @@ class Workspace:
         carrying fails, the worktree is left on its private directory, kept whole, so the next
         `reattach` tries again instead of losing the agent's staged work."""
         self._write_gitfile(path, original)
-        if names is not None:
+        if staged is not None and names is not None:
             try:
                 self._keep_carried_entries(path, private, staged, names)
             except BaseException:
@@ -751,10 +751,10 @@ class Workspace:
             if (not self.git("status", "--porcelain", cwd=path) and not unlocks and not locks
                     and self.in_progress(path) != "merge"):
                 return None
-            trailers = (f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
-                        + "".join(f"Loop-Locks: {f}\n" for f in locks or [])
-                        + "".join(f"{k}: {v}\n" for k, v in (trailers or {}).items()))
-            message = f"{subject}\n\nRefs #{issue}\n\n{trailers}"
+            footer = (f"Loop-Phase: {phase}\n" + "".join(f"Loop-Unlocks: {f}\n" for f in unlocks or [])
+                      + "".join(f"Loop-Locks: {f}\n" for f in locks or [])
+                      + "".join(f"{k}: {v}\n" for k, v in (trailers or {}).items()))
+            message = f"{subject}\n\nRefs #{issue}\n\n{footer}"
             self.git("commit", "--quiet", "--allow-empty", "-m", message, cwd=path)
             return self.head(path)
 

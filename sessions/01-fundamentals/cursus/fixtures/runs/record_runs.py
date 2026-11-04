@@ -36,6 +36,7 @@ import sys
 import tempfile
 import threading
 import time
+from typing import Any
 
 # Importing the sibling scripts must not leave bytecode under runs/: every file there is scanned.
 sys.dont_write_bytecode = True
@@ -287,6 +288,7 @@ def capture(argv, cwd, env, prompt):
         start = time.monotonic()
         process = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.PIPE,
                                    stdout=subprocess.PIPE, stderr=errors)
+        assert process.stdin is not None and process.stdout is not None  # both are pipes
         timer = threading.Timer(TIMEOUT_SECONDS, process.kill)
         timer.start()
         try:
@@ -372,7 +374,7 @@ def record_one(task, vendor, model, effort, version, scratch, attempt):
         env = clean_env(UV_CACHE_DIR=str(uv_cache),
                         **{AUTH_FILES[vendor][0]: str(home)})
         prepare(task, work, env)
-        meta = {"vendor": vendor, "task": task, "attempt": attempt}
+        meta: dict[str, Any] = {"vendor": vendor, "task": task, "attempt": attempt}
         p00 = task != "context-bomb"
         if p00:
             names = contract_files(work, task)

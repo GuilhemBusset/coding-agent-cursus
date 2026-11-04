@@ -43,6 +43,14 @@ not install:
 uv run --group parallel pytest -n auto
 ```
 
+CI also type-checks the session's Python with [ty](https://docs.astral.sh/ty/), configured in
+`pyproject.toml`'s `[tool.ty]` and pinned in the `typecheck` dependency group, which `uv sync`
+does not install either:
+
+```sh
+uv run --group typecheck ty check
+```
+
 The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
 PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell once
 from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that

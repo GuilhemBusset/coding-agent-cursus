@@ -5,9 +5,10 @@ name: Session tests
 # pinned environment: the Python and uv versions in its mise.toml and the packages in its
 # uv.lock, with the command its README documents. The suite runs on every core through
 # pytest-xdist, from the session's non-default `parallel` dependency group (students' `uv sync`
-# never installs it). This is a Linux check of instructor-side
-# work; exercise portability across Linux, macOS and Windows is a separate concern
-# (docs/adr/0010-platform-support.md).
+# never installs it). Then ty type-checks the session's Python with its pyproject.toml's
+# [tool.ty], from its non-default `typecheck` group (ADR 0014). This is a Linux check of
+# instructor-side work; exercise portability across Linux, macOS and Windows is a separate
+# concern (docs/adr/0010-platform-support.md).
 #
 # A test that needs what CI lacks (a logged-in claude or codex CLI, network access to a vendor
 # API, credentials, a real laptop, Windows or macOS) carries the `live` marker, registered in
@@ -87,11 +88,22 @@ jobs:
           import tomllib
 
           with open("pyproject.toml", "rb") as f:
-              groups = tomllib.load(f).get("dependency-groups", {})
+              config = tomllib.load(f)
+          groups = config.get("dependency-groups", {})
           if not any(str(dep).startswith("pytest-xdist") for dep in groups.get("parallel", [])):
               sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::The session's tests run "
                        "in parallel; add pytest-xdist to a `parallel` dependency group "
                        "(uv add --group parallel pytest-xdist)")
+          with open("../../setup/pyproject.toml", "rb") as f:
+              ty = next(dep for dep in tomllib.load(f)["project"]["dependencies"] if dep.startswith("ty=="))
+          if ty not in groups.get("typecheck", []):
+              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::The session's Python is "
+                       f"type-checked with the ty setup/pyproject.toml pins; put {ty} in a `typecheck` "
+                       f"dependency group (uv add --group typecheck {ty})")
+          if "ty" not in config.get("tool", {}):
+              # Without it, ty walks up to the root ty.toml and checks the repository's code instead.
+              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::Configure the session's "
+                       "type check in a [tool.ty] table (see setup/README.md#type-checking)")
           with open("mise.toml", "rb") as f:
               tools = tomllib.load(f)["tools"]
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
@@ -101,7 +113,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           version: ${{ steps.pins.outputs.uv }}
-      - name: pytest
+      - id: pytest
+        name: pytest
         env:
           UV_PYTHON: ${{ steps.pins.outputs.python }}
         run: uv run --locked --group parallel pytest -q -m "not live" -n auto --junitxml="$RUNNER_TEMP/pytest.xml"
@@ -118,3 +131,15 @@ jobs:
               sys.exit("Empty or skipped run. Exclude a test CI cannot run with the registered "
                        "`live` marker, never by skipping inside the test.")
           EOF
+      # Also when the tests failed, so one run reports both. Then the exercises once per platform
+      # students use (ADR 0010): `python-platform = "all"` checks every branch, but an API only one
+      # platform has is caught only by checking as each of the others.
+      - name: Type check
+        if: ${{ !cancelled() && steps.pytest.outcome != 'skipped' }}
+        env:
+          UV_PYTHON: ${{ steps.pins.outputs.python }}
+        run: |
+          uv run --locked --group typecheck ty check
+          for platform in linux darwin win32; do
+            uv run --locked --group typecheck ty check --python-platform "$platform" exercises
+          done

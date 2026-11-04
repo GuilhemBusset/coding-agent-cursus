@@ -15,6 +15,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
+from typing import Any
 
 from .model import IssueState
 
@@ -43,6 +44,7 @@ class RunStore:
         self._lock = threading.RLock()
         self._seq = 0
         path = self.dir / "state.json"
+        self.state: dict[str, Any]
         if path.exists():
             self.state = json.loads(path.read_text())
             events = self.dir / "events.jsonl"

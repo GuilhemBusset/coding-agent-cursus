@@ -127,6 +127,34 @@ def test_github_outputs(tmp_path):
     assert dict(line.split("=", 1) for line in out.read_text().splitlines())["shards"] == "[1, 2, 3]"
 
 
+def test_commands_type_check_the_repository_and_each_session():
+    plan = impact.Plan(units={"typecheck"}, sessions=["sessions/01-x"])
+    run = {label: (command, cwd) for label, command, cwd in impact.commands(plan)}
+    assert run["types"] == (["uv", "run", "--project", "setup", "--locked", "ty", "check"], impact.ROOT)
+    assert run["sessions/01-x types"] == (["uv", "run", "--locked", "--group", "typecheck", "ty", "check"],
+                                          impact.ROOT / "sessions/01-x")
+    for platform in ("linux", "darwin", "win32"):
+        command, cwd = run[f"sessions/01-x exercise types ({platform})"]
+        assert command[-3:] == ["--python-platform", platform, "exercises"] and cwd == impact.ROOT / "sessions/01-x"
+    labels = list(run)
+    assert labels.index("sessions/01-x types") < labels.index("sessions/01-x"), "the seconds-long check first"
+    # The same commands CI runs.
+    workflows = impact.ROOT / ".github/workflows"
+    assert " ".join(run["types"][0]) in (workflows / "checks.yml").read_text(encoding="utf-8")
+    sessions = (workflows / "session-tests.yml").read_text(encoding="utf-8")
+    assert " ".join(run["sessions/01-x types"][0]) in sessions
+    assert '--python-platform "$platform" exercises' in sessions and " ".join(impact.PLATFORMS) in sessions
+
+
+def test_every_path_ty_checks_selects_the_type_check():
+    with (impact.ROOT / "ty.toml").open("rb") as f:
+        include = impact.tomllib.load(f)["src"]["include"]
+    for entry in include:
+        path = entry if entry.endswith(".py") else f"{entry}/x.py"
+        plan = impact.select(Change({path}))
+        assert plan.everything or "typecheck" in plan.units, f"{path}: add {entry} to [units.typecheck]"
+
+
 def test_name_status_counts_both_sides_of_a_rename_and_marks_deletions():
     change = impact.parse_name_status("M\ta.txt\nR087\told.html\tnew.html\nD\tgone.py\n")
     assert change.paths == {"a.txt", "old.html", "new.html", "gone.py"}
@@ -154,7 +182,7 @@ def test_the_map_names_only_suites_that_exist():
 def test_the_map_has_every_section_the_selector_reads():
     rules = impact.load_map()
     assert rules["all"]["paths"] and rules["none"]["paths"] and rules["units"]
-    assert {"engine", "turn-in", "ship", "repo-config"} <= set(rules["units"])
+    assert {"engine", "turn-in", "ship", "repo-config", "typecheck"} <= set(rules["units"])
     assert "shared" in rules["sessions"] and "shared" in rules["pages"] and "shared" in rules["node"]
 
 
@@ -184,5 +212,10 @@ def test_the_real_map_on_known_changes():
     for suite in ("next-token", "tokenizer", "sampler"):
         assert f"tools/html-pages/tests/{suite}.test.mjs" in fixture.suites, suite
     engine = impact.select(Change({"tools/implementation-loop/implement_loop/engine.py"}))
-    assert engine.units == {"engine"} and not engine.sessions and not engine.pages
+    assert engine.units == {"engine", "typecheck"} and not engine.sessions and not engine.pages
+    for path in ("ty.toml", "setup/pyproject.toml", "setup/uv.lock"):
+        types = impact.select(Change({path}))
+        assert not types.everything and types.units == {"typecheck"} and not types.sessions, path
+    session = impact.select(Change({"sessions/01-fundamentals/pyproject.toml"}))
+    assert session.sessions == ["sessions/01-fundamentals"] and "typecheck" not in session.units
     assert impact.select(Change({".github/workflows/ci.yml"})).everything

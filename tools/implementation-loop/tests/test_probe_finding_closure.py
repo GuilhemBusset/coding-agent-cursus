@@ -25,8 +25,8 @@ class ProbeFindingCase(unittest.TestCase):
         self.engine.store = RunStore(self.tmp / "run")
         self.engine.caps = Caps()
         self.phases = []
-        self.engine._set_phase = lambda n, phase, **kw: self.phases.append((phase, kw.get("feedback")))
-        self.engine._fail = lambda n, cause, detail: self.phases.append((Phase.FAILED, cause))
+        self.engine._set_phase = lambda n, phase, **kw: self.phases.append((phase, kw.get("feedback")))  # ty: ignore[invalid-assignment]  # test double
+        self.engine._fail = lambda n, cause, detail: self.phases.append((Phase.FAILED, cause))  # ty: ignore[invalid-assignment]  # test double
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)

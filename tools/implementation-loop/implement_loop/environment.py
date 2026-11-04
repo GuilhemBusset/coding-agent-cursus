@@ -39,7 +39,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Mapping
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -321,7 +321,7 @@ PROC_VERSION = Path("/proc/version")
 _WSL = re.compile(r"microsoft|wsl", re.IGNORECASE)
 
 
-def host_lacks(configured: list[str], env: dict[str, str] | None = None, platform_text: str | None = None) -> list[str]:
+def host_lacks(configured: list[str], env: Mapping[str, str] | None = None, platform_text: str | None = None) -> list[str]:
     """The capabilities this host lacks, sorted and each once: the `configured` ones (declared
     for the host, such as "hardware:laptop", "human:rehearsal", "platform:macos",
     "platform:windows" or "account:non-owner"), plus the facts checked here:

@@ -80,8 +80,21 @@ paths = [
   "tools/html-pages/GUIDE.md",
 ]
 
+# ty over the repository's own Python (ty.toml, ADR 0014), with the tool locked in setup/. Each
+# session type-checks its own code with its pytest suite (below).
+[units.typecheck]
+paths = [
+  "ty.toml",
+  "setup/pyproject.toml",
+  "setup/uv.lock",
+  "setup/browser-libs.py",
+  "tools/implementation-loop/**",
+  "tests/turn_in/**",
+]
+
 # Each session's pytest suite (sessions/<NN>-*/tests) runs when anything in its session folder
-# changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks.
+# changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks. Its type
+# check (ty, from the session's `typecheck` group) runs with it.
 [sessions]
 shared = ["scripts/turn-in.sh", ".githooks/**"]
 

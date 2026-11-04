@@ -10,10 +10,11 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import cast
 
 from . import VERSION, environment, report
 from .config import Config, load_policy
-from .github import GhCli, RecordingGitHub
+from .github import GhCli, GitHub, RecordingGitHub
 from .graph import CycleError, build_plan
 from .state import RunStore
 
@@ -116,7 +117,7 @@ def cmd_retry(args) -> int:
 
 def cmd_record(args) -> int:
     rec = RecordingGitHub(GhCli(args.repo or repo_slug()))
-    build_plan(rec, args.issue, repo_root())
+    build_plan(cast(GitHub, rec), args.issue, repo_root())   # it forwards every GitHub method
     rec.save(Path(args.out))
     print(f"Recorded {sum(len(v) for v in rec.fixture.values())} responses to {args.out}")
     return 0

@@ -32,16 +32,22 @@ MEASUREMENTS = [
 
 def test_metr_frontier_points_and_intervals_use_the_published_scale():
     deck = (Path(__file__).resolve().parents[1] / 'cursus/03-agent.html').read_text()
-    section = re.search(r'<section\b[^>]*\bid="time-horizons".*?</section>', deck, re.S).group()
+    section = re.search(r'<section\b[^>]*\bid="time-horizons".*?</section>', deck, re.S)
+    assert section, 'the deck has the time-horizons slide'
     # The spine comes first on every slide; the chart is the svg.hz-svg.
-    svg = ET.fromstring(re.search(r'<svg class="hz-svg".*?</svg>', section, re.S).group())
+    chart = re.search(r'<svg class="hz-svg".*?</svg>', section.group(), re.S)
+    assert chart, 'the slide has the chart'
+    svg = ET.fromstring(chart.group())
     points = [e for e in svg.iter('circle') if e.get('class') == 'hz-pt']
     intervals = [e for e in svg.iter('line') if e.get('class') == 'hz-ci']
     assert len(points) == len(intervals) == len(MEASUREMENTS)
     by_date = {}
     for point, interval in zip(points, intervals):
-        title = point.find('title').text
-        release = re.search(r'\d{4}-\d{2}-\d{2}', title).group()
+        title = point.findtext('title')
+        assert title, 'every point has a title'
+        found = re.search(r'\d{4}-\d{2}-\d{2}', title)
+        assert found, title
+        release = found.group()
         assert release not in by_date
         by_date[release] = (point, interval, title)
     origin, end = date(2023, 1, 1), date(2026, 7, 1)
@@ -53,10 +59,10 @@ def test_metr_frontier_points_and_intervals_use_the_published_scale():
     for release, estimate, low, high in MEASUREMENTS:
         point, interval, title = by_date[release]
         x = x0 + (x1 - x0) * (date.fromisoformat(release) - origin).days / (end - origin).days
-        assert abs(float(point.get('cx')) - x) <= .1, title
-        assert abs(float(point.get('cy')) - y(estimate)) <= .1, title
-        assert abs(float(interval.get('x1')) - x) <= .1, title
-        assert abs(float(interval.get('x2')) - x) <= .1, title
-        assert abs(float(interval.get('y1')) - y(low)) <= .1, title
-        assert abs(float(interval.get('y2')) - y(high)) <= .1, title
+        assert abs(float(point.attrib['cx']) - x) <= .1, title
+        assert abs(float(point.attrib['cy']) - y(estimate)) <= .1, title
+        assert abs(float(interval.attrib['x1']) - x) <= .1, title
+        assert abs(float(interval.attrib['x2']) - x) <= .1, title
+        assert abs(float(interval.attrib['y1']) - y(low)) <= .1, title
+        assert abs(float(interval.attrib['y2']) - y(high)) <= .1, title
         assert f': {round(estimate)} min' in title

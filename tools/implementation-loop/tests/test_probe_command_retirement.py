@@ -39,7 +39,7 @@ class ProbeCommandCase(unittest.TestCase):
             (self.wt / rel).write_text("def test_x():\n    pass\n")
         self.engine = Engine.__new__(Engine)
         self.engine.store = RunStore(self.tmp / "run")
-        self.engine.caps, self.engine.ws, self.engine.repair, self.engine.other = Caps(), Workspace(), False, "codex"
+        self.engine.caps, self.engine.ws, self.engine.repair, self.engine.other = Caps(), Workspace(), False, "codex"  # ty: ignore[invalid-assignment]  # test double
         self.builder = [command("D1", RENAMED, "builder"), command("A1", KEPT, "builder")]
         self.kept = command("A1", KEPT, "examiner")
 
@@ -55,7 +55,7 @@ class ProbeCommandCase(unittest.TestCase):
         self.engine._apply_request(50, st, self.wt, request, {})
         self.assertFalse((self.wt / GONE).exists())
         self.assertEqual(st.commands, self.builder + [self.kept])
-        self.assertFalse([s for s in self.engine._specs(st) if "test_examiner50_cli" in s.command])
+        self.assertFalse([s for s in self.engine._specs(st) if s.command and "test_examiner50_cli" in s.command])
 
     def test_a_revival_heals_a_state_saved_with_the_stale_command(self):
         stale = command("D1", GONE, "examiner")

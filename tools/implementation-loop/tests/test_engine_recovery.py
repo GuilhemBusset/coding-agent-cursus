@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from helpers import REPO_ROOT, SHIP, git, issue_body
+from helpers import REPO_ROOT, SHIP, git, issue_body, present
 from test_agent_git_isolation import IsolationCase, git_dir
 from test_engine import EPIC, EngineCase
 
@@ -56,7 +56,7 @@ class HappyPathRegressions(RecoveryCase):
         self.add_work(2, "docs/a.txt", "alpha")
         self.epic(2)
         self.run_engine()
-        pr = self.gh.prs[self.store.issue(2).pr]
+        pr = self.gh.prs[present(self.store.issue(2).pr)]
         self.assertNotIn("Closes", pr["body"], "the loop closes the issue itself, with evidence")
         evidence = [c["body"] for c in self.gh.comments[pr["number"]] if "implement-loop:evidence" in c["body"]]
         self.assertEqual(len(evidence), 1)
@@ -105,7 +105,7 @@ class RoundRegressions(RecoveryCase):
         summary = self.run_engine()
         self.assertEqual(self.phase(4), Phase.DONE, "independent work carries on")
         self.assertEqual((set(summary["failed"]), set(summary["waiting"])), ({2}, {3}))
-        self.assertIn("#2", self.store.issue(3).wait["detail"])
+        self.assertIn("#2", present(self.store.issue(3).wait)["detail"])
         self.assertIn({"name": "loop:failed"}, self.gh.issues[2]["labels"])
         self.assertIn({"name": "loop:waiting"}, self.gh.issues[3]["labels"])
         self.assertEqual(self.gh.issues[2]["state"], "open")
@@ -118,7 +118,7 @@ class RoundRegressions(RecoveryCase):
         summary = self.run_engine()
         self.assertEqual(summary["phases"], {"done": 1})
         self.assertEqual(self.events("locked_changes_reverted", 2)[0]["files"], ["checks/issue_2.sh"])
-        self.assertNotIn("exit 0", self.repo.main_file("checks/issue_2.sh"), "the edit never reaches a commit")
+        self.assertNotIn("exit 0", present(self.repo.main_file("checks/issue_2.sh")), "the edit never reaches a commit")
         touched = git("log", "--format=%s", "origin/main", "--", "checks/issue_2.sh", cwd=self.repo.work)
         self.assertEqual(len(touched.splitlines()), 1, "only the squash merge touches the locked test")
         guard = self.guard()
@@ -129,6 +129,7 @@ class RoundRegressions(RecoveryCase):
         self.epic(2)
         self.run_engine()
         st = self.store.issue(2)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "no_progress"))
         self.assertIn("contradict", st.fail["detail"])
         self.assertEqual(len(self.events("replan", 2)), 1)
@@ -152,6 +153,7 @@ class RoundRegressions(RecoveryCase):
         self.epic(2)
         self.run_engine()
         st = self.store.issue(2)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "no_progress"))
         self.assertFalse(self.gh.prs, "nothing is opened for merge")
         self.assertIsNone(self.repo.main_file("docs/a.txt"))
@@ -160,7 +162,7 @@ class RoundRegressions(RecoveryCase):
         self.add_work(2, "docs/a.txt", "alpha", outages=1)
         self.epic(2)
         self.run_engine()
-        self.assertEqual((self.phase(2), self.store.issue(2).wait["resume"]), (Phase.WAITING, "examine"))
+        self.assertEqual((self.phase(2), present(self.store.issue(2).wait)["resume"]), (Phase.WAITING, "examine"))
         self.assertFalse(self.faults(), "an outage is not an engine fault")
         before = len(self.agents.calls)
         self.run_engine(agents=self.agents)   # the outage is over: the same fake now answers
@@ -180,7 +182,7 @@ class RoundRegressions(RecoveryCase):
             if any("required CI check" in f for f in feedback):
                 self.gh._check_seen.clear()
             return original(vendor, req, plan, worktree, feedback)
-        agents.build = fix_round
+        agents.build = fix_round  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertEqual(len(self.gh.reruns), 1)
@@ -193,6 +195,7 @@ class RoundRegressions(RecoveryCase):
         self.gh.default_check = "failure"
         self.run_engine()
         st = self.store.issue(2)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "no_progress"))
         self.assertIn("required CI check is 'failure'", st.fail["detail"])
         self.assertIsNone(self.repo.main_file("docs/a.txt"))
@@ -204,6 +207,7 @@ class RoundRegressions(RecoveryCase):
         self.gh.default_check = "cancelled"
         self.run_engine()
         st = self.store.issue(2)
+        assert st.wait is not None
         self.assertEqual((st.phase, st.wait["kind"], st.wait["resume"]), (Phase.WAITING, "ci", "land"))
         self.gh.default_check = "success"
         self.run_engine(agents=self.agents)
@@ -252,7 +256,7 @@ class RequirementRegressions(RecoveryCase):
                                              + "- [ ] A second criterion.\n")
                 edited.append(True)
             return result
-        agents.build = build_then_edit
+        agents.build = build_then_edit  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertTrue(self.events("requirements_changed", 2))
@@ -263,7 +267,7 @@ class RequirementRegressions(RecoveryCase):
     def test_criteria_edited_after_merge_are_never_ticked_with_old_evidence(self):
         self.add_work(2, "docs/a.txt", "alpha")
         self.epic(2)
-        merge = self.gh.on_merge
+        merge = present(self.gh.on_merge)
 
         def merge_then_edit(branch, sha):
             result = merge(branch, sha)
@@ -311,7 +315,7 @@ class RequirementRegressions(RecoveryCase):
         advisory = [f for f in self.store.issue(2).findings if f["status"] == "advisory"]
         self.assertEqual([(f["title"], f["reason"]) for f in advisory],
                          [("the edge case may break the item", "no runnable reproduction")])
-        pr = self.gh.prs[self.store.issue(2).pr]
+        pr = self.gh.prs[present(self.store.issue(2).pr)]
         self.assertIn("the edge case may break the item (no runnable reproduction)", pr["body"])
         self.assertEqual(len(self.builds()), 1, "it never blocked")
 
@@ -369,7 +373,7 @@ class AgentGitRegressions(RecoveryCase):
         with mock.patch.object(Engine, "_step_verify", verify_then_stop):
             self.run_engine()
         self.assertEqual(self.phase(2), Phase.EXAMINE)
-        wt = Path(self.store.issue(2).worktree)
+        wt = Path(present(self.store.issue(2).worktree))
         (wt / "docs" / "a.txt").write_text("sabotage\n")
         git("commit", "-qam", "stray commit after verification", cwd=wt)
         (store_dir / "STOP").unlink()
@@ -392,7 +396,7 @@ class LockedTestRegressions(RecoveryCase):
         self.assertEqual(self.roles("decide"), {"codex"}, "the other vendor agrees to the change")
         self.assertEqual(self.events("locked_tests_changed", 2)[0]["files"], ["checks/issue_2.sh"])
         self.assertEqual(st.replans, 0, "changed, not replanned")
-        self.assertIn("# amended through an approved request", self.repo.main_file("checks/issue_2.sh"))
+        self.assertIn("# amended through an approved request", present(self.repo.main_file("checks/issue_2.sh")))
         bodies = git("log", "--format=%B", "origin/feat/issue-2", cwd=self.repo.work)
         self.assertIn("Loop-Approved: R2-1 by codex", bodies)
         guard = self.guard()
@@ -402,14 +406,14 @@ class LockedTestRegressions(RecoveryCase):
         self.add_work(2, "docs/a.txt", "alpha", findings=1, test_change=True)
         self.epic(2)
         agents = FakeAgents(self.scripts)
-        agents.decide = lambda vendor, req, wt, requests: agents._metered(
+        agents.decide = lambda vendor, req, wt, requests: agents._metered(  # ty: ignore[invalid-assignment]  # test double
             2, "decide", vendor, lambda: [Decision(r["id"], False, "the item never asks for it") for r in requests])
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertEqual(self.events("requests_decided", 2)[0]["decided"], {"R2-1": "refused"})
         self.assertFalse(self.events("locked_tests_changed", 2))
         self.assertTrue(any("checks/issue_2.sh" in e["files"] for e in self.events("locked_changes_reverted", 2)))
-        self.assertNotIn("amended", self.repo.main_file("checks/issue_2.sh"))
+        self.assertNotIn("amended", present(self.repo.main_file("checks/issue_2.sh")))
 
     def test_a_test_change_request_must_carry_an_edit_to_a_locked_test(self):
         self.add_work(2, "docs/a.txt", "alpha", findings=1)
@@ -422,7 +426,7 @@ class LockedTestRegressions(RecoveryCase):
             if len([c for c in agents.calls if c[0] == "build"]) == 2:
                 result.requests.append(Request("test_change", "this test is wrong", paths=["docs/a.txt"]))
             return result
-        agents.build = ask_without_editing
+        agents.build = ask_without_editing  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
         request = self.store.issue(2).requests[0]
@@ -447,7 +451,7 @@ class LockedTestRegressions(RecoveryCase):
                 (store_dir / "STOP").write_text("stop\n")
                 raise type("AgentStopped", (RuntimeError,), {})("stopped mid-build")
             return original(vendor, req, plan, worktree, feedback)
-        agents.build = half_written
+        agents.build = half_written  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.BUILD)
         self.assertTrue(self.events("step_interrupted", 2))
@@ -457,7 +461,7 @@ class LockedTestRegressions(RecoveryCase):
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertTrue(self.events("checkpoint_before_update", 2))
         self.assertTrue(any("checks/issue_2.sh" in e["files"] for e in self.events("locked_changes_reverted", 2)))
-        self.assertNotIn("half-written", self.repo.main_file("checks/issue_2.sh"))
+        self.assertNotIn("half-written", present(self.repo.main_file("checks/issue_2.sh")))
         guard = self.guard()
         self.assertEqual(guard.returncode, 0, guard.stdout + guard.stderr)
 
@@ -478,7 +482,7 @@ class LockedTestRegressions(RecoveryCase):
                 (store_dir / "STOP").write_text("stop\n")
                 raise type("AgentStopped", (RuntimeError,), {})("stopped mid-build")
             return original(vendor, req, plan, worktree, feedback)
-        agents.build = interrupted
+        agents.build = interrupted  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertTrue(self.events("step_interrupted", 2))
 
@@ -513,9 +517,10 @@ class RecordedRunRegressions(RecoveryCase):
                 "set -euo pipefail\n",
                 'set -euo pipefail\n[ "${HOST_LIBS_OK:-}" = 1 ] || { echo "chrome: error while loading shared libraries: libnspr4.so"; exit 127; }\n'))
             return result
-        agents.build = test_needing_the_host
+        agents.build = test_needing_the_host  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         st = self.store.issue(2)
+        assert st.wait is not None
         self.assertEqual((st.phase, st.wait["kind"], st.wait["resume"]), (Phase.WAITING, "environment", "verify"))
         self.assertIn("libnspr4.so", st.wait["detail"])
         self.assertEqual((len(self.builds()), st.unproductive), (1, 0))
@@ -539,7 +544,7 @@ class RecordedRunRegressions(RecoveryCase):
             return original(engine, n)
         with mock.patch.object(Engine, "_step_examine", crash_for_m):
             summary = self.run_engine()
-        self.assertEqual({n: self.store.issue(n).wait["kind"] for n in summary["waiting"]}, {2: "engine", 3: "engine"})
+        self.assertEqual({n: present(self.store.issue(n).wait)["kind"] for n in summary["waiting"]}, {2: "engine", 3: "engine"})
         self.assertEqual(self.phase(4), Phase.DONE, "the run carries on")
         filed = [c for c in self.gh.calls if c[0] == "create_issue"]
         self.assertEqual(len(filed), 1, "one issue per distinct fault")
@@ -562,9 +567,10 @@ class RecordedRunRegressions(RecoveryCase):
 
         def unavailable(vendor, req, plan, worktree, feedback):
             raise AgentFailure(f"{vendor} build failed after 3 attempts: 529 overloaded", kind="outage", vendor=vendor)
-        agents.build = unavailable
+        agents.build = unavailable  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         st = self.store.issue(2)
+        assert st.wait is not None
         self.assertEqual((st.phase, st.wait["kind"], st.wait["resume"], st.wait["vendor"]),
                          (Phase.WAITING, "outage", "build", "claude"))
         self.assertEqual((st.infra, st.calls), (0, 2), "an outage is charged to no budget")
@@ -593,6 +599,7 @@ class RecordedRunRegressions(RecoveryCase):
         self.assertEqual(reverted[0]["of"], [first_pr])
         self.assertTrue(all(self.gh.prs[e["pr"]]["head"]["ref"].endswith("-revert") for e in reverted))
         st = self.store.issue(3)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"], st.reverts), (Phase.FAILED, "main_broken", 2))
         self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha", "main is green again")
 
@@ -602,6 +609,7 @@ class RecordedRunRegressions(RecoveryCase):
         self.epic(2)
         self.run_engine()
         st = self.store.issue(2)
+        assert st.pr is not None
         pr = self.gh.prs[st.pr]
         pr["head"]["sha"] = "f2e878c" + "0" * 33   # updated with main before the owner merged it
         self.gh.issues[2]["state"] = "open"          # as if the engine had stopped before accepting it
@@ -624,7 +632,7 @@ class RecordedRunRegressions(RecoveryCase):
             self.run_engine(agents=self.agents)
         self.assertEqual(len(self.events("revived", 2)), 1)
         self.assertEqual(self.phase(2), Phase.FAILED, "still wrong")
-        self.assertTrue(self.store.issue(2).fail["resumed"])
+        self.assertTrue(present(self.store.issue(2).fail)["resumed"])
         with mock.patch.object(engine_mod, "VERSION", "9.9.10"):
             self.run_engine(agents=self.agents)
         self.assertEqual(len(self.events("revived", 2)), 1, "one more try per failure, not one per version")
@@ -705,9 +713,10 @@ class CrossVendorRegressions(RecoveryCase):
 
         def refuse(n, sha, method="squash"):
             raise GitHubError("Pull Request is not mergeable")
-        self.gh.merge_pr = refuse
+        self.gh.merge_pr = refuse  # ty: ignore[invalid-assignment]  # test double
         self.run_engine()
         st = self.store.issue(2)
+        assert st.wait is not None
         self.assertEqual((st.phase, st.wait["kind"], st.wait["resume"], st.merge_refusals),
                          (Phase.WAITING, "github", "land", 3))
         self.assertEqual(len(self.events("merge_refused", 2)), 3)
@@ -763,13 +772,13 @@ class CrossVendorRegressions(RecoveryCase):
         def create_then_lose_the_response(title, body, labels):
             real_create(title, body, labels)
             raise GitHubError("connection reset")
-        self.gh.create_issue = create_then_lose_the_response
+        self.gh.create_issue = create_then_lose_the_response  # ty: ignore[invalid-assignment]  # test double
 
         def crash(engine, n):
             raise KeyError("x")
         with mock.patch.object(Engine, "_step_examine", crash):
             self.run_engine()
-        self.gh.create_issue = real_create
+        self.gh.create_issue = real_create  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=FakeAgents(self.scripts))
         faults = [n for n, i in self.gh.issues.items() if "implement-loop:fault:" in (i.get("body") or "")]
         self.assertEqual(len(faults), 1)
@@ -786,7 +795,7 @@ class ResumeTests(RecoveryCase):
             result = original(*args, **kwargs)
             (self.store_dir() / "STOP").write_text("stop\n")
             return result
-        agents.build = build_then_stop
+        agents.build = build_then_stop  # ty: ignore[invalid-assignment]  # test double
         summary = self.run_engine(agents=agents)
         self.assertTrue(summary["stopped"])
         self.assertEqual(self.phase(2), Phase.VERIFY)
@@ -807,7 +816,7 @@ class ResumeTests(RecoveryCase):
         def triage_then_stop(*args, **kwargs):
             (self.store_dir() / "STOP").write_text("stop\n")
             return original(*args, **kwargs)
-        agents.triage = triage_then_stop
+        agents.triage = triage_then_stop  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.PLANNED)
         (self.store_dir() / "STOP").unlink()
@@ -828,12 +837,12 @@ class ResumeTests(RecoveryCase):
         def merge_then_die(n, sha, method="squash"):
             real_merge(n, sha, method)
             raise RuntimeError("process died right after the merge")
-        self.gh.merge_pr = merge_then_die
+        self.gh.merge_pr = merge_then_die  # ty: ignore[invalid-assignment]  # test double
         self.run_engine()
         st = self.store.issue(2)
         st.phase, st.wait = Phase.LAND, None   # as if the process died before handling the crash
         self.store.put(st)
-        self.gh.merge_pr = real_merge
+        self.gh.merge_pr = real_merge  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=FakeAgents(self.scripts))
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertEqual(len(self.events("merge_found_on_resume")), 1)
@@ -865,10 +874,12 @@ class ResumeTests(RecoveryCase):
         (self.store_dir() / "STOP").unlink()
         st = self.store.issue(2)
         self.assertEqual(st.phase, Phase.EXAMINE)
+        assert st.worktree is not None
         wt = Path(st.worktree)
         rebased = git("rev-parse", "HEAD", cwd=wt)
         self.assertEqual(st.verified_sha, rebased)
         for stale in (st.examined_sha, st.certified_sha):
+            assert stale is not None
             self.assertNotEqual(subprocess.run(["git", "merge-base", "--is-ancestor", stale, rebased],
                                                cwd=wt, capture_output=True).returncode, 0)
         git("update-ref", "-d", git("symbolic-ref", "HEAD", cwd=wt), cwd=self.repo.work)

@@ -14,7 +14,7 @@ import threading
 import unittest
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body
+from helpers import SHIP, TempRepo, git, issue_body, present
 from test_land_conflicts import ObservedAgents, has_markers, operation_paths
 from implement_loop.agents import Script
 from implement_loop.config import Caps, Config
@@ -62,10 +62,15 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
         self.scripts = {}
         self.shared_paths = ["registry/widget-list.txt"]
         self.gh = FakeGitHub(on_merge=self.merge_published_head)
-        self.engine = None
-        self.peer = None
+        self._engine: Engine | None = None
+        self.peer: Engine | None = None
         self.boundary_errors = []
         self.seed_main({self.shared_paths[0]: "initial-entry\n"})
+
+    @property
+    def engine(self) -> Engine:
+        assert self._engine is not None, "run_engine() has not run in this fixture"
+        return self._engine
 
     def seed_main(self, files, *, executables=()):
         # All fixture publication is confined to TempRepo's local bare remote.
@@ -106,7 +111,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
                       repo_root=self.repo.work, log=lambda m: None, sleep=lambda s: None)
 
     def run_engine(self, agents):
-        self.engine = self.make_engine(agents=agents)
+        self._engine = self.make_engine(agents=agents)
         original = Engine._set_phase
 
         def boundary(engine, n, phase, **kwargs):
@@ -156,7 +161,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
         self.assertFalse([e for e in self.events() if e["kind"] in ("waiting", "failed")])
         self.assertFalse(self.events("step_crashed"))
         self.assertEqual(self.boundary_errors, [])
-        text = self.repo.main_file(self.shared_paths[0])
+        text = present(self.repo.main_file(self.shared_paths[0]))
         self.assertFalse(has_markers(text))
         for n in ((2, 3) if pair else (3,)):
             self.assertIn(self.scripts[n].lines[self.shared_paths[0]], text.splitlines())
@@ -229,7 +234,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
                     self.assertEqual(index_state(wt, f), index, f)
                 restored.append(True)
 
-        agents.resolve_locked = outside_lane
+        agents.resolve_locked = outside_lane  # ty: ignore[invalid-assignment]  # test double
         agents.before_build = before_builder
         self.run_engine(agents)
         self.assert_done(pair=True)
@@ -255,11 +260,11 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
             observed.append(wt)
             return result
 
-        agents.examine = outside_lane
+        agents.examine = outside_lane  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents)
         self.assert_done()
         self.assertTrue(observed)
-        issue_worktree = Path(self.engine.store.issue(3).worktree)
+        issue_worktree = Path(present(self.engine.store.issue(3).worktree))
         self.assertTrue(all(Path(wt) != issue_worktree for wt in observed))
         self.assertTrue(all(not Path(wt).exists() for wt in observed), "each copy is removed")
         for f in targets[:3]:
@@ -313,7 +318,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
                     if mid_merge:
                         self.assertEqual(len([e for e in self.events("conflict") if e["phase"] == "land"]), 1)
                         for n in (2, 3):
-                            self.assertIn(f"docs/issue-{n}.txt", self.repo.main_file(lane))
+                            self.assertIn(f"docs/issue-{n}.txt", present(self.repo.main_file(lane)))
 
     def logged_checks(self, agents):
         """A test logs real HEAD only after its assertions pass, outside all worktrees.
@@ -352,7 +357,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
 
         def event(store, kind, **data):
             result = real_event(store, kind, **data)
-            if self.engine is not None and store is self.engine.store and data.get("issue") == 3:
+            if self._engine is not None and store is self._engine.store and data.get("issue") == 3:
                 if kind in ("conflict", "updated_from_main", "head_changed_after_certificate"):
                     barriers.append({"seq": max(e["seq"] for e in store.events()), "offset": len(heads())})
             return result
@@ -443,7 +448,7 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
                     self.assertEqual(len(agents.entries), 2)
                     self.assertIn(self.shared_paths[0], "\n".join(agents.entries[-1]["feedback"]))
                     self.assertIn("registration-from-concurrent-main",
-                                  self.repo.main_file(self.shared_paths[0]).splitlines())
+                                  present(self.repo.main_file(self.shared_paths[0])).splitlines())
                 else:
                     changed = self.events("head_changed_after_certificate")
                     self.assertEqual(len(changed), 1)

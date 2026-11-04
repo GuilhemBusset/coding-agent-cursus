@@ -5,7 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from helpers import HAS_PYTEST, git
+from helpers import HAS_PYTEST, git, present
 from test_engine import EngineCase
 
 from implement_loop.agents import BuildResult, FakeAgents, Request
@@ -81,7 +81,7 @@ class RecordedParks(EngineCase):
         self.run_engine(agents=Builder(self.scripts, ignore_feedback_rounds=3))
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertTrue(self.events("replan", 2), "the stalled rounds brought a replan")
-        self.assertEqual(self.repo.main_file("checks/issue_2.sh").splitlines()[0], "#!/usr/bin/env bash",
+        self.assertEqual(present(self.repo.main_file("checks/issue_2.sh")).splitlines()[0], "#!/usr/bin/env bash",
                          "the locked test survived the replan")
         self.assertTrue(any(g["source"] == "earlier plan" for g in self.store.issue(2).grants))
 

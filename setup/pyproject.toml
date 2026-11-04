@@ -1,0 +1,15 @@
+# The locked environment for the repository's own Python tooling, outside every session: the ty
+# type checker, and the pytest it resolves the tests' imports against (the version CI runs them
+# with). Not a package; nothing imports it. The configuration ty applies is ../ty.toml. See
+# README.md#type-checking and ../docs/adr/0014-type-checking-with-ty.md.
+[project]
+name = "cursus-repo-tools"
+version = "0"
+requires-python = ">=3.11"
+dependencies = [
+    "pytest==8.3.5",
+    "ty==0.0.95",
+]
+
+[tool.uv]
+package = false

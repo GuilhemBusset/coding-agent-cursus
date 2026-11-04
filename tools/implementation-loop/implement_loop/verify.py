@@ -250,7 +250,9 @@ def unconditional_failures(root: Path, files: list[str]) -> list[str]:
             for m in _JS_TEST.finditer(text):
                 if _in_js_comment(text, m.start()) or re.search(r"\b(?:skip|todo)\b", m.group("options") or ""):
                     continue
-                start = _JS_LEADING.match(text, m.end()).end()
+                leading = _JS_LEADING.match(text, m.end())
+                assert leading is not None   # every repetition is optional: it matches the empty string
+                start = leading.end()
                 first = _JS_FAILS.match(text, start)
                 if first:
                     line = text.count("\n", 0, m.start()) + 1

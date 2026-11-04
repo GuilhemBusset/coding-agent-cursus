@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections.abc import Iterable
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
@@ -56,7 +57,7 @@ class FakeHost:
 
     def __init__(self, root: Path, state_dir: Path, *, node="v22.11.0", modules="locked", browser=True,
                  libs=True, uv=True, pytest="pytest 8.3.5", npm="locked", recipe_works=True,
-                 copy_launches=True, bad_copies=(), doctor_error=None):
+                 copy_launches=True, bad_copies: Iterable[str] = (), doctor_error=None):
         self.root, self.state_dir = root, state_dir
         self.node, self.browser, self.libs, self.uv, self.pytest = node, browser, libs, uv, pytest
         self.npm, self.recipe_works, self.copy_launches = npm, recipe_works, copy_launches
@@ -579,6 +580,7 @@ class DoctorSmokeTests(unittest.TestCase):
 
 def load_recipe():
     spec = importlib.util.spec_from_file_location("browser_libs", REPO_ROOT / "setup" / "browser-libs.py")
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     saved, sys.dont_write_bytecode = sys.dont_write_bytecode, True  # no __pycache__ in setup/
     try:
@@ -610,6 +612,7 @@ class FakeApt:
         if cmd[:3] == ["apt-get", "download", "--print-uris"]:
             return done(cmd, out="".join(f"'http://archive/{p}.deb' {p}_1_amd64.deb 1 SHA512:00\n" for p in cmd[3:]))
         if cmd[:2] == ["apt-get", "download"]:
+            assert cwd is not None
             for pkg in cmd[2:]:
                 Path(cwd, f"{pkg}_{self.version}_amd64.deb").write_text(f"{pkg} {self.version}")
             return done(cmd)

@@ -140,12 +140,15 @@ def checker_constants():
     tree = ast.parse((PACK / "check.py").read_text(encoding="utf-8"))
     constants = {}
     for node in tree.body:
-        targets = node.targets if isinstance(node, ast.Assign) else (
-            [node.target] if isinstance(node, ast.AnnAssign) else []
-        )
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets, value = [node.target], node.value
+        else:
+            continue
         for target in targets:
             if isinstance(target, ast.Name) and target.id in {"LP_BOUND", "KNOWN_OPTIMUM", "TOL", "DEMAND"}:
-                constants[target.id] = ast.literal_eval(node.value)
+                constants[target.id] = ast.literal_eval(value)
     assert constants == {"LP_BOUND": 10.2, "KNOWN_OPTIMUM": 11, "TOL": TOL, "DEMAND": DEMAND}, (
         "D2/D3: pin the agreed instance, tolerance, LP bound and optimum as literal constants"
     )
@@ -350,7 +353,7 @@ def copied_pack(tmp_path):
 @pytest.mark.parametrize("mutation", ["changed-demand", "missing-day", "bad-number"])
 def test_checker_pins_data(copied_pack, tmp_path, mutation):
     path = copied_pack / "data" / "demand.csv"
-    rows = list(DEMAND.items())
+    rows: list[tuple[str, object]] = list(DEMAND.items())
     if mutation == "changed-demand":
         rows[0] = ("Mon", 0)
     elif mutation == "missing-day":

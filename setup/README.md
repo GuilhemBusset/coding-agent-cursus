@@ -129,14 +129,56 @@ uv run --locked --group parallel pytest -q -m "not live" -n auto
 
 installs the packages in its `uv.lock`, including its non-default `parallel` group
 ([pytest-xdist](https://pypi.org/project/pytest-xdist/), locked in `uv.lock`; `uv sync` does not
-install it), and runs the same suite as the README's `uv run pytest`, spread over every core. Each
-session's `pyproject.toml` must define that group; the workflow stops with an error if it does
-not. The run fails if it collects nothing or skips anything. A test that needs what CI lacks (a
+install it), and runs the same suite as the README's `uv run pytest`, spread over every core.
+Then, also when the suite failed, `uv run --locked --group typecheck ty check` type-checks the
+session, and the exercises once more as each platform ([Type checking](#type-checking)). Each
+session's `pyproject.toml` must define both groups and a `[tool.ty]` table; the workflow stops
+with an error if it does not. The run fails if it collects nothing or skips anything. A test that
+needs what CI lacks (a
 logged-in `claude` or `codex`, network access to a vendor API, credentials, a real laptop,
 Windows or macOS) gets `@pytest.mark.live`, with the marker registered under `markers` in that
 session's `[tool.pytest.ini_options]`, so CI deselects it; it never skips itself. No test needs
 the marker yet, so no session registers it. Files that are not named `test_*.py`, such as
 `tests/fixture_replay_checks.py`, are not collected, in CI or locally.
+
+## Type checking
+
+The repository's Python is type-checked with [ty](https://docs.astral.sh/ty/) (ADR 0014), in two
+kinds of environment, each with its own exactly pinned ty:
+
+- **The repository's own Python**: the implement loop engine, the check selector, the turn-in
+  tests and `browser-libs.py`. The configuration is [`ty.toml`](../ty.toml) at the repository
+  root; ty 0.0.95, and the pytest 8.3.5 it resolves the tests' imports against, are locked in
+  [`pyproject.toml`](pyproject.toml) and [`uv.lock`](uv.lock) here. From the repository root,
+  with uv installed:
+
+  ```sh
+  uv run --project setup --locked ty check
+  ```
+
+  The first run creates `setup/.venv/` (ignored by git) with those two packages and their
+  dependencies, using a Python 3.11 or newer that uv finds or downloads; ty checks as Python 3.11
+  on Linux whatever the interpreter. Remove it with `rm -rf setup/.venv`.
+- **Each session's Python**: configured in the session's `pyproject.toml` (`[tool.ty]`, required:
+  without it, ty walks up to the root `ty.toml` and checks the repository's code instead) and
+  pinned in its non-default `typecheck` dependency group, locked in its `uv.lock`. From the
+  session folder: `uv run --locked --group typecheck ty check`, which adds ty to the session's
+  `.venv/` (a later plain `uv sync` removes it again; students' `uv sync` never installs it). CI
+  and `scripts/check-changed.sh` then check the exercises as each platform students use (ADR
+  0010), which catches an API only one of them has:
+  `... ty check --python-platform <linux|darwin|win32> exercises`.
+
+Warnings fail like errors. ty also merges a user-level `~/.config/ty/ty.toml` if you have one;
+CI has none, so its result is the one that counts. To bump ty, change the pin in
+`setup/pyproject.toml` and in every session's `typecheck` group together (CI rejects a session
+whose pin differs), relock each with the uv CI uses (0.11.28: `uv lock --project setup` from the
+root, `uv lock` in each session folder), and fix what the new version reports in the same pull
+request.
+
+In an editor (VS Code with Astral's ty extension, for example), ty resolves third-party packages
+against the interpreter selected in the editor. Select `sessions/<NN>-*/.venv` to get completions
+and hover types for a session's packages (highspy, numpy), and `setup/.venv` for the repository's
+own code. Opening a session folder as its own workspace folder also applies its `[tool.ty]`.
 
 ## Validating a change
 
@@ -155,9 +197,10 @@ scripts/check-changed.sh --all      # run everything
 
 | You changed | It runs | Local time, 24 cores |
 | --- | --- | --- |
-| one deck | `check-page.mjs` on the deck, the Node suites that read it, the session's pytest suite | about 50 s |
-| a session's exercises or tests | that session's pytest suite, in parallel | about 25 s |
-| `tools/implementation-loop/` | the engine tests, in parallel | about 11 s |
+| one deck | `check-page.mjs` on the deck, the Node suites that read it, the session's type checks and pytest suite | about 50 s |
+| a session's exercises or tests | that session's type checks, then its pytest suite in parallel | about 25 s |
+| `tools/implementation-loop/` | the engine tests, in parallel, and the repository's type check | about 11 s |
+| `ty.toml`, `setup/pyproject.toml` or `setup/uv.lock` | the repository's type check | seconds |
 | `scripts/turn-in.sh`, the hooks or a skill | the turn-in tests, `test-ship.sh` and the static repo checks, plus what reads them | seconds to a minute |
 | a workflow, the selector, `setup/package*.json`, or a path the map does not know | everything | a few minutes |
 
@@ -343,6 +386,8 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | uv, Python and packages for the session test suites in CI | `astral-sh/setup-uv` installs the uv version pinned in each session's `mise.toml` on the CI runner; `uv run --locked` uses that file's Python version (the runner's, or one uv fetches into its cache) and installs the session's `uv.lock` packages into the session's `.venv/` |
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
 | Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
+| ty, and pytest for its import resolution, for the repository's own Python | `uv run --project setup --locked` installs the versions and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, using a Python 3.11 or newer that uv finds or downloads; configured by the root `ty.toml` |
+| ty for each session's Python | The session's `typecheck` dependency group, locked in its `uv.lock`; `uv run --locked --group typecheck` installs it into the session's `.venv/` |
 | Change-based check selection | Checked-in `tools/test-impact/` (standard-library Python) and `scripts/check-changed.sh`; installs nothing, runs the checks above with their own tools |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 

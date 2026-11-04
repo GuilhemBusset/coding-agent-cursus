@@ -308,7 +308,7 @@ class FakeGitHub:
         self.prs: dict[int, dict] = {}
         self.checks: dict[str, str] = {}
         self.default_check: str | None = "success"
-        self.check_script: list[str] = []      # conclusions handed out in order, one per head looked at
+        self.check_script: list[str | None] = []   # conclusions handed out in order, one per head looked at
         self._check_seen: dict[str, dict] = {}  # sha -> the latest check run handed out
         self._run_ids = iter(range(1, 10**9))
         self.reruns: list[str] = []

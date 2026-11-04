@@ -479,14 +479,16 @@ def call_agent(cli, argv, cwd, env, label):
                                  stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
     except OSError as error:
         raise Failure(f"{cli} could not start ({error})") from None
+    stdout, stderr = child.stdout, child.stderr
+    assert stdout is not None and stderr is not None  # both are pipes
     errors = []
-    reader = threading.Thread(target=lambda: errors.append(child.stderr.read()), daemon=True)
+    reader = threading.Thread(target=lambda: errors.append(stderr.read()), daemon=True)
     reader.start()
     timer = threading.Timer(AGENT_TIMEOUT_S, child.kill)
     timer.start()
     lines, pending = [], []
     try:
-        for line in child.stdout:
+        for line in stdout:
             lines.append(line)
             events, _ = parse_lines(line)
             for event in events:

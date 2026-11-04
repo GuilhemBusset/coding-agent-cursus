@@ -47,6 +47,7 @@ import json
 from pathlib import Path
 import re
 import sys
+from typing import Any
 
 
 HERE = Path(__file__).resolve().parent
@@ -96,7 +97,7 @@ def read_events(path):
             continue
         try:
             event = json.loads(line)
-        except ValueError as error:
+        except json.JSONDecodeError as error:
             raise InputError(f"{path.name}:{number}: invalid JSON ({error.msg})") from None
         if not isinstance(event, dict):
             raise InputError(f"{path.name}:{number}: expected a JSON object")
@@ -468,7 +469,7 @@ def build_catalog(recorded):
     metas = {p.name.removesuffix(".meta.json"): json.loads(p.read_text(encoding="utf-8"))
              for p in sorted(recorded.glob("*.meta.json"))}
     used = defaultdict(set)
-    runs = []
+    runs: list[dict[str, Any]] = []
     for stream in streams:
         stem = stream.stem
         parents = [r for r in metas if stem == r or stem.startswith(r + "-")]

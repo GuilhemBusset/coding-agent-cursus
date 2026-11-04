@@ -131,7 +131,9 @@ def export(bug, out):
 
 def section(slide_id):
     raw = DECK.read_text(encoding="utf-8")
-    return re.search(r'<section\b[^>]*id="%s"[^>]*>(.*?)</section>' % slide_id, raw, re.S).group(1)
+    match = re.search(r'<section\b[^>]*id="%s"[^>]*>(.*?)</section>' % slide_id, raw, re.S)
+    assert match, f"No slide {slide_id}"
+    return match.group(1)
 
 
 def cells():
@@ -236,8 +238,10 @@ def rows():
     for row in re.findall(r'<g class="v5-row[^"]*">(.*?)</g>\s*(?=<g class="(?:v5-row|rp-q-mark)[ "])', section("l3"), re.S):
         text = lambda cls: html.unescape(re.search(r'<text class="%s[^"]*"[^>]*>(.*?)</text>' % cls, row, re.S).group(1)).strip()
         status = re.findall(r'<text class="v5-st rp-ans"[^>]*>(.*?)</text>', row)
+        dot = re.search(r'<circle class="v5-dot[^"]*" cx="([\d.]+)"', row)
+        assert dot, row
         out.append({"value": text("v5-val"), "status": status, "contract": text("v5-ct"),
-                    "cx": float(re.search(r'<circle class="v5-dot[^"]*" cx="([\d.]+)"', row).group(1))})
+                    "cx": float(dot.group(1))})
     return out
 
 

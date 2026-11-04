@@ -12,7 +12,7 @@ import threading
 import unittest
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body
+from helpers import SHIP, TempRepo, git, issue_body, present
 import implement_loop
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import CEILINGS, Caps, Config
@@ -116,9 +116,14 @@ class LandConflictTests(unittest.TestCase):
         self.scripts = {}
         self.shared_paths = ["shared/suites.txt"]
         self.seed_main({self.shared_paths[0]: "base-suite\n"})
-        self.engine = None
-        self.peer = None
+        self._engine: Engine | None = None
+        self.peer: Engine | None = None
         self.boundary_errors = []
+
+    @property
+    def engine(self) -> Engine:
+        assert self._engine is not None, "run_engine() has not run in this fixture"
+        return self._engine
 
     def merge_published_head(self, branch, sha):
         self.assertEqual(git("rev-parse", f"refs/heads/{branch}", cwd=self.repo.remote), sha,
@@ -165,7 +170,7 @@ class LandConflictTests(unittest.TestCase):
         return engine
 
     def run_engine(self, agents=None, caps=None):
-        self.engine = self.make_engine(agents=agents, caps=caps)
+        self._engine = self.make_engine(agents=agents, caps=caps)
         self.engine.run()
         return self.engine
 
@@ -228,7 +233,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertFalse([e for e in self.events() if e["kind"] in ("waiting", "failed") and e["seq"] > after_seq])
         path = path or self.shared_paths[0]
         for content in (self.repo.main_file(path), git("show", f"{st.certified_sha}:{path}", cwd=self.repo.work)):
-            self.assertIsNotNone(content)
+            assert content is not None
             self.assertFalse(has_markers(content))
             for n in (2, 3):
                 self.assertIn(self.scripts[n].lines[path], content.splitlines())
@@ -336,6 +341,7 @@ class LandConflictTests(unittest.TestCase):
     def test_no_operation_left_between_steps(self):
         self.conflict_scenario(move_again=True)
         self.assert_success()
+        assert self.peer is not None
         for engine in (self.engine, self.peer):
             for n in engine.plan.work:
                 st = engine.store.issue(n)
@@ -364,6 +370,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertFalse(self.events("step_crashed"))
         st = self.engine.store.issue(3)
         self.assertEqual(st.phase, Phase.BUILD)
+        assert st.worktree is not None
         self.assert_no_operation(Path(st.worktree), clean=True)
         self.run_engine(agents)
         self.assert_success()
@@ -385,9 +392,11 @@ class LandConflictTests(unittest.TestCase):
         st = self.engine.store.issue(3)
         self.assertTrue(self.events("conflict_unresolved"))
         # Conflicts spend no round; the issue's call ceiling bounds them (ADR 0012).
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "ceiling"), self.events())
         self.assertFalse(self.events("step_crashed"))
         self.assertFalse(self.events("merged"))
+        assert st.worktree is not None
         self.assert_no_operation(Path(st.worktree), clean=True)
         self.assertLessEqual(len([e for e in agents.entries if e["issue"] == 3]), CEILINGS["M"])
 
@@ -418,7 +427,7 @@ class LandConflictTests(unittest.TestCase):
         relocked = self.events("checks_relocked")
         self.assertTrue(any(lane in e["files"] and e["source"] == "other-vendor" for e in relocked))
         self.assertFalse(self.events("locked_tests_changed"), "no test change request was needed")
-        final = self.repo.main_file(lane)
+        final = present(self.repo.main_file(lane))
         self.assertFalse(has_markers(final))
         for n in (2, 3):
             self.assertIn(f"docs/issue-{n}.txt", final)
@@ -461,7 +470,7 @@ class LandConflictTests(unittest.TestCase):
                 self.assertEqual((wt / self.shared_paths[0]).read_bytes(), before_resolver[-1])
                 restored.append(True)
 
-        agents.resolve_locked = stray_edit
+        agents.resolve_locked = stray_edit  # ty: ignore[invalid-assignment]  # test double
         agents.before_build = observe_restoration
         self.run_engine(agents)
         self.assertTrue(attempted)
@@ -486,15 +495,17 @@ class LandConflictTests(unittest.TestCase):
             lane = wt / "checks/shared.sh"
             self.assertFalse(lane.exists() and has_markers(lane.read_text()))
 
-        agents.resolve_locked = leave_locked_markers
+        agents.resolve_locked = leave_locked_markers  # ty: ignore[invalid-assignment]  # test double
         agents.before_build = observe_build
         self.run_engine(agents)
         st = self.engine.store.issue(3)
         self.assertTrue(self.events("check_conflict_unresolved"))
         # Conflicts spend no round; the issue's call ceiling bounds them (ADR 0012).
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "ceiling"), self.events())
         self.assertFalse(self.events("step_crashed"))
         self.assertFalse(self.events("merged"))
+        assert st.worktree is not None
         self.assert_no_operation(Path(st.worktree), clean=True)
 
     def test_conflict_scope_allows_a_conflicted_path_outside_the_plan(self):
@@ -539,12 +550,13 @@ class LandConflictTests(unittest.TestCase):
         self.assertTrue(narrowed)
         self.assertTrue(stopped)
         self.assertEqual(self.engine.store.issue(3).phase, Phase.BUILD)
-        self.assert_no_operation(Path(self.engine.store.issue(3).worktree), clean=True)
+        self.assert_no_operation(Path(present(self.engine.store.issue(3).worktree)), clean=True)
         # A fresh plan must recover the conflict permission from persisted state,
         # not merely retain a mutation of the first run's in-memory declared paths.
         self.run_engine(agents)
         self.assert_success(path=path)
         st = self.engine.store.issue(3)
+        assert st.plan is not None
         self.assertNotIn(path, st.plan["zones"])
         self.assertIn({"path": path, "source": "conflict", "protected": False}, st.grants)
         self.assertIn(path, st.conflict_paths)
@@ -618,7 +630,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertFalse(self.events("conflict"))
         self.assertTrue(any(lane in e["files"] and e["source"] == "main"
                             for e in self.events("checks_relocked")))
-        self.assertIn("metadata from main", self.repo.main_file(lane))
+        self.assertIn("metadata from main", present(self.repo.main_file(lane)))
         self.assert_exact_gates(self.engine)
 
     def test_each_implement_round_starts_from_current_main_update_preserves_commits(self):
@@ -769,7 +781,9 @@ class LandConflictTests(unittest.TestCase):
             self.run_engine(agents)
         st = self.engine.store.issue(3)
         self.assertEqual(st.phase, Phase.WAITING)
+        assert st.wait is not None
         self.assertEqual((st.wait["kind"], st.wait["version"], st.wait["resume"]), ("engine", "0.2.0", "land"))
+        assert st.worktree is not None
         wt = Path(st.worktree)
         self.assertIn("rebase-merge", operation_paths(wt))
         self.assertEqual(git("rev-parse", "--abbrev-ref", "HEAD", cwd=wt), "HEAD")
@@ -792,6 +806,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertEqual(git_result(self.repo.work, "merge-base", "--is-ancestor", old.certified_sha,
                                     st.certified_sha).returncode, 0, "recovery must retain committed work")
         # Successful acceptance removes the worktree; its branch still names the merged head.
+        assert st.branch is not None
         self.assertEqual(git("rev-parse", st.branch, cwd=self.repo.work), st.certified_sha)
         if wt.exists():
             self.assert_no_operation(wt, clean=True)
@@ -816,6 +831,7 @@ class LandConflictTests(unittest.TestCase):
             self.run_engine(agents)
         st = self.engine.store.issue(3)
         self.assertEqual(st.phase, Phase.LAND)
+        assert st.worktree is not None
         wt = Path(st.worktree)
         before = git("rev-parse", "HEAD", cwd=wt)
         git("fetch", "-q", "origin", cwd=wt)

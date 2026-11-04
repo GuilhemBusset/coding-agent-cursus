@@ -59,6 +59,7 @@ import sys
 import tempfile
 import threading
 import time
+from typing import Any
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -205,7 +206,7 @@ def kill_tree(process):
 def run_agent(argv, cwd):
     """Run an agent in its own process group with stdin closed. Returns
     (exit code, stdout, timed out)."""
-    options = {}
+    options: dict[str, Any] = {}
     if os.name == "nt":
         options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     else:
@@ -499,6 +500,7 @@ def check_push(report, auth_job):
         report.fail("push", "run the check from your clone of the course repository; its 'origin' "
                             "must be the course repository (or your fork) on GitHub")
         return
+    assert jobs is not None  # gh-auth passed, so gh was found and the lookups above started
     handle, info, commit = (job.result() for job in jobs)
     if not handle:
         report.fail("push", "could not read your GitHub handle with 'gh api user'")

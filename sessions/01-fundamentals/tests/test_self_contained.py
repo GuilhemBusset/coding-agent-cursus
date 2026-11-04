@@ -95,10 +95,11 @@ def test_python_imports_stay_in_session():
         item for item in config.get("dependency-groups", {}).get("fixtures", [])
         if isinstance(item, str)
     )
-    dependencies = {
-        re.match(r"\s*([\w.-]+)", requirement)[1].lower().replace("-", "_")
-        for requirement in requirements
-    }
+    dependencies = set()
+    for requirement in requirements:
+        name = re.match(r"\s*([\w.-]+)", requirement)
+        assert name, f"Unreadable requirement: {requirement!r}"
+        dependencies.add(name[1].lower().replace("-", "_"))
     allowed = sys.stdlib_module_names | dependencies
     paths = visible_files("*.py")
     assert paths, "Session must have its own Python tests"

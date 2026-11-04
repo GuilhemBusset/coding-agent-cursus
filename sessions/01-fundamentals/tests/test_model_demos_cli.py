@@ -431,8 +431,7 @@ class Harness:
             (bindir / name).symlink_to(sys.executable)
         self.answers = (["Copper Finch", "Copper Finch", "Indigo Loom", "Copper Finch", "Indigo Loom"] if variant == 1
                         else ["Orbit Quill", "Moss Arc", "Quiet Delta", "Cobalt Nest", "Velvet Axis"])
-        self.config = {cli: cli in logged for cli in CLIS}
-        self.config.update(answers=self.answers, variant=variant)
+        self.config = {**{cli: cli in logged for cli in CLIS}, "answers": self.answers, "variant": variant}
         (root / "config.json").write_text(json.dumps(self.config), encoding="utf-8")
         for cli in installed:
             path = bindir / cli
@@ -579,7 +578,9 @@ def test_d2_recordings_independently_prove_miscount_and_pivot(cli, tmp_path):
     assignments = [n for n in ast.walk(tree)
                    if (isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "WORD" for t in n.targets))
                    or (isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.target.id == "WORD")]
-    assert len(assignments) == 1 and ast.literal_eval(assignments[0].value) == word
+    assert len(assignments) == 1
+    value = assignments[0].value
+    assert value is not None and ast.literal_eval(value) == word
     assert okay(process([sys.executable, str(path)], DEMO, clean_env())).strip() == str(truth)
     # Replace the input, not the expected output: rejects a hard-coded 146.
     for i, probe in enumerate(("rRrr-river" * 9, "strawberry" * 3, "No lowercase letters here")):
@@ -660,8 +661,8 @@ def test_d3_recorded_spread_replay_and_lab_link(tmp_path):
     assert "claude" in why.casefold() and "codex" in why.casefold() and "temperature" in why.casefold()
     assert re.search(r"\b(neither|no|not|doesn.t|don.t|without|lacks?)\b", why, re.I)
     for data in recordings:
-        version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])[0]
-        assert data["meta"]["date"] in why and version in why and "--help" in why
+        version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])
+        assert version and data["meta"]["date"] in why and version[0] in why and "--help" in why
     links = re.findall(r"\]\(([^)]+)\)", text) + re.findall(r"(?m)^\s*\[[^\]]+\]:\s*(\S+)", text)
     target = SESSION / "cursus/labs/next-token.html"
     assert any(not link.startswith(("/", "http")) and
@@ -928,8 +929,8 @@ def test_a3_runbook_tables_match_each_recording(name, steps):
                 assert rows, f"Recorded runs table omits {filename}"
                 for row in rows:
                     assert data["meta"]["date"] in row
-                    version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])[0]
-                    assert version in row and all(model in row for model in reported_models(data))
+                    version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])
+                    assert version and version[0] in row and all(model in row for model in reported_models(data))
                     assert cli in row.casefold()
 
 

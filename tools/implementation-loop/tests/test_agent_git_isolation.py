@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body
+from helpers import SHIP, TempRepo, git, issue_body, present
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
 from implement_loop.engine import Engine
@@ -135,7 +135,7 @@ class InterleavedRefUpdateTests(IsolationCase):
             observed.append(True)
             return build(vendor, req, plan, wt, feedback)
 
-        self.agents.build = worker
+        self.agents.build = worker  # ty: ignore[invalid-assignment]  # test double
         self.engine.run()
         self.assert_done()
         self.assertEqual(observed, [True])
@@ -189,7 +189,7 @@ class InterleavedRefUpdateTests(IsolationCase):
             observed.append((before, external, agent_head))
             return answer
 
-        self.agents.build = worker
+        self.agents.build = worker  # ty: ignore[invalid-assignment]  # test double
         self.engine.run()
         self.assert_done()
         self.assertEqual(len(observed), 1)
@@ -437,6 +437,7 @@ class AgentGitDirTests(IsolationCase):
         ready, lines = threading.Event(), []
 
         def reader():
+            assert proc.stdout is not None
             lines.append(proc.stdout.readline())
             ready.set()
 
@@ -513,7 +514,7 @@ class MergeStateTests(IsolationCase):
         with mock.patch.object(self.engine, name, stop):
             self.engine.run()
         self.assertEqual(self.store.issue(self.n).phase, Phase.VERIFY)
-        wt = Path(self.store.issue(self.n).worktree)
+        wt = Path(present(self.store.issue(self.n).worktree))
         check = f"checks/issue_{self.n}.sh"
         self.assertEqual(check in self.store.issue(self.n).locked, locked)
         git("checkout", "-q", "main", cwd=self.repo.merger)
@@ -563,7 +564,7 @@ class MergeStateTests(IsolationCase):
             seen.append(True)
             return answer
 
-        self.agents.build = worker
+        self.agents.build = worker  # ty: ignore[invalid-assignment]  # test double
         with self.stop_after_build("inspect dropped merge\n"):
             self.engine.run()
         self.assertEqual(seen, [True])
@@ -573,7 +574,7 @@ class MergeStateTests(IsolationCase):
         self.assertEqual(len(self.events("conflict_unresolved")), 1)
         self.assertNotEqual(result(wt, "rev-parse", "--verify", "MERGE_HEAD").returncode, 0)
         self.assertEqual([c for c in self.gh.calls if c[0] == "merge_pr"], [])
-        self.agents.build = build
+        self.agents.build = build  # ty: ignore[invalid-assignment]  # test double
         (self.store.dir / "STOP").unlink()
         self.engine = self.new_engine()
         self.engine.run()
@@ -582,7 +583,7 @@ class MergeStateTests(IsolationCase):
 
     def assert_main_preserved(self, main):
         self.assertEqual(self.repo.main_file("main-only.txt"), "retain main's new file")
-        content = self.repo.main_file("README.md")
+        content = present(self.repo.main_file("README.md"))
         self.assertIn("main-side", content.splitlines())
         self.assertIn("issue-side", content.splitlines())
         self.assertNotIn("<<<<<<<", content)
@@ -611,7 +612,7 @@ class MergeStateTests(IsolationCase):
             observed.append(True)
             return answer
 
-        self.agents.resolve_locked = worker
+        self.agents.resolve_locked = worker  # ty: ignore[invalid-assignment]  # test double
         with self.stop_after_build("inspect the dropped resolution\n"):
             self.engine.run()
         self.assertEqual(observed, [True])
@@ -621,13 +622,13 @@ class MergeStateTests(IsolationCase):
         self.assertEqual(len(self.events("check_conflict_unresolved")), 1)
         self.assertEqual([c for c in self.gh.calls if c[0] == "merge_pr"], [])
         self.assertNotEqual(result(wt, "rev-parse", "--verify", "MERGE_HEAD").returncode, 0)
-        self.agents.resolve_locked = resolve
+        self.agents.resolve_locked = resolve  # ty: ignore[invalid-assignment]  # test double
         (self.store.dir / "STOP").unlink()
         self.engine = self.new_engine()
         self.engine.run()
         self.assert_done()
         self.assert_main_preserved(main)
-        self.assertIn("test -e main-only.txt", self.repo.main_file(f"checks/issue_{self.n}.sh"))
+        self.assertIn("test -e main-only.txt", present(self.repo.main_file(f"checks/issue_{self.n}.sh")))
 
     def test_a_builder_committing_the_private_merge_is_absorbed_and_lands(self):
         wt, main = self.prepare_conflict()
@@ -647,7 +648,7 @@ class MergeStateTests(IsolationCase):
             observed.append(agent_head)
             return answer
 
-        self.agents.build = worker
+        self.agents.build = worker  # ty: ignore[invalid-assignment]  # test double
         self.engine.run()
         self.assert_done()
         self.assertEqual(len(observed), 1)

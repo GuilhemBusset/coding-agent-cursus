@@ -38,12 +38,18 @@ edit:
 - a page or deck: `node tools/html-pages/check-page.mjs <file>`;
 - one Node suite: `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`;
 - a session's tests: `uv run --group parallel pytest -n auto [tests/<file>]` in its folder;
-- the engine tests: the command in `tools/implementation-loop/README.md`.
+- the engine tests: the command in `tools/implementation-loop/README.md`;
+- types (ty): `uv run --project setup --locked ty check` from the root for the repository's own
+  Python, or `uv run --locked --group typecheck ty check` in a session's folder.
 
 CI's `required` check runs the same selection on a pull request, and everything on every push to
 `main` and nightly; a failing full run opens an issue. When a test starts reading a file that its
 entry in `impact.toml` does not name, add the file there. See `setup/README.md#validating-a-change`
 and ADR 0013.
+
+Type errors fail CI like test failures. Fix them in the code. A `# ty: ignore[<rule>]` names its
+rule and says why, and is only for code that steps outside its annotations on purpose (a test
+double) or that ty misreads. See ADR 0014.
 
 ## Branching & merging
 

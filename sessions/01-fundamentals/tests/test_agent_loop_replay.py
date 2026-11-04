@@ -229,7 +229,7 @@ def inline(page):
     match = matches[0]
     parser = ScriptAttributes()
     parser.feed(match.group(0).split(b">", 1)[0].decode() + ">")
-    assert parser.attrs.get("type") == "application/json"
+    assert parser.attrs and parser.attrs.get("type") == "application/json"
     return match, parser.attrs
 
 

@@ -18,3 +18,25 @@ fixtures = [
 parallel = [
     "pytest-xdist>=3.8.0",
 ]
+typecheck = [
+    "ty==0.0.95",
+]
+
+# ty (https://docs.astral.sh/ty/): `uv run --locked --group typecheck ty check` from this folder.
+# Copied with this file into the P00 export: only its excludes name paths that exist only here,
+# and an exclude that matches nothing is ignored.
+[tool.ty.environment]
+# Exercises run on Linux, macOS and Windows (ADR 0010): check every platform's branches. An API
+# only one platform has passes here; CI also checks exercises/ with --python-platform per platform.
+python-platform = "all"
+
+[tool.ty.src]
+# Verbatim recordings of what the agents wrote, and loose examiner probes that nothing runs.
+exclude = ["cursus/demos/*/recorded/", "tests/probe_*.py"]
+
+[tool.ty.analysis]
+# The opt-in `fixtures` group, which neither `uv sync` nor CI installs.
+allowed-unresolved-imports = ["torch", "torch.**", "transformers", "transformers.**"]
+
+[tool.ty.terminal]
+error-on-warning = true

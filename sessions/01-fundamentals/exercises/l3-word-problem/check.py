@@ -115,7 +115,7 @@ def data_problems(path=DATA_FILE):
             continue
         seen.add(day)
         try:
-            value = float(raw)
+            value = float(raw)  # ty: ignore[invalid-argument-type]  # a short row's None: TypeError
         except (TypeError, ValueError):
             problems.append(f"data: {day} demand {ascii(raw)} is not a number")
             continue

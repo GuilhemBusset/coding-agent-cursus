@@ -167,7 +167,8 @@ def test_version_floor_and_new_major(box, entrypoint, tool, version):
     box.config["versions"] = {tool: version}
     before, _, _ = check(box, entrypoint, True)
     line = status(before, tool, "PASS")
-    assert re.search(r"\d+\.\d+\.\d+", version)[0] in line
+    number = re.search(r"\d+\.\d+\.\d+", version)
+    assert number and number[0] in line
 
 
 @pytest.mark.parametrize("tool", ["git", "gh", "mise"])

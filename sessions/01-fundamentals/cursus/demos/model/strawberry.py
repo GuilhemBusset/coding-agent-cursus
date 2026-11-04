@@ -21,8 +21,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-import agent_cli
-from agent_cli import EFFORT, MODELS, RECORDED, WORK, Failure
+import agent_cli  # ty: ignore[unresolved-import]  # beside this script: ty skips that folder for PEP 723 scripts
+from agent_cli import EFFORT, MODELS, RECORDED, WORK, Failure  # ty: ignore[unresolved-import]  # likewise
 
 SCRIPT = "strawberry.py"
 
@@ -262,6 +262,7 @@ def pivot_claude(record):
         except OSError as error:
             raise Failure(f"claude could not start ({type(error).__name__})\nOr replay the "
                           f"recording: {agent_cli.replay_command(SCRIPT, 'claude', True)}") from None
+        assert process.stdout is not None  # a pipe
         kept = []
         for line in process.stdout:
             for event in agent_cli.parse_events(line):
@@ -294,6 +295,7 @@ def pivot_codex(record):
         except OSError as error:
             raise Failure(f"codex could not start ({type(error).__name__})\nOr replay the "
                           f"recording: {agent_cli.replay_command(SCRIPT, 'codex', True)}") from None
+        assert process.stderr is not None  # a pipe
         lines, view = [], Transcript()
         for line in process.stderr:
             lines.append(line)

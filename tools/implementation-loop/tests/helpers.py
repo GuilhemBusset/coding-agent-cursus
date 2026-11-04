@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import TypeVar
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -20,6 +21,16 @@ HOOKS = REPO_ROOT / ".githooks"
 FIXTURE = HERE / "fixtures" / "epic10.json"
 
 HAS_PYTEST = subprocess.run([sys.executable, "-c", "import pytest"], capture_output=True).returncode == 0
+
+
+T = TypeVar("T")
+
+
+def present(value: T | None) -> T:
+    """`value`, which the test needs to be there: a None fails the test here."""
+    if value is None:
+        raise AssertionError("expected a value, found None")
+    return value
 
 
 def git(*args: str, cwd: Path) -> str:

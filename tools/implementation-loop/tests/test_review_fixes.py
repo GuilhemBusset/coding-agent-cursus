@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from helpers import HAS_PYTEST, SHIP, git, issue_body
+from helpers import HAS_PYTEST, SHIP, git, issue_body, present
 from test_engine import EPIC, EngineCase
 
 from implement_loop import VERSION, gate, verify
@@ -137,7 +137,7 @@ class Finding01PublishedEvidence(FixCase):
         with mock.patch.dict(os.environ, {"GH_TOKEN": "ghp_engine_secret"}):
             self.run_engine(agents=Agents(self.scripts, build=echo_token))
         self.assertEqual(self.phase(2), Phase.DONE)
-        pr = self.store.issue(2).pr
+        pr = present(self.store.issue(2).pr)
         evidence = [c["body"] for c in self.gh.comments[pr] if "implement-loop:evidence" in c["body"]][0]
         self.assertIn("token=unset", evidence)
         published = json.dumps([self.gh.comments, self.gh.prs, self.gh.issues])
@@ -177,6 +177,7 @@ class Finding02RevertGates(FixCase):
         with mock.patch.object(Engine, "_revert", another_run_lands_first):
             self.run_engine(caps=Caps(ci_poll_s=0, queue_poll_s=0, queue_wait_s=0))
             st = self.store.issue(3)
+            assert st.wait is not None
             self.assertEqual((st.phase, st.wait["kind"], st.wait["resume"]), (Phase.WAITING, "merge_queue", "merged"))
             self.assertFalse(self.revert_prs(), "nothing is pushed or merged while another run lands")
             self.assertEqual(self.repo.main_file("docs/a.txt"), "broken")
@@ -194,6 +195,7 @@ class Finding02RevertGates(FixCase):
             return result
         self.run_engine(agents=Agents(self.scripts, examine=refuse_the_revert))
         st = self.store.issue(3)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "main_broken"))
         self.assertIn("did not certify the revert", st.fail["detail"])
         self.assertFalse(self.revert_prs())
@@ -212,9 +214,11 @@ class Finding02RevertGates(FixCase):
         with mock.patch.object(Engine, "_regressions", still_failing_on_the_revert):
             self.run_engine(agents=Agents(self.scripts))
         st = self.store.issue(3)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "main_broken"))
         self.assertIn("still leaves earlier issues' checks failing", st.fail["detail"])
         self.assertFalse(self.revert_prs())
+        assert isinstance(self.agents, Agents)
         self.assertFalse([x for x in self.agents.exams if any("Certify a revert" in f for f in x["feedback"])])
 
     def test_2_a_revert_the_required_check_refuses_is_not_merged(self):
@@ -225,9 +229,10 @@ class Finding02RevertGates(FixCase):
             if any(p["head"]["ref"].endswith("-revert") for p in self.gh.prs.values()):
                 return {"id": 999, "status": "completed", "conclusion": "failure"}
             return real(sha, name)
-        self.gh.required_check_run = red_on_reverts
+        self.gh.required_check_run = red_on_reverts  # ty: ignore[invalid-assignment]  # test double
         self.run_engine()
         st = self.store.issue(3)
+        assert st.fail is not None
         self.assertEqual((st.phase, st.fail["cause"]), (Phase.FAILED, "main_broken"))
         self.assertIn("did not pass the required check", st.fail["detail"])
         self.assertEqual(len(self.revert_prs()), 1)
@@ -300,7 +305,7 @@ class Finding05UnlistedCommandTests(FixCase):
         self.assertIn(extra, self.store.issue(2).tests)
         self.assertIn(f"Loop-Locks: {extra}", git("log", "--format=%B", "origin/feat/issue-2", cwd=self.repo.work))
         self.assertTrue(any(extra in e["files"] for e in self.events("locked_changes_reverted", 2)))
-        self.assertIn("test -s docs/a.txt", self.repo.main_file(extra), "the weakened test never landed")
+        self.assertIn("test -s docs/a.txt", present(self.repo.main_file(extra)), "the weakened test never landed")
 
 
 class Finding06CommandCwd(FixCase):
@@ -338,6 +343,7 @@ class Finding07InRunPrerequisite(FixCase):
         self.run_engine()
         self.assertEqual((self.phase(2), self.phase(3)), (Phase.DONE, Phase.DONE))
         st = self.store.issue(2)
+        assert st.plan is not None
         d2 = next(i for i in st.plan["items"] if i["id"] == "D2")
         self.assertEqual((d2["proof"], d2["depends_on"]), ("review", 3))
         self.assertEqual(st.verdicts["D2"]["verdict"], "met", "proven by the examiner, not closed unproven")
@@ -356,6 +362,7 @@ class Finding08TriageDependency(FixCase):
                               quote="plays in the widget", depends_on=9, depends_quote="Prerequisite widget")
         self.run_engine(agents=Agents(self.scripts, triage=lambda result, req: [objection]))
         st = self.store.issue(2)
+        assert st.plan is not None
         d2 = next(i for i in st.plan["items"] if i["id"] == "D2")
         self.assertEqual((d2["proof"], d2["depends_on"]), ("deferred", 9))
         self.assertEqual(self.events("planned", 2)[0]["items"]["D2"], "deferred")
@@ -528,6 +535,7 @@ class Finding13ProbeCoverage(FixCase):
         waiver = [d for d in st.decisions if d["id"] == "probe-waiver"]
         self.assertEqual(len(waiver), 1)
         self.assertIn("A1, D1", waiver[0]["choice"])
+        assert st.pr is not None
         self.assertIn("probe-waiver", self.gh.prs[st.pr]["body"])
         self.assertEqual(len(self.builds()), 1, "the examiner's gap is not the builder's failure")
 
@@ -543,7 +551,7 @@ class Finding13ProbeCoverage(FixCase):
             return agents._metered(req.issue.number, "arbitrate", vendor,
                                    lambda: Ruling(upheld, "the test reads the file as the item asks" if upheld
                                                   else "the test never checks the content the item names"))
-        agents.arbitrate = refuse_once
+        agents.arbitrate = refuse_once  # ty: ignore[invalid-assignment]  # test double
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertEqual(rulings, ["probe_waiver", "probe_waiver"])
@@ -1131,6 +1139,7 @@ class FindingNew3Supervisor(SupervisorCase):
         sup = None
 
         def script(args):
+            assert sup is not None
             deadlines.append(sup._deadline)
             now[0] += 600
             if "--repair" not in args:
