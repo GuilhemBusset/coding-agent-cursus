@@ -2,10 +2,10 @@
 import ast
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 PACK = Path(__file__).resolve().parents[1] / 'exercises/homework-p01'
 

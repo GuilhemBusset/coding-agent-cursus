@@ -25,19 +25,18 @@ Only uv's interpreter selection is replaced: the commands themselves execute
 in real temporary repos, with this pytest run's locked Python environment.
 """
 
-from html.parser import HTMLParser
 import json
 import os
-from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 PAGE = SESSION / "exercises/lab-ladder.html"

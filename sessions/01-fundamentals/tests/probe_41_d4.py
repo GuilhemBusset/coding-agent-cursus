@@ -1,6 +1,6 @@
-from pathlib import Path
 import hashlib
 import json
+from pathlib import Path
 
 
 def test_same_task_plan_is_readonly_and_supplied_to_build():

@@ -16,7 +16,6 @@ from pathlib import Path
 from unittest import mock
 
 from helpers import REPO_ROOT
-
 from implement_loop import environment, schemas
 from implement_loop.environment import Probe
 
@@ -543,6 +542,7 @@ class VendorReachableTests(unittest.TestCase):
 class DoctorSmokeTests(unittest.TestCase):
     def test_the_doctor_makes_the_shared_smoke_call_and_reports_as_before(self):
         import argparse
+
         from implement_loop import cli
         calls = []
 

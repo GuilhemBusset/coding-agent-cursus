@@ -9,7 +9,6 @@ in the format of README.md; then prove it with `uv run python p01_checker.py` an
 import json
 from pathlib import Path
 
-
 DATA_DIR = Path(__file__).parent / "data"
 
 

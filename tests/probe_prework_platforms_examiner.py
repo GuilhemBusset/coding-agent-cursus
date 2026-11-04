@@ -1,6 +1,6 @@
 """A3 agent work: explicit platform limitations and owner-run instructions."""
-from pathlib import Path
 import re
+from pathlib import Path
 
 session = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'
 page = (session / 'exercises/00-prework.html').read_text()

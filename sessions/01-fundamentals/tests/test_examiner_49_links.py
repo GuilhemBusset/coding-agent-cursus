@@ -1,9 +1,9 @@
 """Follow only clickable links, and validate files, anchors and replay routes (A1)."""
+import json
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
-import json
-import re
 
 SESSION = Path(__file__).resolve().parents[1]
 

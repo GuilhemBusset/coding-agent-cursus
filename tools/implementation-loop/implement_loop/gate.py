@@ -195,7 +195,7 @@ def review_verdicts(verdicts: list[dict], item_text: dict[str, str], review_item
 # ------------------------------------------------------------------ zones
 
 def path_allowed(path: str, grants: list[dict], test_files: list[str]) -> bool:
-    from .scheduler import overlaps   # local import: scheduler imports config only
+    from .scheduler import overlaps  # local import: scheduler imports config only
     return any(overlaps(path, g["path"]) for g in grants) or path in test_files
 
 

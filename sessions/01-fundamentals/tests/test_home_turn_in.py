@@ -11,14 +11,12 @@ the owner's.
 
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
-
 from test_p01_homework import CONTRACTS, PACK, checker, read_instance, single_leg_candidate
-
 
 SESSION = Path(__file__).resolve().parents[1]
 ROOT = SESSION.parents[1]

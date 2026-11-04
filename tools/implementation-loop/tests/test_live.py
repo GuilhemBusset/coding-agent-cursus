@@ -15,7 +15,6 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from helpers import REPO_ROOT, TempRepo, git, load_fixture
-
 from implement_loop import live, schemas
 from implement_loop.agents import IssueRequest
 from implement_loop.issue_parser import parse

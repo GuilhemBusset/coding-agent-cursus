@@ -5,7 +5,6 @@ import csv
 import json
 import math
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
@@ -13,9 +12,9 @@ import tempfile
 import time
 import tomllib
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 PACK = SESSION / "exercises" / "p00-lab"

@@ -1,11 +1,11 @@
 """Independent examiner probe for issue 45 D2."""
 
-from html.parser import HTMLParser
-from pathlib import Path
 import json
 import re
 import shutil
 import subprocess
+from html.parser import HTMLParser
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 

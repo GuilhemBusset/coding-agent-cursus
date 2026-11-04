@@ -14,12 +14,10 @@ starts with the same reset as the `reset` command.
 """
 
 import argparse
-from datetime import datetime, timezone
 import getpass
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -27,6 +25,8 @@ import sys
 import tempfile
 import threading
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SESSION = HERE.parents[2]

@@ -7,19 +7,18 @@ The checker is always a subprocess; no implementation module is imported.
 
 import ast
 import csv
-from fractions import Fraction
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import time
+from fractions import Fraction
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 PACK = SESSION / "exercises" / "l3-word-problem"

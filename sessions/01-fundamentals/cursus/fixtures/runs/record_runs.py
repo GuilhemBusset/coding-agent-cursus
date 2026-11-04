@@ -23,11 +23,9 @@ Scenarios (prompts are constants; nothing about the outcome is steered or edited
 """
 
 import argparse
-from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
 import random
 import re
 import shutil
@@ -36,13 +34,14 @@ import sys
 import tempfile
 import threading
 import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 # Importing the sibling scripts must not leave bytecode under runs/: every file there is scanned.
 sys.dont_write_bytecode = True
 import normalize_runs  # noqa: E402
 import sanitize  # noqa: E402
-
 
 HERE = Path(__file__).resolve().parent
 SESSION = HERE.parents[2]

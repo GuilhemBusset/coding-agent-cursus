@@ -4,12 +4,11 @@ Snapshot read 2026-10-19 from https://metr.org/assets/benchmark_results_1_1.yaml
 all is_sota releases from 2023 onward; horizons and intervals are in minutes.
 No network is required to rerun this dated chart check.
 """
-from datetime import date
-from pathlib import Path
 import math
 import re
 import xml.etree.ElementTree as ET
-
+from datetime import date
+from pathlib import Path
 
 MEASUREMENTS = [
     ('2023-03-14', 3.987428, 1.93292, 7.995283),

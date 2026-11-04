@@ -12,17 +12,17 @@ equivalents computed from prices.json (USD per million tokens). See README.md.
 """
 
 import argparse
-from datetime import datetime, timezone
 import hashlib
 import itertools
 import json
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 

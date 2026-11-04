@@ -2,11 +2,11 @@
 import ast
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 pack = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/exercises/homework-p01'
 private = Path(os.environ.get('P01_REFERENCE_DIR', '~/.local/share/coding-agent-cursus/instructor/s01-p01')).expanduser() / 'p01_model.py'

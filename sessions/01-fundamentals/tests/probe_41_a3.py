@@ -1,8 +1,8 @@
-from pathlib import Path
 import ast
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 
 def test_open_solver_runs_original_instance():

@@ -1,12 +1,11 @@
 """The Session 1 homework sheet: four parts, a good answer for each, the grading rule, both agents."""
 
 import ast
+import re
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
-import re
 from urllib.parse import unquote, urlsplit
-
 
 SESSION = Path(__file__).resolve().parents[1]
 SHEET = SESSION / "exercises" / "home.html"

@@ -6,11 +6,8 @@ local fixtures; this is NOT the full-platform A3 proof. Missing prerequisites
 fail, never skip. All git mutations are confined to disposable repositories.
 """
 
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
-from pathlib import Path
 import re
 import shlex
 import shutil
@@ -19,7 +16,9 @@ import sys
 import tempfile
 import threading
 import time
-
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 BEGIN = "----- BEGIN SETUP SUMMARY -----"

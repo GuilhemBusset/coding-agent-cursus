@@ -10,10 +10,10 @@ reference passes the contract. The objectives on the slide are the ones each ver
 """
 import html
 import json
-from pathlib import Path
 import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 

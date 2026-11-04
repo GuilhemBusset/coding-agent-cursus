@@ -4,7 +4,6 @@ import json
 import unittest
 
 from helpers import TempRepo
-
 from implement_loop.model import IssueState, Phase
 from implement_loop.state import RunStore, runs_root
 from implement_loop.supervisor import Supervisor

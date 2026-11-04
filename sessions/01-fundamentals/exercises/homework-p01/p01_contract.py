@@ -7,11 +7,9 @@ it while p01_model.py is still empty. It solves once, then asks the independent 
 """
 
 import highspy
-import pytest
-
 import p01_checker
 import p01_model
-
+import pytest
 
 ACCEPTED = {"optimal", "feasible"}
 

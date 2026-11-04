@@ -7,22 +7,21 @@ Starter assertions intentionally cease to pass on a completed homework branch.
 """
 
 import ast
-from collections import Counter
-from copy import deepcopy
 import csv
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from collections import Counter
+from copy import deepcopy
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 PACK = SESSION / "exercises/homework-p01"

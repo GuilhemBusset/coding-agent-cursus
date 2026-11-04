@@ -1,8 +1,7 @@
 """Follow-up examination: reuse the independent examiner cases on the real files."""
-from pathlib import Path
 import runpy
 import subprocess
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 

@@ -2,11 +2,11 @@
 import csv
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 pack = root / 'sessions/01-fundamentals/exercises/homework-p01'

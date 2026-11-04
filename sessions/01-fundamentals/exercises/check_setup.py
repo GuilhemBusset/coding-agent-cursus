@@ -46,24 +46,23 @@ import datetime
 import hashlib
 import json
 import os
-from pathlib import Path
 import platform
 import re
 import secrets
 import shutil
 import signal
-import ssl
 import socket
+import ssl
 import subprocess
 import sys
 import tempfile
 import threading
 import time
-from typing import Any
 import urllib.error
 import urllib.parse
 import urllib.request
-
+from pathlib import Path
+from typing import Any
 
 HERE = Path(__file__).resolve().parent
 BEGIN = "----- BEGIN SETUP SUMMARY -----"

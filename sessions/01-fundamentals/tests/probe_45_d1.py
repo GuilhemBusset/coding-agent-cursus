@@ -1,6 +1,6 @@
+import re
 from html import unescape
 from pathlib import Path
-import re
 from urllib.parse import unquote, urlsplit
 
 

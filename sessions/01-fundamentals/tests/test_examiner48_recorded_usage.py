@@ -3,10 +3,9 @@
 #resend draws Act II's run, three model calls, from Claude Code's own usage blocks (cache read,
 cache write, uncached); #long-run draws the 26 calls of the long task and their total.
 """
+import json
 from html.parser import HTMLParser
 from pathlib import Path
-import json
-
 
 SESSION = Path(__file__).resolve().parents[1]
 RUNS = SESSION / 'cursus/fixtures/runs'

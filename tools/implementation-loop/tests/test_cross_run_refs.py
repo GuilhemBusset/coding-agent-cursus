@@ -13,9 +13,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body
-
 import implement_loop
+from helpers import SHIP, TempRepo, git, issue_body
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
 from implement_loop.engine import Engine
@@ -24,7 +23,6 @@ from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
 from implement_loop.workspace import Workspace
-
 
 WAIT = 60
 

@@ -12,10 +12,9 @@ reviewer still judges teaching quality, explanation, voice, and plan fidelity.
 Only standard-library imports are needed in this pytest module.
 """
 
-from pathlib import Path
 import re
 import subprocess
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 NARRATIVE = "docs/cursus-narrative.md"

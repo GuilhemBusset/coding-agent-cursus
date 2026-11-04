@@ -25,7 +25,6 @@ from implement_loop.model import Phase
 from implement_loop.state import RunStore
 from implement_loop.workspace import GitError, Workspace
 
-
 WAIT = 60
 
 

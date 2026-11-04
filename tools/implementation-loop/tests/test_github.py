@@ -5,7 +5,6 @@ import subprocess
 import unittest
 
 import helpers  # noqa: F401 - puts the package on the path
-
 from implement_loop.github import GhCli, GitHubError, GitHubUnavailable, transient
 
 BAD_GATEWAY = "gh: HTTP 502"

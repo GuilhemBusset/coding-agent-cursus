@@ -1,16 +1,17 @@
 """Independent D3 probe: empty starter, documented schema and actual turn-in hook."""
 import ast
 import json
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 session = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'
 pack = session / 'exercises/homework-p01'
 sys.path.insert(0, str(pack))
 import p01_model
+
 try:
     p01_model.solve()
 except NotImplementedError:

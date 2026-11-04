@@ -6,22 +6,22 @@ recovery fixture deliberately reproduces its missing land sync and its non-abort
 does not replace the new recovery code.
 """
 
-from pathlib import Path
 import subprocess
 import threading
 import unittest
+from pathlib import Path
 from unittest import mock
 
-from helpers import SHIP, TempRepo, git, issue_body, present
 import implement_loop
+from helpers import SHIP, TempRepo, git, issue_body, present
+from implement_loop import workspace
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import CEILINGS, Caps, Config
-from implement_loop.engine import Engine, MERGE_QUEUE
+from implement_loop.engine import MERGE_QUEUE, Engine
 from implement_loop.github import FakeGitHub
 from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
-from implement_loop import workspace
 
 
 def git_result(path, *args):

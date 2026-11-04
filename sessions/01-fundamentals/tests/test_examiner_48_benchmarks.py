@@ -1,8 +1,8 @@
 """The benchmark answer in the instructor notes must not pass off two scores of one model as a gap
 between models (the Act III slide that carried it moved there)."""
+import re
 from html.parser import HTMLParser
 from pathlib import Path
-import re
 
 
 class Answer(HTMLParser):

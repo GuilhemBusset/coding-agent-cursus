@@ -1,14 +1,15 @@
 """Independent D2 probe: replay real plans and reject named modelling mistakes."""
-from copy import deepcopy
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from copy import deepcopy
+from pathlib import Path
 
 pack = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/exercises/homework-p01'
 sys.path.insert(0, str(pack))
 import p01_checker as checker
+
 data = checker.load_data()
 penalties = sum(t['penalty'] for t in data['trips'].values())
 base = {'status': 'feasible', 'objective': penalties, 'assign': {}, 'cancel': {t: 1 for t in data['trips']}, 'charge': {}}

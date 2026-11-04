@@ -14,9 +14,9 @@ import argparse
 import base64
 import hashlib
 import json
-from pathlib import Path
 import re
 import urllib.request
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PAGE = HERE.parent / "tiny-lm.html"

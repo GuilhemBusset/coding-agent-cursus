@@ -1,6 +1,7 @@
 """Observe real temporary Git ref updates, not merely the printed push verdict."""
-from pathlib import Path
 import sys
+from pathlib import Path
+
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/tests'))

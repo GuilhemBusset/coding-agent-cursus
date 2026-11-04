@@ -1,8 +1,7 @@
 """Independent completeness and consistency of every run's metadata."""
-from datetime import date
 import json
+from datetime import date
 from pathlib import Path
-
 
 RUNS = Path(__file__).resolve().parents[1] / "cursus/fixtures/runs"
 

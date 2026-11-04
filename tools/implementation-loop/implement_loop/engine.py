@@ -40,13 +40,30 @@ from pathlib import Path
 from typing import Callable
 
 from . import VERSION, gate, graph, issue_parser, report, scheduler, verify
-from .agents import AgentFailure, AgentStopped, Agents, CeilingReached, IssueRequest
-from .config import Config, ceiling, INFRA_PREFIXES, is_protected, is_safety_surface
+from .agents import AgentFailure, Agents, AgentStopped, CeilingReached, IssueRequest
+from .config import INFRA_PREFIXES, Config, ceiling, is_protected, is_safety_surface
 from .github import GitHub, GitHubError
 from .graph import Plan
-from .model import (AGENT_PROOFS, IN_RUN_WAITS, SATISFIES_DEPENDENTS, TERMINAL, WAIT_CI, WAIT_CLAIM,
-                    WAIT_ENGINE, WAIT_ENVIRONMENT, WAIT_GITHUB, WAIT_MERGE_QUEUE, WAIT_OUTAGE, WAIT_RUN_CEILING,
-                    WRITING_PHASES, CheckSpec, Finding, Issue, IssueState, Phase)
+from .model import (
+    AGENT_PROOFS,
+    IN_RUN_WAITS,
+    SATISFIES_DEPENDENTS,
+    TERMINAL,
+    WAIT_CI,
+    WAIT_CLAIM,
+    WAIT_ENGINE,
+    WAIT_ENVIRONMENT,
+    WAIT_GITHUB,
+    WAIT_MERGE_QUEUE,
+    WAIT_OUTAGE,
+    WAIT_RUN_CEILING,
+    WRITING_PHASES,
+    CheckSpec,
+    Finding,
+    Issue,
+    IssueState,
+    Phase,
+)
 from .state import FaultOutbox, RepoClaims, RunStore
 from .workspace import AgentCall, GitError, MergeConflict, UpdateResult, Workspace
 

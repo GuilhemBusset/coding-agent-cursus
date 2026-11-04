@@ -5,7 +5,6 @@ import unittest
 from unittest import mock
 
 from helpers import SHIP, TempRepo, git, issue_body, present
-
 from implement_loop import engine as engine_mod
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config

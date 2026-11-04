@@ -13,13 +13,12 @@ import ast
 import gc
 import json
 import math
-from pathlib import Path
 import re
+from pathlib import Path
 
 import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
-
 
 FIXTURES = Path(__file__).resolve().parents[1] / "cursus" / "fixtures"
 GPT2 = "openai-community/gpt2"

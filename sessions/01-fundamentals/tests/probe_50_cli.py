@@ -1,7 +1,7 @@
 """Independent D1 witness: the sampling claim against the real CLI interfaces."""
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

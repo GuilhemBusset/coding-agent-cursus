@@ -5,9 +5,8 @@ Only stdlib imports; this test also runs in a standalone session checkout.
 
 import hashlib
 import json
-from pathlib import Path
 import re
-
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

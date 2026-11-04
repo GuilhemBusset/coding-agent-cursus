@@ -1,8 +1,8 @@
 """Independent content coverage and dated official-source links."""
+import re
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
-import re
 from urllib.parse import urlsplit
 
 PAGE = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/exercises/00-prework.html'

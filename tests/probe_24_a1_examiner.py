@@ -1,7 +1,8 @@
 """Both public entry points must accept either agent alone."""
-from pathlib import Path
 import shutil
 import sys
+from pathlib import Path
+
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/tests'))

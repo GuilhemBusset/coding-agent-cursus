@@ -2,8 +2,8 @@
 import ast
 import hashlib
 import os
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 pack = root / 'sessions/01-fundamentals/exercises/homework-p01'

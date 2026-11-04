@@ -1,9 +1,9 @@
 """Independent A2 agent-part probe: run and audit the promised benchmark harness."""
 import json
 import math
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 session = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'
 result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-s', 'tests/instructor_p01_reference.py', '-k', 'laptop_benchmark'], cwd=session, capture_output=True, text=True, timeout=260)

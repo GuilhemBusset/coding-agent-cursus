@@ -4,9 +4,9 @@ The PocketOS case moved from the old Act V deck to Act IV's #l1 slide, where it 
 guards against. Its founder's words are known only through Tom's Hardware, so wherever the slide
 and its notes quote them, they say so, link the founder's own article and Railway's account.
 """
+import re
 from html import unescape
 from pathlib import Path
-import re
 
 SESSION = Path(__file__).resolve().parents[1]
 

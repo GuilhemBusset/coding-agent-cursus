@@ -1,6 +1,6 @@
+import re
 from html import unescape
 from pathlib import Path
-import re
 
 
 def test_each_part_explains_quality_and_feasibility_precedes_objective():

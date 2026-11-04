@@ -2,7 +2,6 @@ import unittest
 from pathlib import Path
 
 from helpers import REPO_ROOT, load_fixture
-
 from implement_loop import issue_parser
 from implement_loop.github import FakeGitHub
 from implement_loop.graph import CycleError, build_plan, compute_waves, topological_order

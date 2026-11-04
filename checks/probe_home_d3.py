@@ -1,8 +1,8 @@
 """Independent examiner probe for issue 45 D3."""
 
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
-import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 

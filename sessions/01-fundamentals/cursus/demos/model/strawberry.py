@@ -13,12 +13,12 @@ use their own logins: this script reads no API key.
 """
 
 import argparse
-from collections import Counter
-from datetime import date
 import re
 import subprocess
 import sys
 import tempfile
+from collections import Counter
+from datetime import date
 from pathlib import Path
 
 import agent_cli  # ty: ignore[unresolved-import]  # beside this script: ty skips that folder for PEP 723 scripts

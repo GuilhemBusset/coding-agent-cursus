@@ -1,0 +1,18 @@
+# Ruff (https://docs.astral.sh/ruff/), as editors run it: the repository's one style for import
+# blocks, whatever folder an editor opens. Sort them from the repository root with
+#
+#   uvx ruff@0.17.3 check --select I --fix .
+#
+# This file sets no rules; an editor's default selection still applies.
+
+# The width the code is written to, so sorting does not re-wrap import lines.
+line-length = 120
+# What agents wrote, kept as it was recorded.
+extend-exclude = ["sessions/*/cursus/demos/*/recorded"]
+# The folders the programs and tests put on sys.path (as in ty.toml): their modules are first-party.
+src = [".", "tools/implementation-loop", "tools/implementation-loop/tests", "tools/test-impact", "tests/turn_in"]
+
+[lint.per-file-ignores]
+# The recorded agent runs (cursus/fixtures/runs) pin these files' SHA-256: their bytes change only
+# with a new recording.
+"sessions/01-fundamentals/exercises/p00-lab/{p00_checker,p00_model,test_p00_contract}.py" = ["I001"]

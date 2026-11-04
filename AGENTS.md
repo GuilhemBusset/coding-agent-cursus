@@ -40,7 +40,8 @@ edit:
 - a session's tests: `uv run --group parallel pytest -n auto [tests/<file>]` in its folder;
 - the engine tests: the command in `tools/implementation-loop/README.md`;
 - types (ty): `uv run --project setup --locked ty check` from the root for the repository's own
-  Python, or `uv run --locked --group typecheck ty check` in a session's folder.
+  Python, or `uv run --locked --group typecheck ty check` in a session's folder;
+- import order: `uvx ruff@0.17.3 check --select I --fix <files>` from the root (`ruff.toml`).
 
 CI's `required` check runs the same selection on a pull request, and everything on every push to
 `main` and nightly; a failing full run opens an issue. When a test starts reading a file that its

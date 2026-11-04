@@ -24,7 +24,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 # A path as git records it: None (absent), ("link", target), ("dir",) or ("file", bytes, executable).
 FileState = tuple | None
 

@@ -12,21 +12,31 @@ import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import platform
 import re
 import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import pytest
-
 from test_p01_homework import (
-    PACK, SESSION, checker, failure_tags, literal, oracle, output,
-    read_instance, replace_literal, required, run, suite_report, tolerance, verdict,
+    PACK,
+    SESSION,
+    checker,
+    failure_tags,
+    literal,
+    oracle,
+    output,
+    read_instance,
+    replace_literal,
+    required,
+    run,
+    suite_report,
+    tolerance,
+    verdict,
 )
-
 
 VARIANTS = {
     "dropped-charging-window": "charging-window",

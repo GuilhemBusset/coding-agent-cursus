@@ -1,9 +1,9 @@
-from pathlib import Path
-import json
 import hashlib
+import json
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 
 def test_two_resets_discard_prior_demo_work():

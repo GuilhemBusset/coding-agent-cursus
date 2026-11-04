@@ -6,10 +6,9 @@ import unittest
 from pathlib import Path
 
 from helpers import HAS_PYTEST, git, present
-from test_engine import EngineCase
-
 from implement_loop.agents import BuildResult, FakeAgents, Request
 from implement_loop.model import CheckSpec, Phase
+from test_engine import EngineCase
 
 
 class Builder(FakeAgents):
@@ -166,6 +165,7 @@ class FileHardeningTests(unittest.TestCase):
     def test_replace_file_never_writes_through_a_link(self):
         import os
         import tempfile
+
         from implement_loop.engine import Engine
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
@@ -182,6 +182,7 @@ class FileHardeningTests(unittest.TestCase):
 
     def test_git_metadata_and_escapes_are_never_inside(self):
         import tempfile
+
         from implement_loop.engine import Engine
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -191,6 +192,7 @@ class FileHardeningTests(unittest.TestCase):
 
     def test_a_check_directory_outside_the_tree_is_refused(self):
         import tempfile
+
         from implement_loop import verify
         with tempfile.TemporaryDirectory() as d:
             root = Path(d) / "tree"

@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 
 import helpers  # noqa: F401  (puts the engine on sys.path)
-
 from implement_loop import VERSION
 from implement_loop.config import Caps
 from implement_loop.engine import Engine

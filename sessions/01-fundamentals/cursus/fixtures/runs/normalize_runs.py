@@ -41,14 +41,13 @@ uses stops the run with a message.
 """
 
 import argparse
-from collections import defaultdict
 import hashlib
 import json
-from pathlib import Path
 import re
 import sys
+from collections import defaultdict
+from pathlib import Path
 from typing import Any
-
 
 HERE = Path(__file__).resolve().parent
 SCHEMA = "agent-run/1"

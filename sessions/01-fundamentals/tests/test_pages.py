@@ -4,7 +4,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-
 SESSION = Path(__file__).resolve().parents[1]
 KINDS = {"page", "deck", "lab"}
 RESOURCE_RELS = {

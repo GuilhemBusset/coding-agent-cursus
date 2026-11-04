@@ -1,7 +1,7 @@
 """Evidence scope must stay honest and refer to the scripts actually delivered."""
-from pathlib import Path
 import hashlib
 import re
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'
 

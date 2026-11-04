@@ -1,10 +1,10 @@
 """Exercise the run-of-show's actual fallback commands and time coverage (D2)."""
-from html.parser import HTMLParser
-from pathlib import Path
 import os
 import re
 import shlex
 import subprocess
+from html.parser import HTMLParser
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

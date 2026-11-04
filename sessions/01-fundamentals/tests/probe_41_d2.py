@@ -1,8 +1,8 @@
-from pathlib import Path
 import json
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 
 def test_recorded_repairs_really_fix_fresh_p00():

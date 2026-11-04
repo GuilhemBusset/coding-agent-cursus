@@ -5,7 +5,6 @@ import re
 from test_ci_checks import run_step, workflow_steps
 from test_turn_in_script import ROOT, write
 
-
 AGENT = ".agents/skills/turn-in/SKILL.md"
 CLAUDE = ".claude/skills/turn-in/SKILL.md"
 

@@ -13,25 +13,30 @@ live-agent layer, not A3. No missing prerequisite or artifact is skipped.
 """
 
 import ast
-from datetime import date, datetime, timezone
-from html import unescape
-from html.parser import HTMLParser
 import json
-from pathlib import Path
 import re
 import socket
 import subprocess
 import sys
 import time
+from datetime import date, datetime, timezone
+from html import unescape
+from html.parser import HTMLParser
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-import pytest
-
 import prework_live_agents
+import pytest
 from prework_live_agents import (
-    BEGIN, END, SESSION, STUB, Sandbox, local_http, powershell, report,
+    BEGIN,
+    END,
+    SESSION,
+    STUB,
+    Sandbox,
+    local_http,
+    powershell,
+    report,
 )
-
 
 TOOLS = {"git", "gh", "uv", "mise", "claude", "codex"}
 PLATFORMS = {"macos", "linux", "wsl", "windows"}

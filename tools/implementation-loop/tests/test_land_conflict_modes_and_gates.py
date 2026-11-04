@@ -6,16 +6,15 @@ lstat directly rather than the production restoration helpers under test.
 """
 
 import os
-from pathlib import Path
 import shlex
 import stat
 import subprocess
 import threading
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from helpers import SHIP, TempRepo, git, issue_body, present
-from test_land_conflicts import ObservedAgents, has_markers, operation_paths
 from implement_loop.agents import Script
 from implement_loop.config import Caps, Config
 from implement_loop.engine import Engine
@@ -24,6 +23,7 @@ from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
 from implement_loop.workspace import Workspace
+from test_land_conflicts import ObservedAgents, has_markers, operation_paths
 
 
 def disk_state(path):

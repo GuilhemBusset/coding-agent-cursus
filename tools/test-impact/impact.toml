@@ -22,9 +22,10 @@ paths = [
 ]
 
 [none]
-# Read by no check: prose, and loose probe or examiner scripts nothing runs.
+# Read by no check: prose, editor configuration, and loose probe or examiner scripts nothing runs.
 paths = [
   "CLAUDE.md",
+  "ruff.toml",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "LICENSE",

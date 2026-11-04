@@ -7,7 +7,6 @@ import pytest
 
 from test_turn_in_script import ROOT, command, write
 
-
 WORKFLOW = ROOT / ".github/workflows/checks.yml"
 
 

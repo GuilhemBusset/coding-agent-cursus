@@ -2,13 +2,13 @@
 import contextlib
 import http.server
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'sessions/01-fundamentals/exercises'

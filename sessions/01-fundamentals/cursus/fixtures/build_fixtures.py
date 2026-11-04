@@ -20,7 +20,6 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-
 GPT2 = "openai-community/gpt2"
 BASE = "HuggingFaceTB/SmolLM2-135M"
 INSTRUCT = "HuggingFaceTB/SmolLM2-135M-Instruct"

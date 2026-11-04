@@ -6,9 +6,8 @@ Independent of the producer: the expected block is derived here from the committ
 
 import hashlib
 import json
-from pathlib import Path
 import re
-
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 RUNS = SESSION / "cursus/fixtures/runs"

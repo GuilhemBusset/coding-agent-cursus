@@ -180,6 +180,17 @@ against the interpreter selected in the editor. Select `sessions/<NN>-*/.venv` t
 and hover types for a session's packages (highspy, numpy), and `setup/.venv` for the repository's
 own code. Opening a session folder as its own workspace folder also applies its `[tool.ty]`.
 
+Import blocks follow one order: Ruff's isort rules, with the settings in the root
+[`ruff.toml`](../ruff.toml), which editors' Ruff extension reads too. To sort the imports of
+files you changed, from the repository root (Ruff 0.17.3 is fetched into uv's cache):
+
+```sh
+uvx ruff@0.17.3 check --select I --fix <files>
+```
+
+The P00 files that the recorded agent runs pin by SHA-256 are exempt. Nothing checks the order in
+CI.
+
 ## Validating a change
 
 `scripts/check-changed.sh` (Linux; Python 3.11 or newer, plus whatever the selected checks need
@@ -388,6 +399,7 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | ty, and pytest for its import resolution, for the repository's own Python | `uv run --project setup --locked` installs the versions and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, using a Python 3.11 or newer that uv finds or downloads; configured by the root `ty.toml` |
 | ty for each session's Python | The session's `typecheck` dependency group, locked in its `uv.lock`; `uv run --locked --group typecheck` installs it into the session's `.venv/` |
+| Ruff, to sort imports | `uvx ruff@0.17.3` fetches the pinned Ruff into uv's per-user cache; configured by the root `ruff.toml` |
 | Change-based check selection | Checked-in `tools/test-impact/` (standard-library Python) and `scripts/check-changed.sh`; installs nothing, runs the checks above with their own tools |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |
 

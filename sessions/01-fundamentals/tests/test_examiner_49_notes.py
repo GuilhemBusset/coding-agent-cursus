@@ -1,8 +1,8 @@
 """Cross-check the instructor's peer answers with the actual exit ticket (D3)."""
-from html.parser import HTMLParser
-from pathlib import Path
 import re
 import unicodedata
+from html.parser import HTMLParser
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

@@ -9,20 +9,19 @@ No real agent is invoked.
 """
 
 import ast
-from collections import Counter
-from datetime import date
 import json
 import os
-from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
 import sys
 import tomllib
+from collections import Counter
+from datetime import date
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 DEMO = SESSION / "cursus/demos/model"

@@ -20,22 +20,21 @@ All git writes below are confined to a disposable reset-test clone.
 
 import ast
 import copy
-from datetime import date, datetime, timedelta, timezone
 import hashlib
 import itertools
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 REPO = SESSION.parents[1]

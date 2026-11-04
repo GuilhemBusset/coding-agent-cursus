@@ -10,24 +10,23 @@ its command/changes/arguments; neither may lose the actual tool arguments.
 """
 
 import ast
-from collections import defaultdict
-from datetime import datetime
-from email.parser import Parser
 import hashlib
-from html.parser import HTMLParser
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tomllib
+from collections import defaultdict
+from datetime import datetime
+from email.parser import Parser
+from html.parser import HTMLParser
+from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import highspy
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 DEMO = SESSION / "cursus/demos/agent"

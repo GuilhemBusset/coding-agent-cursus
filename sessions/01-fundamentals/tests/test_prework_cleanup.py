@@ -15,10 +15,8 @@ import re
 import sys
 
 import pytest
-
 from prework_live_agents import report
 from test_prework import box, check, entrypoint, status
-
 
 FIXED_DATE = "2026-01-02T03:04:05+00:00"
 

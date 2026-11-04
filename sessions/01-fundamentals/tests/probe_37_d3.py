@@ -1,8 +1,8 @@
 """Exercise the empty starter and the actual session hook in an isolated copy."""
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

@@ -1,8 +1,8 @@
 """Independent execution and recovery checks for the #48 ceiling repair."""
-from dataclasses import asdict
-from pathlib import Path
 import shlex
 import sys
+from dataclasses import asdict
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/implementation-loop"))
 from implement_loop.config import Caps

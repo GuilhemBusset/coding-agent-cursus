@@ -1,7 +1,7 @@
 """The README agenda must agree with the student's hub (D4)."""
+import re
 from html.parser import HTMLParser
 from pathlib import Path
-import re
 
 SESSION = Path(__file__).resolve().parents[1]
 

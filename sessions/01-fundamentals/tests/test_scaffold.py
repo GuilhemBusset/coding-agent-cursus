@@ -1,9 +1,8 @@
 """Acceptance checks for the session layout, dependencies and runbook."""
 
-from pathlib import Path
 import re
 import tomllib
-
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 

@@ -6,17 +6,16 @@ Synthetic objects below exercise validators, never stand in for model evidence.
 """
 
 import ast
-from copy import deepcopy
-from datetime import date
 import json
 import math
-from pathlib import Path
 import re
 import sys
 import tomllib
+from copy import deepcopy
+from datetime import date
+from pathlib import Path
 from typing import Any
 from unittest import TestCase
-
 
 SESSION = Path(__file__).resolve().parents[1]
 FIXTURES = SESSION / "cursus" / "fixtures"

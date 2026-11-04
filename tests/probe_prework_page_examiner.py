@@ -1,9 +1,9 @@
 """Independent checks of issue 24's offline page contract."""
+import re
+import unittest
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
-import re
-import unittest
 from urllib.parse import urlsplit
 
 SESSION = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'

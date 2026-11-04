@@ -2,7 +2,6 @@
 import json
 from pathlib import Path
 
-
 RUNS = Path(__file__).resolve().parents[1] / "cursus/fixtures/runs"
 
 

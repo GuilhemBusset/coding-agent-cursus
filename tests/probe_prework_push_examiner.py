@@ -1,7 +1,7 @@
 """Independent D3 assertions against local bare repositories."""
-from pathlib import Path
 import sys
 import tempfile
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals/tests'))
 from prework_live_agents import Sandbox, local_http

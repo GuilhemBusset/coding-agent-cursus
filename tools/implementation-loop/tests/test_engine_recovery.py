@@ -12,9 +12,6 @@ from pathlib import Path
 from unittest import mock
 
 from helpers import REPO_ROOT, SHIP, git, issue_body, present
-from test_agent_git_isolation import IsolationCase, git_dir
-from test_engine import EPIC, EngineCase
-
 from implement_loop import engine as engine_mod
 from implement_loop.agents import AgentFailure, Decision, FakeAgents, Request, Script
 from implement_loop.config import Caps
@@ -23,6 +20,8 @@ from implement_loop.github import GitHubError
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
 from implement_loop.workspace import GitError, Workspace
+from test_agent_git_isolation import IsolationCase, git_dir
+from test_engine import EPIC, EngineCase
 
 
 class RecoveryCase(EngineCase):

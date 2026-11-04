@@ -16,8 +16,6 @@ from pathlib import Path
 from unittest import mock
 
 from helpers import HAS_PYTEST, SHIP, git, issue_body, present
-from test_engine import EPIC, EngineCase
-
 from implement_loop import VERSION, gate, verify
 from implement_loop.agents import Decision, FakeAgents, Objection, Probe, Request, Ruling, Script
 from implement_loop.config import Caps, Config
@@ -27,6 +25,7 @@ from implement_loop.model import CheckSpec, Finding, IssueState, Phase
 from implement_loop.state import RepoClaims, RunStore, runs_root
 from implement_loop.supervisor import Supervisor
 from implement_loop.workspace import Workspace
+from test_engine import EPIC, EngineCase
 
 
 class Agents(FakeAgents):
@@ -1038,6 +1037,7 @@ class FindingNew2Dispositions(FixCase):
 class FindingNew3Stopping(FixCase):
     def test_new_3_the_engine_sees_a_stop_during_a_long_agent_call_and_terminates_the_agents(self):
         from concurrent import futures
+
         from implement_loop import engine as engine_mod
         from implement_loop.agents import AgentStopped
         self.add_work(2, "docs/a.txt", "alpha")

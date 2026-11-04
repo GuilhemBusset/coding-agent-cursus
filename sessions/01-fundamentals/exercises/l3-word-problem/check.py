@@ -16,9 +16,8 @@ and 1 on FAIL.
 import csv
 import json
 import math
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DATA_FILE = HERE / "data" / "demand.csv"

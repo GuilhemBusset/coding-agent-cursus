@@ -20,20 +20,19 @@ are offline; git mutations occur only in disposable test repositories.
 """
 
 import ast
-from datetime import date
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
+from datetime import date
+from pathlib import Path
 from urllib.parse import unquote
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 RELATIVE = Path("sessions/01-fundamentals/cursus/demos/cold-open")

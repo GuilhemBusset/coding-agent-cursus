@@ -40,12 +40,11 @@ import getpass
 import hashlib
 import json
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
-
+from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 IDENTITY_DIGESTS = HERE / "scan-identities.json"

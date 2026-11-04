@@ -14,7 +14,6 @@ import unittest
 from pathlib import Path
 
 from helpers import HAS_PYTEST
-
 from implement_loop import verify
 from implement_loop.model import CheckSpec
 

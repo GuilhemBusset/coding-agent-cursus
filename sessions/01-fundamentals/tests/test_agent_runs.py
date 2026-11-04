@@ -5,19 +5,18 @@ provenance and the README procedure additionally require cross-vendor review.
 Only the documented command-line interfaces are exercised.
 """
 
-from datetime import date, datetime, timezone
 import getpass
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import subprocess
 import sys
+from datetime import date, datetime, timezone
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 RUNS = SESSION / "cursus/fixtures/runs"

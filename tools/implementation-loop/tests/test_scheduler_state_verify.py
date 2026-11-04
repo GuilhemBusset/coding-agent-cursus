@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 
 from helpers import HAS_PYTEST, TempRepo, git
-
 from implement_loop import scheduler, verify
 from implement_loop.model import CheckSpec, IssueState, Phase
 from implement_loop.state import LockHeld, RepoClaims, RunLock, RunStore

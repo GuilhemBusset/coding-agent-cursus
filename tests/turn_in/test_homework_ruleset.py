@@ -1,13 +1,12 @@
 """Validate the definition and exercise both create/update paths offline."""
 
 import json
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 import pytest
 
 from test_turn_in_script import ROOT, command, isolated_environment, records, write
-
 
 FILES = ("pr-only-main.json", "homework-branches.json")
 

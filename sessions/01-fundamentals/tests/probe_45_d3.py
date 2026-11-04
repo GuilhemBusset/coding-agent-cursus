@@ -1,6 +1,6 @@
+import re
 from html import unescape
 from pathlib import Path
-import re
 
 
 def test_both_agents_have_demo_and_submission_commands():

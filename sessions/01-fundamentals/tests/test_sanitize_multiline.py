@@ -6,16 +6,15 @@ Closed values preserve surrounding text; unterminated values consume their unit
 (a plain file or one decoded JSON string), retaining its final newline.
 """
 
-from dataclasses import dataclass
 import hashlib
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
-
 
 SESSION = Path(__file__).resolve().parents[1]
 SANITIZE = SESSION / "cursus/fixtures/runs/sanitize.py"

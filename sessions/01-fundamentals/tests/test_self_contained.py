@@ -5,11 +5,10 @@ the acceptance evidence also requires source review of every session Python file
 """
 
 import ast
-from pathlib import Path
 import re
 import sys
 import tomllib
-
+from pathlib import Path
 
 SESSION = Path(__file__).resolve().parents[1]
 FORBIDDEN_IMPORTS = {"importlib", "runpy", "imp", "site"}
