@@ -153,7 +153,7 @@ def resolve(page: str, values: set[str]) -> set[str]:
 class Plan:
     everything: bool = False
     reasons: list[str] = field(default_factory=list)
-    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, turn-in, engine
+    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, imports, turn-in, engine
     sessions: list[str] = field(default_factory=list)
     suites: list[str] = field(default_factory=list)
     pages: list[str] = field(default_factory=list)
@@ -242,6 +242,8 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         out.append(("ship", ["bash", "scripts/test-ship.sh"], ROOT))
     if "typecheck" in plan.units:
         out.append(("types", ["uv", "run", "--project", "setup", "--locked", "ty", "check"], ROOT))
+    if "imports" in plan.units:
+        out.append(("imports", ["uv", "run", "--project", "setup", "--locked", "ruff", "check", "--select", "I", "."], ROOT))
     if "turn-in" in plan.units:
         out.append(("turn-in", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/turn_in"], ROOT))
     if plan.everything:

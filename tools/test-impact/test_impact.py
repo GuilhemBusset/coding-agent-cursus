@@ -128,7 +128,7 @@ def test_github_outputs(tmp_path):
 
 
 def test_commands_type_check_the_repository_and_each_session():
-    plan = impact.Plan(units={"typecheck"}, sessions=["sessions/01-x"])
+    plan = impact.Plan(units={"typecheck", "imports"}, sessions=["sessions/01-x"])
     run = {label: (command, cwd) for label, command, cwd in impact.commands(plan)}
     assert run["types"] == (["uv", "run", "--project", "setup", "--locked", "ty", "check"], impact.ROOT)
     assert run["sessions/01-x types"] == (["uv", "run", "--locked", "--group", "typecheck", "ty", "check"],
@@ -140,7 +140,10 @@ def test_commands_type_check_the_repository_and_each_session():
     assert labels.index("sessions/01-x types") < labels.index("sessions/01-x"), "the seconds-long check first"
     # The same commands CI runs.
     workflows = impact.ROOT / ".github/workflows"
-    assert " ".join(run["types"][0]) in (workflows / "checks.yml").read_text(encoding="utf-8")
+    checks = (workflows / "checks.yml").read_text(encoding="utf-8")
+    assert " ".join(run["types"][0]) in checks
+    assert run["imports"] == ("uv run --project setup --locked ruff check --select I .".split(), impact.ROOT)
+    assert " ".join(run["imports"][0]) in checks
     sessions = (workflows / "session-tests.yml").read_text(encoding="utf-8")
     assert " ".join(run["sessions/01-x types"][0]) in sessions
     assert '--python-platform "$platform" exercises' in sessions and " ".join(impact.PLATFORMS) in sessions
@@ -153,6 +156,21 @@ def test_every_path_ty_checks_selects_the_type_check():
         path = entry if entry.endswith(".py") else f"{entry}/x.py"
         plan = impact.select(Change({path}))
         assert plan.everything or "typecheck" in plan.units, f"{path}: add {entry} to [units.typecheck]"
+
+
+def test_any_python_file_and_ruff_toml_select_the_import_order():
+    for path in ("x.py", "tests/probe_x.py", "setup/browser-libs.py", "tools/implementation-loop/implement_loop/engine.py",
+                 "sessions/01-fundamentals/exercises/p00-lab/p00_model.py", "ruff.toml"):
+        plan = impact.select(Change({path}))
+        assert not plan.everything and "imports" in plan.units, path
+
+
+def test_ruff_toml_requires_the_ruff_setup_pins():
+    with (impact.ROOT / "ruff.toml").open("rb") as f:
+        required = impact.tomllib.load(f)["required-version"]
+    with (impact.ROOT / "setup/pyproject.toml").open("rb") as f:
+        pins = impact.tomllib.load(f)["project"]["dependencies"]
+    assert f"ruff{required}" in pins, "bump Ruff in setup/pyproject.toml and ruff.toml together"
 
 
 def test_name_status_counts_both_sides_of_a_rename_and_marks_deletions():
@@ -182,7 +200,7 @@ def test_the_map_names_only_suites_that_exist():
 def test_the_map_has_every_section_the_selector_reads():
     rules = impact.load_map()
     assert rules["all"]["paths"] and rules["none"]["paths"] and rules["units"]
-    assert {"engine", "turn-in", "ship", "repo-config", "typecheck"} <= set(rules["units"])
+    assert {"engine", "turn-in", "ship", "repo-config", "typecheck", "imports"} <= set(rules["units"])
     assert "shared" in rules["sessions"] and "shared" in rules["pages"] and "shared" in rules["node"]
 
 
@@ -212,10 +230,11 @@ def test_the_real_map_on_known_changes():
     for suite in ("next-token", "tokenizer", "sampler"):
         assert f"tools/html-pages/tests/{suite}.test.mjs" in fixture.suites, suite
     engine = impact.select(Change({"tools/implementation-loop/implement_loop/engine.py"}))
-    assert engine.units == {"engine", "typecheck"} and not engine.sessions and not engine.pages
-    for path in ("ty.toml", "setup/pyproject.toml", "setup/uv.lock"):
+    assert engine.units == {"engine", "typecheck", "imports"} and not engine.sessions and not engine.pages
+    assert impact.select(Change({"ty.toml"})).units == {"typecheck"}
+    for path in ("setup/pyproject.toml", "setup/uv.lock"):
         types = impact.select(Change({path}))
-        assert not types.everything and types.units == {"typecheck"} and not types.sessions, path
+        assert not types.everything and types.units == {"typecheck", "imports"} and not types.sessions, path
     session = impact.select(Change({"sessions/01-fundamentals/pyproject.toml"}))
     assert session.sessions == ["sessions/01-fundamentals"] and "typecheck" not in session.units
     assert impact.select(Change({".github/workflows/ci.yml"})).everything
