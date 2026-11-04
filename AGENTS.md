@@ -41,7 +41,10 @@ edit:
 - the engine tests: the command in `tools/implementation-loop/README.md`;
 - types (ty): `uv run --project setup --locked ty check` from the root for the repository's own
   Python, or `uv run --locked --group typecheck ty check` in a session's folder;
-- import order: `uvx ruff@0.17.3 check --select I --fix <files>` from the root (`ruff.toml`).
+- import order: `uv run --project setup --locked ruff check --select I --fix <files>` from the root
+  (`ruff.toml`); CI runs it over the whole repository (`... --select I .`). A Ruff bump changes the
+  pin in `setup/pyproject.toml`, `setup/uv.lock` and `required-version` in `ruff.toml` together,
+  which keeps editors' bundled Ruff from sorting differently (`setup/README.md#import-order`).
 
 CI's `required` check runs the same selection on a pull request, and everything on every push to
 `main` and nightly; a failing full run opens an issue. When a test starts reading a file that its
