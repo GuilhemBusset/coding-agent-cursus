@@ -38,7 +38,7 @@ def page():
     result = Page(); result.feed(SHEET.read_text(encoding='utf-8')); return result
 
 def run(args, cwd):
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=50)
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=50, check=False)
 
 def cancelled_plan():
     import csv
@@ -61,7 +61,7 @@ def test_d2_rubric_matches_the_real_checker_and_gate(tmp_path):
     checked = run(['uv', 'run', '--no-project', '--python', '3.12', 'python',
                    'exercises/homework-p01/p01_checker.py'], copy)
     assert checked.returncode == 1, checked.stdout + checked.stderr
-    errors = re.findall(r'^([a-z-]+):', checked.stdout, flags=re.M)
+    errors = re.findall(r'^([a-z-]+):', checked.stdout, flags=re.MULTILINE)
     assert 'optimality' in errors, checked.stdout
     contracts = {'coverage', 'integrality', 'sequence', 'maintenance', 'charging-window',
                  'charging-power', 'charger-capacity', 'soc', 'objective', 'status', 'format', 'data'}

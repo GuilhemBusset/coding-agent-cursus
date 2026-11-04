@@ -155,6 +155,11 @@ class FakeHost:
 
 class EnvironmentTestCase(unittest.TestCase):
     def setUp(self):
+        # Inside a loop run, the host's own library copy is in the environment; the fake host has none.
+        environ = mock.patch.dict(os.environ)
+        environ.start()
+        self.addCleanup(environ.stop)
+        os.environ.pop("CURSUS_BROWSER_LIBS", None)
         self.tmp = Path(tempfile.mkdtemp(prefix="loop-env-"))
         self.root = self.tmp / "repo"
         self.root.mkdir()

@@ -54,7 +54,7 @@ def test_session_graph_and_targets():
             target = pages.get(dest) or Links(dest)
             if fragment.startswith("run="):
                 catalogs = re.findall(r'<script[^>]*type="application/json"[^>]*>(.*?)</script>',
-                                      dest.read_text(encoding="utf-8"), re.S)
+                                      dest.read_text(encoding="utf-8"), re.DOTALL)
                 run_ids = {r.get("id") or r.get("meta", {}).get("run") for data in catalogs
                            for r in json.loads(data).get("runs", [])}
                 assert fragment[4:] in run_ids, f"{path}: unknown replay {fragment}"

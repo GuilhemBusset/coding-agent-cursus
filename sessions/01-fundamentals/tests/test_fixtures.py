@@ -415,8 +415,8 @@ def test_a3_readme_regeneration_command():
     readme = (SESSION / "README.md").read_text(encoding="utf-8")
     sections = re.split(r"(?m)^(?=#+\s)", readme)
     matching = [section for section in sections if section.splitlines()
-                and re.search(r"regenerat", section.splitlines()[0], re.I)
-                and re.search(r"fixture", section.splitlines()[0], re.I)]
+                and re.search(r"regenerat", section.splitlines()[0], re.IGNORECASE)
+                and re.search(r"fixture", section.splitlines()[0], re.IGNORECASE)]
     assert matching, "README needs a fixture regeneration heading"
     assert any(all(part in line for part in (
         "uv run", "--locked", "--group fixtures", "python cursus/fixtures/build_fixtures.py"

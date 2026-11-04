@@ -41,7 +41,7 @@ def test_A2_shell_syntax_and_shellcheck():
     for command in ([ 'bash', '-n', script ],
                     [ 'uv', 'run', '--no-project', '--with', 'shellcheck-py==0.10.0.1',
                       'shellcheck', script ]):
-        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120, check=False)
         assert result.returncode == 0, result.stdout + result.stderr
 
 

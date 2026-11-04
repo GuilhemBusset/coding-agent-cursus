@@ -45,7 +45,7 @@ class PluginRecordTests(TempTree):
         base = {k: v for k, v in os.environ.items() if not k.startswith("LOOP_")}
         base |= {"LOOP_REPORT_DIR": str(reports), "LOOP_REPO_ROOT": str(self.root), "PYTHONPATH": PLUGIN_PATH}
         subprocess.run([PY, "-m", "pytest", "-p", "implement_loop.loop_pytest", "-p", "no:cacheprovider", *args],
-                       cwd=cwd or self.root, env=base | (env or {}), capture_output=True, text=True)
+                       cwd=cwd or self.root, env=base | (env or {}), capture_output=True, text=True, check=False)
         return [json.loads(p.read_text()) for p in sorted(reports.glob("run-*.json"))]
 
     def test_every_outcome_is_recorded_with_repo_relative_ids(self):
@@ -132,7 +132,7 @@ class PluginRecordTests(TempTree):
         reports = self.root / ".reports"
         env = {k: v for k, v in os.environ.items() if not k.startswith("LOOP_")} | {"PYTHONPATH": PLUGIN_PATH}
         proc = subprocess.run([PY, "-m", "pytest", "-p", "implement_loop.loop_pytest", "tests/test_a.py"],
-                              cwd=self.root, env=env, capture_output=True, text=True)
+                              cwd=self.root, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertFalse(reports.exists())
 
@@ -160,7 +160,7 @@ class RunCheckTests(TempTree):
 
     def test_a_skipped_test_fails_the_command(self):
         self.write("tests/test_a.py", "import pytest\n\ndef test_a():\n    pass\n\n@pytest.mark.skip(reason='later')\ndef test_b():\n    pass\n")
-        ev, cases = self.check(f"{PY} -m pytest -q tests/test_a.py")
+        ev, _cases = self.check(f"{PY} -m pytest -q tests/test_a.py")
         self.assertEqual(ev.exit_code, 0)
         self.assertFalse(ev.passed)
         self.assertEqual(ev.note, "unexpected skip: ['tests/test_a.py::test_b']")
@@ -246,7 +246,7 @@ class RunCheckTests(TempTree):
     def test_pytest_through_uv_run_with_its_own_project_is_accounted(self):
         if not shutil.which("uv") or subprocess.run(
                 ["uv", "run", "--offline", "--no-project", "--with", "pytest==8.3.5", "python", "-c", "import pytest"],
-                capture_output=True).returncode != 0:
+                capture_output=True, check=False).returncode != 0:
             self.skipTest("uv with pytest==8.3.5 in its cache is not available offline")
         self.write("sessions/01-x/pyproject.toml", "[tool.pytest.ini_options]\naddopts = '-q'\n")
         self.write("sessions/01-x/tests/test_s.py", "def test_s():\n    pass\n")

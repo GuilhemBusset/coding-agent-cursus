@@ -16,7 +16,7 @@ for skill in sorted(p.name for p in (ROOT / ".claude/skills").iterdir() if p.is_
         failed.append(f"{skill}: .agents and .claude SKILL.md differ")
 scripts = [*sorted(ROOT.glob("scripts/*.sh")), *sorted(ROOT.glob("setup/*.sh")), ROOT / ".githooks/pre-commit", ROOT / ".githooks/pre-push"]
 for script in scripts:
-    result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+    result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True, check=False)
     if result.returncode:
         failed.append(f"{script.relative_to(ROOT)}: {result.stderr.strip()}")
 for name in ("setup/pr-only-main.json", "setup/homework-branches.json"):

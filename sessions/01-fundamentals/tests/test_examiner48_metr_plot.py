@@ -31,10 +31,10 @@ MEASUREMENTS = [
 
 def test_metr_frontier_points_and_intervals_use_the_published_scale():
     deck = (Path(__file__).resolve().parents[1] / 'cursus/03-agent.html').read_text()
-    section = re.search(r'<section\b[^>]*\bid="time-horizons".*?</section>', deck, re.S)
+    section = re.search(r'<section\b[^>]*\bid="time-horizons".*?</section>', deck, re.DOTALL)
     assert section, 'the deck has the time-horizons slide'
     # The spine comes first on every slide; the chart is the svg.hz-svg.
-    chart = re.search(r'<svg class="hz-svg".*?</svg>', section.group(), re.S)
+    chart = re.search(r'<svg class="hz-svg".*?</svg>', section.group(), re.DOTALL)
     assert chart, 'the slide has the chart'
     svg = ET.fromstring(chart.group())
     points = [e for e in svg.iter('circle') if e.get('class') == 'hz-pt']

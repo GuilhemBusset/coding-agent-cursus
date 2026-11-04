@@ -20,7 +20,7 @@ SHIP = REPO_ROOT / "scripts" / "ship.sh"
 HOOKS = REPO_ROOT / ".githooks"
 FIXTURE = HERE / "fixtures" / "epic10.json"
 
-HAS_PYTEST = subprocess.run([sys.executable, "-c", "import pytest"], capture_output=True).returncode == 0
+HAS_PYTEST = subprocess.run([sys.executable, "-c", "import pytest"], capture_output=True, check=False).returncode == 0
 
 
 T = TypeVar("T")
@@ -34,7 +34,7 @@ def present(value: T | None) -> T:
 
 
 def git(*args: str, cwd: Path) -> str:
-    proc = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    proc = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: {proc.stderr}")
     return proc.stdout.strip()

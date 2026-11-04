@@ -4,11 +4,11 @@
 import sys
 from pathlib import Path
 
-if sys.version_info < (3, 11):
+if sys.version_info < (3, 11):  # noqa: UP036 - a clear exit for whoever launches it with an older Python
     sys.exit("implement: Python 3.11 or newer is required")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from implement_loop.cli import main  # noqa: E402
+from implement_loop.cli import main
 
 sys.exit(main())

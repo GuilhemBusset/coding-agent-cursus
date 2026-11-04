@@ -35,7 +35,7 @@ def test_D1_failure_shaped_command_runs_and_accounts_for_unittest_probe():
             CheckSpec('D2/A1: examiner locked probe', command=command)]))
         assert len(state.commands) == 1, 'the probe selection command was discarded'
         assert state.commands[0]['criterion'] == 'D2'
-        ok, evidence, problems, ran = verify.verify(root, engine._specs(state), 'examiner-head',
+        ok, _evidence, problems, ran = verify.verify(root, engine._specs(state), 'examiner-head',
             root / 'reports', {}, ['probe.py'], None, check_tamper=False)
         assert ok, problems
         assert ran == ['probe.py::Probe::test_single_agent']
@@ -44,7 +44,7 @@ def test_D1_failure_shaped_command_runs_and_accounts_for_unittest_probe():
 
 
 def test_D1_normalization_preserves_locked_command_approval():
-    engine, state, events = engine_and_state()
+    engine, state, _events = engine_and_state()
     old = {'criterion': 'D2', 'command': 'old-command', 'cwd': '.', 'author': 'builder'}
     state.commands = [old.copy()]
     state.examined_sha = 'locked-head'

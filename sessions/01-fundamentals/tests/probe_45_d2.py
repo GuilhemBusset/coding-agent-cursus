@@ -5,10 +5,10 @@ from pathlib import Path
 
 def test_each_part_explains_quality_and_feasibility_precedes_objective():
     source = (Path(__file__).resolve().parents[1] / 'exercises/home.html').read_text(encoding='utf-8')
-    parts = re.findall(r'<section id="part-[1-4]"[^>]*>(.*?)</section>', source, re.S)
+    parts = re.findall(r'<section id="part-[1-4]"[^>]*>(.*?)</section>', source, re.DOTALL)
     assert len(parts) == 4
     for part in parts:
-        good = re.search(r'<div class="callout good">(.*?)</div>', part, re.S)
+        good = re.search(r'<div class="callout good">(.*?)</div>', part, re.DOTALL)
         assert good and 'What a good answer looks like' in good[1]
         assert len(re.findall(r'<li>', good[1])) >= 2
     text = ' '.join(unescape(re.sub('<[^>]+>', ' ', source)).split()).lower()

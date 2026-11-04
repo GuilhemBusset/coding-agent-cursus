@@ -79,7 +79,7 @@ class Issue:
         return ""
 
     @classmethod
-    def from_api(cls, data: dict) -> "Issue":
+    def from_api(cls, data: dict) -> Issue:
         return cls(
             number=data["number"],
             title=data.get("title", ""),
@@ -227,7 +227,7 @@ class IssueState:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "IssueState":
+    def from_dict(cls, d: dict) -> IssueState:
         d = dict(d)
         phase = d.get("phase", "pending")
         if phase == "needs_human":

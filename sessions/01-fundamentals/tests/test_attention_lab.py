@@ -18,11 +18,11 @@ def test_attention_inline_fixture_and_digest_match_recorded_bytes():
     raw = fixture.read_bytes()
     html = page.read_text(encoding="utf-8")
     blocks = []
-    for match in re.finditer(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, re.I):
+    for match in re.finditer(r"<script\b([^>]*)>([\s\S]*?)</script\s*>", html, re.IGNORECASE):
         attrs = {
             key.lower(): value
             for key, _, value in re.findall(
-                r'''([\w-]+)\s*=\s*(["'])(.*?)\2''', match[1], re.S
+                r'''([\w-]+)\s*=\s*(["'])(.*?)\2''', match[1], re.DOTALL
             )
         }
         if attrs.get("id") == "attention-data":

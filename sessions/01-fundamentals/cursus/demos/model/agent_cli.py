@@ -29,7 +29,7 @@ PRIVATE_LINES = re.compile(r"(?m)^session id:.*\n?")
 BANNER_MODEL = re.compile(r"(?m)^\s*model:\s*\S+\s*$")
 CLAUDE_RESULT_KEYS = ("type", "subtype", "is_error", "num_turns", "result", "stop_reason",
                       "duration_ms", "modelUsage")
-AUTH_ERROR = re.compile(r"not logged in|log ?in|logged out|auth|api key|credential|401|403", re.I)
+AUTH_ERROR = re.compile(r"not logged in|log ?in|logged out|auth|api key|credential|401|403", re.IGNORECASE)
 
 
 class Failure(Exception):
@@ -83,7 +83,7 @@ def login_state(cli):
         reported = json.loads(text).get("loggedIn")
     except (ValueError, AttributeError):
         reported = None
-    if reported is False or re.search(r"not logged in|logged out", text, re.I):
+    if reported is False or re.search(r"not logged in|logged out", text, re.IGNORECASE):
         return "logged-out"
     if code == 0:
         return "ok"

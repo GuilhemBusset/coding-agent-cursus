@@ -11,7 +11,7 @@ PACK = SESSION / 'exercises/homework-p01'
 
 
 def test_owner_benchmark_produces_pinned_evidence():
-    result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-s', 'tests/instructor_p01_reference.py', '-k', 'laptop_benchmark'], cwd=SESSION, capture_output=True, text=True, timeout=180)
+    result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-s', 'tests/instructor_p01_reference.py', '-k', 'laptop_benchmark'], cwd=SESSION, capture_output=True, text=True, timeout=180, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     evidence = [json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
     assert len(evidence) == 1

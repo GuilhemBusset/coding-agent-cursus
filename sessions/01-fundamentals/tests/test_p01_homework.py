@@ -123,7 +123,7 @@ def test_statement_covers_contracts_and_data():
     assert re.search(r"half[-\s]+open", plain) and re.search(
         r"\[\s*start\s*,\s*end\s*\)", plain
     ), "statement: missing half-open [start,end) convention"
-    assert re.search(r"tariff[^.]*\b(?:slot|boundar|half[-\s]+open)", plain, re.S), (
+    assert re.search(r"tariff[^.]*\b(?:slot|boundar|half[-\s]+open)", plain, re.DOTALL), (
         "statement: explain how tariff blocks use the slot/boundary convention"
     )
 
@@ -143,9 +143,7 @@ def literal(name, source=None):
     tree = ast.parse(source if source is not None else required(PACK / "p01_checker.py"))
     values = []
     for node in tree.body:
-        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets):
-            values.append(ast.literal_eval(node.value))
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets) or isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == name:
             values.append(ast.literal_eval(node.value))
     assert len(values) == 1, f"checker: require one literal {name}"
     return values[0]
@@ -459,7 +457,7 @@ print(c.summary(s))
     # Missing individual entries mean zero, rather than demanding a dense plan.
     dense = deepcopy(solution)
     dense["assign"] = {v: dict.fromkeys(instance["trips"], 0.0) for v in instance["vehicles"]}
-    dense["charge"] = dict.fromkeys(instance["vehicles"], [])
+    dense["charge"] = {v: [] for v in instance["vehicles"]}
     assert failure_tags(checker(pack, dense)) == {"optimality"}
 
 

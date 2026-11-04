@@ -12,7 +12,7 @@ def test_two_resets_discard_prior_demo_work():
         for name in ['loop', 'plan', 'bomb']:
             states = []
             for run in [1, 2]:
-                reset = subprocess.run([sys.executable, str(demo / 'agent_demo.py'), 'reset', name, '--work-root', work], capture_output=True, text=True)
+                reset = subprocess.run([sys.executable, str(demo / 'agent_demo.py'), 'reset', name, '--work-root', work], capture_output=True, text=True, check=False)
                 assert reset.returncode == 0, reset.stderr
                 folder = Path(work) / name
                 assert not (folder / 'prior-run.txt').exists()

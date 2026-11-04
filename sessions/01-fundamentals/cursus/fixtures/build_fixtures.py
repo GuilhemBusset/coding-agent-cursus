@@ -70,9 +70,9 @@ ATTENTION_REFERENT = "animal"
 COMPARISON_PROMPTS = [
     ("factual", "What is the capital of Australia?"),
     ("lp-word-problem",
-     "A bakery makes bread and cakes. Each loaf of bread earns $3 and each cake earns $5. "
-     "Both need 1 hour of oven time and the oven is free for 40 hours. At most 15 cakes can "
-     "be sold. How many of each should the bakery make to maximize profit?"),
+     ("A bakery makes bread and cakes. Each loaf of bread earns $3 and each cake earns $5. "
+      "Both need 1 hour of oven time and the oven is free for 40 hours. At most 15 cakes can "
+      "be sold. How many of each should the bakery make to maximize profit?")),
     ("strawberry", "How many r's are in strawberry?"),
     ("dual-variable", "Explain in one sentence what a dual variable is in linear programming."),
     ("haiku", "Write a haiku about optimization."),

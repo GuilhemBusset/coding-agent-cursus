@@ -25,7 +25,7 @@ from implement_loop.state import RunStore
 
 
 def git_result(path, *args):
-    return subprocess.run(["git", *args], cwd=path, capture_output=True, text=True)
+    return subprocess.run(["git", *args], cwd=path, capture_output=True, text=True, check=False)
 
 
 def operation_paths(path):
@@ -433,13 +433,14 @@ class LandConflictTests(unittest.TestCase):
             self.assertIn(f"docs/issue-{n}.txt", final)
         # Retaining main's test requirements is observable, not just a relock event.
         coord = self.engine.ws.coord_path()
-        self.assertEqual(subprocess.run(["bash", lane], cwd=coord, capture_output=True).returncode, 0)
+        self.assertEqual(subprocess.run(["bash", lane], cwd=coord, capture_output=True, check=False).returncode, 0)
         for n in (2, 3):
             target = coord / f"docs/issue-{n}.txt"
             original = target.read_bytes()
             try:
                 target.write_text("broken\n")
-                self.assertNotEqual(subprocess.run(["bash", lane], cwd=coord, capture_output=True).returncode, 0)
+                self.assertNotEqual(subprocess.run(["bash", lane], cwd=coord, capture_output=True,
+                                                   check=False).returncode, 0)
             finally:
                 target.write_bytes(original)
 
@@ -567,46 +568,49 @@ class LandConflictTests(unittest.TestCase):
     def test_each_build_round_starts_from_current_main(self):
         for conflicting in (False, True):
             with self.subTest(conflicting=conflicting):
-                # Separate run stores/branches and repositories for the two cases.
-                if conflicting:
-                    self.repo.cleanup()
-                    self.new_fixture()
-                self.setup_pair()
-                self.scripts[3].wrong_attempts = 1
-                agents = ObservedAgents(self)
-                moved = []
+                self.build_round_case(conflicting)
 
-                def move_main(req, plan, wt, entry):
-                    if req.issue.number == 3 and not moved:
-                        moved.append(True)
-                        if conflicting:
-                            self.peer = self.make_engine(root=10)
-                            self.peer.run()
-                            self.assertEqual(self.peer.store.issue(2).phase, Phase.DONE)
-                        else:
-                            self.seed_main({"docs/main-round-one.txt": "arrived during round one\n"})
+    def build_round_case(self, conflicting):
+        # Separate run stores/branches and repositories for the two cases.
+        if conflicting:
+            self.repo.cleanup()
+            self.new_fixture()
+        self.setup_pair()
+        self.scripts[3].wrong_attempts = 1
+        agents = ObservedAgents(self)
+        moved = []
 
-                agents.after_build = move_main
-                self.run_engine(agents)
-                self.assertEqual(self.engine.store.issue(3).phase, Phase.DONE, self.events())
-                entries = [e for e in agents.entries if e["issue"] == 3]
-                self.assertEqual(len(entries), 2)
+        def move_main(req, plan, wt, entry):
+            if req.issue.number == 3 and not moved:
+                moved.append(True)
                 if conflicting:
-                    self.assert_success()
-                    self.assertTrue(has_markers(entries[1]["contents"][self.shared_paths[0]]))
-                    self.assertIn(self.shared_paths[0], "\n".join(entries[1]["feedback"]))
-                    conflicts = self.events("conflict")
-                    self.assertEqual(len(conflicts), 1)
-                    self.assertEqual(conflicts[0]["phase"], "build")
+                    self.peer = self.make_engine(root=10)
+                    self.peer.run()
+                    self.assertEqual(self.peer.store.issue(2).phase, Phase.DONE)
                 else:
-                    second = entries[1]
-                    self.assertEqual(git_result(self.repo.work, "merge-base", "--is-ancestor",
-                                                second["main"], second["head"]).returncode, 0)
-                    self.assertEqual(git("show", f"{second['head']}:docs/main-round-one.txt",
-                                         cwd=self.repo.work), "arrived during round one")
-                    self.assertTrue(self.events("updated_from_main"))
-                    self.assertFalse(self.events("conflict"))
-                    self.assert_exact_gates(self.engine)
+                    self.seed_main({"docs/main-round-one.txt": "arrived during round one\n"})
+
+        agents.after_build = move_main
+        self.run_engine(agents)
+        self.assertEqual(self.engine.store.issue(3).phase, Phase.DONE, self.events())
+        entries = [e for e in agents.entries if e["issue"] == 3]
+        self.assertEqual(len(entries), 2)
+        if conflicting:
+            self.assert_success()
+            self.assertTrue(has_markers(entries[1]["contents"][self.shared_paths[0]]))
+            self.assertIn(self.shared_paths[0], "\n".join(entries[1]["feedback"]))
+            conflicts = self.events("conflict")
+            self.assertEqual(len(conflicts), 1)
+            self.assertEqual(conflicts[0]["phase"], "build")
+        else:
+            second = entries[1]
+            self.assertEqual(git_result(self.repo.work, "merge-base", "--is-ancestor",
+                                        second["main"], second["head"]).returncode, 0)
+            self.assertEqual(git("show", f"{second['head']}:docs/main-round-one.txt",
+                                 cwd=self.repo.work), "arrived during round one")
+            self.assertTrue(self.events("updated_from_main"))
+            self.assertFalse(self.events("conflict"))
+            self.assert_exact_gates(self.engine)
 
     def test_main_changes_a_locked_file_without_conflict(self):
         lane = "checks/stable.sh"
@@ -760,7 +764,7 @@ class LandConflictTests(unittest.TestCase):
         real_land = Engine._step_land
 
         def old_push(ws, wt):
-            proc = subprocess.run(["bash", str(SHIP)], cwd=wt, capture_output=True, text=True)
+            proc = subprocess.run(["bash", str(SHIP)], cwd=wt, capture_output=True, text=True, check=False)
             if proc.returncode:
                 raise workspace.GitError(proc.stderr or proc.stdout)
             return ws.head(wt)

@@ -7,13 +7,14 @@ Only the documented command-line interfaces are exercised.
 
 import getpass
 import hashlib
+import itertools
 import json
 import math
 import os
 import re
 import subprocess
 import sys
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -72,7 +73,7 @@ def invoke(script, *args, cwd=None, env=None, success=True):
     child_env = dict(os.environ if env is None else env, PYTHONDONTWRITEBYTECODE="1")
     result = subprocess.run([sys.executable, str(path), *map(str, args)],
                             cwd=cwd or SESSION, env=child_env, capture_output=True,
-                            text=True, encoding="utf-8", timeout=90)
+                            text=True, encoding="utf-8", timeout=90, check=False)
     if success:
         # Do not echo subprocess output: a failed privacy control could contain
         # its input. The implementation's CLI can be run separately to diagnose.
@@ -491,17 +492,17 @@ def test_d2_malformed_json_reports_file_and_line(tmp_path):
 # Privacy rules are independent of sanitize.py. Prefixes and positive controls
 # are assembled so this test does not itself introduce secret-looking literals.
 PRIVACY_PATTERNS = {
-    "home": re.compile(r"/(?:home|Users)/[\w.-]+", re.I),
-    "windows_home": re.compile(r"[A-Z]:[\\/]+Users[\\/]+[\w.-]+", re.I),
-    "encoded_home": re.compile(r"-home-[\w.]+-", re.I),
+    "home": re.compile(r"/(?:home|Users)/[\w.-]+", re.IGNORECASE),
+    "windows_home": re.compile(r"[A-Z]:[\\/]+Users[\\/]+[\w.-]+", re.IGNORECASE),
+    "encoded_home": re.compile(r"-home-[\w.]+-", re.IGNORECASE),
     "email": re.compile(r"[\w.+%-]+@[\w.-]+\.[A-Za-z]{2,}"),
     "anthropic_key": re.compile(r"\bsk-ant-[A-Za-z0-9_-]{8,}"),
     "openai_key": re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{8,}"),
     "github_key": re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,})"),
     "aws_key": re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
     "slack_key": re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{8,}"),
-    "bearer": re.compile(r"\bBearer\s+(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.I),
-    "assignment": re.compile(r"\b(?:api[_-]?key|token|secret|password)\s*[=:]\s*(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.I),
+    "bearer": re.compile(r"\bBearer\s+(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.IGNORECASE),
+    "assignment": re.compile(r"\b(?:api[_-]?key|token|secret|password)\s*[=:]\s*(?!<(?:key|redacted)>($|[\s\"',;}]))[^\s\"',;}]+", re.IGNORECASE),
     "private_key": re.compile(r"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )?PRIVATE KEY-----"),
 }
 
@@ -573,7 +574,7 @@ def test_d3_sanitizes_nested_json_meta_text_without_clipping(tmp_path):
     for path in (jsonl, meta, plain):
         text = path.read_text(encoding="utf-8")
         assert not privacy_categories(text), "Privacy controls survived sanitization"
-        assert not re.search(r"\balice\b", text, re.I)
+        assert not re.search(r"\balice\b", text, re.IGNORECASE)
     assert long_text in plain.read_text(encoding="utf-8")
     before = {path: path.read_bytes() for path in (jsonl, meta, plain)}
     invoke("sanitize.py", *args, jsonl, meta, plain, cwd=tmp_path)
@@ -629,9 +630,9 @@ def test_d4_metadata_matches_capture_and_requested_options():
         assert meta["effort"] in {"minimal", "low", "medium", "high", "xhigh", "max"}
         assert date.fromisoformat(meta["date"]).isoformat() == meta["date"]
         assert meta["date"] == meta["started_at"][:10]
-        start = datetime.fromisoformat(meta["started_at"].replace("Z", "+00:00"))
-        end = datetime.fromisoformat(meta["ended_at"].replace("Z", "+00:00"))
-        assert start.utcoffset() == end.utcoffset() == timezone.utc.utcoffset(start)
+        start = datetime.fromisoformat(meta["started_at"])
+        end = datetime.fromisoformat(meta["ended_at"])
+        assert start.utcoffset() == end.utcoffset() == UTC.utcoffset(start)
         assert start <= end
         assert type(meta["exit_code"]) is int
         argv = meta["argv"]
@@ -667,14 +668,14 @@ def test_a1_independent_scanner_positive_controls():
 def identity_words(text):
     words = re.findall(r"\w+", text.casefold(), re.UNICODE)
     yield from words
-    yield from (" ".join(pair) for pair in zip(words, words[1:]))
+    yield from (" ".join(pair) for pair in itertools.pairwise(words))
 
 
 def local_identities():
     values = {getpass.getuser()}
     for key in ("user.name", "user.email"):
         result = subprocess.run(["git", "config", "--get", key], cwd=SESSION,
-                                capture_output=True, text=True, timeout=10)
+                                capture_output=True, text=True, timeout=10, check=False)
         if result.returncode == 0 and result.stdout.strip():
             text = result.stdout.strip()
             values.add(text)

@@ -20,7 +20,7 @@ from .state import RunStore
 
 
 def repo_root() -> Path:
-    out = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    out = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
     if out.returncode != 0:
         sys.exit("implement: run this inside the repository")
     return Path(out.stdout.strip())
@@ -28,7 +28,7 @@ def repo_root() -> Path:
 
 def repo_slug() -> str:
     out = subprocess.run(["gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, check=False)
     if out.returncode != 0:
         sys.exit("implement: `gh repo view` failed; is the GitHub CLI authenticated (gh auth status)?")
     return out.stdout.strip()
@@ -131,7 +131,7 @@ def detect_operator() -> str | None:
 
 def _out(cmd: list[str]) -> tuple[int, str]:
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
         return p.returncode, (p.stdout or p.stderr).strip()
     except (OSError, subprocess.TimeoutExpired) as e:
         return 1, str(e)

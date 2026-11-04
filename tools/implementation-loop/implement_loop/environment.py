@@ -37,9 +37,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Mapping
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -166,7 +166,7 @@ def _missing_libraries(executable: Path, state_dir: Path, root: Path, runner: Ru
         except (OSError, ValueError, KeyError):
             dirs = []
         env = {**os.environ, "LD_LIBRARY_PATH": os.pathsep.join(str(copy / d) for d in dirs)}
-    code, out = _run(runner, ["ldd", str(executable)], root, 60, env)
+    _code, out = _run(runner, ["ldd", str(executable)], root, 60, env)
     return sorted({line.split("=>")[0].strip() for line in out.splitlines() if "not found" in line})
 
 

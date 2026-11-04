@@ -28,7 +28,7 @@ WAIT = 60
 
 
 def git_result(path, *args):
-    return subprocess.run(["git", *args], cwd=path, capture_output=True)
+    return subprocess.run(["git", *args], cwd=path, capture_output=True, check=False)
 
 
 def snapshot(path):
@@ -257,7 +257,7 @@ class ConcurrentRunsTests(LoopCase):
             def target():
                 try:
                     run.engine.run()
-                except BaseException as error:
+                except BaseException as error:  # noqa: BLE001 - collected; the test asserts no thread raised
                     errors.append(error)
                 finally:
                     if finished is not None:
@@ -329,7 +329,7 @@ class ConcurrentRunsTests(LoopCase):
             attempting.set()
             try:
                 b.fetch()
-            except BaseException as error:
+            except BaseException as error:  # noqa: BLE001 - collected; the test asserts no thread raised
                 errors.append(error)
             finally:
                 finished.set()

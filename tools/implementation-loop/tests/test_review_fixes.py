@@ -13,6 +13,7 @@ import time
 import types
 import unittest
 from pathlib import Path
+from typing import ClassVar
 from unittest import mock
 
 from helpers import HAS_PYTEST, SHIP, git, issue_body, present
@@ -813,7 +814,6 @@ class Finding12ManifestFromEmpty(FixCase):
         path = "tests/test_late_2.py"
         self.add_work(2, "docs/a.txt", "alpha", findings=1)
         self.epic(2)
-        engine = []
 
         def add_a_python_test(result, req, worktree, k):
             if k >= 1:
@@ -966,8 +966,9 @@ class Fault95TypedCommandChangeAdds(FixCase):
 
 class FindingNew1OwnerFindings(unittest.TestCase):
     """On an owner item only the agent part can block: a finding must quote the plan's agent part."""
-    item_text = {"D1": "`docs/a.txt` contains `alpha`.", "D2": "Runs under a second on a 2020 laptop."}
-    parts = {"D2": "time the page on this host"}
+    item_text: ClassVar[dict[str, str]] = {"D1": "`docs/a.txt` contains `alpha`.",
+                                           "D2": "Runs under a second on a 2020 laptop."}
+    parts: ClassVar[dict[str, str]] = {"D2": "time the page on this host"}
 
     def classify(self, quote, reproduced=True, invariant=None):
         f = Finding(id="F", title="t", item="D2", quote=quote, invariant=invariant, observed="slow", expected="fast",
@@ -1082,9 +1083,8 @@ class FindingNew3Stopping(FixCase):
             agents.terminate_all()   # the stop lands between the check and the registration
             return proc
         started = time.monotonic()
-        with mock.patch.object(live.subprocess, "Popen", popen_then_stop):
-            with self.assertRaises(live.AgentStopped):
-                agents._spawn([sys.executable, "-c", "import time; time.sleep(30)"], "", self.repo.tmp, 60)
+        with mock.patch.object(live.subprocess, "Popen", popen_then_stop), self.assertRaises(live.AgentStopped):
+            agents._spawn([sys.executable, "-c", "import time; time.sleep(30)"], "", self.repo.tmp, 60)
         self.assertLess(time.monotonic() - started, 10, "the late agent was killed, not waited for")
 
 

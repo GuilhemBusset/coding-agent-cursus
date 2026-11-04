@@ -46,7 +46,8 @@ esac
 
 
 def git(*args, cwd, env):
-    result = subprocess.run(["git", *map(str, args)], cwd=cwd, env=env, text=True, capture_output=True, timeout=60)
+    result = subprocess.run(["git", *map(str, args)], cwd=cwd, env=env, text=True, capture_output=True, timeout=60,
+                            check=False)
     assert result.returncode == 0, (args, result.stdout, result.stderr)
     return result.stdout.strip()
 
@@ -111,7 +112,7 @@ def test_sheet_end_to_end_turns_in_from_a_fork(tmp_path, origin):
 
     # Part 4: the turn-in, run from the repository root as the sheet says.
     result = subprocess.run(["bash", "scripts/turn-in.sh", "01"], cwd=clone, env=env, text=True,
-                            capture_output=True, timeout=300)
+                            capture_output=True, timeout=300, check=False)
     log = result.stdout + result.stderr
     assert result.returncode == 0, log
     assert "Running sessions/01-fundamentals/exercises/turn-in-check.sh" in log

@@ -1,6 +1,5 @@
 """Independent D1 probe: upstream derivation and real reference solve sizing."""
 import csv
-import json
 import os
 import shutil
 import subprocess
@@ -44,8 +43,10 @@ with tempfile.TemporaryDirectory() as temporary:
     work = Path(temporary) / 'pack'
     shutil.copytree(pack, work)
     shutil.copyfile(reference, work / 'p01_model.py')
-    result = subprocess.run([sys.executable, '-c', driver], cwd=work, capture_output=True, text=True, timeout=100)
+    result = subprocess.run([sys.executable, '-c', driver], cwd=work, capture_output=True, text=True, timeout=100,
+                            check=False)
     assert result.returncode == 0, result.stdout + result.stderr
-    checked = subprocess.run([sys.executable, '-S', 'p01_checker.py'], cwd=work, capture_output=True, text=True)
+    checked = subprocess.run([sys.executable, '-S', 'p01_checker.py'], cwd=work, capture_output=True, text=True,
+                             check=False)
     assert checked.returncode == 0 and checked.stdout.startswith('PASS'), checked.stdout + checked.stderr
     print(result.stdout.strip())

@@ -22,7 +22,7 @@ import subprocess
 import threading
 import time
 import tomllib
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from . import schemas
@@ -203,7 +203,7 @@ class LiveAgents:
         agent could even write) adds servers. Fails closed if they can't be listed."""
         try:
             proc = subprocess.run([self.bins["codex"], "mcp", "list", "--json"], cwd=cwd,
-                                  capture_output=True, text=True, timeout=60, env=agent_env(self.no_gh_dir, self.extra_env))
+                                  capture_output=True, text=True, timeout=60, env=agent_env(self.no_gh_dir, self.extra_env), check=False)
             servers = json.loads(proc.stdout[proc.stdout.index("["):]) if proc.returncode == 0 else None
         except (OSError, ValueError, subprocess.TimeoutExpired):
             servers = None
@@ -332,7 +332,8 @@ class LiveAgents:
         return self.ws.coord_path()
 
     def _diff(self, worktree: Path, base: str, head: str) -> str:
-        diff = subprocess.run(["git", "diff", f"{base}..{head}"], cwd=worktree, capture_output=True, text=True).stdout
+        diff = subprocess.run(["git", "diff", f"{base}..{head}"], cwd=worktree, capture_output=True, text=True,
+                              check=False).stdout
         if len(diff) > DIFF_LIMIT:
             diff = diff[:DIFF_LIMIT] + f"\n[diff truncated at {DIFF_LIMIT} characters; read the files directly]"
         return diff or "(empty)"

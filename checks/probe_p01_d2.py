@@ -49,6 +49,6 @@ for contract, solution in cases.items():
 with tempfile.TemporaryDirectory() as temporary:
     path = Path(temporary) / 'plan.json'
     path.write_text(json.dumps(single), encoding='utf-8')
-    result = subprocess.run([sys.executable, '-S', str(pack / 'p01_checker.py'), str(path)], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, '-S', str(pack / 'p01_checker.py'), str(path)], capture_output=True, text=True, check=False)
     assert result.returncode == 1 and 'optimality:' in result.stdout and 'objective:' not in result.stdout, result.stdout + result.stderr
 print('independent objective replay and eight named contracts passed')

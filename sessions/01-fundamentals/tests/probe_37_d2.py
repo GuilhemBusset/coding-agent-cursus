@@ -17,7 +17,7 @@ def test_file_replay_recomputes_cost_and_names_errors(tmp_path):
     path = tmp_path / 'plan.json'
     def check():
         path.write_text(json.dumps(solution), encoding='utf-8')
-        r = subprocess.run([sys.executable, '-I', '-S', str(PACK / 'p01_checker.py'), str(path)], capture_output=True, text=True, timeout=10)
+        r = subprocess.run([sys.executable, '-I', '-S', str(PACK / 'p01_checker.py'), str(path)], capture_output=True, text=True, timeout=10, check=False)
         assert 'Traceback' not in r.stderr, r.stderr
         return r, {line.partition(':')[0] for line in r.stdout.splitlines() if ':' in line and not line.startswith(' ')}
     result, tags = check()
@@ -36,7 +36,7 @@ def test_file_replay_recomputes_cost_and_names_errors(tmp_path):
     solution['cancel'][tid] = 0
     result, tags = check()
     assert result.returncode == 1 and 'coverage' in tags, result.stdout
-    result = subprocess.run([sys.executable, '-m', 'pytest', '--collect-only', '-q', str(PACK / 'p01_contract.py')], capture_output=True, text=True, timeout=20)
+    result = subprocess.run([sys.executable, '-m', 'pytest', '--collect-only', '-q', str(PACK / 'p01_contract.py')], capture_output=True, text=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     names = set(re.findall(r'::(test_\w+)', result.stdout))
     for tag in ('status','coverage','integrality','sequence','maintenance','charging_window','charging_power','charger_capacity','soc','objective','optimality'):

@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import impact  # noqa: E402
-from impact import Change, glob_re, select  # noqa: E402
+import impact
+from impact import Change, glob_re, select
 
 RULES = {
     "all": {"paths": [".github/workflows/**", "tools/test-impact/**"]},

@@ -21,7 +21,8 @@ print(json.dumps({'optimum': checker.KNOWN_OPTIMUM, 'penalties': penalties, 'obj
 
 
 def test_committed_optimum_and_private_reference():
-    api = subprocess.run([sys.executable, '-S', '-c', API_SCRIPT], cwd=PACK, capture_output=True, text=True, timeout=30)
+    api = subprocess.run([sys.executable, '-S', '-c', API_SCRIPT], cwd=PACK, capture_output=True, text=True,
+                         timeout=30, check=False)
     assert api.returncode == 0, api.stderr
     result = json.loads(api.stdout)
     assert math.isfinite(result['optimum']) and 0 < result['optimum'] < result['penalties']

@@ -157,7 +157,7 @@ class Background:
     def _run(self, fn, args):
         try:
             self.value = fn(*args)
-        except BaseException as error:
+        except BaseException as error:  # noqa: BLE001 - kept for result(), which re-raises it in the caller
             self.error = error
 
     def result(self):
@@ -180,7 +180,7 @@ def run(argv, cwd=None, env=None, timeout=60, input=None):
             argv, cwd=cwd, env=env, input=input,
             stdin=subprocess.DEVNULL if input is None else None,
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            text=True, encoding="utf-8", errors="replace", timeout=timeout)
+            text=True, encoding="utf-8", errors="replace", timeout=timeout, check=False)
     except (OSError, ValueError, subprocess.SubprocessError):
         return None, ""
     return result.returncode, result.stdout
@@ -191,7 +191,7 @@ def kill_tree(process):
         if os.name == "nt":
             subprocess.run(["taskkill", "/F", "/T", "/PID", str(process.pid)],
                            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL, timeout=30)
+                           stderr=subprocess.DEVNULL, timeout=30, check=False)
         else:
             os.killpg(process.pid, signal.SIGKILL)
     except (OSError, subprocess.SubprocessError):
@@ -326,7 +326,7 @@ def probe(url):
             return True, response.status
     except urllib.error.HTTPError as error:
         return True, error.code
-    except Exception as error:  # Any other failure means the host is not reachable.
+    except Exception as error:  # noqa: BLE001 - any other failure means the host is not reachable
         return False, network_failure(error)
 
 
@@ -386,9 +386,9 @@ def repo_view(gh, origin_repo):
         return f"could not look up {origin_repo} and your permission on it with gh"
     try:
         info = json.loads(out)
-        if not isinstance(info, dict):
-            raise ValueError
     except ValueError:
+        info = None
+    if not isinstance(info, dict):
         return f"unexpected reply from 'gh repo view {origin_repo}'"
     return info
 
@@ -448,8 +448,7 @@ def origin_url(git):
     code, origin = run([git, "config", "--get", "remote.origin.url"], cwd=HERE)
     origin = origin.strip()
     trimmed = origin.rstrip("/")
-    if trimmed.endswith(".git"):
-        trimmed = trimmed[:-4]
+    trimmed = trimmed.removesuffix(".git")
     return origin, (ORIGIN.match(trimmed) if code == 0 else None)
 
 
@@ -631,7 +630,7 @@ def script_hash():
 def summary(report):
     failures = report.failures()
     lines = [BEGIN,
-             f"date: {datetime.datetime.now(datetime.timezone.utc).date().isoformat()} (UTC)",
+             f"date: {datetime.datetime.now(datetime.UTC).date().isoformat()} (UTC)",
              f"os: {os_name()}",
              ascii_only(f"kernel: {platform.release() or 'unknown'}"),
              f"python: {platform.python_version()}",
@@ -647,7 +646,7 @@ def guarded(report, name, check, *args):
     """Run one check; an unexpected error becomes a FAIL, and later checks still run."""
     try:
         return check(*args)
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - an unexpected error becomes a FAIL, and later checks still run
         detail = f"internal error ({type(error).__name__}); please report it to your instructor"
         report.fail(name if name not in report.names else "checker", detail)
         return None
@@ -696,13 +695,13 @@ def main():
             report.ok("agent", " and ".join(installed))
         else:
             report.fail("agent", f"neither Claude Code nor Codex is installed; install one ({INSTALL_HINT})")
-    except BaseException as error:  # Including Ctrl-C: still print the summary.
+    except BaseException as error:  # noqa: BLE001 - including Ctrl-C: still print the summary
         stop_agents()
         reason = "interrupted" if isinstance(error, KeyboardInterrupt) else f"internal error ({type(error).__name__})"
         report.fail("checker", reason)
     try:
         summary(report)
-    except BaseException:
+    except BaseException:  # noqa: BLE001 - a summary that cannot print (closed stdout, Ctrl-C) still exits 1
         return 1
     return 0 if report.failures() == 0 else 1
 

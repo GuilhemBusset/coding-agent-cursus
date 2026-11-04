@@ -275,50 +275,53 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
         for mid_merge in (False, True):
             for change in ("chmod", "symlink"):
                 with self.subTest(mid_merge=mid_merge, change=change):
-                    if mid_merge or change != "chmod":
-                        self.repo.cleanup()
-                        self.new_fixture()
-                    # Without a conflict, a blocking finding at the first examination (where the
-                    # test locks) brings the second build that tampers.
-                    self.setup_issues(pair=mid_merge, locked=True, **({} if mid_merge else {"findings": 1}))
-                    lane = "checks/combined.sh"
-                    agents = ObservedAgents(self)
-                    intended, tampered = [], []
+                    self.builder_mode_change_case(mid_merge, change)
 
-                    def tamper(req, plan, wt, entry):
-                        if req.issue.number != 3:
-                            return
-                        if lane not in self.engine.store.issue(3).locked:
-                            executable(wt / lane, mid_merge)   # the builder's own test, as it wants it
-                            return
-                        if tampered or (mid_merge and not self.events("conflict")):
-                            return
-                        intended.append(disk_state(wt / lane))
-                        if change == "chmod":
-                            executable(wt / lane, not intended[-1][2])
-                        else:
-                            copy = self.repo.tmp / "identical-check.sh"
-                            copy.write_bytes(intended[-1][1])
-                            (wt / lane).unlink()
-                            (wt / lane).symlink_to(copy)
-                        if mid_merge:
-                            git("add", "--", lane, cwd=wt)
-                        self.assertEqual((wt / lane).read_bytes(), intended[-1][1])
-                        self.assertNotEqual(disk_state(wt / lane), intended[-1])
-                        tampered.append(True)
+    def builder_mode_change_case(self, mid_merge, change):
+        if mid_merge or change != "chmod":
+            self.repo.cleanup()
+            self.new_fixture()
+        # Without a conflict, a blocking finding at the first examination (where the
+        # test locks) brings the second build that tampers.
+        self.setup_issues(pair=mid_merge, locked=True, **({} if mid_merge else {"findings": 1}))
+        lane = "checks/combined.sh"
+        agents = ObservedAgents(self)
+        intended, tampered = [], []
 
-                    agents.after_build = tamper
-                    if mid_merge:
-                        self.install_peer_hook(agents)
-                    self.run_engine(agents)
-                    self.assert_done(pair=mid_merge)
-                    self.assertEqual(len(tampered), 1)
-                    self.assert_main_state(lane, intended[0])
-                    self.assertTrue(any(lane in e["files"] for e in self.events("locked_changes_reverted")))
-                    if mid_merge:
-                        self.assertEqual(len([e for e in self.events("conflict") if e["phase"] == "land"]), 1)
-                        for n in (2, 3):
-                            self.assertIn(f"docs/issue-{n}.txt", present(self.repo.main_file(lane)))
+        def tamper(req, plan, wt, entry):
+            if req.issue.number != 3:
+                return
+            if lane not in self.engine.store.issue(3).locked:
+                executable(wt / lane, mid_merge)   # the builder's own test, as it wants it
+                return
+            if tampered or (mid_merge and not self.events("conflict")):
+                return
+            intended.append(disk_state(wt / lane))
+            if change == "chmod":
+                executable(wt / lane, not intended[-1][2])
+            else:
+                copy = self.repo.tmp / "identical-check.sh"
+                copy.write_bytes(intended[-1][1])
+                (wt / lane).unlink()
+                (wt / lane).symlink_to(copy)
+            if mid_merge:
+                git("add", "--", lane, cwd=wt)
+            self.assertEqual((wt / lane).read_bytes(), intended[-1][1])
+            self.assertNotEqual(disk_state(wt / lane), intended[-1])
+            tampered.append(True)
+
+        agents.after_build = tamper
+        if mid_merge:
+            self.install_peer_hook(agents)
+        self.run_engine(agents)
+        self.assert_done(pair=mid_merge)
+        self.assertEqual(len(tampered), 1)
+        self.assert_main_state(lane, intended[0])
+        self.assertTrue(any(lane in e["files"] for e in self.events("locked_changes_reverted")))
+        if mid_merge:
+            self.assertEqual(len([e for e in self.events("conflict") if e["phase"] == "land"]), 1)
+            for n in (2, 3):
+                self.assertIn(f"docs/issue-{n}.txt", present(self.repo.main_file(lane)))
 
     def logged_checks(self, agents):
         """A test logs real HEAD only after its assertions pass, outside all worktrees.
@@ -357,9 +360,9 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
 
         def event(store, kind, **data):
             result = real_event(store, kind, **data)
-            if self._engine is not None and store is self._engine.store and data.get("issue") == 3:
-                if kind in ("conflict", "updated_from_main", "head_changed_after_certificate"):
-                    barriers.append({"seq": max(e["seq"] for e in store.events()), "offset": len(heads())})
+            if (self._engine is not None and store is self._engine.store and data.get("issue") == 3
+                    and kind in ("conflict", "updated_from_main", "head_changed_after_certificate")):
+                barriers.append({"seq": max(e["seq"] for e in store.events()), "offset": len(heads())})
             return result
 
         agents.build, agents.examine = build, examine
@@ -401,63 +404,66 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
     def test_exact_head_after_main_moves_between_land_sync_and_ship(self):
         for conflicting in (False, True):
             with self.subTest(conflicting=conflicting):
-                if conflicting:
-                    self.repo.cleanup()
-                    self.new_fixture()
-                self.setup_issues()
-                agents = ObservedAgents(self)
-                log, exams, barriers, recording = self.logged_checks(agents)
-                real_update, real_push = Workspace.update, Workspace.push
-                syncs, moved = {}, []
-                before_push = []
+                self.exact_head_case(conflicting)
 
-                def update(ws, wt):
-                    result = real_update(ws, wt)
-                    syncs[wt] = result.status
-                    return result
+    def exact_head_case(self, conflicting):
+        if conflicting:
+            self.repo.cleanup()
+            self.new_fixture()
+        self.setup_issues()
+        agents = ObservedAgents(self)
+        log, exams, barriers, recording = self.logged_checks(agents)
+        real_update, real_push = Workspace.update, Workspace.push
+        syncs, moved = {}, []
+        before_push = []
 
-                def push(ws, wt):
-                    if not moved:
-                        self.assertEqual(syncs[wt], "current")
-                        st = self.engine.store.issue(3)
-                        before_push.append(git("rev-parse", "HEAD", cwd=wt))
-                        self.assertEqual((st.verified_sha, st.certified_sha), (before_push[0], before_push[0]))
-                        moved.append(self.seed_main({
-                            self.shared_paths[0] if conflicting else "docs/race-from-main.txt":
-                            "registration-from-concurrent-main\n" if conflicting else "clean concurrent update\n"}))
-                    try:
-                        return real_push(ws, wt)
-                    finally:
-                        self.assert_no_operation(wt, clean=True)
+        def update(ws, wt):
+            result = real_update(ws, wt)
+            syncs[wt] = result.status
+            return result
 
-                with recording, mock.patch.object(Workspace, "update", update), \
-                        mock.patch.object(Workspace, "push", push):
-                    self.run_engine(agents)
-                self.assert_done()
-                self.assertEqual(len(moved), 1)
-                merged_head = self.events("merged")[0]["head"]
-                self.assertNotEqual(merged_head, before_push[0])
-                self.assertEqual(subprocess.run(
-                    ["git", "merge-base", "--is-ancestor", moved[0], merged_head],
-                    cwd=self.repo.work, capture_output=True).returncode, 0)
-                if conflicting:
-                    conflicts = [e for e in self.events("conflict") if e["phase"] == "land"]
-                    self.assertEqual(len(conflicts), 1)
-                    self.assertIn(self.shared_paths[0], conflicts[0]["files"])
-                    self.assertFalse(self.events("round_failed"))
-                    self.assertEqual(len(agents.entries), 2)
-                    self.assertIn(self.shared_paths[0], "\n".join(agents.entries[-1]["feedback"]))
-                    self.assertIn("registration-from-concurrent-main",
-                                  present(self.repo.main_file(self.shared_paths[0])).splitlines())
-                else:
-                    changed = self.events("head_changed_after_certificate")
-                    self.assertEqual(len(changed), 1)
-                    self.assertEqual((changed[0]["certified"], changed[0]["head"]),
-                                     (before_push[0], merged_head))
-                    self.assertEqual(self.repo.main_file("docs/race-from-main.txt"), "clean concurrent update")
-                    self.assertFalse(self.events("conflict"))
-                    self.assertFalse(self.events("round_failed"))
-                self.assert_independent_gates(log, exams, barriers)
+        def push(ws, wt):
+            if not moved:
+                self.assertEqual(syncs[wt], "current")
+                st = self.engine.store.issue(3)
+                before_push.append(git("rev-parse", "HEAD", cwd=wt))
+                self.assertEqual((st.verified_sha, st.certified_sha), (before_push[0], before_push[0]))
+                moved.append(self.seed_main({
+                    self.shared_paths[0] if conflicting else "docs/race-from-main.txt":
+                    "registration-from-concurrent-main\n" if conflicting else "clean concurrent update\n"}))
+            try:
+                return real_push(ws, wt)
+            finally:
+                self.assert_no_operation(wt, clean=True)
+
+        with recording, mock.patch.object(Workspace, "update", update), \
+                mock.patch.object(Workspace, "push", push):
+            self.run_engine(agents)
+        self.assert_done()
+        self.assertEqual(len(moved), 1)
+        merged_head = self.events("merged")[0]["head"]
+        self.assertNotEqual(merged_head, before_push[0])
+        self.assertEqual(subprocess.run(
+            ["git", "merge-base", "--is-ancestor", moved[0], merged_head],
+            cwd=self.repo.work, capture_output=True, check=False).returncode, 0)
+        if conflicting:
+            conflicts = [e for e in self.events("conflict") if e["phase"] == "land"]
+            self.assertEqual(len(conflicts), 1)
+            self.assertIn(self.shared_paths[0], conflicts[0]["files"])
+            self.assertFalse(self.events("round_failed"))
+            self.assertEqual(len(agents.entries), 2)
+            self.assertIn(self.shared_paths[0], "\n".join(agents.entries[-1]["feedback"]))
+            self.assertIn("registration-from-concurrent-main",
+                          present(self.repo.main_file(self.shared_paths[0])).splitlines())
+        else:
+            changed = self.events("head_changed_after_certificate")
+            self.assertEqual(len(changed), 1)
+            self.assertEqual((changed[0]["certified"], changed[0]["head"]),
+                             (before_push[0], merged_head))
+            self.assertEqual(self.repo.main_file("docs/race-from-main.txt"), "clean concurrent update")
+            self.assertFalse(self.events("conflict"))
+            self.assertFalse(self.events("round_failed"))
+        self.assert_independent_gates(log, exams, barriers)
 
 
 if __name__ == "__main__":

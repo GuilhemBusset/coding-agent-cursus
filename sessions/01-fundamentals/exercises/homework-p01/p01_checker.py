@@ -21,10 +21,9 @@ import hashlib
 import json
 import math
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
@@ -78,7 +77,7 @@ def parse_time(value):
 
 
 def hhmm(value):
-    value = int(round(value))
+    value = round(value)
     return f"{value // 60:02d}:{value % 60:02d}"
 
 
@@ -167,9 +166,9 @@ class Report:
     warnings: list = field(default_factory=list)
     fatal: bool = False  # data or format: nothing could be checked
     skipped: tuple = ()  # contracts that could not be assessed
-    objective: Optional[float] = None  # recomputed cost
-    breakdown: Optional[dict] = None
-    reported: Optional[float] = None
+    objective: float | None = None  # recomputed cost
+    breakdown: dict | None = None
+    reported: float | None = None
 
 
 def _validate(solution, data):
@@ -285,8 +284,8 @@ def _schedule(data, assign, charge, fail):
 
         maintenance = vehicle["maintenance"]
 
-        def in_maintenance(start, end):
-            return maintenance is not None and end > start and start < maintenance[1] and end > maintenance[0]
+        def in_maintenance(start, end, window=maintenance):
+            return window is not None and end > start and start < window[1] and end > window[0]
 
         for start, end, _, label in moves:
             if in_maintenance(start, end):

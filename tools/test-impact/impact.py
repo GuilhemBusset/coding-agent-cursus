@@ -31,12 +31,12 @@ ROOT = Path(__file__).resolve().parents[2]
 MAP = Path(__file__).with_name("impact.toml")
 SUITES_DIR = "tools/html-pages/tests"
 SUITE_SUFFIX = ".test.mjs"
-PAGE_RE = re.compile(r"^(docs|sessions)/.*\.html?$", re.I)
-MARKER = re.compile(r"""data-design-system\s*=\s*["']cursus["']""", re.I)
+PAGE_RE = re.compile(r"^(docs|sessions)/.*\.html?$", re.IGNORECASE)
+MARKER = re.compile(r"""data-design-system\s*=\s*["']cursus["']""", re.IGNORECASE)
 # What check-page.mjs resolves on a page: runtime assets, whose content matters, and link
 # targets, of which only existence matters.
-RUNTIME = re.compile(r"""\s(?:src|data|poster)\s*=\s*["']([^"'#?]+)|<link\b[^>]*?\shref\s*=\s*["']([^"'#?]+)""", re.I)
-LINK = re.compile(r"""\shref\s*=\s*["']([^"'#?]+)""", re.I)
+RUNTIME = re.compile(r"""\s(?:src|data|poster)\s*=\s*["']([^"'#?]+)|<link\b[^>]*?\shref\s*=\s*["']([^"'#?]+)""", re.IGNORECASE)
+LINK = re.compile(r"""\shref\s*=\s*["']([^"'#?]+)""", re.IGNORECASE)
 # The platforms students run the exercises on (ADR 0010), as ty names them.
 PLATFORMS = ("linux", "darwin", "win32")
 
@@ -138,7 +138,7 @@ def resolve(page: str, values: set[str]) -> set[str]:
     folder = (ROOT / page).parent
     found = set()
     for value in values:
-        if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.I) or value.startswith("//"):
+        if re.match(r"^[a-z][a-z0-9+.-]*:", value, re.IGNORECASE) or value.startswith("//"):
             continue
         # As check-page.mjs resolves it: the attribute's text, then the URL's path, decoded.
         target = os.path.normpath(folder / unquote(html.unescape(value)))
@@ -280,8 +280,7 @@ def github_output(plan: Plan, path: str) -> None:
         "html": str(bool(plan.suites or plan.pages)).lower(),
     }
     with open(path, "a", encoding="utf-8") as out:
-        for key, value in values.items():
-            out.write(f"{key}={value}\n")
+        out.writelines(f"{key}={value}\n" for key, value in values.items())
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -307,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
     failed = []
     for label, command, cwd in commands(plan):
         print(f"\n== {label}: {' '.join(command)}", flush=True)
-        if subprocess.run(command, cwd=cwd).returncode != 0:
+        if subprocess.run(command, cwd=cwd, check=False).returncode != 0:
             failed.append(label)
     print("\n" + (f"FAILED: {', '.join(failed)}" if failed else "All selected checks passed."))
     return 1 if failed else 0

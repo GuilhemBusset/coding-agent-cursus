@@ -26,11 +26,10 @@ import json
 import math
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -122,7 +121,7 @@ def child_env(**changes):
 
 def run(args, cwd, env=None):
     return subprocess.run([str(arg) for arg in args], cwd=cwd, env=env or child_env(),
-                          capture_output=True, text=True, encoding="utf-8", timeout=60)
+                          capture_output=True, text=True, encoding="utf-8", timeout=60, check=False)
 
 
 def success(args, cwd, env=None):
@@ -145,7 +144,7 @@ def rows(document):
 
 def sections():
     source = read(DEMO / "README.md")
-    headings = list(re.finditer(r"^#{1,6}\s+(.+?)\s*#*\s*$", source, re.M))
+    headings = list(re.finditer(r"^#{1,6}\s+(.+?)\s*#*\s*$", source, re.MULTILINE))
     result = {}
     for keyword in ("timing", "predict", "expected", "reset"):
         matches = [(i, match) for i, match in enumerate(headings) if keyword in match[1].lower()]
@@ -164,7 +163,7 @@ def table_lines(output, expected):
     for identity in expected:
         cli, effort = identity
         matches = [line for line in output.splitlines()
-                   if re.search(rf"\b{cli}\b", line, re.I) and re.search(rf"\b{effort}\b", line, re.I)]
+                   if re.search(rf"\b{cli}\b", line, re.IGNORECASE) and re.search(rf"\b{effort}\b", line, re.IGNORECASE)]
         assert len(matches) == 1, f"Need one printed row for {identity}:\n{output}"
         result[identity] = matches[0]
     return result
@@ -187,10 +186,10 @@ def has_number(line, value, *, fractional=False):
 
 def assert_table(output, expected):
     lines = table_lines(output, expected)
-    assert re.search(r"token|input|output", output, re.I)
-    assert re.search(r"seconds|wall|time|\bsec\b", output, re.I)
-    assert re.search(r"cost|usd|\$", output, re.I)
-    assert re.search(r"correct|verdict|answer", output, re.I)
+    assert re.search(r"token|input|output", output, re.IGNORECASE)
+    assert re.search(r"seconds|wall|time|\bsec\b", output, re.IGNORECASE)
+    assert re.search(r"cost|usd|\$", output, re.IGNORECASE)
+    assert re.search(r"correct|verdict|answer", output, re.IGNORECASE)
     for identity, row in expected.items():
         line = lines[identity]
         for name in ("input", "output"):
@@ -198,7 +197,7 @@ def assert_table(output, expected):
         for name in ("wall_seconds", "cost_usd"):
             assert has_number(line, row[name], fractional=True), f"Missing {name}: {line}"
         verdict = r"true|yes|correct|pass|✓" if row["correct"] else r"false|no|incorrect|wrong|fail|✗|✘"
-        assert re.search(rf"(?<!\w)(?:{verdict})(?!\w)", line, re.I), f"Missing verdict: {line}"
+        assert re.search(rf"(?<!\w)(?:{verdict})(?!\w)", line, re.IGNORECASE), f"Missing verdict: {line}"
         if not row["pure_reasoning"]:
             assert "(used tools)" in line, f"Tool-contaminated run must be marked: {line}"
     return lines
@@ -211,7 +210,7 @@ def iso_date(value):
 
 def timestamp(value):
     assert isinstance(value, str) and "T" in value
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    result = datetime.fromisoformat(value)
     assert result.tzinfo is not None and result.utcoffset() == timedelta(0), "Use UTC ISO timestamps"
     return result
 
@@ -303,7 +302,7 @@ def sources(block):
 def puzzle():
     """Locate the literal parcel table structurally; never import the oracle."""
     prompt = read(DEMO / "prompt.txt")
-    match = re.search(r"\bcapacity\b[^\n\d]{0,80}(\d+)\b", prompt, re.I)
+    match = re.search(r"\bcapacity\b[^\n\d]{0,80}(\d+)\b", prompt, re.IGNORECASE)
     assert match, "Prompt must state its integer capacity"
     capacity = int(match[1])
     tree = ast.parse(read(DEMO / "effort.py"))
@@ -359,12 +358,12 @@ def puzzle():
     optimum = max(sum(value for take, (_, value) in zip(bits, parcels) if take)
                   for bits in itertools.product((0, 1), repeat=len(parcels))
                   if sum(weight for take, (weight, _) in zip(bits, parcels) if take) <= capacity)
-    assert "ANSWER:" in prompt and re.search(r"without tools|no tools|not use tools|do not use.*tools", prompt, re.I)
+    assert "ANSWER:" in prompt and re.search(r"without tools|no tools|not use tools|do not use.*tools", prompt, re.IGNORECASE)
     return prompt, parcels, capacity, optimum
 
 
 def answer(text):
-    matches = re.findall(r"^\s*ANSWER\s*:\s*(.*?)\s*$", text, re.M)
+    matches = re.findall(r"^\s*ANSWER\s*:\s*(.*?)\s*$", text, re.MULTILINE)
     if not matches or not re.fullmatch(r"[+-]?\d+", matches[-1]):
         return None
     return int(matches[-1])
@@ -491,7 +490,7 @@ def test_d1_artifacts_and_documented_commands(recorded, replay):
 def test_d2_recorded_rows_rederive_from_raw_and_meta(recorded, cli, effort):
     document, recorded_rows = recorded
     row = recorded_rows[cli, effort]
-    prompt, _, _, optimum = puzzle()
+    _prompt, _, _, optimum = puzzle()
     raw = events_at(DEMO / f"recorded/raw/{cli}-{effort}.jsonl")
     meta = load(DEMO / f"recorded/raw/{cli}-{effort}.meta.json")
     counts, text, tools, pure, usage, reported, aggregate_usage = decode(raw, cli)
@@ -538,13 +537,13 @@ runpy.run_path("effort.py", run_name="__main__")
 def test_d3_recording_dates_and_files(recorded):
     document, recorded_rows = recorded
     run_date = iso_date(document["run_date"])
-    assert run_date <= datetime.now(timezone.utc).date()
+    assert run_date <= datetime.now(UTC).date()
     starts = []
     for cli, effort in RUNS:
         read(DEMO / f"recorded/raw/{cli}-{effort}.jsonl")
         meta = load(DEMO / f"recorded/raw/{cli}-{effort}.meta.json")
         start, end = timestamp(meta["started_at"]), timestamp(meta["ended_at"])
-        assert run_date <= start.date() <= end.date() <= datetime.now(timezone.utc).date()
+        assert run_date <= start.date() <= end.date() <= datetime.now(UTC).date()
         starts.append(start)
         assert re.search(r"\d+\.\d+", recorded_rows[cli, effort]["cli_version"])
     assert min(starts).date() == run_date, "run_date is the first run's UTC date"
@@ -562,11 +561,11 @@ def test_a1_runbook_sections_and_exact_expected_table(replay, recorded):
 @pytest.mark.parametrize("cwd_kind", ("demo", "session", "repo"))
 def test_a1_reset_in_disposable_clone(tmp_path, cwd_kind):
     parts = sections()
-    blocks = re.findall(r"```(?:sh|bash|shell|console)?\s*\n(.*?)```", parts["reset"], re.S)
+    blocks = re.findall(r"```(?:sh|bash|shell|console)?\s*\n(.*?)```", parts["reset"], re.DOTALL)
     assert blocks, "Reset needs a fenced command block"
     command = "\n".join(blocks)
     assert str(REPO) not in command, "Reset must be checkout-relative"
-    assert re.search(r"discard|delete|destroy|lose|loss|remov", parts["reset"], re.I), "Warn about discarded work"
+    assert re.search(r"discard|delete|destroy|lose|loss|remov", parts["reset"], re.IGNORECASE), "Warn about discarded work"
     clone = tmp_path / "disposable repo with spaces"
     success(["git", "clone", "--local", "--no-hardlinks", REPO, clone], tmp_path)
     success(["git", "checkout", "-b", "test/effort-reset"], clone)
@@ -611,7 +610,7 @@ def test_a2_models_prices_dates_and_documentation(recorded):
     sources(price_block)
     readme = read(DEMO / "README.md")
     assert price_block["as_of"] in readme and document["run_date"] in readme
-    assert re.search(r"million|1\s*M\b|MTok", readme, re.I), "Label price units"
+    assert re.search(r"million|1\s*M\b|MTok", readme, re.IGNORECASE), "Label price units"
     for cli, effort in RUNS:
         row = recorded_rows[cli, effort]
         model = row["model"]
@@ -884,7 +883,7 @@ def test_d2_claude_cache_duration_accounting(tmp_path, main_hour, aux_hour, five
     assert_table(result.stdout, observed)
     if (main_hour, aux_hour) in ((13, 0), (0, 3)):
         # These splits cover one model; the other model has no duration evidence.
-        assert re.search(r"warning.*cache|cache.*warning", result.stderr, re.I)
+        assert re.search(r"warning.*cache|cache.*warning", result.stderr, re.IGNORECASE)
 
 
 def test_d2_rejects_unattributable_claude_cache_duration(tmp_path):
@@ -900,7 +899,7 @@ def test_d2_rejects_unattributable_claude_cache_duration(tmp_path):
     assert result.returncode != 0, "Do not guess a per-model price for ambiguous cache-write durations"
     calls = events_at(log)
     assert calls and all(not Path(call["cwd"]).exists() for call in calls)
-    assert re.search(r"cache|duration|attribute", result.stderr + result.stdout, re.I)
+    assert re.search(r"cache|duration|attribute", result.stderr + result.stdout, re.IGNORECASE)
 
 
 @pytest.mark.parametrize("cli", ("claude", "codex"))
@@ -934,13 +933,13 @@ def test_d2_oracle_recomputes_when_capacity_changes(tmp_path):
     tree = ast.parse(script.read_text(encoding="utf-8"))
     changed = 0
     for node in tree.body:
-        if isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Constant):
-            if type(node.value.value) is int and node.value.value == capacity:
-                node.value = ast.copy_location(ast.Constant(changed_capacity), node.value)
-                changed += 1
+        if (isinstance(node, (ast.Assign, ast.AnnAssign)) and isinstance(node.value, ast.Constant)
+                and type(node.value.value) is int and node.value.value == capacity):
+            node.value = ast.copy_location(ast.Constant(changed_capacity), node.value)
+            changed += 1
     assert changed, "Capacity must be literal puzzle data"
     script.write_text(ast.unparse(tree) + "\n", encoding="utf-8")
-    match = re.search(r"\bcapacity\b[^\n\d]{0,80}(\d+)\b", prompt, re.I)
+    match = re.search(r"\bcapacity\b[^\n\d]{0,80}(\d+)\b", prompt, re.IGNORECASE)
     assert match, "The prompt states the capacity"
     changed_prompt = prompt[:match.start(1)] + str(changed_capacity) + prompt[match.end(1):]
     (destination / "prompt.txt").write_text(changed_prompt, encoding="utf-8")
@@ -969,7 +968,7 @@ def test_d2_rejects_noninclusive_codex_usage(tmp_path, bad_counter):
     calls = events_at(log)
     assert calls, "The parser must actually consume the invalid event"
     assert all(not Path(call["cwd"]).exists() for call in calls), "Clean temp directories on failure too"
-    assert re.search(r"cache|reason|usage|token", result.stderr + result.stdout, re.I)
+    assert re.search(r"cache|reason|usage|token", result.stderr + result.stdout, re.IGNORECASE)
 
 
 def test_d2_rejects_unpriced_auxiliary_claude_model(tmp_path):
@@ -981,7 +980,7 @@ def test_d2_rejects_unpriced_auxiliary_claude_model(tmp_path):
     assert result.returncode != 0, "Never silently omit an auxiliary model's cost"
     calls = events_at(log)
     assert calls and all(not Path(call["cwd"]).exists() for call in calls)
-    assert re.search(r"price|rate|model", result.stderr + result.stdout, re.I)
+    assert re.search(r"price|rate|model", result.stderr + result.stdout, re.IGNORECASE)
 
 
 def test_d2_greedy_density_misses_exhaustive_optimum():

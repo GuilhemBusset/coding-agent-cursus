@@ -43,7 +43,7 @@ def powershell():
 
 
 def checked_run(argv, **kwargs):
-    result = subprocess.run(argv, capture_output=True, text=True, timeout=30, **kwargs)
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=30, **kwargs, check=False)
     assert result.returncode == 0, f"Fixture command failed: {argv[0]} ({result.returncode})"
     return result.stdout.strip()
 
@@ -316,7 +316,7 @@ for line in sys.stdin:
                     str(self.exercise / "check-setup.ps1")]
         # Different CWD proves wrappers locate their own script/repository.
         return subprocess.run(argv, cwd=self.root, env=self.env, stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, timeout=timeout)
+                              capture_output=True, text=True, timeout=timeout, check=False)
 
 
 def report(result, success):

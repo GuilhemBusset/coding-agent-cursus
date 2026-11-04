@@ -37,7 +37,7 @@ class AgentIndexModeTests(IsolationCase):
         self.assertEqual(len(record.splitlines()), 1, record)
         metadata, actual_name = record.split("\t", 1)
         self.assertEqual(actual_name, name)
-        mode, oid, stage = metadata.split()
+        _mode, _oid, stage = metadata.split()
         self.assertEqual(stage, "0")
         return record
 
@@ -123,7 +123,7 @@ class AgentIndexModeTests(IsolationCase):
         proc = subprocess.run(
             [sys.executable, "-c", code, str(Path(__file__).resolve().parents[1]),
              str(self.repo.work), str(self.n), str(SHIP), str(self.ws.dir), str(wt), name],
-            capture_output=True, text=True, timeout=60)
+            capture_output=True, text=True, timeout=60, check=False)
         self.assertEqual(proc.returncode, -signal.SIGKILL, proc.stderr)
         self.assertNotEqual((wt / ".git").read_bytes(), original)
         expected = self.assert_index_mode(wt, name, "100755")
@@ -140,11 +140,10 @@ class AgentIndexModeTests(IsolationCase):
         class WorkerFailed(Exception):
             pass
 
-        with self.assertRaises(WorkerFailed):
-            with self.ws.agent_call(wt):
-                git("update-index", "--chmod=+x", "--", name, cwd=wt)
-                expected = self.assert_index_mode(wt, name, "100755")
-                raise WorkerFailed()
+        with self.assertRaises(WorkerFailed), self.ws.agent_call(wt):
+            git("update-index", "--chmod=+x", "--", name, cwd=wt)
+            expected = self.assert_index_mode(wt, name, "100755")
+            raise WorkerFailed()
         self.assert_registered(wt, original)
         self.assertEqual(self.index_record(wt, name), expected)
         self.commit_and_assert(wt, name, expected)

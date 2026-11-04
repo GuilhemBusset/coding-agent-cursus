@@ -21,7 +21,7 @@ def test_readme_agenda_contains_the_hub_schedule_and_materials():
     source = (SESSION / "index.html").read_text(encoding="utf-8")
     readme = (SESSION / "README.md").read_text(encoding="utf-8")
     agenda = readme.split("## Agenda", 1)[1].split("\n## ", 1)[0]
-    assert not re.search(r"\b(TBD|Placeholder)\b", agenda, re.I)
+    assert not re.search(r"\b(TBD|Placeholder)\b", agenda, re.IGNORECASE)
     assert "(index.html)" in agenda
     for time in re.findall(r'<p class="agenda-time">([^<]+)</p>', source):
         assert time in agenda, f"Missing time block: {time}"

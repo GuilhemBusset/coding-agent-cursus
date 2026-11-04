@@ -71,7 +71,7 @@ RECORDING_STEP_FIELDS = ("i", "t_ms", "tool", "input", "is_error", "tokens")
 
 
 def inline_block(block_id):
-    return re.compile(rb'(<script\b(?=[^>]*\bid=[\'"]' + block_id + rb'[\'"])[^>]*>)(.*?)(</script\s*>)', re.S | re.I)
+    return re.compile(rb'(<script\b(?=[^>]*\bid=[\'"]' + block_id + rb'[\'"])[^>]*>)(.*?)(</script\s*>)', re.DOTALL | re.IGNORECASE)
 
 
 INLINE = inline_block(b"agent-runs")

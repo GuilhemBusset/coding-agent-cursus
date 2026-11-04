@@ -8,7 +8,7 @@ def test_homework_has_four_actionable_parts_and_local_materials():
     session = Path(__file__).resolve().parents[1]
     page = session / 'exercises/home.html'
     source = page.read_text(encoding='utf-8')
-    sections = dict(re.findall(r'<section id="([^"]+)"[^>]*>(.*?)</section>', source, re.S))
+    sections = dict(re.findall(r'<section id="([^"]+)"[^>]*>(.*?)</section>', source, re.DOTALL))
     text = {key: ' '.join(unescape(re.sub('<[^>]+>', ' ', body)).split()) for key, body in sections.items()}
     assert all(f'part-{i}' in text for i in range(1, 5))
     assert 'two' in text['part-1'].lower() and 'what changed' in text['part-1'].lower()

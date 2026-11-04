@@ -198,8 +198,8 @@ _JS_TEST = re.compile(
     r"""(?P<q>['"`])(?:\\.|(?!(?P=q)).)*(?P=q)\s*,\s*"""                  # the test name
     r"""(?:(?P<options>\{[^{}]*\})\s*,\s*)?"""                              # node:test options
     r"""(?:async\s+)?(?:function\b\s*\*?\s*[\w$]*\s*\([^)]*\)|\([^)]*\)|[\w$]+)\s*(?:=>\s*)?\{""",
-    re.S)
-_JS_LEADING = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)*", re.S)
+    re.DOTALL)
+_JS_LEADING = re.compile(r"(?:\s+|//[^\n]*|/\*.*?\*/)*", re.DOTALL)
 _JS_FAILS = re.compile(r"assert\.fail\s*\(|throw\s+(?:new\s+)?Error\s*\(|assert(?:\.ok)?\s*\(\s*false\s*[,)]")
 _SHELL_NOISE = re.compile(r"(?:set\s|echo\b|printf\b|:(?:\s|$))")
 _SHELL_FAILS = re.compile(r"(?:exit\s+[1-9]\d*|(?:/usr)?(?:/bin/)?false)")
@@ -345,10 +345,10 @@ def _read_records(report_dir: Path) -> dict | None:
 def _pytest_said(output: str, status: int | None) -> str:
     """pytest's own one-line account of why it stopped, if it printed one."""
     if status == 3:
-        lines = re.findall(r"^INTERNALERROR> (.+)$", output, re.M)
+        lines = re.findall(r"^INTERNALERROR> (.+)$", output, re.MULTILINE)
         return lines[-1].strip()[:200] if lines else ""
     for pattern in (r"^\S+: error: (.+)$", r"^ERROR: (.+)$", r"^Interrupted: (.+)$"):
-        m = re.search(pattern, output, re.M)
+        m = re.search(pattern, output, re.MULTILINE)
         if m:
             return m.group(1).strip()[:200]
     return ""
@@ -358,8 +358,8 @@ def _notes(cases: dict | None, output: str) -> list[str]:
     """Why the pytest runs of a command do not prove anything, in words."""
     if cases is None:
         if f'Error importing plugin "{PLUGIN}"' in output:
-            return ["pytest could not load the verifier's result plugin; if the command sets PYTHONPATH, "
-                    "extend it (PYTHONPATH=src:$PYTHONPATH) instead of replacing it"]
+            return [("pytest could not load the verifier's result plugin; if the command sets PYTHONPATH, "
+                     "extend it (PYTHONPATH=src:$PYTHONPATH) instead of replacing it")]
         return []
     notes = []
     if cases["failed"]:

@@ -37,7 +37,7 @@ RUNBOOKS = {"loop": "loop.md", "plan": "plan-first.md", "bomb": "context-bomb.md
 CLIS = ("claude", "codex")
 PROPRIETARY = {"gurobipy", "cplex", "docplex", "xpress", "mosek", "knitro",
                "localsolver", "hexaly", "coptpy"}
-INLINE = re.compile(rb'<script\b(?=[^>]*\bid=[\'"]agent-runs[\'"])[^>]*>(.*?)</script\s*>', re.S | re.I)
+INLINE = re.compile(rb'<script\b(?=[^>]*\bid=[\'"]agent-runs[\'"])[^>]*>(.*?)</script\s*>', re.DOTALL | re.IGNORECASE)
 
 
 def read(path):
@@ -236,7 +236,7 @@ def test_d1_fallback_links_resolve():
     runs = catalog()
     for demo, name in RUNBOOKS.items():
         book = read(DEMO / name)
-        section = re.search(r"^##\s+Fallback\b[^\n]*\n(.*?)(?=^##\s|\Z)", book, re.M | re.S)
+        section = re.search(r"^##\s+Fallback\b[^\n]*\n(.*?)(?=^##\s|\Z)", book, re.MULTILINE | re.DOTALL)
         assert section, f"{name} needs a Fallback section"
         links = re.findall(r"\]\(([^\s)]+)\)", section[1])
         selected = []
@@ -264,7 +264,7 @@ def test_d2_normalized_loop_order():
         reads = [i for i, s, arg in calls if "p00_model.py" in arg and
                  (s["tool"].lower() == "read" or re.search(r"\b(cat|sed|head|rg|read_text)\b", arg))]
         edits = [i for i, s, arg in calls if "p00_model.py" in arg and
-                 (re.search(r"edit|write|file_change|patch", s["tool"], re.I) or "apply_patch" in arg)]
+                 (re.search(r"edit|write|file_change|patch", s["tool"], re.IGNORECASE) or "apply_patch" in arg)]
         red, green = [], []
         for i, call, arg in calls:
             if "pytest" not in arg:
@@ -342,7 +342,7 @@ def test_a1_catalog_includes_both_rehearsals_per_harness():
             assert {r["run"] for r in rows} >= {1, 2}
             for row in rows:
                 assert row["meta"]["exit_code"] == 0
-                begin, end = (datetime.fromisoformat(row["meta"][key].replace("Z", "+00:00"))
+                begin, end = (datetime.fromisoformat(row["meta"][key])
                               for key in ("started_utc", "ended_utc"))
                 assert begin.tzinfo is not None and begin <= end
 
@@ -394,10 +394,10 @@ def imports(source):
                 yield node.module.split(".")[0]
         elif isinstance(node, ast.Call) and node.args and isinstance(node.args[0], ast.Constant):
             func = node.func
-            if (isinstance(func, ast.Name) and func.id == "__import__" or
-                    isinstance(func, ast.Attribute) and func.attr == "import_module"):
-                if isinstance(node.args[0].value, str):
-                    yield node.args[0].value.split(".")[0]
+            if ((isinstance(func, ast.Name) and func.id == "__import__"
+                    or isinstance(func, ast.Attribute) and func.attr == "import_module")
+                    and isinstance(node.args[0].value, str)):
+                yield node.args[0].value.split(".")[0]
 
 
 def test_a2_normalizer_stdlib():
@@ -428,7 +428,7 @@ def normalize(copy, *args):
     session, cwd, guard = copy
     env = dict(os.environ, PYTHONPATH=str(guard), PYTHONDONTWRITEBYTECODE="1", UV_OFFLINE="1")
     return subprocess.run([sys.executable, session / "cursus/fixtures/runs/normalize_runs.py", *args],
-                          cwd=cwd, env=env, capture_output=True, text=True, timeout=30)
+                          cwd=cwd, env=env, capture_output=True, text=True, timeout=30, check=False)
 
 
 def success(result):

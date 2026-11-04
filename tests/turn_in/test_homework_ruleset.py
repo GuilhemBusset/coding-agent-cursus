@@ -71,7 +71,7 @@ def test_apply_both_rulesets_create_update_and_mixed(tmp_path, present):
         args, payload = record["args"], record["payload"]
         name = payload["name"]
         assert payload == expected[name], "The API payload must match the checked-in ruleset"
-        endpoint = f"repos/course/cursus/rulesets" + (f"/{ids[name]}" if name in present else "")
+        endpoint = "repos/course/cursus/rulesets" + (f"/{ids[name]}" if name in present else "")
         assert endpoint in args, (endpoint, args)
         assert method(args) == ("PUT" if name in present else "POST")
 

@@ -34,7 +34,7 @@ class RecoveryCase(EngineCase):
     def guard(self, branch="feat/issue-2"):
         """The CI loop guard over the merged branch: no implementation commit changed a locked test."""
         return subprocess.run(["bash", str(REPO_ROOT / "scripts" / "check-loop-guard.sh"), "origin/main~1",
-                               f"origin/{branch}"], cwd=self.repo.work, capture_output=True, text=True)
+                               f"origin/{branch}"], cwd=self.repo.work, capture_output=True, text=True, check=False)
 
     def move_main(self, files):
         git("fetch", "-q", "origin", cwd=self.repo.merger)
@@ -880,7 +880,7 @@ class ResumeTests(RecoveryCase):
         for stale in (st.examined_sha, st.certified_sha):
             assert stale is not None
             self.assertNotEqual(subprocess.run(["git", "merge-base", "--is-ancestor", stale, rebased],
-                                               cwd=wt, capture_output=True).returncode, 0)
+                                               cwd=wt, capture_output=True, check=False).returncode, 0)
         git("update-ref", "-d", git("symbolic-ref", "HEAD", cwd=wt), cwd=self.repo.work)
         st.phase = Phase.WAITING
         st.wait = {"kind": "engine", "resume": "examine", "detail": "the branch was deleted", "since": 0,
@@ -912,7 +912,7 @@ class KilledCallOnALostBranchTests(IsolationCase):
         ])
         proc = subprocess.run([sys.executable, "-c", code, str(Path(__file__).resolve().parents[1]),
                                str(self.repo.work), str(self.n), str(SHIP), str(self.ws.dir), str(wt)],
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, text=True, timeout=60, check=False)
         self.assertEqual(proc.returncode, -signal.SIGKILL, proc.stderr)
         private = git_dir(wt)
         self.assertTrue(private.is_relative_to(self.ws.dir.resolve()))
@@ -946,9 +946,9 @@ class KilledCallOnALostBranchTests(IsolationCase):
     def test_a_failed_carry_keeps_the_private_metadata_for_the_next_reattach(self):
         wt, original, base, private = self.killed_with_staged_executable_bit()
         git("update-ref", "refs/heads/feat/isolated-worker", base, cwd=self.repo.work)
-        with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
-            with self.assertRaises(GitError):
-                self.ws.reattach(wt)
+        with (mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")),
+              self.assertRaises(GitError)):
+            self.ws.reattach(wt)
         self.assertEqual(git_dir(wt), private)
         self.assert_mode(wt, "100755")
         self.ws.reattach(wt)
@@ -957,7 +957,7 @@ class KilledCallOnALostBranchTests(IsolationCase):
         self.assertFalse(private.exists())
 
     def test_removing_the_worktree_does_not_depend_on_carrying(self):
-        wt, original, base, private = self.killed_with_staged_executable_bit()
+        wt, _original, _base, private = self.killed_with_staged_executable_bit()
         with mock.patch.object(self.ws, "restore_index_entry", side_effect=GitError("index locked")):
             self.ws.remove(wt)
         self.assertFalse(wt.exists())

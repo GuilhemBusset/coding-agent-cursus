@@ -72,9 +72,9 @@ def import_problems(source, path, allowed_roots):
                     for candidate in candidates
                 ):
                     report(node, f"undeclared, non-local import: {name}")
-        if isinstance(node, ast.Attribute) and node.attr == "path":
-            if isinstance(node.value, ast.Name) and node.value.id in sys_names:
-                report(node, "sys.path access is forbidden")
+        if (isinstance(node, ast.Attribute) and node.attr == "path"
+                and isinstance(node.value, ast.Name) and node.value.id in sys_names):
+            report(node, "sys.path access is forbidden")
         if isinstance(node, ast.Call):
             function = node.func
             direct = isinstance(function, ast.Name) and function.id in dynamic_names

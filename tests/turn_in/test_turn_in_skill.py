@@ -11,7 +11,7 @@ CLAUDE = ".claude/skills/turn-in/SKILL.md"
 
 def frontmatter(path):
     text = path.read_text(encoding="utf-8")
-    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", text, re.S)
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
     assert match, f"Missing skill frontmatter in {path}"
     fields = dict(re.findall(r"(?m)^([\w-]+):\s*(.+)$", match.group(1)))
     return fields, text[match.end():]
@@ -35,7 +35,7 @@ def test_regular_identical_skill_files_and_explicit_flags():
         assert token in body
     assert "scripts/turn-in.sh" in body
     assert "$ARGUMENTS" not in body
-    assert re.search(r"\b(ask|request)\b", body, re.I) and re.search(r"\b(missing|absent|omitted|not provided)\b", body, re.I)
+    assert re.search(r"\b(ask|request)\b", body, re.IGNORECASE) and re.search(r"\b(missing|absent|omitted|not provided)\b", body, re.IGNORECASE)
 
 
 def test_codex_disallows_implicit_invocation_under_policy():

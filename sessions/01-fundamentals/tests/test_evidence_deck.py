@@ -39,18 +39,18 @@ FIXES = {
             ),
             (
                 "tests/test_p00_contract.py",
-                "    errors = p00_checker.integrality_problems(data, solution)\n"
-                "    assert not errors, \"integrality contract: \" + \"; \".join(errors)\n"
-                "    rounded = deepcopy(solution)\n"
-                "    rounded[\"open\"] = {plant: round(value) for plant, value in solution[\"open\"].items()}\n"
-                "    errors = p00_checker.problems(data, rounded)\n"
-                "    assert not errors, \"integrality contract: rounding must preserve feasibility: \" + \"; \".join(errors)\n"
-                "    assert close(p00_checker.objective(data, rounded), p00_checker.objective(data, solution)), (\n"
-                "        \"integrality contract: rounding changed the objective\"\n"
-                "    )\n",
-                "    assert all(0.0 <= value <= 1.0 for value in solution[\"open\"].values()), (\n"
-                "        \"integrality contract: openings must lie in [0, 1]\"\n"
-                "    )\n",
+                ("    errors = p00_checker.integrality_problems(data, solution)\n"
+                 "    assert not errors, \"integrality contract: \" + \"; \".join(errors)\n"
+                 "    rounded = deepcopy(solution)\n"
+                 "    rounded[\"open\"] = {plant: round(value) for plant, value in solution[\"open\"].items()}\n"
+                 "    errors = p00_checker.problems(data, rounded)\n"
+                 "    assert not errors, \"integrality contract: rounding must preserve feasibility: \" + \"; \".join(errors)\n"
+                 "    assert close(p00_checker.objective(data, rounded), p00_checker.objective(data, solution)), (\n"
+                 "        \"integrality contract: rounding changed the objective\"\n"
+                 "    )\n"),
+                ("    assert all(0.0 <= value <= 1.0 for value in solution[\"open\"].values()), (\n"
+                 "        \"integrality contract: openings must lie in [0, 1]\"\n"
+                 "    )\n"),
             ),
         ],
     },
@@ -70,18 +70,18 @@ FIXES = {
             (
                 "p00_model.py",
                 "DATA_DIR = Path(__file__).parent / \"data\"\n",
-                "DATA_DIR = Path(__file__).parent / \"data\"\n"
-                "BEST_FLOW = {(\"P1\", \"C1\"): 20.0, (\"P1\", \"C2\"): 30.0,\n"
-                "             (\"P2\", \"C3\"): 25.0, (\"P2\", \"C4\"): 15.0, (\"P2\", \"C5\"): 10.0}\n",
+                ("DATA_DIR = Path(__file__).parent / \"data\"\n"
+                 "BEST_FLOW = {(\"P1\", \"C1\"): 20.0, (\"P1\", \"C2\"): 30.0,\n"
+                 "             (\"P2\", \"C3\"): 25.0, (\"P2\", \"C4\"): 15.0, (\"P2\", \"C5\"): 10.0}\n"),
             ),
             (
                 "p00_model.py",
-                "        \"objective\": float(h.getObjectiveValue()),\n"
-                "        \"open\": {p: float(h.val(y[p])) for p in plant_ids},\n"
-                "        \"flow\": {p: {c: float(h.val(x[p, c])) for c in customer_ids} for p in plant_ids},\n",
-                "        \"objective\": 485.0,\n"
-                "        \"open\": {\"P1\": 1.0, \"P2\": 1.0, \"P3\": 0.0},\n"
-                "        \"flow\": {p: {c: BEST_FLOW.get((p, c), 0.0) for c in customer_ids} for p in plant_ids},\n",
+                ("        \"objective\": float(h.getObjectiveValue()),\n"
+                 "        \"open\": {p: float(h.val(y[p])) for p in plant_ids},\n"
+                 "        \"flow\": {p: {c: float(h.val(x[p, c])) for c in customer_ids} for p in plant_ids},\n"),
+                ("        \"objective\": 485.0,\n"
+                 "        \"open\": {\"P1\": 1.0, \"P2\": 1.0, \"P3\": 0.0},\n"
+                 "        \"flow\": {p: {c: BEST_FLOW.get((p, c), 0.0) for c in customer_ids} for p in plant_ids},\n"),
             ),
         ],
     },
@@ -120,7 +120,8 @@ def run(args, cwd):
         args = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider"]
     elif isinstance(args, str):
         args = args.split()
-    return subprocess.run(args, cwd=cwd, env=env(), capture_output=True, text=True, encoding="utf-8", timeout=120)
+    return subprocess.run(args, cwd=cwd, env=env(), capture_output=True, text=True, encoding="utf-8", timeout=120,
+                          check=False)
 
 
 def export(bug, out):
@@ -131,7 +132,7 @@ def export(bug, out):
 
 def section(slide_id):
     raw = DECK.read_text(encoding="utf-8")
-    match = re.search(r'<section\b[^>]*id="%s"[^>]*>(.*?)</section>' % slide_id, raw, re.S)
+    match = re.search(rf'<section\b[^>]*id="{slide_id}"[^>]*>(.*?)</section>', raw, re.DOTALL)
     assert match, f"No slide {slide_id}"
     return match.group(1)
 
@@ -140,12 +141,12 @@ def cells():
     """The #catch grid as the slide shows it: (command, fix) -> the text in its cell's output block, or None where
     the cell says, and only says, that the command prints nothing."""
     out = {}
-    for cmd, row in re.findall(r'<tr[^>]*data-ca-cmd="([^"]+)"[^>]*>(.*?)</tr>', section("catch"), re.S):
-        for fix, cell in re.findall(r'<td[^>]*data-ca-fix="([ABC])"[^>]*>(.*?)</td>', row, re.S):
+    for cmd, row in re.findall(r'<tr[^>]*data-ca-cmd="([^"]+)"[^>]*>(.*?)</tr>', section("catch"), re.DOTALL):
+        for fix, cell in re.findall(r'<td[^>]*data-ca-fix="([ABC])"[^>]*>(.*?)</td>', row, re.DOTALL):
             key = (html.unescape(cmd), fix)
             assert key not in out, key
-            pre = re.findall(r'<pre class="ca-out">(.*?)</pre>', cell, re.S)
-            none = re.findall(r'<span class="ca-none">(.*?)</span>', cell, re.S)
+            pre = re.findall(r'<pre class="ca-out">(.*?)</pre>', cell, re.DOTALL)
+            none = re.findall(r'<span class="ca-none">(.*?)</span>', cell, re.DOTALL)
             assert len(pre) + len(none) == 1, (key, cell)
             if none:
                 assert none[0].strip() == "prints nothing", (key, none)
@@ -219,7 +220,7 @@ def versions(tmp_path_factory):
         solved = run([sys.executable, "-c", SPY], directory)
         assert solved.returncode == 0, solved.stderr
         tests = run([sys.executable, "-m", "pytest", "-q", "-rf", "-p", "no:cacheprovider"], directory)
-        failed = re.findall(r"^FAILED tests/test_p00_contract\.py::(\w+)", tests.stdout, flags=re.M)
+        failed = re.findall(r"^FAILED tests/test_p00_contract\.py::(\w+)", tests.stdout, flags=re.MULTILINE)
         out[bug] = {**json.loads(solved.stdout), "broken": {TEST_CONTRACT[name] for name in failed},
                     "pytest_exit": tests.returncode}
     return out
@@ -231,16 +232,22 @@ ROW_CONTRACT = {"none · 30 passed": "none", "integrality": "relaxed-binary", "f
 AXIS_X0, AXIS_LEN, AXIS_MAX = 280, 495, 1100
 
 
+def row_text(row, cls):
+    """The text of a row's `<text class="cls ...">`, unescaped."""
+    match = re.search(rf'<text class="{cls}[^"]*"[^>]*>(.*?)</text>', row, re.DOTALL)
+    assert match, (cls, row)
+    return html.unescape(match.group(1)).strip()
+
+
 def rows():
     """#l3's five rows as drawn: the cost printed beside the dot, the dot's position, what HiGHS says, the contract."""
     out = []
     # A row ends where the next row (or the figure's "?" box) starts: a row may hold a nested group.
-    for row in re.findall(r'<g class="v5-row[^"]*">(.*?)</g>\s*(?=<g class="(?:v5-row|rp-q-mark)[ "])', section("l3"), re.S):
-        text = lambda cls: html.unescape(re.search(r'<text class="%s[^"]*"[^>]*>(.*?)</text>' % cls, row, re.S).group(1)).strip()
+    for row in re.findall(r'<g class="v5-row[^"]*">(.*?)</g>\s*(?=<g class="(?:v5-row|rp-q-mark)[ "])', section("l3"), re.DOTALL):
         status = re.findall(r'<text class="v5-st rp-ans"[^>]*>(.*?)</text>', row)
         dot = re.search(r'<circle class="v5-dot[^"]*" cx="([\d.]+)"', row)
         assert dot, row
-        out.append({"value": text("v5-val"), "status": status, "contract": text("v5-ct"),
+        out.append({"value": row_text(row, "v5-val"), "status": status, "contract": row_text(row, "v5-ct"),
                     "cx": float(dot.group(1))})
     return out
 

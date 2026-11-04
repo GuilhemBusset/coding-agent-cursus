@@ -36,8 +36,8 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 # Playwright 1.63.0's Chromium dependencies for Ubuntu 24.04 and 26.04 (the two lists are
 # identical, with the t64 names): `deps["ubuntu24.04-x64"].chromium` and
@@ -106,7 +106,7 @@ def resolve(packages: list[str], run: Runner) -> list[str]:
     proc = call(run, ["apt-get", "-s", "--no-install-recommends", "install", *packages])
     if proc.returncode != 0:
         raise RecipeError(f"apt cannot resolve {' '.join(packages)}: {tail(proc)}")
-    extra = re.findall(r"^Inst (\S+)", proc.stdout or "", re.M)
+    extra = re.findall(r"^Inst (\S+)", proc.stdout or "", re.MULTILINE)
     return sorted((set(packages) | set(extra)) - NEVER)
 
 
@@ -126,7 +126,7 @@ def download(packages: list[str], debs: Path, run: Runner) -> dict[str, Path]:
 
 
 def unpack(files: dict[str, Path], root: Path, run: Runner) -> None:
-    for pkg, deb in files.items():
+    for deb in files.values():
         proc = call(run, ["dpkg", "-x", str(deb), str(root)])
         if proc.returncode != 0:
             raise RecipeError(f"dpkg -x {deb.name} failed: {tail(proc)}")
@@ -170,7 +170,7 @@ def smoke(executables: list[Path], copy: Path, dirs: list[str], run: Runner) -> 
             raise RecipeError(f"{exe.name} still misses {', '.join(missing)}; no allowlisted package provides it")
         if proc.returncode != 0:
             raise RecipeError(f"ldd {exe.name} failed: {tail(proc)}")
-        from_copy |= {m.group(1) for m in re.finditer(r"^\s*(\S+) => (\S+)", out, re.M)
+        from_copy |= {m.group(1) for m in re.finditer(r"^\s*(\S+) => (\S+)", out, re.MULTILINE)
                       if m.group(2).startswith(str(copy))}
     return len(from_copy)
 

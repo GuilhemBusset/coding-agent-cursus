@@ -22,7 +22,7 @@ def engine_at(tmp_path):
 
 def run_python(root, relative, cwd):
     command = f"{shlex.quote(sys.executable)} {shlex.quote(relative)}"
-    result = subprocess.run(shlex.split(command), cwd=root / cwd, capture_output=True)
+    result = subprocess.run(shlex.split(command), cwd=root / cwd, capture_output=True, check=False)
     return ({"criterion": "D1", "author": "examiner", "command": command, "cwd": cwd},
             {"command": command, "cwd": cwd, "passed": result.returncode == 0})
 

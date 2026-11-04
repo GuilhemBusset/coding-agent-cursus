@@ -166,7 +166,7 @@ def serve(stream):
             respond(request["id"], handle(request["method"], params))
         except RpcError as error:
             respond(request["id"], error=error)
-        except Exception as error:  # never let one bad request kill the demo
+        except Exception as error:  # noqa: BLE001 - never let one bad request kill the demo
             print(f"context_bomb: {type(error).__name__}: {error}", file=sys.stderr)
             respond(request["id"], error=RpcError(-32603, "Internal error"))
 

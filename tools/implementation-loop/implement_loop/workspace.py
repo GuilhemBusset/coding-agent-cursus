@@ -23,6 +23,7 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Self
 
 # A path as git records it: None (absent), ("link", target), ("dir",) or ("file", bytes, executable).
 FileState = tuple | None
@@ -60,7 +61,7 @@ class RepoLock:
         self._depth = 0
         self._fd: int | None = None
 
-    def __enter__(self) -> "RepoLock":
+    def __enter__(self) -> Self:
         self._rlock.acquire()
         try:
             if self._depth == 0:
@@ -143,7 +144,7 @@ class Workspace:
         """The repository's git directory shared by all its worktrees."""
         if self._common is None:
             proc = subprocess.run(["git", "rev-parse", "--git-common-dir"], cwd=self.repo,
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, check=False)
             if proc.returncode != 0:
                 raise GitError(f"git rev-parse --git-common-dir failed: {proc.stderr.strip()[:400]}")
             path = Path(proc.stdout.strip())
@@ -151,7 +152,7 @@ class Workspace:
         return self._common
 
     def git(self, *args: str, cwd: Path | None = None, check: bool = True, strip: bool = True) -> str:
-        proc = subprocess.run(["git", *args], cwd=cwd or self.repo, capture_output=True, text=True)
+        proc = subprocess.run(["git", *args], cwd=cwd or self.repo, capture_output=True, text=True, check=False)
         if check and proc.returncode != 0:
             raise GitError(f"git {' '.join(args)} failed: {(proc.stderr or proc.stdout).strip()[:400]}")
         return proc.stdout.strip() if strip else proc.stdout
@@ -194,7 +195,7 @@ class Workspace:
         removal = f"0 {'0' * (64 if fmt == 'sha256' else 40)}\t{name}"
         info = "".join(f"{record}\0" for record in [removal, *entries])
         proc = subprocess.run(["git", "update-index", "-z", "--index-info"], cwd=path, input=info,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, check=False)
         if proc.returncode != 0:
             raise GitError(f"git update-index --index-info failed for {name}: {proc.stderr.strip()[:400]}")
 
@@ -413,7 +414,7 @@ class Workspace:
                 updates = "".join(f"create {ref} {oid}\n" for ref, oid in sorted(refs.items()))
                 proc = subprocess.run(["git", f"--git-dir={private}", "-c", f"core.hooksPath={private / 'no-hooks'}",
                                        "update-ref", "--stdin"], cwd=private, input=updates,
-                                      capture_output=True, text=True)
+                                      capture_output=True, text=True, check=False)
                 if proc.returncode != 0:
                     raise GitError(f"copying the refs into {private} failed: {proc.stderr.strip()[:400]}")
             shutil.copyfile(admin / "HEAD", private / "HEAD")
@@ -500,12 +501,12 @@ class Workspace:
                 mode, oid = record.split(" ", 2)[:2]
                 if mode != "160000" and not self._ok(path, "cat-file", "-e", oid):   # a gitlink names no blob here
                     blob = subprocess.run(["git", f"--git-dir={private}", "cat-file", "blob", oid], cwd=private,
-                                          capture_output=True)
+                                          capture_output=True, check=False)
                     if blob.returncode != 0:
                         raise GitError(f"the agent staged {name}, and its blob {oid} cannot be read: "
                                        f"{blob.stderr.decode(errors='replace').strip()[:400]}")
                     proc = subprocess.run(["git", "hash-object", "-w", "--no-filters", "--stdin"], cwd=path,
-                                          input=blob.stdout, capture_output=True)
+                                          input=blob.stdout, capture_output=True, check=False)
                     if proc.returncode != 0:
                         raise GitError(f"copying the blob of {name} failed: "
                                        f"{proc.stderr.decode(errors='replace').strip()[:400]}")
@@ -607,21 +608,21 @@ class Workspace:
 
     def changed_files(self, path: Path, since: str) -> list[str]:
         committed = self.git("diff", "--name-only", "-z", f"{since}..HEAD", cwd=path, strip=False).split("\0")
-        return sorted(set(f for f in committed + self.uncommitted(path) if f))
+        return sorted({f for f in committed + self.uncommitted(path) if f})
 
     def has_commit(self, path: Path, sha: str) -> bool:
-        return subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=path, capture_output=True).returncode == 0
+        return subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=path, capture_output=True, check=False).returncode == 0
 
     def is_ancestor(self, path: Path, ancestor: str, descendant: str) -> bool:
         return subprocess.run(["git", "merge-base", "--is-ancestor", ancestor, descendant], cwd=path,
-                              capture_output=True).returncode == 0
+                              capture_output=True, check=False).returncode == 0
 
     def exists_at(self, path: Path, ref: str, file: str) -> bool:
         return bool(self.git("ls-tree", "--name-only", ref, "--", file, cwd=path, check=False))
 
     def show_bytes(self, path: Path, ref: str, file: str) -> bytes | None:
         """The bytes of `file` at `ref`, or None when it is not a file there."""
-        proc = subprocess.run(["git", "cat-file", "blob", f"{ref}:{file}"], cwd=path, capture_output=True)
+        proc = subprocess.run(["git", "cat-file", "blob", f"{ref}:{file}"], cwd=path, capture_output=True, check=False)
         return proc.stdout if proc.returncode == 0 else None
 
     def file_state(self, path: Path, rel: str) -> FileState:
@@ -690,7 +691,7 @@ class Workspace:
 
     # in-progress operations ------------------------------------------------------
     def _ok(self, path: Path, *args: str) -> bool:
-        return subprocess.run(["git", *args], cwd=path, capture_output=True, text=True).returncode == 0
+        return subprocess.run(["git", *args], cwd=path, capture_output=True, text=True, check=False).returncode == 0
 
     def abort_in_progress(self, path: Path) -> str | None:
         """Abort a rebase or merge left half-way, returning which it was. Committed work is never
@@ -727,7 +728,7 @@ class Workspace:
             if self.is_ancestor(path, main, before):
                 return UpdateResult("current", [], before, main)
             proc = subprocess.run(["git", "merge", "--no-edit", "-m", f"Merge {self.base_ref()} into the issue branch",
-                                   main], cwd=path, capture_output=True, text=True)
+                                   main], cwd=path, capture_output=True, text=True, check=False)
             if proc.returncode == 0:
                 return UpdateResult("merged", [], before, main)
             files = self.conflicted_files(path)
@@ -779,7 +780,8 @@ class Workspace:
         with self._mutex:
             before = self.head(path)
             branch = self.git("symbolic-ref", "--short", "-q", "HEAD", cwd=path, check=False)
-            proc = subprocess.run(["bash", str(self.ship_script)], cwd=path, capture_output=True, text=True)
+            proc = subprocess.run(["bash", str(self.ship_script)], cwd=path, capture_output=True, text=True,
+                                  check=False)
             if proc.returncode == 0:
                 return self.head(path)
             message = f"ship.sh failed: {(proc.stderr or proc.stdout).strip()[-600:]}"

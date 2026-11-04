@@ -96,7 +96,7 @@ class Probe(unittest.TestCase):
             def execute(shell):
                 wrapper = repo / 'exercises' / ('check-setup.sh' if shell == 'bash' else 'check-setup.ps1')
                 argv = [BASH, str(wrapper)] if shell == 'bash' else [PWSH, '-NoProfile', '-File', str(wrapper)]
-                return subprocess.run(argv, cwd=repo, env=env, capture_output=True, text=True, timeout=30)
+                return subprocess.run(argv, cwd=repo, env=env, capture_output=True, text=True, timeout=30, check=False)
             try:
                 yield execute, git, base
             finally:
@@ -111,7 +111,7 @@ class Probe(unittest.TestCase):
 
     def test_D2_A1_single_agents(self):
         for agent in ('claude', 'codex'):
-            with self.machine(agent) as (execute, git, base):
+            with self.machine(agent) as (execute, _git, _base):
                 for shell in ('bash', 'powershell'):
                     with self.subTest(agent=agent, shell=shell):
                         result = execute(shell)
@@ -143,7 +143,7 @@ class Probe(unittest.TestCase):
 
     def test_A2_failed_auth_and_smoke_hide_secrets(self):
         for settings in ({'AUTH_FAIL':'1'}, {'REPLY':SECRET}):
-            with self.machine('claude', **settings) as (execute, git, base):
+            with self.machine('claude', **settings) as (execute, _git, _base):
                 for shell in ('bash', 'powershell'):
                     with self.subTest(settings=settings, shell=shell):
                         result = execute(shell)
@@ -153,7 +153,7 @@ class Probe(unittest.TestCase):
     def test_D2_bootstrap_exit_one_summary(self):
         # A stale Python environment makes real Python initialization exit 1.
         # Real uv and the delivered wrappers must still produce a pasteable failure.
-        with self.machine('codex', REAL_UV=True, PYTHONHOME='/nonexistent-prework-python') as (execute, git, base):
+        with self.machine('codex', REAL_UV=True, PYTHONHOME='/nonexistent-prework-python') as (execute, _git, _base):
             for shell in ('bash', 'powershell'):
                 with self.subTest(shell=shell):
                     self.summary(execute(shell), False)

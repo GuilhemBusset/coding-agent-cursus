@@ -19,7 +19,7 @@ def test_tool_auth_network_and_summary(tmp_path, wrapper):
         summary, after = tail.split('----- END SETUP SUMMARY -----')
         assert not after.strip()
         for tool in ('git', 'gh', 'uv', 'mise', 'claude', 'codex'):
-            line = re.search(r'^' + tool + r': PASS (\d+\.\d+[^\n]*)', before, re.M)
+            line = re.search(r'^' + tool + r': PASS (\d+\.\d+[^\n]*)', before, re.MULTILINE)
             assert line, (tool, before)
             assert line.group(0) in summary
         for text in ('gh-auth: PASS', 'reachable (HTTP 403)', 'claude-smoke: PASS', 'codex-smoke: PASS', 'result: PASS'):

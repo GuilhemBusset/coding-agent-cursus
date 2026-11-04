@@ -39,10 +39,10 @@ Path('observed.json').write_text(json.dumps(observed))
         lines = source.splitlines(keepends=True)
         lines[node.lineno-1:node.end_lineno] = [f'VARIANT = {variant!r}\n']
         (directory / 'p01_model.py').write_text(''.join(lines), encoding='utf-8')
-        solved = subprocess.run([sys.executable, '-c', driver], cwd=directory, text=True, capture_output=True, timeout=120)
+        solved = subprocess.run([sys.executable, '-c', driver], cwd=directory, text=True, capture_output=True, timeout=120, check=False)
         assert solved.returncode == 0, solved.stderr
         observed = json.loads((directory / 'observed.json').read_text())[-1]
-        checked = subprocess.run([sys.executable, '-I', '-S', str(directory / 'p01_checker.py')], text=True, capture_output=True, timeout=20)
+        checked = subprocess.run([sys.executable, '-I', '-S', str(directory / 'p01_checker.py')], text=True, capture_output=True, timeout=20, check=False)
         if variant == 'none':
             assert observed[0] == 'kOptimal' and abs(observed[2] - observed[3]) < 1e-5 and observed[4] == 0
             assert 5 <= observed[1] < 60

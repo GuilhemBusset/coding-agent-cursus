@@ -69,8 +69,8 @@ class Element:
 
 
 class Document(HTMLParser):
-    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input",
-            "link", "meta", "param", "source", "track", "wbr"}
+    VOID = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input",
+                      "link", "meta", "param", "source", "track", "wbr"})
 
     def __init__(self, source):
         super().__init__(convert_charrefs=True)
@@ -383,8 +383,8 @@ def execute_done(commands, cwd, name, option=None, executed=None):
         elif kind in {"rule", "skill", "citation"}:
             passed = passed and bool(result.stdout.strip())
         elif kind == "certificate":
-            passed = passed and bool(re.search(r"^PASS\s*$", result.stdout, re.M))
-            passed = passed and bool(re.search(r"gap.*bound", result.stdout, re.I))
+            passed = passed and bool(re.search(r"^PASS\s*$", result.stdout, re.MULTILINE))
+            passed = passed and bool(re.search(r"gap.*bound", result.stdout, re.IGNORECASE))
         outcomes.append((kind, passed, result))
     return outcomes
 
@@ -498,9 +498,9 @@ def test_done_commands_l3_certificate(page, tmp_path, wrong):
     result = execute_done(commands, directory, "L3")
     assert_done(result, False)
     check = next(r for kind, _, r in result if kind == "certificate")
-    assert check.returncode != 0 and re.search(r"^FAIL\s*$", check.stdout, re.M)
-    assert re.search(r"gap.*bound", check.stdout, re.I), check.stdout
-    assert re.search(r"headcount", check.stdout, re.I), check.stdout
+    assert check.returncode != 0 and re.search(r"^FAIL\s*$", check.stdout, re.MULTILINE)
+    assert re.search(r"gap.*bound", check.stdout, re.IGNORECASE), check.stdout
+    assert re.search(r"headcount", check.stdout, re.IGNORECASE), check.stdout
 
 
 def test_done_commands_l3_protects_checker(page, tmp_path):

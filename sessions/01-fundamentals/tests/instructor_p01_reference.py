@@ -190,7 +190,7 @@ def host_description():
     def attempt(function):
         try:
             return function() or "unknown"
-        except Exception:
+        except Exception:  # noqa: BLE001 - host metadata is advisory (see below)
             # Host metadata is advisory: missing commands, permissions, malformed
             # proc files and platform API errors must not break the benchmark.
             return "unknown"

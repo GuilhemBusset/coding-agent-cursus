@@ -91,9 +91,9 @@ def assert_summary(result, headcount):
     # Check labels and values, without prescribing punctuation or line layout.
     lines = result.stdout.splitlines()[1:]
     lines = [line for line in lines if not any(line.startswith(k + ":") for k in CONTRACTS)]
-    head_lines = [line for line in lines if re.search(r"headcount|recomputed", line, re.I)]
-    bound_lines = [line for line in lines if re.search(r"\bLP\b|relaxation", line, re.I)]
-    gap_lines = [line for line in lines if re.search(r"gap", line, re.I)]
+    head_lines = [line for line in lines if re.search(r"headcount|recomputed", line, re.IGNORECASE)]
+    bound_lines = [line for line in lines if re.search(r"\bLP\b|relaxation", line, re.IGNORECASE)]
+    gap_lines = [line for line in lines if re.search(r"gap", line, re.IGNORECASE)]
     assert any(has_number(line, headcount) for line in head_lines), result.stdout
     assert any(has_number(line, 10.2) for line in bound_lines), result.stdout
     assert any(has_number(line, headcount - 10.2) for line in gap_lines), result.stdout
@@ -171,17 +171,17 @@ def test_layout_and_statement():
     assert len(re.split(r"\n\s*\n", problem)) == 1 and problem, "D1: one prose paragraph"
     assert not re.search(r"(?m)^\s*(?:[-*] |\d+\. |```|#)", problem), "D1: prose, not a list or code"
     # Broad semantic markers for the agreed statement; editorial quality is reviewed.
-    assert re.search(r"\b(?:5|five)\b", problem, re.I) and re.search(r"consecutive|successive|in a row", problem, re.I)
-    assert re.search(r"\b(?:2|two)\b", problem, re.I) and re.search(r"off|rest", problem, re.I)
-    assert re.search(r"wrap|cycl|repeat|Sun\w*.*Mon", problem, re.I | re.S)
-    assert re.search(r"minimi[sz]|minimum|fewest|as few", problem, re.I)
-    assert re.search(r"headcount|staff|people|employees|workers", problem, re.I)
+    assert re.search(r"\b(?:5|five)\b", problem, re.IGNORECASE) and re.search(r"consecutive|successive|in a row", problem, re.IGNORECASE)
+    assert re.search(r"\b(?:2|two)\b", problem, re.IGNORECASE) and re.search(r"off|rest", problem, re.IGNORECASE)
+    assert re.search(r"wrap|cycl|repeat|Sun\w*.*Mon", problem, re.IGNORECASE | re.DOTALL)
+    assert re.search(r"minimi[sz]|minimum|fewest|as few", problem, re.IGNORECASE)
+    assert re.search(r"headcount|staff|people|employees|workers", problem, re.IGNORECASE)
     assert "data/demand.csv" in readme and "solution.json" in readme
     assert re.search(r"uv\s+run\s+python\s+check\.py", readme)
     assert re.search(r"(?m)(?:^|`)\s*python\s+check\.py", readme), "D1: document plain Python too"
     assert '"objective"' in readme and '"start"' in readme
     assert all(f'"{day}"' in readme for day in DAYS), "D1: example must show all seven day keys"
-    assert "PASS" in readme and re.search(r"gap", readme, re.I), "D1: document the done criterion"
+    assert "PASS" in readme and re.search(r"gap", readme, re.IGNORECASE), "D1: document the done criterion"
     assert has_number(readme, 10.2) and has_number(readme, 11), "D1: publish bound and optimum"
     layout = section((SESSION / "README.md").read_text(encoding="utf-8"), "Layout")
     assert any("exercises/l3-word-problem/" in line and "|" in line for line in layout.splitlines())

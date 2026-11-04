@@ -105,5 +105,5 @@ def test_unrelated_approved_edit_must_not_drop_an_existing_module_probe(tmp_path
         "content": {"checks/other.py": "# approved edit of another locked check\n"}}, {})
     assert (wt / "checks/probe_contract.py").is_file()
     assert "checks/probe_contract.py" in st.probes
-    ok, evidence, problems, _ = check(engine, st, wt, tmp_path)
+    ok, evidence, _problems, _ = check(engine, st, wt, tmp_path)
     assert not ok, f"Unrelated test_change silently bypassed a live failing probe: {evidence}"

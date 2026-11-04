@@ -25,11 +25,11 @@ with tempfile.TemporaryDirectory() as temporary:
     work = Path(temporary)
     shutil.copytree(session / 'exercises', work / 'exercises')
     hook = work / 'exercises/turn-in-check.sh'
-    result = subprocess.run(['bash', str(hook)], cwd=work, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(['bash', str(hook)], cwd=work, capture_output=True, text=True, timeout=60, check=False)
     assert result.returncode == 0 and 'WARNING' in result.stdout, result.stdout + result.stderr
     solution = work / 'exercises/homework-p01/solution.json'
     solution.write_text('{', encoding='utf-8')
-    result = subprocess.run(['bash', str(hook)], cwd=work, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(['bash', str(hook)], cwd=work, capture_output=True, text=True, timeout=60, check=False)
     assert result.returncode != 0 and 'format:' in result.stdout, result.stdout + result.stderr
     # The executable stub must write solve()'s result next to itself.
     model = work / 'exercises/homework-p01/p01_model.py'
@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory() as temporary:
     # __main__ also prints the objective, so include the documented field.
     source = model.read_text(encoding='utf-8').replace("{'status': 'no_solution'}", "{'status': 'no_solution', 'objective': None}")
     model.write_text(source, encoding='utf-8')
-    result = subprocess.run([sys.executable, str(model)], cwd=work, capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(model)], cwd=work, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(solution.read_text(encoding='utf-8')) == {'status': 'no_solution', 'objective': None}
 print('empty starter and real turn-in hook passed')

@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from helpers import HAS_PYTEST, git, present
-from implement_loop.agents import BuildResult, FakeAgents, Request
+from implement_loop.agents import FakeAgents, Request
 from implement_loop.model import CheckSpec, Phase
 from test_engine import EngineCase
 

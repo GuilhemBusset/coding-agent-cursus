@@ -15,8 +15,13 @@ import re
 import sys
 
 import pytest
+import test_prework
 from prework_live_agents import report
-from test_prework import box, check, entrypoint, status
+from test_prework import check, status
+
+# test_prework's fixtures, shared here: pytest finds them by these names.
+box = test_prework.box
+entrypoint = test_prework.entrypoint
 
 FIXED_DATE = "2026-01-02T03:04:05+00:00"
 
@@ -206,7 +211,7 @@ def test_push_cleanup_unreadable_tip_requires_conditional_advice(box, entrypoint
     assert setup_ref(box).removeprefix("refs/heads/") in notes
     assert box.config["origin_slug"] in notes
     assert oid[:12] in notes, "Unreadable cleanup must identify the expected probe OID"
-    assert re.search(r"only if|only when", notes, re.I), notes
+    assert re.search(r"only if|only when", notes, re.IGNORECASE), notes
     assert "-X DELETE" not in notes, "Unreadable ref must not get blind deletion advice"
 
 
@@ -219,5 +224,5 @@ def test_push_unreadable_verification_still_cleans_own_probe(box, entrypoint):
     assert len(created) == 1
     notes = " ".join(line for line in before.splitlines() if line.startswith("note:"))
     assert created[0][:12] in notes
-    assert re.search(r"only if|only when", notes, re.I), notes
+    assert re.search(r"only if|only when", notes, re.IGNORECASE), notes
     assert "-X DELETE" not in notes

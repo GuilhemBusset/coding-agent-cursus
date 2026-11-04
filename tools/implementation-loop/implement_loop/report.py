@@ -22,10 +22,10 @@ CALLS_BY_SIZE = {"S": 5, "M": 7, "L": 10}
 def render_plan(plan: Plan) -> str:
     lines = [f"Plan for #{plan.root} ({plan.mode} mode): {len(plan.work)} open work item(s)"]
     if plan.closed_work:
-        lines.append(f"Already closed in the tree: {', '.join('#%d' % n for n in plan.closed_work)}")
+        lines.append(f"Already closed in the tree: {', '.join(f'#{n}' for n in plan.closed_work)}")
     trackers = [n for n in plan.tracking if n != plan.root]
     if trackers:
-        lines.append(f"Tracking issues: {', '.join('#%d' % n for n in trackers)}")
+        lines.append(f"Tracking issues: {', '.join(f'#{n}' for n in trackers)}")
     lines.append("")
     by_wave: dict[int, list[int]] = {}
     for n in plan.work:
@@ -46,10 +46,10 @@ def render_plan(plan: Plan) -> str:
     if plan.mode == "epic":
         lines.append("  - add open prerequisites from this epic discovered mid-run (each lands in its own PR, through "
                      "the same gates)")
-    lines += ["  - turn an item into an owner obligation when it needs a capability this host lacks, or defer it to "
-              "another open issue",
-              "  - under the supervisor, file loop faults and run one repair per fault (never on the loop's safety "
-              "surface), then resume"]
+    lines += [("  - turn an item into an owner obligation when it needs a capability this host lacks, or defer it to "
+               "another open issue"),
+              ("  - under the supervisor, file loop faults and run one repair per fault (never on the loop's safety "
+               "surface), then resume")]
     return "\n".join(lines)
 
 
@@ -106,8 +106,8 @@ def render_progress(st, root: int) -> str:
         lines += ["", f"**Not delivered ({st.fail.get('cause')}):** {st.fail.get('detail', '')}", "",
                   "_Filed as a loop fault. The branch keeps the work; a new engine version tries once more._"]
     if st.human_tasks:
-        lines += ["", "**Remaining obligations** (owner items: tick the box in the issue once done; deferred items "
-                      "reopen by themselves):"]
+        lines += ["", ("**Remaining obligations** (owner items: tick the box in the issue once done; deferred items "
+                       "reopen by themselves):")]
         lines += [f"- {t}" for t in st.human_tasks]
     return "\n".join(lines)
 
@@ -141,8 +141,8 @@ def render_pr_body(n: int, title: str, st, operator: str, other: str) -> str:
     lines = [f"Refs #{n}", "", f"Implements **{title}** through the implement loop.", ""]
     if st.decisions:
         lines += ["## Decisions", "",
-                  "Readings and choices the loop made on its own. To override one, edit the issue (reopen it "
-                  "first if it is closed) and run the loop again.", ""]
+                  ("Readings and choices the loop made on its own. To override one, edit the issue (reopen it "
+                   "first if it is closed) and run the loop again."), ""]
         lines += [f"- **{d.get('id')}**: {d.get('choice')}" + (f" ({d['rationale']})" if d.get("rationale") else "")
                   for d in st.decisions]
         lines.append("")
@@ -158,11 +158,11 @@ def render_pr_body(n: int, title: str, st, operator: str, other: str) -> str:
     follow = [f for f in st.findings if f.get("status") == "follow_up"]
     advisory = [f for f in st.findings if f.get("status") in ("advisory", "rejected")]
     lines += ["## Examination",
-              f"- Built by {operator}; examined, probed and certified on this exact head by {other}. "
-              f"No blocking finding remains."]
+              (f"- Built by {operator}; examined, probed and certified on this exact head by {other}. "
+               f"No blocking finding remains.")]
     if follow:
-        lines += ["- Reproduced but not blocking (no ledger item or safety invariant requires them; filed as a "
-                  "follow-up issue):"] + [f"  - {f['title']}" for f in follow[:10]]
+        lines += [("- Reproduced but not blocking (no ledger item or safety invariant requires them; filed as a "
+                   "follow-up issue):")] + [f"  - {f['title']}" for f in follow[:10]]
     if advisory:
         lines += ["- Advisory notes:"] + [f"  - {f['title']} ({f.get('reason', '')})" for f in advisory[:10]]
     lines += ["", "The issue closes when every ledger item has evidence; see the evidence comment below."]
@@ -186,8 +186,8 @@ def render_run_summary(root: int, states: dict) -> str:
         lines += ["", f"**Decisions taken by the loop:** {decided}, listed in each pull request's Decisions section."]
     owner = [(n, t) for n in by_phase.get(Phase.DELIVERED, []) for t in states[n].human_tasks]
     if owner:
-        lines += ["", "**Remaining obligations** (owner items: tick the box in the issue itself; deferred items reopen "
-                      "by themselves):"]
+        lines += ["", ("**Remaining obligations** (owner items: tick the box in the issue itself; deferred items reopen "
+                       "by themselves):")]
         lines += [f"- #{n} {t}" for n, t in owner]
     waiting = by_phase.get(Phase.WAITING, [])
     if waiting:

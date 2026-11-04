@@ -25,7 +25,7 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -81,7 +81,7 @@ GIT_REDIRECTS = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR",
                  "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES")
 PRIVATE_KEYS = {"session_id", "thread_id", "uuid", "message_id", "request_id"}
 CODEX_TOOL_ITEMS = {"command_execution", "file_change", "mcp_tool_call", "web_search", "tool_call"}
-PYTEST_LINE = re.compile(r"^(?:FAILED \S+.*|.*\b\d+ (?:passed|failed)\b.*)$", re.M)
+PYTEST_LINE = re.compile(r"^(?:FAILED \S+.*|.*\b\d+ (?:passed|failed)\b.*)$", re.MULTILINE)
 
 
 class Failure(Exception):
@@ -89,11 +89,11 @@ class Failure(Exception):
 
 
 def utc_now():
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def seconds_between(start, end):
-    parse = lambda s: datetime.fromisoformat(s.replace("Z", "+00:00"))
+    parse = datetime.fromisoformat
     return (parse(end) - parse(start)).total_seconds()
 
 
@@ -161,7 +161,7 @@ def contract(folder):
     env = dict(base_env(), PYTHONDONTWRITEBYTECODE="1")
     done = quiet([python if python.exists() else sys.executable, "-B", "-m", "pytest", "-q", "-rf",
                   "-p", "no:cacheprovider", SUITE], folder, env, timeout=300)
-    failing = re.findall(r"^FAILED (\S+)", done.stdout, re.M)
+    failing = re.findall(r"^FAILED (\S+)", done.stdout, re.MULTILINE)
     lines = [line for line in done.stdout.splitlines() if re.search(r"\b\d+ (?:passed|failed)\b", line)]
     return done.returncode, failing, (lines[-1].strip("= ") if lines else done.stdout.strip()[-200:])
 
@@ -194,7 +194,7 @@ def reset(demo, work_root, announce=True):
                       f"`uv sync` in sessions/01-fundamentals first): {synced.stderr.strip()[-300:]}\n"
                       f"Or replay the recording: {replay_command(demo, 'claude')}")
     if announce:
-        code, failing, summary = contract(folder)
+        _code, failing, summary = contract(folder)
         print(f"reset {demo}: fresh {BUG} export at {folder}, synced offline")
         print(f"  pytest: {summary}" + (f" ({', '.join(failing)})" if failing else ""))
     return folder
@@ -460,7 +460,7 @@ def check_login(cli, demo):
         logged = json.loads(done.stdout).get("loggedIn")
     except (ValueError, AttributeError):
         logged = None
-    if logged is False or re.search(r"not logged in|logged out", text, re.I) or (logged is None and done.returncode != 0):
+    if logged is False or re.search(r"not logged in|logged out", text, re.IGNORECASE) or (logged is None and done.returncode != 0):
         raise Failure(f"{cli}: installed but not logged in; {LOGIN[cli]}\n"
                       f"Or replay the recording: {replay_command(demo, cli)}")
 
@@ -765,7 +765,7 @@ def wait_for(session, pattern, seconds):
             tmux("send-keys", "-t", session, "Escape")  # skip the update offer: keep the pinned CLI
             time.sleep(2)
             continue
-        if re.search(pattern, pane, re.M):
+        if re.search(pattern, pane, re.MULTILINE):
             return pane
         time.sleep(1)
     raise Failure(f"the Codex TUI never showed {pattern!r}; last screen:\n{pane[-1500:]}")

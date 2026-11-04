@@ -92,7 +92,7 @@ def cli_name(value):
 
 
 def run_number(value):
-    match = re.fullmatch(r"(?:run\s*)?([12])", value.strip(), re.I)
+    match = re.fullmatch(r"(?:run\s*)?([12])", value.strip(), re.IGNORECASE)
     assert match, f"Expected measured run 1 or 2: {value}"
     return int(match[1])
 
@@ -125,7 +125,7 @@ def model_path(cli, number):
 
 def transcript(cli, number):
     source = read(DEMO / "recorded" / f"{cli}-run{number}.txt")
-    matches = list(re.finditer(r"^===\s*([\w-]+)\s*===\s*$", source, re.M))
+    matches = list(re.finditer(r"^===\s*([\w-]+)\s*===\s*$", source, re.MULTILINE))
     assert [match[1] for match in matches] == list(SECTIONS), "Need the seven ordered evidence sections"
     return {match[1]: source[match.end():matches[i + 1].start() if i + 1 < len(matches) else len(source)].strip()
             for i, match in enumerate(matches)}
@@ -186,7 +186,7 @@ def certificate(source):
                 rf"duality gap:\s*({NUMBER})", r"binding constraints:\s*([^\n]+)"]
     # Every line is anchored; quoted source code does not count as executed output.
     pattern = r"[ \t]*" + r"[ \t]*\n[ \t]*".join(patterns) + r"[ \t]*$"
-    matches = list(re.finditer("^" + pattern, rendered(source), re.M | re.I))
+    matches = list(re.finditer("^" + pattern, rendered(source), re.MULTILINE | re.IGNORECASE))
     assert matches, "Missing seven-line optimal certificate in executed output"
     values = matches[-1].groups()
     numbers = tuple(float(value) for value in values[1:9])
@@ -218,7 +218,7 @@ def agent_certificate(parts):
     command = re.search(r"\buv\s+run\s+python\s+(?:\./)?work/model\.py\b", source)
     assert command, "Agent must itself execute uv run python work/model.py"
     assert re.search(r"\b(?:Bash|exec|exec_command|shell|tool_use|tool call|command_execution)\b",
-                     source[:command.end()], re.I), "Need a recorded tool call, not just assistant prose"
+                     source[:command.end()], re.IGNORECASE), "Need a recorded tool call, not just assistant prose"
     result = certificate(source[command.end():])
     validate(result)
     return result
@@ -248,7 +248,7 @@ def model_tree(cli, number):
 def relative_links():
     source = read(DEMO / "README.md")
     targets = re.findall(r"\[[^\]]*\]\(<?([^\s)>]+)>?(?:\s+\"[^\"]*\")?\)", source)
-    targets += re.findall(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", source, re.M)
+    targets += re.findall(r"^\s*\[[^\]]+\]:\s*<?([^\s>]+)>?", source, re.MULTILINE)
     found = set()
     for target in targets:
         target = unquote(target.split("#")[0])
@@ -266,24 +266,24 @@ def relative_links():
 
 def reset_line():
     source = read(DEMO / "README.md")
-    section = re.search(r"^## Reset\s*\n(.*?)(?=^## |\Z)", source, re.M | re.S)
+    section = re.search(r"^## Reset\s*\n(.*?)(?=^## |\Z)", source, re.MULTILINE | re.DOTALL)
     assert section, "Missing ## Reset"
-    blocks = re.findall(r"^```[^\n]*\n(.*?)^```\s*$", section[1], re.M | re.S)
+    blocks = re.findall(r"^```[^\n]*\n(.*?)^```\s*$", section[1], re.MULTILINE | re.DOTALL)
     assert len(blocks) == 1 and blocks[0].strip() == RESET, "One path-anchored reset line is required"
     return blocks[0].strip()
 
 
 def runbook_command(cli):
     source = read(DEMO / "README.md").replace("\\\n", " ")
-    code = re.findall(r"^```[^\n]*\n(.*?)^```", source, re.M | re.S)
+    code = re.findall(r"^```[^\n]*\n(.*?)^```", source, re.MULTILINE | re.DOTALL)
     code += re.findall(r"(?<!`)`([^`\n]+)`(?!`)", source)
     candidates = set()
     for block in code:
         for line in block.splitlines():
             line = line.strip()
-            if re.search(rf"\b{cli}\s+{'-p' if cli == 'claude' else 'exec'}\b", line):
-                if '"$(cat prompt.txt)"' in line:
-                    candidates.add(line)
+            if (re.search(rf"\b{cli}\s+{'-p' if cli == 'claude' else 'exec'}\b", line)
+                    and '"$(cat prompt.txt)"' in line):
+                candidates.add(line)
     assert len(candidates) == 1, f"Need one unambiguous primary {cli} command in the runbook"
     command = candidates.pop()
     assert ('--permission-mode acceptEdits' in command and '--allowedTools "Bash(uv run:*)"' in command
@@ -327,7 +327,7 @@ def test_d1_artifacts_links_and_unspoiled_prompt():
     prompt = read(DEMO / "prompt.txt")
     assert not re.search(r"\b1[,_ ]?400(?:\.0+)?\b", prompt), "Prompt leaks optimum"
     for name, value in zip(ROWS, (20, 10, 0)):
-        assert not re.search(rf"\b{name}\s*[:=]\s*{value}(?:\.0+)?\b", prompt, re.I), "Prompt leaks duals"
+        assert not re.search(rf"\b{name}\s*[:=]\s*{value}(?:\.0+)?\b", prompt, re.IGNORECASE), "Prompt leaks duals"
     assert not re.search(r"\b20(?:\.0+)?\s*[,;]\s*10(?:\.0+)?\s*[,;]\s*0(?:\.0+)?\b", prompt), "Prompt leaks dual vector"
 
 
@@ -389,7 +389,7 @@ path = Path(sys.argv[1])
 exec(compile(path.read_bytes(), str(path), 'exec'), {'__name__': '__main__', '__file__': str(path)})
 """
     result = run([sys.executable, "-c", runner, path], DEMO)
-    assert not re.search(r"^\s*status:\s*(?:optimal|kOptimal)\s*$", result.stdout, re.M | re.I), (
+    assert not re.search(r"^\s*status:\s*(?:optimal|kOptimal)\s*$", result.stdout, re.MULTILINE | re.IGNORECASE), (
         "An unavailable solver must not produce a canned optimal certificate")
 
 
@@ -474,6 +474,6 @@ def test_a2_only_open_installed_solver(cli, number):
     assert not roots & COMMERCIAL
     parts = transcript(cli, number)
     source = rendered(parts["agent"] + "\n" + parts["harness-check"])
-    assert not re.search(r"\b(?:pip(?:3)?\s+install|uv\s+(?:add|pip\s+install))\b", source, re.I), "No dependency installs during the run"
+    assert not re.search(r"\b(?:pip(?:3)?\s+install|uv\s+(?:add|pip\s+install))\b", source, re.IGNORECASE), "No dependency installs during the run"
     for package in COMMERCIAL:
-        assert not re.search(rf"\b(?:import\s+{package}\b|from\s+{package}\b)", source, re.I), "Commercial solver in transcript"
+        assert not re.search(rf"\b(?:import\s+{package}\b|from\s+{package}\b)", source, re.IGNORECASE), "Commercial solver in transcript"

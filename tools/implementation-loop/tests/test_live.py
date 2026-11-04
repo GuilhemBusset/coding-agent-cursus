@@ -407,7 +407,7 @@ class LiveAdapterTests(unittest.TestCase):
         def run():
             try:
                 self.agents.explore("claude", "q", "b")
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:  # noqa: BLE001 - collected; the test asserts what the thread raised
                 errors.append(e)
         t = threading.Thread(target=run)
         started = time.monotonic()
@@ -464,7 +464,7 @@ class LoopGuardTests(unittest.TestCase):
     def guard(self):
         head = git("rev-parse", "HEAD", cwd=self.wt)
         return subprocess.run(["bash", str(REPO_ROOT / "scripts" / "check-loop-guard.sh"), self.base, head],
-                              cwd=self.wt, capture_output=True, text=True)
+                              cwd=self.wt, capture_output=True, text=True, check=False)
 
     def test_implementation_after_locked_checks_passes(self):
         self.commit("tests/test_a.py", "def test_a(): pass\n", "acceptance-checks")

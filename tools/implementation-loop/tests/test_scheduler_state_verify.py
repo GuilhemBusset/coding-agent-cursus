@@ -1,7 +1,6 @@
 import json
 import os
 import socket
-import subprocess
 import sys
 import tempfile
 import textwrap
@@ -52,9 +51,8 @@ class StateTests(unittest.TestCase):
 
     def test_lock_blocks_a_live_holder_and_takes_over_a_dead_one(self):
         lock_path = self.tmp / "run" / "lock"
-        with RunLock(lock_path):
-            with self.assertRaises(LockHeld):
-                RunLock(lock_path).__enter__()
+        with RunLock(lock_path), self.assertRaises(LockHeld):
+            RunLock(lock_path).__enter__()
         lock_path.write_text(json.dumps({"pid": 2 ** 22 + 12345, "host": socket.gethostname()}))
         with RunLock(lock_path):
             self.assertEqual(json.loads(lock_path.read_text())["pid"], os.getpid())

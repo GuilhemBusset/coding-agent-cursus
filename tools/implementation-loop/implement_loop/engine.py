@@ -34,10 +34,10 @@ import tempfile
 import threading
 import time
 import traceback
+from collections.abc import Callable
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, replace
 from pathlib import Path
-from typing import Callable
 
 from . import VERSION, gate, graph, issue_parser, report, scheduler, verify
 from .agents import AgentFailure, Agents, AgentStopped, CeilingReached, IssueRequest
@@ -46,7 +46,6 @@ from .github import GitHub, GitHubError
 from .graph import Plan
 from .model import (
     AGENT_PROOFS,
-    IN_RUN_WAITS,
     SATISFIES_DEPENDENTS,
     TERMINAL,
     WAIT_CI,
@@ -279,8 +278,8 @@ class Engine:
                                                                   if Path(f).suffix in (".py", ".mjs", ".js", ".sh")})
         if old_tests:
             st.tests = sorted(set(st.tests) | set(old_tests))
-            st.feedback = list(st.feedback) + [f"An earlier version of the loop wrote these tests on your branch: "
-                                               f"{', '.join(old_tests)}. They are yours now; keep, fix or replace them."]
+            st.feedback = list(st.feedback) + [(f"An earlier version of the loop wrote these tests on your branch: "
+                                                f"{', '.join(old_tests)}. They are yours now; keep, fix or replace them.")]
             st.requests.append({"id": "legacy-unlock", "kind": "legacy_unlock", "paths": sorted(legacy.get("locked", {})),
                                 "status": "pending", "detail": "release an earlier engine's locked checks"})
         for f in design.get("files", []):
@@ -306,8 +305,8 @@ class Engine:
             restored = self.ws.restore_branch(wt, [a for a in anchors if a])
         except GitError as e:
             self.store.event("branch_restore_failed", issue=n, error=str(e)[:300])
-            self._new_round(st, [f"the branch {st.branch} was lost and could not be restored from its history; "
-                                 f"start again from main"], owner_edit=False)
+            self._new_round(st, [(f"the branch {st.branch} was lost and could not be restored from its history; "
+                                  f"start again from main")], owner_edit=False)
             st.phase = Phase.PENDING
             self.store.put(st)
             return False
@@ -356,8 +355,8 @@ class Engine:
         deleted = {p for r in st.requests if r.get("kind") == "test_change" and r.get("status") == "approved"
                    for p, text in (r.get("content") or {}).items() if text is None}
         self._retire_probe_commands(st.number, st, sorted(deleted - set(st.probes)))
-        st.feedback = [f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
-                       f"A new engine version gives it one more try."]
+        st.feedback = [(f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
+                        f"A new engine version gives it one more try.")]
         self.store.event("revived", issue=st.number, cause=f.get("cause"), phase=st.phase.value)
 
     def _retire_probe_commands(self, n: int, st: IssueState, deleted: list[str]) -> None:
@@ -1310,8 +1309,8 @@ class Engine:
         self._declare(n, st)
         self.store.event("conflict", issue=n, phase=phase, files=files)
         self._set_phase(n, Phase.BUILD, feedback=[
-            f"Main moved on and conflicts with this branch in: {', '.join(files)}. The next round starts with main's "
-            f"merge in progress; resolve the conflicts in those files."])
+            (f"Main moved on and conflicts with this branch in: {', '.join(files)}. The next round starts with main's "
+             f"merge in progress; resolve the conflicts in those files.")])
 
     def _relock_candidates(self, n: int, wt: Path, before: str) -> dict[str, str]:
         st = self.store.issue(n)
@@ -1360,10 +1359,10 @@ class Engine:
         `lane`, staged or not, are undone from the index entries and bytes taken before it ran."""
         snapshot = {f: self.ws.file_state(wt, f) for f in self.ws.uncommitted(wt)}
         index = self.ws.index_entries(wt)
-        feedback = [f"Main moved on, and merging it into this branch conflicts in the locked tests {', '.join(lane)}. "
-                    f"The merge is in progress: resolve the conflict markers in those files, keeping the requirements "
-                    f"of both sides (main's side tests work already merged). Change nothing else; do not run git "
-                    f"merge, commit or abort."]
+        feedback = [(f"Main moved on, and merging it into this branch conflicts in the locked tests {', '.join(lane)}. "
+                     f"The merge is in progress: resolve the conflict markers in those files, keeping the requirements "
+                     f"of both sides (main's side tests work already merged). Change nothing else; do not run git "
+                     f"merge, commit or abort.")]
         with self.ws.agent_call(wt) as call:
             self.agents.resolve_locked(self.other, self._req(n), wt, lane, feedback)
         self._absorb_agent_commits(n, wt, call, merge_head=merge_head)
@@ -1680,8 +1679,8 @@ class Engine:
                                 "run by these commands, prove each item as written?"}, scratch)
             st = self.store.issue(n)
             if not ruling.upheld:
-                return self._round_failed(n, [f"no independent probe could be written for {', '.join(unprobed)}, and the "
-                                              f"arbiter judges your tests do not prove them as written: {ruling.reason}"])
+                return self._round_failed(n, [(f"no independent probe could be written for {', '.join(unprobed)}, and the "
+                                               f"arbiter judges your tests do not prove them as written: {ruling.reason}")])
             self._decide(st, {"id": "probe-waiver", "choice": f"{', '.join(unprobed)}: proven by the builder's locked tests",
                               "rationale": f"no independent probe after two requests; the arbiter ruled: {ruling.reason}"})
             self.store.put(st)
@@ -1871,9 +1870,9 @@ class Engine:
                               resume=Phase.LAND)
         log = self._safe(self.gh.failed_log, head) or "(no log available)"
         self.store.event("ci_failed", issue=n, head=head, conclusion=conclusion)
-        self._round_failed(n, [f"The required CI check is '{conclusion}' on {head[:7]}, also after one re-run. Find and "
-                               f"fix the cause; never weaken or skip a check to get green. Tail of the failed log:\n"
-                               f"{log[-3000:]}"])
+        self._round_failed(n, [(f"The required CI check is '{conclusion}' on {head[:7]}, also after one re-run. Find and "
+                                f"fix the cause; never weaken or skip a check to get green. Tail of the failed log:\n"
+                                f"{log[-3000:]}")])
 
     def _wait_required(self, sha: str, after: int | None = None) -> tuple[str, int | None]:
         waited = 0
@@ -1960,8 +1959,8 @@ class Engine:
         lines = [f"- **{f['title']}** — observed: {f.get('observed')}; expected: {f.get('expected')}; reproduce: "
                  f"`{f.get('reproduction') or f.get('probe')}`" for f in follow]
         body = (f"Follow-up to #{n}" + (f" (PR #{st.pr})" if st.pr else "") + ". The other vendor's examination "
-                f"reproduced these findings, which no ledger item or safety invariant requires, so they did not block "
-                f"the merge:\n\n" + "\n".join(lines) + "\n")
+                "reproduced these findings, which no ledger item or safety invariant requires, so they did not block "
+                "the merge:\n\n" + "\n".join(lines) + "\n")
         created = self._safe(self.gh.create_issue, f"Follow-up to #{n}: {len(follow)} non-blocking finding(s)", body,
                              [FOLLOWUP_LABEL[0]])
         if created:
@@ -2043,9 +2042,9 @@ class Engine:
                                                     + "; ".join(regressions)[:500])
             with self.ws.disposable(wt) as scratch:
                 exam = self.agents.examine(self.other, self._req(n, [
-                    f"Certify a revert: the loop reverts this issue's merged change because main fails after it and a "
-                    f"fix-forward did not repair it. Check that `{main_sha[:12]}..{head[:12]}` only undoes that "
-                    f"change and leaves main working."]), {"items": [], "zones": []}, scratch, main_sha, head, [], [], [],
+                    (f"Certify a revert: the loop reverts this issue's merged change because main fails after it and a "
+                     f"fix-forward did not repair it. Check that `{main_sha[:12]}..{head[:12]}` only undoes that "
+                     f"change and leaves main working.")]), {"items": [], "zones": []}, scratch, main_sha, head, [], [], [],
                     None)
             serious = []
             for f in exam.findings:   # the same rule as any examination: reproduced, witnessed, tied to an invariant
@@ -2080,8 +2079,8 @@ class Engine:
         if st.reverts > self.caps.reverts:
             return self._fail(n, "main_broken", f"its delivery broke main again and was reverted in PR #{rpr['number']}: "
                                                 + "; ".join(feedback)[:500])
-        self._new_round(st, feedback + [f"Your earlier delivery was reverted in PR #{rpr['number']} because it broke "
-                                        f"main; deliver it again without breaking it."], owner_edit=False)
+        self._new_round(st, feedback + [(f"Your earlier delivery was reverted in PR #{rpr['number']} because it broke "
+                                         f"main; deliver it again without breaking it.")], owner_edit=False)
         st.phase = Phase.PLANNED if st.plan else Phase.PENDING
         self.store.put(st)
         self._sync(n)

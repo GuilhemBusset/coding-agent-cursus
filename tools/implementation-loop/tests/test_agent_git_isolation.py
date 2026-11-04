@@ -29,7 +29,7 @@ WAIT = 60
 
 
 def result(path, *args):
-    return subprocess.run(["git", *args], cwd=path, capture_output=True)
+    return subprocess.run(["git", *args], cwd=path, capture_output=True, check=False)
 
 
 def git_path(path, name):
@@ -388,15 +388,14 @@ class AgentGitDirTests(IsolationCase):
             hook.chmod(0o755)
         original = (wt / ".git").read_bytes()
         config_before = (self.ws.common_dir() / "config").read_bytes()
-        with self.assertRaisesRegex(RuntimeError, "intentional interruption"):
-            with self.ws.agent_call(wt):
-                private = git_dir(wt)
-                git("tag", "hook-probe", cwd=wt)
-                (wt / "hook-file.txt").write_text("hook content\n")
-                git("add", "hook-file.txt", cwd=wt)
-                git("commit", "-qm", "exercise original pre-commit", cwd=wt)
-                self.assertEqual((self.ws.common_dir() / "config").read_bytes(), config_before)
-                raise RuntimeError("intentional interruption")
+        with self.assertRaisesRegex(RuntimeError, "intentional interruption"), self.ws.agent_call(wt):
+            private = git_dir(wt)
+            git("tag", "hook-probe", cwd=wt)
+            (wt / "hook-file.txt").write_text("hook content\n")
+            git("add", "hook-file.txt", cwd=wt)
+            git("commit", "-qm", "exercise original pre-commit", cwd=wt)
+            self.assertEqual((self.ws.common_dir() / "config").read_bytes(), config_before)
+            raise RuntimeError("intentional interruption")
         self.assert_registered(wt, original)
         self.assertFalse(private.exists(), "an exceptional call must remove its private git dir")
         self.assertEqual((self.ws.common_dir() / "config").read_bytes(), config_before)
@@ -481,7 +480,7 @@ class AgentGitDirTests(IsolationCase):
         self.assertEqual(self.events("worktree_recovery_failed"), [])
 
     def test_remove_reattaches_a_killed_call_before_removing_the_worktree(self):
-        wt, original, base, private = self.killed_call()
+        wt, _original, base, private = self.killed_call()
         self.ws.remove(wt)
         self.assertFalse(wt.exists())
         self.assertFalse(private.exists())
@@ -490,9 +489,8 @@ class AgentGitDirTests(IsolationCase):
 
     def test_agent_call_rejects_a_checkout_with_a_git_directory(self):
         before = (self.ws.common_dir() / "config").read_bytes()
-        with self.assertRaises(GitError):
-            with self.ws.agent_call(self.repo.work):
-                self.fail("a primary checkout must not be attached by replacing its .git directory")
+        with self.assertRaises(GitError), self.ws.agent_call(self.repo.work):
+            self.fail("a primary checkout must not be attached by replacing its .git directory")
         self.assertTrue((self.repo.work / ".git").is_dir())
         self.assertEqual((self.ws.common_dir() / "config").read_bytes(), before)
 
@@ -630,7 +628,7 @@ class MergeStateTests(IsolationCase):
         self.assertIn("test -e main-only.txt", present(self.repo.main_file(f"checks/issue_{self.n}.sh")))
 
     def test_a_builder_committing_the_private_merge_is_absorbed_and_lands(self):
-        wt, main = self.prepare_conflict()
+        _wt, main = self.prepare_conflict()
         build = self.agents.build
         observed = []
 

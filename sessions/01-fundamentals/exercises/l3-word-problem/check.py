@@ -107,7 +107,7 @@ def data_problems(path=DATA_FILE):
     for line, row in enumerate(rows, start=2):
         day, raw = row.get("day"), row.get("demand")
         if day not in DEMAND:
-            problems.append(f"data: line {line} has unknown day {ascii(day)}")
+            problems.append(f"data: line {line} has unknown day {day!a}")
             continue
         if day in seen:
             problems.append(f"data: {day} appears more than once")
@@ -116,7 +116,7 @@ def data_problems(path=DATA_FILE):
         try:
             value = float(raw)  # ty: ignore[invalid-argument-type]  # a short row's None: TypeError
         except (TypeError, ValueError):
-            problems.append(f"data: {day} demand {ascii(raw)} is not a number")
+            problems.append(f"data: {day} demand {raw!a} is not a number")
             continue
         if value != DEMAND[day]:
             problems.append(f"data: {day} demand is {fmt(value)}, the instance pins {DEMAND[day]}")
@@ -144,15 +144,15 @@ def load_solution(path):
 def format_problems(solution):
     """Check the shape {"objective": number, "start": {day: number, ...}}."""
     if not isinstance(solution, dict):
-        return [f"format: the solution must be a JSON object with keys "
-                f"\"objective\" and \"start\", got {describe(solution)}"]
+        return [(f"format: the solution must be a JSON object with keys "
+                 f"\"objective\" and \"start\", got {describe(solution)}")]
     problems = []
     for key in ROOT_KEYS:
         if key not in solution:
             problems.append(f"format: missing key \"{key}\"")
     for key in solution:
         if key not in ROOT_KEYS:
-            problems.append(f"format: unexpected key {ascii(key)}; only \"objective\" and \"start\"")
+            problems.append(f"format: unexpected key {key!a}; only \"objective\" and \"start\"")
     if "objective" in solution and number(solution["objective"]) is None:
         problems.append(f"format: objective must be a finite number, got "
                         f"{describe(solution['objective'])}")
@@ -169,7 +169,7 @@ def format_problems(solution):
                                 f"{describe(start[day])}")
         for key in start:
             if key not in DEMAND:
-                problems.append(f"format: start has unexpected key {ascii(key)}; "
+                problems.append(f"format: start has unexpected key {key!a}; "
                                 f"days are {', '.join(DAYS)}")
     return problems
 

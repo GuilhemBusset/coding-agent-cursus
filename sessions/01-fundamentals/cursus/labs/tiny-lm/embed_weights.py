@@ -65,7 +65,7 @@ def main():
         if len(pattern.findall(html)) != 1:
             raise SystemExit(f"expected exactly one #{element_id} data block in {PAGE.name}")
         replacement = block(element_id, load(files[key], args.source_dir))
-        html = pattern.sub(lambda _: replacement, html)
+        html = pattern.sub(lambda _, text=replacement: text, html)
     PAGE.write_text(html, encoding="utf-8")
     print(f"Embedded weights and tokenizer into {PAGE} ({PAGE.stat().st_size:,} bytes)")
 

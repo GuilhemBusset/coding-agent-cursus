@@ -19,8 +19,9 @@ import re
 import subprocess
 import time
 import urllib.parse
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 PER_PAGE = 100
 RETRY_DELAYS_S = (5, 15, 45)   # seconds slept before each retry of a transient failure

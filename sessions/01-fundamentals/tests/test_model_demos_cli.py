@@ -108,7 +108,7 @@ def final_answer(cli, raw):
                     break
         if answer is None:
             for text in strings(raw):
-                match = re.search(r"(?:^|\n)codex\s*\n(.*?)(?=\n(?:tokens used|usage)\b|\Z)", text, re.S)
+                match = re.search(r"(?:^|\n)codex\s*\n(.*?)(?=\n(?:tokens used|usage)\b|\Z)", text, re.DOTALL)
                 if match:
                     answer = match[1].strip()
         # A plain-mode raw entry may itself be the -o file's verbatim contents.
@@ -305,7 +305,7 @@ def clean_env():
 
 
 def process(argv, cwd, env):
-    return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=40)
+    return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=40, check=False)
 
 
 def okay(result):
@@ -658,7 +658,7 @@ def test_d3_recorded_spread_replay_and_lab_link(tmp_path):
     for url in ("https://code.claude.com/docs/en/cli-reference", "https://developers.openai.com/codex/cli/reference"):
         assert url in text
     assert "claude" in why.casefold() and "codex" in why.casefold() and "temperature" in why.casefold()
-    assert re.search(r"\b(neither|no|not|doesn.t|don.t|without|lacks?)\b", why, re.I)
+    assert re.search(r"\b(neither|no|not|doesn.t|don.t|without|lacks?)\b", why, re.IGNORECASE)
     for data in recordings:
         version = re.search(r"\d+\.\d+(?:\.\d+)?", data["meta"]["cli_version"])
         assert version and data["meta"]["date"] in why and version[0] in why and "--help" in why
@@ -811,15 +811,15 @@ def test_a1_forced_unavailable_cli_never_falls_back(script, via, state, tmp_path
 def timing_seconds(text):
     values = [int(m) * 60 + int(s) for m, s in re.findall(r"\b(\d+):([0-5]\d)\b", text)]
     if not values:
-        minutes = re.findall(r"\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?)\b", text, re.I)
-        seconds = re.findall(r"\b(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s)\b", text, re.I)
+        minutes = re.findall(r"\b(\d+(?:\.\d+)?)\s*(?:minutes?|mins?)\b", text, re.IGNORECASE)
+        seconds = re.findall(r"\b(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s)\b", text, re.IGNORECASE)
         values = [round(float(m) * 60) for m in minutes] + [round(float(s)) for s in seconds]
     return values
 
 
 def expected_for_cli(expected, cli):
     """Bind the quoted results and tally to the CLI named in the runbook."""
-    markers = list(re.finditer(r"\b(claude(?: code)?|codex)\b(?!-)", expected, re.I))
+    markers = list(re.finditer(r"\b(claude(?: code)?|codex)\b(?!-)", expected, re.IGNORECASE))
     start = next((i for i, m in enumerate(markers) if m[1].casefold().startswith(cli)), None)
     assert start is not None, f"Expected outcome must name {cli}"
     end = next((m.start() for m in markers[start + 1:]
@@ -833,18 +833,18 @@ def test_a2_runbook_timing_predict_and_recorded_facts(name):
     for heading in ("Before class", "Run", "Fallback", "Recorded runs", "Reset"):
         assert section(text, heading).strip()
     timing = section(text, "Timing")
-    total_lines = [line for line in timing.splitlines() if re.search(r"\btotal\b", line, re.I)]
+    total_lines = [line for line in timing.splitlines() if re.search(r"\btotal\b", line, re.IGNORECASE)]
     assert total_lines, "Timing needs a stated total"
     totals = timing_seconds("\n".join(total_lines))
     assert len(totals) == 1 and 120 <= totals[0] <= 300, "Each demo must total between two and five minutes"
     beats = timing_seconds("\n".join(line for line in timing.splitlines() if line not in total_lines))
     assert beats and all(v > 0 for v in beats) and sum(beats) == totals[0], "Beat durations must sum to total"
     predict = section(text, "Predict")
-    assert "?" in predict and re.search(r"\b(?:five|5)\b", predict, re.I), "Ask the room about five runs"
+    assert "?" in predict and re.search(r"\b(?:five|5)\b", predict, re.IGNORECASE), "Ask the room about five runs"
     if name == "strawberry.md":
-        assert re.search(r"\bcount\b", predict, re.I), "Predict the correctness of the count"
+        assert re.search(r"\bcount\b", predict, re.IGNORECASE), "Predict the correctness of the count"
     else:
-        assert re.search(r"\b(?:different|distinct)\b", predict, re.I), "Predict the diversity of the names"
+        assert re.search(r"\b(?:different|distinct)\b", predict, re.IGNORECASE), "Predict the diversity of the names"
     expected = section(text, "Expected outcome")
     if name == "strawberry.md":
         for cli in CLIS:

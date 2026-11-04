@@ -20,7 +20,7 @@ def test_turning_in_homework_section(filename):
     next_heading = re.search(r"(?m)^#{1," + str(len(heading.group(1))) + r"}\s+", rest)
     section = rest[:next_heading.start()] if next_heading else rest
     assert "/turn-in" in section and "$turn-in" in section
-    assert re.search(r"\bpublic\b", section, re.I), "The homework section must disclose public visibility"
+    assert re.search(r"\bpublic\b", section, re.IGNORECASE), "The homework section must disclose public visibility"
 
 
 def test_homework_adr_has_a_unique_number_and_cites_ship_decision():

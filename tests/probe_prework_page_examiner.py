@@ -1,5 +1,4 @@
 """Independent checks of issue 24's offline page contract."""
-import re
 import unittest
 from datetime import date
 from html.parser import HTMLParser

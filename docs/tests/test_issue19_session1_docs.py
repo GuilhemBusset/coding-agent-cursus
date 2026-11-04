@@ -37,7 +37,7 @@ def read(path):
 
 def section(text):
     match = re.search(r"^## Session 1 — Fundamentals\s*\n(.*?)^## Session 2\b",
-                      text, re.M | re.S)
+                      text, re.MULTILINE | re.DOTALL)
     assert match, "Expected Session 1 — Fundamentals followed by Session 2"
     return match.group(1)
 
@@ -80,7 +80,7 @@ def blocks():
     for name, start, end in PARTS:
         pattern = (r"^\*\*" + re.escape(name) + r" \(" + interval(start, end)
                    + r"\)\.\*\*")
-        found = list(re.finditer(pattern, text, re.M | re.I))
+        found = list(re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE))
         assert len(found) == 1, f"Expected one bold lead-in: {name} ({start}–{end})."
         matches.append(found[0])
     assert [m.start() for m in matches] == sorted(m.start() for m in matches), \
@@ -94,7 +94,7 @@ def blocks():
 
 def bullets():
     return [plain(m.group(1)).casefold() for m in re.finditer(
-        r"^[-*] (.*?)(?=^[-*] |\Z)", section(read(NOTIONS)), re.M | re.S)]
+        r"^[-*] (.*?)(?=^[-*] |\Z)", section(read(NOTIONS)), re.MULTILINE | re.DOTALL)]
 
 
 def bullet_with(items, *terms):
@@ -107,8 +107,8 @@ def test_d1_instructor_framing_anchors_and_cross_references():
     text = section(read(NARRATIVE))
     parts = blocks()
     assert len(re.findall(r"\b(?:I\s|I['’]|my\s)", text)) >= 5, "Use instructor voice"
-    assert re.search(r"\byou\b", text, re.I), "Address the student"
-    assert not re.search(r"^\s*\|", text, re.M), "Narrative should be prose, not a table"
+    assert re.search(r"\byou\b", text, re.IGNORECASE), "Address the student"
+    assert not re.search(r"^\s*\|", text, re.MULTILINE), "Narrative should be prose, not a table"
     require(parts["framing"], "does this change how you drive an agent next week",
             "p(x_t", "sub-word", "pure function of its context", "illusion", "harness")
     assert any(all(t in s.casefold() for t in
@@ -151,13 +151,13 @@ def test_d2_system1_system2_and_distinct_loops():
 
 def test_d3_four_hour_arc():
     intro = preamble()
-    assert not re.search(r"five sessions of (?:roughly |about )?two hours", intro, re.I)
-    assert any("session 1" in s.casefold() and re.search(r"(?:four|4)[- ]hours?", s, re.I)
+    assert not re.search(r"five sessions of (?:roughly |about )?two hours", intro, re.IGNORECASE)
+    assert any("session 1" in s.casefold() and re.search(r"(?:four|4)[- ]hours?", s, re.IGNORECASE)
                for s in sentences(intro)), "State Session 1's four-hour duration"
     subtitle = read(NARRATIVE).splitlines()[2]
     require(subtitle, "Session 1", "interactive")
-    assert re.search(r"sessions 2\s*[–-]\s*5.*(?:roughly|about) two hours", subtitle, re.I)
-    assert any("re-baselining" in s and re.search(r"(?:four|4)[- ]hours?", s, re.I)
+    assert re.search(r"sessions 2\s*[–-]\s*5.*(?:roughly|about) two hours", subtitle, re.IGNORECASE)
+    assert any("re-baselining" in s and re.search(r"(?:four|4)[- ]hours?", s, re.IGNORECASE)
                for s in sentences(intro)), "Explain the four-hour re-baselining"
     assert "two hours" not in section(read(NARRATIVE)).casefold()
 
@@ -214,18 +214,18 @@ def test_d6_cuts_and_benchmark_distrust_everywhere():
         for sentence in prose:
             if any(t in sentence.casefold() for t in cut_terms):
                 assert sentence == cuts[0], f"{path}: cut material outside cut list: {sentence}"
-            if re.search(r"benchmark|SWE-bench|MMLU|GPQA|HumanEval", sentence, re.I):
+            if re.search(r"benchmark|SWE-bench|MMLU|GPQA|HumanEval", sentence, re.IGNORECASE):
                 assert has_any(sentence, ("vendor", "standardized", "distrust", "METR",
                                           "time horizon", "time-horizon")), \
                     f"{path}: benchmark claim without distrust/trend framing: {sentence}"
         for pattern in forbidden:
-            assert not re.search(pattern, text, re.I), f"{path}: excluded mechanics: {pattern}"
+            assert not re.search(pattern, text, re.IGNORECASE), f"{path}: excluded mechanics: {pattern}"
         require(text, "vendor", "standardized", "METR")
         assert has_any(text, ("time horizon", "time-horizon"))
         for paragraph in paragraphs(text):
             if "latest" in paragraph.casefold() or (
                     "2026" in paragraph and "landscape" in paragraph.casefold()):
-                assert re.search(r"as[- ]of\s+.{0,40}20\d\d", paragraph, re.I), \
+                assert re.search(r"as[- ]of\s+.{0,40}20\d\d", paragraph, re.IGNORECASE), \
                     f"{path}: date the landscape/latest claim: {paragraph}"
     assert any("metr" in p.casefold() and has_any(p, ("time horizon", "time-horizon"))
                and re.search(r"https?://(?:[\w-]+\.)*metr\.org(?:[/)#?\s]|$)", p)

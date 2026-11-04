@@ -38,6 +38,7 @@ a JSONL file, and in decoded JSON strings, never across a raw JSON line.
 import argparse
 import getpass
 import hashlib
+import itertools
 import json
 import os
 import re
@@ -58,7 +59,7 @@ NOT_PLACEHOLDER = r"(?!<(?:key|redacted)>(?:$|[\s\"',;}]))"
 VALUE = r"[^\s\"',;}]+"
 # Names that carry a credential, also as the last part of a longer one (access_token, OPENAI_API_KEY).
 CREDENTIAL = r"(?:api[_-]?key|token|secret|password|passwd)"
-CREDENTIAL_KEY = re.compile(r"(?:.*[_-])?" + CREDENTIAL, re.I)
+CREDENTIAL_KEY = re.compile(r"(?:.*[_-])?" + CREDENTIAL, re.IGNORECASE)
 # `name = value`, `name: "value"`, `"name": "value"`. A quoted name (a JSON field) needs a quoted
 # value, so `"token": null` or `"token": {` is not a finding; a bare name takes either.
 # A quoted value (single, double or triple quotes) ends at its own closing quote, never at an
@@ -80,7 +81,7 @@ QUOTED = (
 )
 ASSIGNMENT = re.compile(
     r"(?<![A-Za-z0-9])" + CREDENTIAL + r"(?P<close>\\*[\"'])?\s*[=:]\s*"
-    r"(?P<value>" + QUOTED + r"|(?(close)(?!)|" + NOT_PLACEHOLDER + r"(?![{\[(])" + VALUE + r"))", re.I)
+    r"(?P<value>" + QUOTED + r"|(?(close)(?!)|" + NOT_PLACEHOLDER + r"(?![{\[(])" + VALUE + r"))", re.IGNORECASE)
 KEY_PATTERNS = (
     ("private_key", re.compile(r"-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----[\s\S]*?-----END (?:[A-Z0-9]+ )?PRIVATE KEY-----")),
     ("github_key", re.compile(r"\b(?:gh[pousr]_|github_pat_)[A-Za-z0-9_]{8,}")),
@@ -88,17 +89,17 @@ KEY_PATTERNS = (
     ("openai_key", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{8,}")),
     ("aws_key", re.compile(r"\bAKIA[A-Z0-9]{16}\b")),
     ("slack_key", re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{8,}")),
-    ("bearer", re.compile(r"\bBearer\s+" + NOT_PLACEHOLDER + VALUE, re.I)),
+    ("bearer", re.compile(r"\bBearer\s+" + NOT_PLACEHOLDER + VALUE, re.IGNORECASE)),
     ("assignment", ASSIGNMENT),
 )
 EMAIL = re.compile(r"[\w.+%-]+@[\w.-]+\.[A-Za-z]{2,}")
 HOME_PATHS = (
-    ("home", re.compile(r"/(?:home|Users)/[\w.-]+", re.I)),
-    ("windows_home", re.compile(r"[A-Z]:[\\/]+Users[\\/]+[\w.-]+", re.I)),
+    ("home", re.compile(r"/(?:home|Users)/[\w.-]+", re.IGNORECASE)),
+    ("windows_home", re.compile(r"[A-Z]:[\\/]+Users[\\/]+[\w.-]+", re.IGNORECASE)),
 )
-ENCODED_HOME = re.compile(r"-(?:home|Users)-[\w.-]+", re.I)
+ENCODED_HOME = re.compile(r"-(?:home|Users)-[\w.-]+", re.IGNORECASE)
 # Claude Code names a project folder after its path with every other character as a dash.
-ENCODED_HOME_SCAN = re.compile(r"-home-[\w.]+-", re.I)
+ENCODED_HOME_SCAN = re.compile(r"-home-[\w.]+-", re.IGNORECASE)
 JSON_ESCAPE = re.compile(r"\\(?:u[0-9a-fA-F]{4}|[\"\\/bfnrt])")
 
 
@@ -112,7 +113,7 @@ def local_identities():
     for key in ("user.name", "user.email"):
         try:
             result = subprocess.run(["git", "config", "--get", key], cwd=HERE,
-                                    capture_output=True, text=True, timeout=10)
+                                    capture_output=True, text=True, timeout=10, check=False)
         except OSError:
             continue
         text = result.stdout.strip() if result.returncode == 0 else ""
@@ -156,7 +157,7 @@ class Sanitizer:
         home = str(Path.home())
         self.home = home if home not in {"/", "."} and len(home) > 1 else None
         tokens = sorted({token.strip() for token in identities if token.strip()}, key=lambda t: (-len(t), t))
-        self.identities = [re.compile(r"(?<!\w)" + re.escape(token) + r"(?!\w)", re.I) for token in tokens]
+        self.identities = [re.compile(r"(?<!\w)" + re.escape(token) + r"(?!\w)", re.IGNORECASE) for token in tokens]
 
     def text(self, value):
         for _, pattern in KEY_PATTERNS:
@@ -263,7 +264,7 @@ def sha(text):
 def words(text):
     found = re.findall(r"\w+", text.casefold())
     yield from found
-    yield from (" ".join(pair) for pair in zip(found, found[1:]))
+    yield from (" ".join(pair) for pair in itertools.pairwise(found))
 
 
 class Scanner:

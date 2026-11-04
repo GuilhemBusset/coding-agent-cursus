@@ -8,7 +8,7 @@ def test_both_agents_have_demo_and_submission_commands():
     text = ' '.join(unescape(re.sub('<[^>]+>', '', source)).split())
     assert 'one coding agent, Claude Code or Codex' in text
     for demo_id in ('demo-sampling', 'demo-strawberry'):
-        demo = re.search(r'<div class="demo" id="' + demo_id + r'">(.*?)(?=<div class="demo"|<div class="callout good")', source, re.S)[1]
+        demo = re.search(r'<div class="demo" id="' + demo_id + r'">(.*?)(?=<div class="demo"|<div class="callout good")', source, re.DOTALL)[1]
         assert 'Claude Code' in demo and 'claude -p' in demo
         assert 'Codex' in demo and 'codex exec' in demo
     assert 'It is the same for both agents.' in text

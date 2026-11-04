@@ -20,12 +20,12 @@ def test_reference_and_two_modelling_mistakes(tmp_path):
         lines = source.splitlines(keepends=True)
         lines[node.lineno-1:node.end_lineno] = [f'VARIANT = {variant!r}\n']
         (directory / 'p01_model.py').write_text(''.join(lines), encoding='utf-8')
-        r = subprocess.run([sys.executable, '-c', "import json,p01_model; from pathlib import Path; Path('solution.json').write_text(json.dumps(p01_model.solve(time_limit=60)))"], cwd=directory, capture_output=True, text=True, timeout=120)
+        r = subprocess.run([sys.executable, '-c', "import json,p01_model; from pathlib import Path; Path('solution.json').write_text(json.dumps(p01_model.solve(time_limit=60)))"], cwd=directory, capture_output=True, text=True, timeout=120, check=False)
         assert r.returncode == 0, r.stderr
-        r = subprocess.run([sys.executable, '-I', '-S', str(directory / 'p01_checker.py')], capture_output=True, text=True, timeout=10)
+        r = subprocess.run([sys.executable, '-I', '-S', str(directory / 'p01_checker.py')], capture_output=True, text=True, timeout=10, check=False)
         if tag is None:
             assert r.returncode == 0 and r.stdout.startswith('PASS'), r.stdout + r.stderr
-            suite = subprocess.run([sys.executable, '-m', 'pytest', '-q', 'p01_contract.py'], cwd=directory, capture_output=True, text=True, timeout=120)
+            suite = subprocess.run([sys.executable, '-m', 'pytest', '-q', 'p01_contract.py'], cwd=directory, capture_output=True, text=True, timeout=120, check=False)
             assert suite.returncode == 0 and 'passed' in suite.stdout and 'skipped' not in suite.stdout, suite.stdout + suite.stderr
         else:
             assert r.returncode == 1 and any(line.startswith(tag+':') for line in r.stdout.splitlines()), r.stdout + r.stderr

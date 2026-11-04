@@ -34,14 +34,14 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 # Importing the sibling scripts must not leave bytecode under runs/: every file there is scanned.
 sys.dont_write_bytecode = True
-import normalize_runs  # noqa: E402
-import sanitize  # noqa: E402
+import normalize_runs
+import sanitize
 
 HERE = Path(__file__).resolve().parent
 SESSION = HERE.parents[2]
@@ -117,7 +117,7 @@ def noise_logs(seed=NOISE_SEED):
     """24 deterministic logs: {path: (sentinel, body, error_lines)}. No clock is read."""
     rng = random.Random(seed)
     loud = rng.randrange(len(SERVICES))
-    start = datetime(2026, 3, 4, tzinfo=timezone.utc)
+    start = datetime(2026, 3, 4, tzinfo=UTC)
     logs = {}
     for index, service in enumerate(SERVICES):
         error_rate = 0.12 if index == loud else rng.uniform(0.01, 0.06)
@@ -220,7 +220,7 @@ def describe():
 
 
 def utc_now():
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def clean_env(**extra):
@@ -230,7 +230,7 @@ def clean_env(**extra):
 
 
 def run(argv, cwd, env=None, timeout=600):
-    return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout)
+    return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, timeout=timeout, check=False)
 
 
 def checked(argv, cwd, env=None):

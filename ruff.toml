@@ -1,16 +1,65 @@
-# Ruff (https://docs.astral.sh/ruff/), as editors run it: the repository's one style for import
-# blocks, whatever folder an editor opens. Sort them from the repository root with
+# Ruff (https://docs.astral.sh/ruff/), as editors run it: the rules the repository follows, whatever
+# folder an editor opens. Editors' Ruff extension bundles Ruff 0.17.3; check from the repository root
+# with the same version:
 #
-#   uvx ruff@0.17.3 check --select I --fix .
+#   uvx ruff@0.17.3 check .
 #
-# This file sets no rules; an editor's default selection still applies.
+# Sort import blocks with `uvx ruff@0.17.3 check --select I --fix <files>`.
 
 # The width the code is written to, so sorting does not re-wrap import lines.
 line-length = 120
+# The oldest Python the repository runs on (setup/pyproject.toml); rules such as UP017 key off it.
+target-version = "py311"
 # What agents wrote, kept as it was recorded.
 extend-exclude = ["sessions/*/cursus/demos/*/recorded"]
 # The folders the programs and tests put on sys.path (as in ty.toml): their modules are first-party.
 src = [".", "tools/implementation-loop", "tools/implementation-loop/tests", "tools/test-impact", "tests/turn_in"]
+
+[lint]
+# The rules are Ruff 0.17.3's default selection (no `select`), less the `ignore` list below, so the
+# editor and the command line show the same findings. The default takes a curated subset of each
+# family; every family in it is kept, for this reason:
+#   F       (Pyflakes)            unused imports and names, undefined names: real mistakes.
+#   E, W    (pycodestyle)         only bare `except:`, unreadable files and invalid escapes are in the default.
+#   I       (isort)               one order for import blocks across the repository.
+#   B       (flake8-bugbear)      likely bugs, such as a closure reading a loop variable after the loop.
+#   BLE     (blind except)        a broad `except` must say why (noqa with its reason).
+#   C4      (comprehensions)      simpler comprehensions, except C408 below.
+#   D       (pydocstyle)          only D419, an empty docstring.
+#   DTZ     (datetime)            no naive `datetime.utcnow()` and the like.
+#   EXE     (executables)         shebangs agree with the executable bit.
+#   FA      (future annotations)  annotations that need `from __future__ import annotations` have it.
+#   FURB    (refurb)              the plainer standard-library spelling (`re.IGNORECASE`, `removesuffix`).
+#   G, LOG  (logging)             logging calls are formatted as logging expects.
+#   INT     (gettext)             translation calls are well formed.
+#   ISC     (implicit concat)     ISC004: a concatenation inside a list is parenthesized, so a missing comma shows.
+#   N       (pep8-naming)         only N999, an invalid module name.
+#   PERF    (performance)         loops that iterate what they do not need.
+#   PGH     (pygrep-hooks)        only PGH005, a mock assertion that is not one.
+#   PIE     (flake8-pie)          dead `pass`, duplicate keys, needless spreads.
+#   PL      (Pylint)              errors, warnings and a few refactors, such as `subprocess.run` without `check=`.
+#   PT      (pytest style)        well-formed `pytest.raises` and fixtures.
+#   PTH     (pathlib)             only PTH124 and PTH210, misuse of path APIs.
+#   PYI     (typing)              well-formed annotations, such as `__enter__` returning `Self`.
+#   RET     (returns)             only RET501, an explicit `return None` where none is needed.
+#   RUF     (Ruff)                unused unpacked names, mutable class defaults, unused noqa comments.
+#   S       (bandit)              only `exec` and a silently swallowed exception.
+#   SIM     (simplify)            nested `if` and `with` collapsed.
+#   T10     (debugger)            no leftover breakpoints.
+#   TC      (type-checking)       imports used only for typing are placed consistently.
+#   TRY     (tryceratops)         raise the exception that matches the error.
+#   UP      (pyupgrade)           the syntax of the oldest supported Python (`X | None`, `datetime.UTC`).
+#   ASYNC, YTT                    async misuse and `sys.version` comparisons; cheap, and nothing trips them.
+# Every other finding is fixed in the code, or ignored on its line with `# noqa: <rule> - <reason>`.
+ignore = [
+  # `dict(key=value)` reads as well as a literal; the code uses both.
+  "C408",
+  # `"\n".join([...])` of program lines is clearer than one long literal (FLY is only FLY002).
+  "FLY002",
+  # In tests, `[x for x in ... if ...][0]` fails with IndexError when nothing matches; `next(...)`'s
+  # StopIteration is the less readable failure.
+  "RUF015",
+]
 
 [lint.per-file-ignores]
 # The recorded agent runs (cursus/fixtures/runs) pin these files' SHA-256: their bytes change only

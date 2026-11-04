@@ -1,4 +1,5 @@
 """Exercise the run-of-show's actual fallback commands and time coverage (D2)."""
+import itertools
 import os
 import re
 import shlex
@@ -58,7 +59,7 @@ def test_run_of_show_has_no_time_gaps_and_its_fallbacks_work():
     intervals = sorted(tuple(seconds(t) for t in span.split("–")) for span in spans)
     assert intervals[0][0] == 0 and intervals[-1][1] == 4 * 3600
     assert all(a < b for a, b in intervals)
-    assert all(a[1] == b[0] for a, b in zip(intervals, intervals[1:]))
+    assert all(a[1] == b[0] for a, b in itertools.pairwise(intervals))
     commands_run = 0
     for row in rows:
         assert any(mode in row[2]["text"] for mode in ("Watch", "Predict", "Drive"))
@@ -70,7 +71,7 @@ def test_run_of_show_has_no_time_gaps_and_its_fallbacks_work():
         for command in commands:
             result = subprocess.run(shlex.split(command), cwd=SESSION / folders[0],
                                     env={**os.environ, "UV_OFFLINE": "1"},
-                                    text=True, capture_output=True, timeout=60)
+                                    text=True, capture_output=True, timeout=60, check=False)
             assert result.returncode == 0, (command, result.stdout, result.stderr)
             assert result.stdout.strip(), f"Empty fallback output: {command}"
             commands_run += 1

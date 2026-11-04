@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 session = Path(__file__).resolve().parents[1] / 'sessions/01-fundamentals'
-result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-s', 'tests/instructor_p01_reference.py', '-k', 'laptop_benchmark'], cwd=session, capture_output=True, text=True, timeout=260)
+result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-s', 'tests/instructor_p01_reference.py', '-k', 'laptop_benchmark'], cwd=session, capture_output=True, text=True, timeout=260, check=False)
 assert result.returncode == 0, result.stdout + result.stderr
 records = [json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
 assert len(records) == 1, result.stdout

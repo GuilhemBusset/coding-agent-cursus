@@ -20,14 +20,16 @@ with tempfile.TemporaryDirectory() as temporary:
         lines = source.splitlines(keepends=True)
         lines[assignment.lineno - 1:assignment.end_lineno] = [f'VARIANT = {variant!r}\n']
         (work / 'p01_model.py').write_text(''.join(lines), encoding='utf-8')
-        solved = subprocess.run([sys.executable, 'p01_model.py'], cwd=work, capture_output=True, text=True, timeout=150)
+        solved = subprocess.run([sys.executable, 'p01_model.py'], cwd=work, capture_output=True, text=True,
+                                timeout=150, check=False)
         assert solved.returncode == 0, solved.stdout + solved.stderr
         solution = json.loads((work / 'solution.json').read_text(encoding='utf-8'))
         objectives[variant] = solution['objective']
-        checked = subprocess.run([sys.executable, '-S', 'p01_checker.py'], cwd=work, capture_output=True, text=True)
+        checked = subprocess.run([sys.executable, '-S', 'p01_checker.py'], cwd=work, capture_output=True, text=True,
+                                 check=False)
         if expected is None:
             assert checked.returncode == 0 and checked.stdout.startswith('PASS'), checked.stdout + checked.stderr
-            contracts = subprocess.run([sys.executable, '-m', 'pytest', '-q', 'p01_contract.py'], cwd=work, capture_output=True, text=True, timeout=150)
+            contracts = subprocess.run([sys.executable, '-m', 'pytest', '-q', 'p01_contract.py'], cwd=work, capture_output=True, text=True, timeout=150, check=False)
             assert contracts.returncode == 0 and 'passed' in contracts.stdout, contracts.stdout + contracts.stderr
         else:
             assert checked.returncode == 1, checked.stdout + checked.stderr

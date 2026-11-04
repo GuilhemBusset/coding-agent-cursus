@@ -29,7 +29,7 @@ def test_real_sheet_payload_and_checker_verdict_reach_only_the_fork(tmp_path):
     course, fork = bares[COURSE], bares[FORK]
     course_before = git('show-ref', cwd=course, env=env)
     result = subprocess.run(['bash', 'scripts/turn-in.sh', '01'], cwd=clone, env=env, text=True,
-                            capture_output=True, timeout=300)
+                            capture_output=True, timeout=300, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     branch = f'homework/s01/{HANDLE}'
     assert f'Running {EXERCISES}/turn-in-check.sh' in result.stderr

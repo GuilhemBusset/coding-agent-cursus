@@ -94,7 +94,7 @@ def test_pinned_uv_runs_whole_turn_in_suite():
                  s["run"])]
     assert len(tests) == 1, "CI must execute all the acceptance tests with pinned pytest through uv"
     assert any(i < tests[0] and re.search(r"version:\s*['\"]?0\.11\.28['\"]?\s*$",
-                                         steps[i]["block"], re.M) for i in install)
+                                         steps[i]["block"], re.MULTILINE) for i in install)
 
 
 @pytest.mark.parametrize("bad_file", ["pr-only-main.json", "homework-branches.json"])

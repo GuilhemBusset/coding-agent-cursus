@@ -23,9 +23,9 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
 
 from .model import Phase
 from .state import RunStore, runs_root
@@ -196,7 +196,7 @@ class Supervisor:
 
     def _fast_forward(self) -> str:
         def git(*a):
-            return subprocess.run(["git", *a], cwd=self.repo_root, capture_output=True, text=True)
+            return subprocess.run(["git", *a], cwd=self.repo_root, capture_output=True, text=True, check=False)
         branch = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
         if branch != "main":
             return f"main checkout is on {branch}; not updated"

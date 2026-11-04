@@ -22,7 +22,7 @@ SCRIPT = ROOT / "scripts/turn-in.sh"
 def command(args, *, cwd, env=None, ok=True):
     result = subprocess.run(
         [str(a) for a in args], cwd=cwd, env=env, text=True,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=40,
+        capture_output=True, timeout=40, check=False,
     )
     if ok:
         assert result.returncode == 0, (args, result.stdout, result.stderr)

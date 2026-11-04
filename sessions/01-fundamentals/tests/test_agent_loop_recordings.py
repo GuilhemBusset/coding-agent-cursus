@@ -12,7 +12,7 @@ from pathlib import Path
 SESSION = Path(__file__).resolve().parents[1]
 RUNS = SESSION / "cursus/fixtures/runs"
 PAGE = SESSION / "cursus/labs/agent-loop.html"
-BLOCK = re.compile(rb'<script type="application/json" id="agent-run-recordings" data-sha256="([0-9a-f]*)">(.*?)</script>', re.S)
+BLOCK = re.compile(rb'<script type="application/json" id="agent-run-recordings" data-sha256="([0-9a-f]*)">(.*?)</script>', re.DOTALL)
 CLIP = 1200
 
 

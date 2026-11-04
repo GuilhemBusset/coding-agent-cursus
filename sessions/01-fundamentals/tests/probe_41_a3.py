@@ -8,7 +8,7 @@ from pathlib import Path
 def test_open_solver_runs_original_instance():
     session = Path(__file__).resolve().parents[1]
     model = session / 'exercises/p00-lab/p00_model.py'
-    proc = subprocess.run([sys.executable, str(model)], text=True, capture_output=True)
+    proc = subprocess.run([sys.executable, str(model)], text=True, capture_output=True, check=False)
     assert proc.returncode == 0, proc.stderr
     solution = json.loads(proc.stdout)
     assert solution['status'] == 'optimal' and abs(solution['objective'] - 485) < 1e-6

@@ -35,7 +35,7 @@ def page():
     result = Page(); result.feed(SHEET.read_text(encoding='utf-8')); return result
 
 def run(args, cwd):
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=50)
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=50, check=False)
 
 def test_d3_both_agent_routes_share_the_same_proof():
     p = page()

@@ -13,7 +13,8 @@ def test_mcp_stdio_and_recorded_comparisons():
         {'id': 3, 'method': 'tools/call', 'params': {'name': 'bomb_status', 'arguments': {}}},
     ]
     proc = subprocess.run([sys.executable, str(demo / 'context_bomb.py')], input=''.join(
-        json.dumps({'jsonrpc': '2.0', **r}) + '\n' for r in requests), text=True, capture_output=True, timeout=10)
+        json.dumps({'jsonrpc': '2.0', **r}) + '\n' for r in requests), text=True, capture_output=True, timeout=10,
+        check=False)
     assert proc.returncode == 0, proc.stderr
     rows = [json.loads(line) for line in proc.stdout.splitlines()]
     assert [r['id'] for r in rows] == [1, 2, 3]

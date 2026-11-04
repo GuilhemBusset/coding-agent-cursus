@@ -212,7 +212,7 @@ def resolve_union(text: str) -> str:
 
 def merging(worktree: Path) -> bool:
     return subprocess.run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"], cwd=worktree,
-                          capture_output=True).returncode == 0
+                          capture_output=True, check=False).returncode == 0
 
 
 class FakeAgents:

@@ -18,8 +18,8 @@ PAGES = [p for p in sorted([*CURSUS.rglob("*.html"), *(SESSION / "exercises").rg
 DECKS = sorted(CURSUS.glob("[0-9][0-9]-*.html"))
 
 ISO = r"(\d{4}-\d{2}-\d{2})"
-DATED = re.compile(r"\b(?:as of|checked|read|accessed)\b[^.;]{0,80}?" + ISO, re.I)
-RECHECKED = re.compile(r"\brechecked\b[^.;]{0,80}?" + ISO, re.I)
+DATED = re.compile(r"\b(?:as of|checked|read|accessed)\b[^.;]{0,80}?" + ISO, re.IGNORECASE)
+RECHECKED = re.compile(r"\brechecked\b[^.;]{0,80}?" + ISO, re.IGNORECASE)
 BLOCKS = {"p", "li", "td", "th", "caption", "figcaption", "footer", "summary", "dt", "dd",
           "h1", "h2", "h3", "h4", "h5", "h6", "pre", "blockquote", "div", "section", "aside",
           "figure", "header", "main", "legend", "label", "body"}
@@ -131,7 +131,7 @@ def test_no_dated_claim_predates_the_fact_check():
                 continue
             problems += [(page.name, d, text.strip()[:80]) for d in stale(text)]
         for table in parsed.tables:
-            columns = [i for i, h in enumerate(table["head"]) if re.fullmatch(r"\s*(as of|accessed|checked)\s*", h, re.I)]
+            columns = [i for i, h in enumerate(table["head"]) if re.fullmatch(r"\s*(as of|accessed|checked)\s*", h, re.IGNORECASE)]
             for row in table["rows"]:
                 for i in columns:
                     cell = row[i] if i < len(row) else ""

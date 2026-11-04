@@ -15,7 +15,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 from .model import IssueState
 
@@ -55,7 +55,7 @@ class RunStore:
             self.state = {"version": STATE_VERSION, "issues": {}, "context": None, "meta": {}}
 
     @classmethod
-    def for_root(cls, repo_root: Path, root: int, fresh: bool = False) -> "RunStore":
+    def for_root(cls, repo_root: Path, root: int, fresh: bool = False) -> RunStore:
         run_dir = runs_root(repo_root) / f"issue-{root}"
         if fresh and run_dir.exists():
             run_dir.rename(run_dir.with_name(f"issue-{root}.archived-{int(time.time())}"))
@@ -147,7 +147,7 @@ class RunStore:
         except FileNotFoundError:
             return False
 
-    def lock(self) -> "RunLock":
+    def lock(self) -> RunLock:
         return RunLock(self.dir / "lock")
 
 
@@ -167,7 +167,7 @@ class RunLock:
     def __init__(self, path: Path):
         self.path = path
 
-    def __enter__(self) -> "RunLock":
+    def __enter__(self) -> Self:
         me = {"pid": os.getpid(), "host": socket.gethostname(), "started": time.time()}
         for _ in range(2):
             try:
@@ -245,7 +245,7 @@ class FaultOutbox:
     class _Transaction:
         """One read-modify-write, serialized across threads and across runs (an flock)."""
 
-        def __init__(self, outbox: "FaultOutbox"):
+        def __init__(self, outbox: FaultOutbox):
             self.outbox = outbox
 
         def __enter__(self) -> dict:

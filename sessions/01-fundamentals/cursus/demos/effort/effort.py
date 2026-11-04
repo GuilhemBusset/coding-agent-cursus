@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -88,14 +88,14 @@ def optimum(parcels=PARCELS, capacity=CAPACITY):
 
 def final_answer(text):
     """The integer on the last `ANSWER:` line, or None when it is missing or not an integer."""
-    matches = re.findall(r"^\s*ANSWER\s*:\s*(.*?)\s*$", text or "", re.M)
+    matches = re.findall(r"^\s*ANSWER\s*:\s*(.*?)\s*$", text or "", re.MULTILINE)
     if not matches or not re.fullmatch(r"[+-]?\d+", matches[-1]):
         return None
     return int(matches[-1])
 
 
 def utc_now():
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def load_prices():
@@ -241,7 +241,7 @@ def codex_row(events, prices, model):
 
 
 def cli_version(cli):
-    result = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=60)
+    result = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=60, check=False)
     if result.returncode != 0:
         raise DemoError(f"`{cli} --version` failed: {result.stderr.strip()}")
     return result.stdout.strip()
@@ -255,7 +255,7 @@ def run_one(cli, effort, model, version, prompt, prices, out):
         started_at = utc_now()
         start = time.monotonic()
         result = subprocess.run(argv, cwd=workdir, input=prompt.encode("utf-8"),
-                                capture_output=True, timeout=TIMEOUT_SECONDS)
+                                capture_output=True, timeout=TIMEOUT_SECONDS, check=False)
         wall = round(time.monotonic() - start, 3)
         ended_at = utc_now()
         raw_dir = out / "raw"

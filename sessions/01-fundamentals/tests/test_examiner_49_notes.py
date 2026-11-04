@@ -25,7 +25,7 @@ def test_notes_supply_answers_for_each_act_and_reuse_the_primer():
     raw = (SESSION / "cursus/instructor-notes.html").read_text(encoding="utf-8")
     notes = Text(raw).normalized()
     close = (SESSION / "cursus/99-close.html").read_text(encoding="utf-8")
-    labels = dict(re.findall(r'<label for="([^"]+)">(.*?)</label>', close, re.S))
+    labels = dict(re.findall(r'<label for="([^"]+)">(.*?)</label>', close, re.DOTALL))
     ids = re.findall(r'<input\b[^>]*id="([^"]+)"[^>]*data-correct', close)
     assert len(ids) == 5
     for ident in ids:

@@ -19,7 +19,7 @@ import socket
 import subprocess
 import sys
 import time
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
@@ -67,7 +67,7 @@ def check(box, entrypoint, success, **kwargs):
     assert box.snapshot() == state, "Checker changed HEAD, refs, index or student files"
     for secret in PRIVATE:
         assert secret not in result.stdout + result.stderr, f"Leaked subprocess output: {secret}"
-    assert datetime.now(timezone.utc).date().isoformat() in summary
+    assert datetime.now(UTC).date().isoformat() in summary
     return before, summary, result
 
 
@@ -433,9 +433,9 @@ if (@($errors).Count -gt 0 -or $bad.Count -gt 0 -or $badTokens.Count -gt 0 -or $
     # literal file path in a single-quoted PowerShell string instead.
     command = command.replace("$args[0]", "'" + str(path).replace("'", "''") + "'")
     result = subprocess.run([powershell(), "-NoProfile", "-Command", command],
-                            capture_output=True, text=True, timeout=30)
+                            capture_output=True, text=True, timeout=30, check=False)
     assert result.returncode == 0, "PowerShell parser errors or 7-only syntax in wrapper"
-    assert re.search(r"powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass\s+-File\s+\.\\check-setup\.ps1", source, re.I)
+    assert re.search(r"powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass\s+-File\s+\.\\check-setup\.ps1", source, re.IGNORECASE)
 
 
 class Element:
@@ -463,7 +463,8 @@ class Element:
 
 
 class Document(HTMLParser):
-    VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+    VOID = frozenset({"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+                      "track", "wbr"})
 
     def __init__(self, source):
         super().__init__(convert_charrefs=True)
@@ -506,7 +507,7 @@ def page():
 
 
 def normalized(value):
-    value = re.sub(r"<br\s*/?>", " ", value, flags=re.I)
+    value = re.sub(r"<br\s*/?>", " ", value, flags=re.IGNORECASE)
     return re.sub(r"\s+", " ", unescape(value).replace("\\|", "|").replace("`", "")).strip()
 
 
@@ -515,7 +516,7 @@ def dates(node):
     assert values, "Missing dated <time datetime=...> source check"
     for value in values:
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", value), value
-        assert date.fromisoformat(value) <= datetime.now(timezone.utc).date(), value
+        assert date.fromisoformat(value) <= datetime.now(UTC).date(), value
     return values
 
 
@@ -554,17 +555,17 @@ def test_page_content_login_and_check_instructions(page):
     # These are named operational hazards; the adequacy of the prose is reviewed.
     for pattern in (r"(?:copy|paste)", r"\bURL\b", r"(?:\.bashrc|\.zshrc|\brc\b|shell.*(?:profile|config))",
                     r"Windows", r"user.*environment|environment.*user"):
-        assert re.search(pattern, login, re.I), pattern
+        assert re.search(pattern, login, re.IGNORECASE), pattern
     all_text = normalized(page.root.text())
     assert re.search(r"npm\s+(?:i|install)\s+-g\s+codex\b", all_text)
     assert "unrelated" in all_text.lower()
     check_text = normalized(page.section("check").text())
     assert re.search(r"bash\s+(?:\S*/)?check-setup\.sh", check_text)
-    assert re.search(r"powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass\s+-File", check_text, re.I)
+    assert re.search(r"powershell\s+-NoProfile\s+-ExecutionPolicy\s+Bypass\s+-File", check_text, re.IGNORECASE)
     for token in ("check-setup.ps1", "setup-check/", "fork", "PASS", "FAIL", "paste"):
         assert token.lower() in check_text.lower()
-    assert re.search(r"delet|remov|clean", check_text, re.I)
-    assert re.search(r"instructor|teacher", check_text, re.I)
+    assert re.search(r"delet|remov|clean", check_text, re.IGNORECASE)
+    assert re.search(r"instructor|teacher", check_text, re.IGNORECASE)
     assert "Git Bash" in all_text and "PATH" in all_text
     assert "../prework-verification.md" in links(page.root)
 
@@ -582,22 +583,22 @@ def test_page_content_platform_evidence_matches(page):
     nodes = [n for n in page.section("platforms").descendants() if "data-status" in n.attrs]
     record = read(SESSION / "prework-verification.md")
     for platform, pattern in PLATFORM_NAMES.items():
-        candidates = [n for n in nodes if re.search(pattern, n.text(), re.I)
+        candidates = [n for n in nodes if re.search(pattern, n.text(), re.IGNORECASE)
                       or n.attrs.get("data-platform") == platform]
         # WSL entries sometimes mention Linux; the native entry must be separate.
         if platform == "linux":
-            candidates = [n for n in candidates if not re.search(r"\bWSL", n.text(), re.I)
+            candidates = [n for n in candidates if not re.search(r"\bWSL", n.text(), re.IGNORECASE)
                           or n.attrs.get("data-platform") == "linux"]
         assert len(candidates) == 1, f"One status required for {platform}"
         state = candidates[0].attrs["data-status"]
         assert state in {"tested", "untested"}
-        rows = [line for line in record.splitlines() if re.search(pattern, line, re.I)
-                and re.search(r"\b" + state + r"\b", line, re.I)]
+        rows = [line for line in record.splitlines() if re.search(pattern, line, re.IGNORECASE)
+                and re.search(r"\b" + state + r"\b", line, re.IGNORECASE)]
         assert rows, f"Verification record must explicitly agree: {platform}: {state}"
         if state == "tested":
             assert BEGIN in record and END in record and "result: PASS" in record
-            assert re.search(r"kernel", record, re.I)
-            assert re.search(r"\b[0-9a-f]{64}\b", record, re.I), "Tested platforms need script hashes"
+            assert re.search(r"kernel", record, re.IGNORECASE)
+            assert re.search(r"\b[0-9a-f]{64}\b", record, re.IGNORECASE), "Tested platforms need script hashes"
     assert not re.search(r"data-status\s*=\s*['\"]fixture-tested", read(SESSION / "exercises/00-prework.html"))
 
 
@@ -609,7 +610,7 @@ OFFICIAL = {
     "claude": [("code.claude.com", "/docs/en/setup")],
     "codex": [("developers.openai.com", "/codex"), ("github.com", "/openai/codex")],
 }
-INSTALL = re.compile(r"\b(?:curl|irm|iex|winget|brew|apt(?:-get)?|dnf)\b|\bnpm\s+(?:i|install)\b|\binstall\b|\|\s*(?:ba)?sh\b", re.I)
+INSTALL = re.compile(r"\b(?:curl|irm|iex|winget|brew|apt(?:-get)?|dnf)\b|\bnpm\s+(?:i|install)\b|\binstall\b|\|\s*(?:ba)?sh\b", re.IGNORECASE)
 
 
 def official(tool, url):
@@ -638,7 +639,7 @@ def test_page_sources_every_install_command_is_audited(page):
         checked_dates = dates(block)
         commands = [normalized(n.text()) for n in block.descendants("code") if n.parent.tag == "pre"]
         assert commands
-        candidates = [row for row in rows if re.search(r"\b" + tool + r"\b", row, re.I)
+        candidates = [row for row in rows if re.search(r"\b" + tool + r"\b", row, re.IGNORECASE)
                       and any(url in row for url in urls) and any(day in row for day in checked_dates)]
         assert candidates, f"No matching Install sources row for {tool}: {urls} / {checked_dates}"
         for command in commands:
@@ -683,7 +684,7 @@ def test_page_reading_links_chapters_dates_and_audit(page):
             item = item.parent
         assert item is not None and item is not reading, "Each reading item needs its own as-of date"
         days = dates(item)
-        assert re.search(r"\b\d+(?:\s*[-–]\s*\d+)?\s*(?:min|minute|h\b|hour)", item.text(), re.I), "Reading item needs approximate length"
+        assert re.search(r"\b\d+(?:\s*[-–]\s*\d+)?\s*(?:min|minute|h\b|hour)", item.text(), re.IGNORECASE), "Reading item needs approximate length"
         url = link.attrs["href"]
         assert any(url in line and any(day in line for day in days) for line in record.splitlines()), (
             "Reading source-check row missing URL and matching date: " + url)
@@ -727,7 +728,8 @@ def test_acceptance_fixture_protocols(tmp_path, monkeypatch):
     assert json.loads(gh.stdout)["login"] == sandbox.config["handle"]
     bootstrap = subprocess.run([str(sandbox.bin / "uv"), "run", "--no-project", "--python", "3.12",
                                 "python", "-c", "import sys; print(sys.version_info[:2])"],
-                               env=sandbox.env, cwd=sandbox.root, capture_output=True, text=True, timeout=30)
+                               env=sandbox.env, cwd=sandbox.root, capture_output=True, text=True, timeout=30,
+                               check=False)
     assert bootstrap.returncode == 0, "Fixture needs an offline, preinstalled uv-managed Python 3.12"
     assert "(3, 12)" in bootstrap.stdout
     tree = sandbox.git_run("mktree", input="")
