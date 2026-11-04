@@ -159,6 +159,12 @@ class EnvironmentTestCase(unittest.TestCase):
         self.root = self.tmp / "repo"
         self.root.mkdir()
         self.state = self.tmp / "state"
+        # The fake host has no library copy unless a test activates one. A copy the calling loop
+        # exports (CURSUS_BROWSER_LIBS, see browser_env) would leak into the doctor's environment.
+        env = mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ.pop("CURSUS_BROWSER_LIBS", None)
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
