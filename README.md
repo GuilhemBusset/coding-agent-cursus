@@ -8,6 +8,9 @@ Working conventions for this repo (branching, merging, enforcement) are in
 
 ## Setup
 
+**Students:** prepare your machine with one command for your platform, from a fresh machine to a
+ready course clone: see [`setup/student/README.md`](setup/student/README.md).
+
 Repository-wide installation instructions, dependency manifests, setup scripts, and diagnostics live in
 [`setup/`](setup/README.md). Start there after cloning, including when configuring a fork.
 

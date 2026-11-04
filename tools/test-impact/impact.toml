@@ -81,6 +81,22 @@ paths = [
   "tools/html-pages/GUIDE.md",
 ]
 
+# The student setup (ADR 0015): tests/student_setup, and student-setup.yml, which runs the scripts
+# for real on Linux containers, macOS and Windows. They read the scripts, their pins and docs, the
+# hooks they activate, the floors in check_setup.py and every session's contract files.
+[units.student-setup]
+paths = [
+  "setup/student/**",
+  "tests/student_setup/**",
+  "setup/session-01-fundamentals.sh",
+  "setup/git-hooks.sh",
+  ".githooks/**",
+  "sessions/*/mise.toml",
+  "sessions/*/pyproject.toml",
+  "sessions/*/uv.lock",
+  "sessions/*/exercises/check_setup.py",
+]
+
 # ty over the repository's own Python (ty.toml, ADR 0014), with the tool locked in setup/. Each
 # session type-checks its own code with its pytest suite (below).
 [units.typecheck]
@@ -91,6 +107,8 @@ paths = [
   "setup/browser-libs.py",
   "tools/implementation-loop/**",
   "tests/turn_in/**",
+  "setup/student/*.py",
+  "tests/student_setup/**",
 ]
 
 # Each session's pytest suite (sessions/<NN>-*/tests) runs when anything in its session folder

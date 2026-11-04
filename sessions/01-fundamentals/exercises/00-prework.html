@@ -238,7 +238,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <h2 id="overview-title">What you need</h2>
         <p>You need <strong>one</strong> coding agent: Claude Code or Codex. Both are fine, and neither is required on top of the other. Everything in the course works with either one.</p>
         <ol>
-          <li><a href="#install">Install the tools</a>: git, the GitHub CLI (<code>gh</code>), uv, mise, and your agent. About 30 to 45 minutes.</li>
+          <li><a href="#install">Install the tools</a>: git, the GitHub CLI (<code>gh</code>), uv, mise, and your agent. One command for your platform installs them all, logs you in and runs the check; or install each tool by hand, which takes about 30 to 45 minutes.</li>
           <li><a href="#login">Log in</a> to GitHub and to your agent.</li>
           <li><a href="#check">Run the setup check</a> and paste its summary block into the form your instructor gives you.</li>
           <li><a href="#reading">Do the reading</a>: about 2 to 3 hours, video and course included.</li>
@@ -256,7 +256,30 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <section id="install" aria-labelledby="install-title">
         <h2 id="install-title">Install the tools</h2>
-        <p>Each block names its platforms, gives the commands from the tool's official documentation, and links to that page. “Checked” is the date we first read that page and “rechecked” the date we last read it; it does not mean every command was run on every platform (see <a href="#platforms">Platforms</a>). If a command fails, follow the linked page, which is kept up to date by the tool's authors.</p>
+        <h3>One command for your platform</h3>
+        <p>Run the line for your platform. It shows a plan and asks once, installs whatever is missing (git, <code>gh</code>, uv, mise, and Claude Code, Codex or both, from their official sources), sets your git identity, logs you in to GitHub and to your agent in the browser, clones the course into <code>~/coding-agent-cursus</code>, sets up every session and runs the setup check. A tool you already have is left alone, and rerunning the command is safe: it continues from where it stopped. It needs a GitHub account, a Claude or ChatGPT plan, and your approval when it asks for <code>sudo</code> or an administrator prompt.</p>
+        <div class="install" data-setup data-platform="windows">
+          <p class="label">Windows (PowerShell, not as administrator)</p>
+          <pre tabindex="0" aria-label="One-command setup on Windows"><code>irm https://raw.githubusercontent.com/GuilhemBusset/coding-agent-cursus/main/setup/student/install.ps1 | iex</code></pre>
+          <p>Git for Windows' installer asks for administrator approval (UAC): approve it.</p>
+        </div>
+        <div class="install" data-setup data-platform="wsl">
+          <p class="label">WSL 2 (in the WSL terminal, not in PowerShell)</p>
+          <pre tabindex="0" aria-label="One-command setup in WSL"><code>curl -fsSL https://raw.githubusercontent.com/GuilhemBusset/coding-agent-cursus/main/setup/student/install.sh | bash</code></pre>
+        </div>
+        <div class="install" data-setup data-platform="macos">
+          <p class="label">macOS (Terminal)</p>
+          <pre tabindex="0" aria-label="One-command setup on macOS"><code>curl -fsSL https://raw.githubusercontent.com/GuilhemBusset/coding-agent-cursus/main/setup/student/install.sh | bash</code></pre>
+          <p>If a dialog asks to install the command line developer tools, finish it, then run the same line again.</p>
+        </div>
+        <div class="install" data-setup data-platform="linux">
+          <p class="label">Linux (Debian, Ubuntu, Fedora, Arch and others)</p>
+          <pre tabindex="0" aria-label="One-command setup on Linux"><code>curl -fsSL https://raw.githubusercontent.com/GuilhemBusset/coding-agent-cursus/main/setup/student/install.sh | bash</code></pre>
+        </div>
+        <p>The <a href="../../../setup/student/README.md">student setup guide</a> has, for each platform, what the command installs and where, what asks for <code>sudo</code> or an administrator prompt, how to undo it, how to read the script before running it, and its test status. So far none has had a full live run with real logins: every platform is untested live, though CI runs the command without logins on Windows, macOS and four Linux distributions. When it ends, paste the summary block into your instructor's form (<a href="#check">step 4 below</a>), then do the <a href="#reading">reading</a>.</p>
+
+        <h3>Or install each tool by hand</h3>
+        <p>The blocks below are the manual way, and the fallback if the command stops on your machine. Each block names its platforms, gives the commands from the tool's official documentation, and links to that page. “Checked” is the date we first read that page and “rechecked” the date we last read it; it does not mean every command was run on every platform (see <a href="#platforms">Platforms</a>). If a command fails, follow the linked page, which is kept up to date by the tool's authors.</p>
 
         <div class="tool">
           <h3>git</h3>
@@ -442,6 +465,7 @@ grep -n ANTHROPIC_API_KEY ~/.bashrc ~/.bash_profile ~/.zshrc ~/.profile</code></
 
       <section id="check" aria-labelledby="check-title">
         <h2 id="check-title">Run the setup check</h2>
+        <p>If you used the one-command setup, it already cloned the course, set it up and ran this check: go to <a href="#check-result">3. Read the result</a>.</p>
         <h3>1. Clone the course and set up Session 1</h3>
         <pre tabindex="0" aria-label="Clone the course repository"><code>gh repo clone GuilhemBusset/coding-agent-cursus
 cd coding-agent-cursus
@@ -453,7 +477,7 @@ bash setup/session-01-fundamentals.sh</code></pre>
         <p>Or in Windows PowerShell:</p>
         <pre tabindex="0" aria-label="Run the setup check in PowerShell"><code>powershell -NoProfile -ExecutionPolicy Bypass -File .\sessions\01-fundamentals\exercises\check-setup.ps1</code></pre>
         <p>Both run the same checks, from <code>check_setup.py</code> in the same folder, through uv. The first run may download Python 3.12, and the agent smoke test can take a minute or two.</p>
-        <h3>3. Read the result</h3>
+        <h3 id="check-result">3. Read the result</h3>
         <p>Each line reads <code>&lt;check&gt;: PASS</code>, <code>&lt;check&gt;: FAIL</code> with a hint, or <code>&lt;agent&gt;: not installed (fine)</code> for the agent you do not use. The script exits non-zero if any line is FAIL.</p>
         <div class="table-wrap" role="region" aria-label="What the setup check verifies" tabindex="0">
           <table>

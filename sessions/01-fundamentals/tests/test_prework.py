@@ -547,6 +547,27 @@ def test_page_content_install_coverage(page):
         page.section(ident)
 
 
+SETUP_URL = "https://raw.githubusercontent.com/GuilhemBusset/coding-agent-cursus/main/setup/student/"
+SETUP_COMMAND = {"windows": f"irm {SETUP_URL}install.ps1 | iex", "wsl": f"curl -fsSL {SETUP_URL}install.sh | bash",
+                 "macos": f"curl -fsSL {SETUP_URL}install.sh | bash", "linux": f"curl -fsSL {SETUP_URL}install.sh | bash"}
+
+
+def test_page_install_starts_with_the_one_command_setup(page):
+    install = page.section("install")
+    nodes = list(install.descendants())
+    setup = [n for n in nodes if "data-setup" in n.attrs]
+    manual = [n for n in nodes if "data-install" in n.attrs]
+    assert setup and manual and nodes.index(setup[-1]) < nodes.index(manual[0]), "one command first, manual after"
+    covered = {}
+    for block in setup:
+        commands = [normalized(n.text()) for n in block.descendants("code") if n.parent.tag == "pre"]
+        for platform in block.attrs.get("data-platform", "").split():
+            covered[platform] = commands
+    assert covered == {platform: [command] for platform, command in SETUP_COMMAND.items()}, covered
+    # check-page.mjs checks that the link resolves, and reruns when its target changes.
+    assert "../../../setup/student/README.md" in links(install)
+
+
 def test_page_content_login_and_check_instructions(page):
     login = normalized(page.section("login").text())
     assert "unset ANTHROPIC_API_KEY" in login
@@ -629,7 +650,7 @@ def test_page_sources_every_install_command_is_audited(page):
         if node.tag not in {"code", "pre"}:
             continue
         if INSTALL.search(node.text()):
-            assert node.ancestor(lambda n: "data-install" in n.attrs), (
+            assert node.ancestor(lambda n: "data-install" in n.attrs or "data-setup" in n.attrs), (
                 "Every installation command (even outside #install) needs a data-install block: " + node.text())
     for block in blocks(page):
         tool = block.attrs["data-tool"]

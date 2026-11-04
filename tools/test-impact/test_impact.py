@@ -109,7 +109,8 @@ def test_github_outputs(tmp_path):
     impact.github_output(plan("sessions/01-x/cursus/00-deck.html"), out)
     values = dict(line.split("=", 1) for line in out.read_text().splitlines())
     assert values == {
-        "everything": "false", "engine": "false", "sessions": '["sessions/01-x"]', "session_tests": "true",
+        "everything": "false", "engine": "false", "student_setup": "false", "sessions": '["sessions/01-x"]',
+        "session_tests": "true",
         "suites": "tools/html-pages/tests/deck.test.mjs tools/html-pages/tests/new.test.mjs",
         "shards": "[1, 2]", "pages": PAGES[0], "html": "true",
     }
