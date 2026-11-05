@@ -355,8 +355,12 @@ class Engine:
         deleted = {p for r in st.requests if r.get("kind") == "test_change" and r.get("status") == "approved"
                    for p, text in (r.get("content") or {}).items() if text is None}
         self._retire_probe_commands(st.number, st, sorted(deleted - set(st.probes)))
+        retired = self._retire_uncommanded(st)   # heals a state saved before the fix (#148)
         st.feedback = [(f"An earlier attempt failed ({f.get('cause')}): {str(f.get('detail'))[:500]}. "
                         f"A new engine version gives it one more try.")]
+        if retired:
+            st.feedback.append(f"These commands were retired, because the plan no longer proves their items by "
+                               f"a command: {retired[:6]}.")
         self.store.event("revived", issue=st.number, cause=f.get("cause"), phase=st.phase.value)
 
     def _retire_probe_commands(self, n: int, st: IssueState, deleted: list[str]) -> None:
@@ -562,6 +566,25 @@ class Engine:
         """Items the examiner must judge: review items, and owner items' agent parts no command proves."""
         commanded = {c["criterion"] for c in st.commands if c.get("author") == "builder"}
         return self._review_items(st) | (self._agent_part_items(st) - commanded)
+
+    def _commanded_items(self, st: IssueState) -> set[str]:
+        """Items a builder's command may prove: `test` and `command` items, and owner items' agent
+        parts. A review or deferred item has no builder command."""
+        return {i["id"] for i in self._items(st) if i["proof"] in ("test", "command", "owner")}
+
+    def _retire_uncommanded(self, st: IssueState) -> list[str]:
+        """Retire the builder's commands for items the current plan no longer proves by a command.
+        In #148, a replan moved A2 from `command` to `review`, but A2's old command kept running,
+        and failing, until the replan could change nothing (no_progress). Only items the plan names
+        with another proof are retired; a command for an item the plan does not list is left alone."""
+        uncommanded = {i["id"] for i in self._items(st)} - self._commanded_items(st)
+        stale = [c for c in st.commands if c.get("author") == "builder" and c.get("criterion") in uncommanded]
+        if not stale:
+            return []
+        st.commands = [c for c in st.commands if c not in stale]
+        retired = [f"{c.get('criterion')}: {c['command'][:160]}" for c in stale]
+        self.store.event("commands_retired", issue=st.number, commands=retired[:8])
+        return retired
 
     def _specs(self, st: IssueState) -> list[CheckSpec]:
         fields = CheckSpec.__dataclass_fields__
@@ -856,6 +879,10 @@ class Engine:
                               + ", ".join(z for z in plan["zones"] if is_protected(z)),
                               "rationale": f"{self.other} saw them in the plan and raised no objection"})
         plan = st.plan
+        retired = self._retire_uncommanded(st)
+        if retired:
+            feedback.append(f"These commands were retired, because the plan no longer proves their items by a "
+                            f"command: {retired[:6]}.")
         st.feedback = feedback
         self.store.put(st)
         self._declare(n, st)
@@ -1069,7 +1096,8 @@ class Engine:
     def _absorb_build(self, st: IssueState, result, wt: Path | None = None) -> None:
         """The builder's tests, commands and dispositions. Before the first examination they are its
         own; after it, commands for locked items change only through an approved request."""
-        agent = self._agent_items(st) | {i["id"] for i in self._items(st) if i["proof"] == "owner"}
+        proofs = {i["id"]: i["proof"] for i in self._items(st)}
+        commanded = self._commanded_items(st)
         inside = (lambda rel: self._inside(wt, rel)) if wt is not None else (lambda rel: True)
         refused = [t for t in result.tests if t and not inside(t)]
         if refused:
@@ -1083,8 +1111,10 @@ class Engine:
         given: dict[str, list[dict]] = {}   # an item may need several commands; each one is kept
         dropped = []
         for c in result.commands:
-            item = criterion_item(c.criterion, agent)
-            why = ("its criterion names no plan item" if item is None else "it is empty" if not c.command
+            item = criterion_item(c.criterion, set(proofs))
+            why = ("its criterion names no plan item" if item is None
+                   else f"{item} is proven by {proofs[item]}, not by a command" if item not in commanded
+                   else "it is empty" if not c.command
                    else "its cwd is outside the worktree" if not inside(c.cwd or ".") else None)
             if item is None or why:   # said to the builder, never dropped in silence (#24 lost every probe command this way)
                 dropped.append(f"`{(c.command or '')[:120]}` (criterion {(c.criterion or '')[:80]!r}): {why}")
@@ -1107,6 +1137,7 @@ class Engine:
                 continue
             current[item] = entries
         st.commands = [e for entries in current.values() for e in entries] + probes
+        self._retire_uncommanded(st)
         for test_id, why in (result.dispositions or {}).items():
             st.dispositions.setdefault(test_id, why)
         for d in result.decisions or []:
