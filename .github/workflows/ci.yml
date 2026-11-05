@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       engine: ${{ steps.select.outputs.engine }}
+      student_setup: ${{ steps.select.outputs.student_setup }}
       session_tests: ${{ steps.select.outputs.session_tests }}
       sessions: ${{ steps.select.outputs.sessions }}
       html: ${{ steps.select.outputs.html }}
@@ -75,6 +76,12 @@ jobs:
     with:
       sessions: ${{ needs.changes.outputs.sessions }}
 
+  # The one-command student setup, run for real on Linux containers, macOS and Windows (ADR 0015).
+  student-setup:
+    needs: changes
+    if: needs.changes.outputs.student_setup == 'true'
+    uses: ./.github/workflows/student-setup.yml
+
   html-pages:
     needs: changes
     if: needs.changes.outputs.html == 'true'
@@ -86,13 +93,14 @@ jobs:
 
   required:
     if: always()
-    needs: [changes, repo-checks, engine-tests, session-tests, html-pages]
+    needs: [changes, repo-checks, engine-tests, session-tests, student-setup, html-pages]
     runs-on: ubuntu-latest
     steps:
       - name: Every applicable check passed
         env:
           NEEDS: ${{ toJSON(needs) }}
           ENGINE: ${{ needs.changes.outputs.engine }}
+          STUDENT_SETUP: ${{ needs.changes.outputs.student_setup }}
           SESSIONS: ${{ needs.changes.outputs.session_tests }}
           HTML: ${{ needs.changes.outputs.html }}
         run: |
@@ -100,13 +108,15 @@ jobs:
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           # Missing, cancelled or failed results never count as green. A check may be skipped
           # only when `changes` succeeded and said it does not apply.
-          echo "$NEEDS" | jq -e --arg engine "$ENGINE" --arg sessions "$SESSIONS" --arg html "$HTML" '
+          echo "$NEEDS" | jq -e --arg engine "$ENGINE" --arg sessions "$SESSIONS" --arg html "$HTML" \
+            --arg student "$STUDENT_SETUP" '
             def ran_or_not_needed(job; needed):
               (.[job].result == "success") or (.[job].result == "skipped" and needed == "false");
             (.changes.result == "success")
             and (."repo-checks".result == "success")
             and ran_or_not_needed("engine-tests"; $engine)
             and ran_or_not_needed("session-tests"; $sessions)
+            and ran_or_not_needed("student-setup"; $student)
             and ran_or_not_needed("html-pages"; $html)
           ' > /dev/null
 

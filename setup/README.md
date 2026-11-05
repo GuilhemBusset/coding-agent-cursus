@@ -1,5 +1,15 @@
 # Repository setup
 
+## Students: prepare your machine
+
+**Start here if you take the course.** One command for your platform installs git, gh, uv, mise
+and your agent, logs you in, clones the course and runs the setup check:
+[`student/README.md`](student/README.md). It has a section per platform (Windows, WSL, macOS,
+Debian and Ubuntu, Fedora, Arch, other Linux) with the command, what it installs and where, what
+needs sudo or an administrator prompt, how to undo it, and how to read the script first.
+
+The rest of this page is for maintainers and instructors.
+
 This directory is the home for repository-wide installation scripts, dependency manifests,
 diagnostics, and setup documentation. Run the commands below from the repository root.
 Installation needs internet access; viewing generated HTML needs only a browser.
@@ -69,18 +79,22 @@ same setup and test sequence on Linux, the only platform teaching pages need (AD
 
 ## Session 1: set up the session
 
-Prerequisites: [mise](https://mise.jdx.dev/getting-started.html) and Bash (Git Bash on Windows).
+Prerequisites: [mise](https://mise.jdx.dev/getting-started.html), [uv](https://docs.astral.sh/uv/)
+and Bash (Git Bash on Windows). The [student setup](student/README.md) installs all of them and
+runs this step itself.
 
 ```sh
 bash setup/session-01-fundamentals.sh
 ```
 
 Run it from the repository root as above; from any other directory, pass the script's path
-(for example `bash ../../setup/session-01-fundamentals.sh` from inside the session). It resolves
-the session from its own location, then, inside `sessions/01-fundamentals/`, runs
-`mise trust mise.toml`, `mise install` (the Python and uv pinned in that session's `mise.toml`)
-and `mise exec -- uv sync --locked` (the runtime dependencies from its `uv.lock`). It does not
-install the build-only `fixtures` group. Repeating it is safe. The session's own
+(for example `bash ../../setup/session-01-fundamentals.sh` from inside the session). It is a
+wrapper over the student setup's shared step, [`student/prepare.py`](student/prepare.py): it
+activates the git hooks, then in every session that has a `mise.toml`, a `pyproject.toml` and a
+`uv.lock` (Session 1 included) runs `mise trust mise.toml`, `mise install` (the Python and uv
+pinned in that session's `mise.toml`) and `mise exec -- uv sync --locked` (the runtime
+dependencies from its `uv.lock`). It does not install the build-only `fixtures` group, and does
+not run the setup check. Repeating it is safe. The session's own
 [README](../sessions/01-fundamentals/README.md) covers running and validating it.
 
 ### Session 1: PowerShell and shellcheck for the pre-work tests
@@ -431,6 +445,7 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Linux browser libraries | OS packages installed only with `--with-system-deps`; versions come from the supported distribution's repositories |
 | Linux browser libraries without root | `browser-libs.py`: the pinned Chromium packages, plus dependencies apt says are missing, fetched with `apt-get download` and unpacked with `dpkg -x` under `--dest` only (the loop: its state directory under `.git/implementation-loop/`); used only by browser processes, through `CURSUS_BROWSER_LIBS` |
 | Pinned pytest for the implement loop | `uv run --no-project --with pytest==8.3.5` fetches pytest, and a Python if needed, into uv's per-user cache |
+| Student machine setup | `student/install.sh` (macOS, Linux, WSL) and `student/install.ps1` (Windows): git and gh from the platform's packages (apt with GitHub's apt repository, dnf with GitHub's rpm repository, pacman, winget, the Xcode Command Line Tools, Homebrew or gh's pinned, SHA-256-checked release archive under `~/.local/share/coding-agent-cursus/gh/`); uv and mise from their official installers at the versions in [`student/versions.env`](student/versions.env), and Claude Code and Codex from their official native installers, into the user's `~/.local/bin` (and on Windows the folders in [student/README.md](student/README.md)); the clone in `~/coding-agent-cursus`; then `student/prepare.py`. Tested by `tests/student_setup` and `.github/workflows/student-setup.yml` |
 | Session 1 toolchain and Python packages | `session-01-fundamentals.sh`: mise installs Python 3.12 and uv 0.11.28 (pinned in `sessions/01-fundamentals/mise.toml`) into mise's per-user directory; uv installs the PyPI packages pinned in `sessions/01-fundamentals/uv.lock` into `sessions/01-fundamentals/.venv/`. The `fixtures` group (torch, transformers) is installed only with `uv sync --group fixtures` |
 | PowerShell 7 for the Session 1 pre-work tests | `pwsh.sh`: the pinned, SHA-256-checked PowerShell 7.6.6 Linux tarball under `~/.local/share/coding-agent-cursus/pwsh/7.6.6/`, linked as `~/.local/bin/pwsh` |
 | shellcheck for the pre-work check script | `uv run --no-project --with shellcheck-py==0.10.0.1` fetches the pinned shellcheck binary into uv's per-user cache |

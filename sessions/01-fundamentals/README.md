@@ -7,7 +7,10 @@ it works the same whether you use Claude Code or Codex.
 
 ## Setup
 
-Prerequisites: [mise](https://mise.jdx.dev/getting-started.html) and Bash (Git Bash on
+Students: the one-command [student setup](../../setup/student/README.md) installs the tools,
+clones the course and does this step for you.
+
+Prerequisites: [mise](https://mise.jdx.dev/getting-started.html), uv and Bash (Git Bash on
 Windows). mise installs the pinned Python 3.12 and uv from `mise.toml`.
 
 From the repo root, run the setup helper:
@@ -18,8 +21,9 @@ bash setup/session-01-fundamentals.sh
 
 From any other directory, pass the helper's path instead, for example
 `bash ../../setup/session-01-fundamentals.sh` from inside this session. The helper resolves
-the session from its own location, then runs `mise trust mise.toml`, `mise install` and
-`uv sync --locked` (through `mise exec`) inside `sessions/01-fundamentals/`.
+the repository from its own location, activates the git hooks, then runs `mise trust mise.toml`,
+`mise install` and `uv sync --locked` (through `mise exec`) inside `sessions/01-fundamentals/`
+and every other session folder that has a `mise.toml`, `pyproject.toml` and `uv.lock`.
 
 To do the same by hand, inside this directory:
 

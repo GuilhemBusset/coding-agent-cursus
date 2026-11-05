@@ -155,7 +155,7 @@ def resolve(page: str, values: set[str]) -> set[str]:
 class Plan:
     everything: bool = False
     reasons: list[str] = field(default_factory=list)
-    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, imports, turn-in, engine
+    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, imports, turn-in, engine, student-setup
     sessions: list[str] = field(default_factory=list)
     suites: list[str] = field(default_factory=list)
     pages: list[str] = field(default_factory=list)
@@ -250,6 +250,8 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         out.append(("turn-in", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/turn_in"], ROOT))
     if plan.everything:
         out.append(("selector", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tools/test-impact"], ROOT))
+    if "student-setup" in plan.units:
+        out.append(("student setup", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/student_setup"], ROOT))
     if "engine" in plan.units:
         out.append(("engine", ["uv", "run", "--no-project", "--python", "3.12", "--with", "pytest==8.3.5",
                                "--with", "pytest-xdist==3.8.0", "--with", "execnet==2.1.2", "python", "-m", "pytest",
@@ -291,6 +293,7 @@ def github_output(plan: Plan, path: str) -> None:
     values = {
         "everything": str(plan.everything).lower(),
         "engine": str("engine" in plan.units).lower(),
+        "student_setup": str("student-setup" in plan.units).lower(),
         "sessions": json.dumps(plan.sessions),
         "session_tests": str(bool(plan.sessions)).lower(),
         "suites": "all" if every else " ".join(plan.suites) or "none",

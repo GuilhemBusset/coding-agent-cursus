@@ -1,0 +1,91 @@
+name: Student setup
+
+# Called by ci.yml when a pull request changes the student setup (tools/test-impact/impact.toml,
+# [units.student-setup]) and on every full run: each push to main and the nightly schedule. Its
+# result feeds the single required check.
+#
+# The offline tests (tests/student_setup) run first. Then the one-command setup students run
+# (setup/student/install.sh, install.ps1) runs for real, non-interactively, the way CI can:
+# `--yes --agent both --no-login` (on Windows through the matching environment variables),
+# twice, on clean Linux containers from pinned images, on macOS with /bin/bash (Bash 3.2) and
+# on Windows with Windows PowerShell 5.1. ci_verify.py then checks the tools against the floors,
+# the hooks, every session's sync, that the second run installed nothing, and that the clone's
+# `git status --porcelain` and HEAD did not change. The logins and the setup check need a
+# person: they are the live runs recorded in setup/student/verification.md (ADR 0015).
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.11.28'
+      # ubuntu-latest ships PowerShell 7 (pwsh), which the parser and dry-run tests use.
+      - name: Student setup tests
+        run: uv run --no-project --with pytest==8.3.5 pytest -q tests/student_setup
+
+  # Pinned images: an Ubuntu LTS, a Debian stable, a Fedora release and Arch. Bump a tag here and
+  # in setup/student/verification.md together.
+  linux:
+    name: linux (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ubuntu:26.04
+            prep: apt-get update && apt-get install -y sudo curl ca-certificates
+          - image: debian:13.7
+            prep: apt-get update && apt-get install -y sudo curl ca-certificates
+          - image: fedora:45
+            prep: dnf install -y sudo curl ca-certificates shadow-utils
+          - image: archlinux:base-20261101.0.620205
+            prep: pacman -Sy --noconfirm sudo curl ca-certificates
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install twice in a clean container, then verify
+        env:
+          IMAGE: ${{ matrix.image }}
+          PREP: ${{ matrix.prep }}
+        run: docker run --rm -v "$PWD:/src:ro" -e PREP "$IMAGE" bash /src/tests/student_setup/linux_container.sh
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: /bin/bash is Bash 3.2
+        run: |
+          /bin/bash -c 'echo "$BASH_VERSION"; case $BASH_VERSION in 3.2.*) ;; *) exit 1 ;; esac'
+      # The runner already has git and gh: the run must leave them alone.
+      - name: Install twice with /bin/bash, then verify
+        env:
+          PREINSTALLED: git,gh
+        run: /bin/bash tests/student_setup/run_twice.sh "$PWD"
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Windows PowerShell is 5.1
+        shell: powershell
+        run: |
+          $PSVersionTable.PSVersion.ToString()
+          if ($PSVersionTable.PSEdition -ne 'Desktop' -or $PSVersionTable.PSVersion.Major -ne 5 -or $PSVersionTable.PSVersion.Minor -ne 1) { exit 1 }
+      # The runner already has git and gh: the run must leave them alone (run_twice.ps1 checks).
+      - name: Install twice with powershell.exe, then verify
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\student_setup\run_twice.ps1 -Source $PWD
