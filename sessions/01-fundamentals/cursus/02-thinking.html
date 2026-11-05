@@ -434,13 +434,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 /* == end proto:cot-depth == */
 /* == proto:effort-demo == */
 /* The room's bet against one run, on one scale: times low effort, from 0 to ×10. The bet chips sit on
-   the axis at their own values, and a marked chip drops a dashed line through its row. Reveal draws
-   high effort's bars and the answer; without JS and in print, the run shows. */
-.eff { --gut: 2.75rem; --lo: .5rem; --hi: 1.25rem; --chip: 2.75rem; }
+   the axis at their own values, and a marked chip drops a dashed line through its row's three lanes,
+   low, high and max. Reveal draws the high and max bars; without JS and in print, the run shows. */
+.eff { --gut: 2.75rem; --lo: .5rem; --hi: 1.5rem; --chip: 2.75rem; }
 .eff-scroll { overflow-x: auto; }
-.eff-board { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem 1rem; }
-.eff-row { grid-column: 1 / -1; display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); align-items: end; column-gap: .75rem; }
-.eff-row.is-answer { grid-column: 1; align-items: center; }
+/* The two rows share the scale; the controls stand beside them, so they add no height. */
+.eff-board { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem 1.25rem; }
+.eff-row { grid-column: 1; display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); align-items: end; column-gap: .75rem; }
 [data-slide] .eff-k { margin: 0; align-self: center; color: var(--ink); font-size: 1.125rem; font-weight: 600; line-height: 1.2; }
 .eff-k small { display: block; margin-top: .15rem; color: var(--secondary); font: 500 .8125rem/1.3 var(--sans); }
 .eff-key { display: inline-block; width: .75rem; height: .75rem; margin-right: .35rem; vertical-align: -.08rem; border-radius: 1px; }
@@ -453,50 +453,50 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .eff-chip:hover:not(:disabled) { color: var(--ink); border-color: var(--accent); }
 .eff-chip[aria-pressed="true"] { border: 2.5px solid var(--accent); background: var(--accent-soft); }
 .eff-chip[aria-pressed="true"]::after { content: "✓"; content: "✓" / ""; position: absolute; top: -.6rem; right: -.5rem; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--accent); color: var(--on); font: 700 .8125rem/1.25rem var(--sans); text-align: center; }
-/* The room's bet, dropped through the row onto the scale. */
-.eff-chips .eff-chip[aria-pressed="true"]::before { content: ""; position: absolute; left: calc(50% - 1px); top: 100%; height: calc(.35rem + var(--lo) + .2rem + var(--hi) + 2px); border-left: 2px dashed var(--accent); }
-.eff-bars { position: relative; height: calc(var(--lo) + .2rem + var(--hi)); margin: .35rem 2rem 0 0; border-left: 1.5px solid var(--muted);
+/* The room's bet, dropped through the row's three lanes onto the scale. */
+.eff-chips .eff-chip[aria-pressed="true"]::before { content: ""; position: absolute; left: calc(50% - 1px); top: 100%; height: calc(.35rem + var(--lo) + .4rem + 2 * var(--hi) + 2px); border-left: 2px dashed var(--accent); }
+.eff-bars { position: relative; height: calc(var(--lo) + .4rem + 2 * var(--hi)); margin: .35rem 2rem 0 0; border-left: 1.5px solid var(--muted);
   background: linear-gradient(var(--rule), var(--rule)) 10% 0 / 1px 100% no-repeat, linear-gradient(var(--rule), var(--rule)) 20% 0 / 1px 100% no-repeat,
     linear-gradient(var(--rule), var(--rule)) 50% 0 / 1px 100% no-repeat, linear-gradient(var(--rule), var(--rule)) 100% 0 / 1px 100% no-repeat; }
 .eff-bar { position: absolute; left: 0; display: flex; width: calc(var(--v) * 10%); }
 .eff-bar.is-low { top: 0; height: var(--lo); }
-/* High effort's bar and its label share the band's full height, so the label fits inside it. */
-.eff-hi { position: absolute; inset: 0; }
-.eff-bar.is-high { bottom: 0; height: var(--hi); }
+/* Each revealed lane, high then max: its bar and its label share the lane's full height, so the label fits inside it. */
+.eff-run { position: absolute; left: 0; right: 0; height: var(--hi); }
+.eff-run.is-high { top: calc(var(--lo) + .2rem); }
+.eff-run.is-max { bottom: 0; }
+.eff-run .eff-bar { top: 0; height: 100%; }
 .eff-bar i { flex: var(--w) 1 0%; min-width: 0; }
-.eff-bars::before, .eff-bars::after { position: absolute; right: calc(100% + .5rem); transform: translateY(-50%); color: var(--secondary); font: 600 .75rem/1 var(--mono); }
-.eff-bars::before { content: "low"; top: calc(var(--lo) / 2); }
-.eff-bars::after { content: "high"; top: calc(100% - var(--hi) / 2); }
+/* The lanes' names stay in sight before the reveal, so the room sees where the run will land. */
+.eff-lane { position: absolute; right: calc(100% + .5rem); transform: translateY(-50%); color: var(--secondary); font: 600 .75rem/1 var(--mono); }
+.eff-lane.is-low { top: calc(var(--lo) / 2); }
+.eff-lane.is-high { top: calc(var(--lo) + .2rem + var(--hi) / 2); }
+.eff-lane.is-max { top: calc(100% - var(--hi) / 2); }
 .eff-bar .is-think { background: repeating-linear-gradient(135deg, var(--muted) 0 2px, var(--faint) 2px 5px); }
 .eff-bar .is-reply, .eff-bar .is-out { background: var(--muted); }
 .eff-bar .is-fixed, .eff-key.is-fixed { background: var(--secondary); }
-.eff-bar.is-high .is-think, .eff-key.is-think { background: repeating-linear-gradient(135deg, var(--accent) 0 2px, var(--accent-soft) 2px 5px); }
-.eff-bar.is-high .is-reply, .eff-bar.is-high .is-out, .eff-key.is-reply, .eff-key.is-out { background: var(--accent); }
-.eff-out { position: absolute; z-index: 2; left: calc(var(--v) * 10% + .5rem); bottom: 0; display: flex; align-items: baseline; gap: .5rem; padding: 0 .4rem; background: var(--sheet); color: var(--secondary); font: 600 .9375rem/1.2 var(--mono); white-space: nowrap; }
-.eff-out b { color: var(--accent); font: 700 1.5rem/1.2 var(--mono); }
-.eff-answer { display: flex; align-items: center; gap: .4rem; min-width: 0; padding-left: var(--gut); }
-[data-slide] .eff-verdict { min-width: 0; margin: 0 0 0 1rem; color: var(--secondary); font: 600 1rem/1.3 var(--mono); }
-.eff-verdict b { color: var(--accent); font-size: 1.375rem; }
-[data-slide] .eff-ctl { grid-column: 2; align-self: center; display: flex; align-items: center; gap: .75rem; margin: 0; }
+.eff-run .eff-bar .is-think, .eff-key.is-think { background: repeating-linear-gradient(135deg, var(--accent) 0 2px, var(--accent-soft) 2px 5px); }
+.eff-run .eff-bar .is-reply, .eff-run .eff-bar .is-out, .eff-key.is-reply, .eff-key.is-out { background: var(--accent); }
+/* A label is exactly as tall as its lane (font size × 1.2), so high's and max's never touch. */
+.eff-out { position: absolute; z-index: 2; left: calc(var(--v) * 10% + .5rem); bottom: 0; display: flex; align-items: baseline; gap: .5rem; padding: 0 .4rem; background: var(--sheet); color: var(--secondary); font: 600 .875rem/1.2 var(--mono); white-space: nowrap; }
+.eff-out b { color: var(--accent); font: 700 1.25rem/1.2 var(--mono); }
+/* A fixed width, so the scale does not move when Reveal hides. */
+[data-slide] .eff-ctl { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; flex-direction: column; align-items: stretch; gap: .75rem; width: 12.5rem; margin: 0; text-align: center; }
 .eff-ctl a { font: 600 .9375rem/1.5 var(--mono); }
-.eff-reveal { padding: .5rem 1.2rem; border-color: var(--accent); background: var(--sheet); color: var(--accent); font-size: 1.125rem; font-weight: 650; }
+.eff-reveal { padding: .5rem 1.2rem; white-space: nowrap; border-color: var(--accent); background: var(--sheet); color: var(--accent); font-size: 1.125rem; font-weight: 650; }
 .eff[data-eff-state="bet"] [data-eff-run] { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: no-preference) {
   .eff [data-eff-run] { transition: opacity .2s ease, visibility .2s; }
 }
 @media screen and (min-width: 800px) and (min-height: 821px) {
-  .eff { --lo: 1rem; --hi: 2.5rem; --chip: 2.875rem; }
+  .eff { --lo: 1rem; --hi: 2.25rem; --chip: 2.875rem; }
   .eff-board { row-gap: 1.25rem; margin-top: .6rem; }
   [data-slide] .eff-k { font-size: 1.25rem; }
   .eff-out { font-size: 1.0625rem; }
-  .eff-out b { font-size: 2rem; }
-  [data-slide] .eff-verdict { font-size: 1.125rem; }
-  .eff-verdict b { font-size: 1.625rem; }
+  .eff-out b { font-size: 1.875rem; }
 }
 @media (max-width: 799px) {
-  .eff-board { min-width: 46rem; }
-  .eff-board > .eff-row.is-answer, [data-slide] .eff-ctl { grid-column: 1 / -1; }
-  [data-slide] .eff-ctl { justify-self: start; }
+  .eff-board { min-width: 46rem; grid-template-columns: minmax(0, 1fr); }
+  [data-slide] .eff-ctl { grid-column: 1; grid-row: auto; flex-direction: row; align-items: center; justify-self: start; width: auto; }
 }
 @media print {
   .eff [data-eff-run] { opacity: 1 !important; visibility: visible !important; }
@@ -953,7 +953,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <text class="tag all" x="830" y="135">▸ Act III: agent loop</text>
           <a href="#cot-depth" aria-label="Part 1 · How does it think?"><g class="track all"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge all"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag all" x="158" y="114">writes a token, reads it back</text></g></a>
           <a href="#search" aria-label="Part 2 · Is it right?"><g class="node all"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge all"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g></a>
-          <a href="#effort-demo" aria-label="Part 3 · How much thinking?"><g class="track all"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge all"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag all" x="472" y="114">effort</text><text class="tag all" x="532" y="114">low</text><path class="dial all" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag all" x="594" y="114">high</text></g></a>
+          <a href="#effort-demo" aria-label="Part 3 · How much thinking?"><g class="track all"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge all"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag all" x="472" y="114">effort</text><text class="tag all" x="532" y="114">low</text><path class="dial all" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag all" x="594" y="114">max</text></g></a>
           <a href="#cot-faithfulness" aria-label="Part 4 · Trust what it wrote?"><g class="node all"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">? hidden</text><g class="badge all"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g></a>
           <a href="#world-models" aria-label="Part 5 · What does it know?"><g class="node all"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge all"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g></a>
           </svg>
@@ -1073,7 +1073,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track now"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge now"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag now" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node next"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge next"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">high</text></g>
+          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">max</text></g>
           <g class="node now"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge next"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1181,7 +1181,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node now"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge now"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">high</text></g>
+          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge next"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1249,7 +1249,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node now"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge now"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">high</text></g>
+          <g class="track next"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge next"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag next" x="472" y="114">effort</text><text class="tag next" x="532" y="114">low</text><path class="dial next" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag next" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge next"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1296,7 +1296,7 @@ Rules:
 
       <section id="effort-demo" data-slide tabindex="-1" aria-labelledby="effort-demo-title">
         <p class="eyebrow">Part 3 · How much thinking? · Demo</p>
-        <h2 id="effort-demo-title">High effort: a better answer, or a bigger bill?</h2>
+        <h2 id="effort-demo-title">Low, high, max: a better answer, or a bigger bill?</h2>
         <div class="spine-wrap" role="region" aria-label="Act II mechanism" tabindex="0">
           <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act II’s mechanism: the context, 8 parcels and 630 kg, goes through one forward pass; the written tokens, 343 hidden, return to the context for another pass, as long as effort allows; the answer, 229 EUR, goes to a check outside the model over all 256 loads; the check’s test output can return to the context. Highlighted: question 3, how much thinking: the effort dial on the loop, and the check.">
           <path class="bracket done" d="M198 22 V14 H674 V22"/>
@@ -1323,7 +1323,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node now"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track now"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag now" x="472" y="114">effort</text><text class="tag now" x="532" y="114">low</text><path class="dial now" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag now" x="594" y="114">high</text></g>
+          <g class="track now"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag now" x="472" y="114">effort</text><text class="tag now" x="532" y="114">low</text><path class="dial now" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag now" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge next"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1331,7 +1331,7 @@ Rules:
         <div class="eff" data-eff>
           <div class="eff-scroll" role="region" tabindex="0" aria-label="The room’s bet against one run, in times low effort">
             <div class="eff-board">
-              <div class="eff-row" role="group" aria-labelledby="eff-k-tok" data-eff-row data-eff-name="Tokens" data-eff-result="×1.5">
+              <div class="eff-row" role="group" aria-labelledby="eff-k-tok" data-eff-row data-eff-name="Tokens" data-eff-result="high ×1.5, max ×2.9">
                 <p class="eff-k"><span id="eff-k-tok">Tokens</span><small><i class="eff-key is-think"></i>thinking</small><small><i class="eff-key is-reply"></i>reply</small></p>
                 <div class="eff-track">
                   <div class="eff-chips">
@@ -1341,13 +1341,15 @@ Rules:
                       <button type="button" class="eff-chip" data-eff-chip style="--v: 10" aria-pressed="false" disabled>×10</button>
                   </div>
                   <div class="eff-bars">
+                      <span class="eff-lane is-low" aria-hidden="true">low</span><span class="eff-lane is-high" aria-hidden="true">high</span><span class="eff-lane is-max" aria-hidden="true">max</span>
                       <div class="eff-bar is-low" role="img" aria-label="Low effort: 820 tokens, 343 of them thinking" style="--v: 1"><i class="is-think" style="--w: 343"></i><i class="is-reply" style="--w: 477"></i></div>
-                      <div class="eff-hi" data-eff-run style="--v: 1.478"><div class="eff-bar is-high" role="img" aria-label="High effort: 1,212 tokens, 703 of them thinking: 1.5 times low effort"><i class="is-think" style="--w: 703"></i><i class="is-reply" style="--w: 509"></i></div><span class="eff-out" aria-hidden="true"><b>×1.5</b> 820 → 1,212</span></div>
+                      <div class="eff-run is-high" data-eff-run style="--v: 1.478"><div class="eff-bar" role="img" aria-label="High effort: 1,212 tokens, 703 of them thinking: 1.5 times low effort"><i class="is-think" style="--w: 703"></i><i class="is-reply" style="--w: 509"></i></div><span class="eff-out" aria-hidden="true"><b>×1.5</b> 820 → 1,212</span></div>
+                      <div class="eff-run is-max" data-eff-run style="--v: 2.8634"><div class="eff-bar" role="img" aria-label="Max effort: 2,348 tokens, 1,801 of them thinking: 2.9 times low effort"><i class="is-think" style="--w: 1801"></i><i class="is-reply" style="--w: 547"></i></div><span class="eff-out" aria-hidden="true"><b>×2.9</b> 820 → 2,348</span></div>
                   </div>
                 </div>
               </div>
-              <div class="eff-row" role="group" aria-labelledby="eff-k-bill" data-eff-row data-eff-name="The bill" data-eff-result="×1.2">
-                <p class="eff-k"><span id="eff-k-bill">The bill</span><small><i class="eff-key is-fixed"></i>prompt, same at both</small><small><i class="eff-key is-out"></i>tokens it wrote</small></p>
+              <div class="eff-row" role="group" aria-labelledby="eff-k-bill" data-eff-row data-eff-name="The bill" data-eff-result="high ×1.2, max ×1.8">
+                <p class="eff-k"><span id="eff-k-bill">The bill</span><small><i class="eff-key is-fixed"></i>prompt, paid at every effort</small><small><i class="eff-key is-out"></i>tokens it wrote</small></p>
                 <div class="eff-track">
                   <div class="eff-chips">
                       <button type="button" class="eff-chip" data-eff-chip style="--v: 1" aria-pressed="false" disabled>×1</button>
@@ -1356,16 +1358,11 @@ Rules:
                       <button type="button" class="eff-chip" data-eff-chip style="--v: 10" aria-pressed="false" disabled>×10</button>
                   </div>
                   <div class="eff-bars">
+                      <span class="eff-lane is-low" aria-hidden="true">low</span><span class="eff-lane is-high" aria-hidden="true">high</span><span class="eff-lane is-max" aria-hidden="true">max</span>
                       <div class="eff-bar is-low" role="img" aria-label="Low effort: $0.038, of which $0.021 is the prompt" style="--v: 1"><i class="is-fixed" style="--w: 21176"></i><i class="is-out" style="--w: 16400"></i></div>
-                      <div class="eff-hi" data-eff-run style="--v: 1.2078"><div class="eff-bar is-high" role="img" aria-label="High effort: $0.045, of which $0.021 is the prompt: 1.2 times low effort"><i class="is-fixed" style="--w: 21144"></i><i class="is-out" style="--w: 24240"></i></div><span class="eff-out" aria-hidden="true"><b>×1.2</b> $0.038 → $0.045</span></div>
+                      <div class="eff-run is-high" data-eff-run style="--v: 1.2078"><div class="eff-bar" role="img" aria-label="High effort: $0.045, of which $0.021 is the prompt: 1.2 times low effort"><i class="is-fixed" style="--w: 21144"></i><i class="is-out" style="--w: 24240"></i></div><span class="eff-out" aria-hidden="true"><b>×1.2</b> $0.038 → $0.045</span></div>
+                      <div class="eff-run is-max" data-eff-run style="--v: 1.8278"><div class="eff-bar" role="img" aria-label="Max effort: $0.069, of which $0.022 is the prompt: 1.8 times low effort"><i class="is-fixed" style="--w: 21720"></i><i class="is-out" style="--w: 46960"></i></div><span class="eff-out" aria-hidden="true"><b>×1.8</b> $0.038 → $0.069</span></div>
                   </div>
-                </div>
-              </div>
-              <div class="eff-row is-answer" role="group" aria-labelledby="eff-k-right" data-eff-row data-eff-name="Right this time" data-eff-result="both said 229, the best of all 256 loads">
-                <p class="eff-k"><span id="eff-k-right">Right this time?</span></p>
-                <div class="eff-answer">
-                  <button type="button" class="eff-chip" data-eff-chip aria-pressed="false" disabled>yes</button><button type="button" class="eff-chip" data-eff-chip aria-pressed="false" disabled>no</button>
-                  <p class="eff-verdict" data-eff-run>both said <b>229 ✓</b> = the best of all 256 loads</p>
                 </div>
               </div>
               <p class="eff-ctl"><a href="demos/effort/README.md">Runbook</a> <button type="button" class="eff-reveal" data-eff-reveal hidden>Reveal the run</button> <button type="button" class="eff-reset" data-eff-reset hidden>Reset</button></p>
@@ -1377,21 +1374,23 @@ Rules:
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
             <p>Talk track: point at badge 3, the dial. Every vendor sells one: a hint, not a strict token budget.</p>
-            <p>Predict question, on the room’s bet, hands for each row: how many times the tokens, how many times the bill, right this time? Press the majority’s chip in each row: the chips sit on the scale, so the bet drops through its row as a dashed line.</p>
-            <p>Activity: run low and high effort live; read the “High effort divided by low effort” line aloud against the dashed lines.</p>
-            <p>Demo: from <code>cursus/demos/effort</code>, run <code>uv run effort.py live --cli claude</code>, or <code>uv run effort.py live --cli codex</code> with <code>gpt-6-astra</code>; no tools, an empty folder.</p>
-            <p>Fallback: if the network, quota or login fails, or a high run hangs, press Ctrl-C and run <code>uv run --offline effort.py replay</code>, then read a row below. The recorded run, 2026-11-01, Claude Code 2.1.316 and codex-cli 0.166.0, all four answers 229 and correct: thinking grew about 2 times (Claude) and 1.2 times (Codex), the bill only 1.2 and 1.03 times; list prices as of 2026-10-11, rechecked 2026-11-01 and unchanged.</p>
+            <p>Predict question, on the room’s bet, hands for each row: at max effort, how many times low effort’s tokens, how many times its bill? Press the majority’s chip in each row: the chips sit on the scale, so the bet drops through all three lanes, low, high and max, as a dashed line.</p>
+            <p>Activity: run low, high and max effort live; read the “High effort divided by low effort” and “Max effort divided by low effort” lines aloud against the dashed lines.</p>
+            <p>Demo: from <code>cursus/demos/effort</code>, run <code>uv run effort.py live --cli claude</code>, or <code>uv run effort.py live --cli codex</code> with <code>gpt-6-astra</code>; no tools, an empty folder. The three runs take about 50 s (Claude) or 130 s (Codex), max the longest.</p>
+            <p>Fallback: if the network, quota or login fails, or a max run hangs, press Ctrl-C and run <code>uv run --offline effort.py replay</code>, then read a row below. The recorded runs: low and high on 2026-11-01 (Claude Code 2.1.316, codex-cli 0.166.0), max on 2026-11-05 (Claude Code 2.1.318, codex-cli 0.165.0); all six answers 229 and correct. Over low, thinking grew about 2 times at high and 5 times at max (Claude), 1.2 and 2.8 times (Codex); the bill only 1.2 and 1.8 times (Claude), 1.03 and 1.5 times (Codex). List prices as of 2026-10-11, rechecked 2026-11-01 and unchanged.</p>
             <ul>
               <li>claude-opus-5-5, low: 820 output tokens, 343 thinking, 13.3 s, $0.0376.</li>
               <li>claude-opus-5-5, high: 1,212 output tokens, 703 thinking, 14.0 s, $0.0454.</li>
+              <li>claude-opus-5-5, max: 2,348 output tokens, 1,801 thinking, 21.4 s, $0.0687.</li>
               <li>gpt-6-astra, low: 591 output tokens, 366 reasoning, 34.4 s, $0.0683.</li>
               <li>gpt-6-astra, high: 632 output tokens, 448 reasoning, 32.7 s, $0.0704.</li>
+              <li>gpt-6-astra, max: 1,215 output tokens, 1,034 reasoning, 59.8 s, $0.1005.</li>
             </ul>
-            <p>Press Reveal the run. The bars are the recorded Claude run above; if your live run differs, say so. Tokens: 820 to 1,212, 1.5 times, and the thinking inside doubled, 343 to 703. The bill: only 1.2 times, because its grey block, the prompt, is paid at both efforts and is about half the bill. Point at the gap between each bar and the room’s dashed line. Right this time: both said 229 EUR, and a program that tried all 256 loads says it is the best; the model only compared a few loads by hand.</p>
-            <p>Qualification to keep: if both were right, high effort bought thinking and cost, not correctness. One run is an anecdote; claims need many runs and a check.</p>
-            <p>For your agent: the default is someone else’s choice; set effort per task.</p>
+            <p>Press Reveal the run. The bars are the recorded Claude runs above; if your live run differs, say so. Tokens: 820 at low, 1,212 at high, 1.5 times, 2,348 at max, 2.9 times; the thinking inside went 343, 703, 1,801, five times at max. The bill: only 1.2 and 1.8 times, because its grey block, the prompt, is paid at every effort: about half the low bill, a third of the max one. Point at the gap between each bar and the room’s dashed line. Then the spine’s ✓ lights: all three said 229 EUR, and a program that tried all 256 loads says it is the best; the model only checked loads by hand.</p>
+            <p>Qualification to keep: all three were right, so more effort bought thinking, time and cost, not correctness. One run per effort is an anecdote; claims need many runs and a check.</p>
+            <p>For your agent: the default is someone else’s choice, and max is not a safe setting; set effort per task.</p>
             <p>Transition, carrying the next predict: “Can more thinking hurt accuracy? Guess first: on a question full of distractors, does a longer reply help or hurt?”</p>
-            <p>Background for you, not for the slides: as of 2026-10-18, Anthropic’s <a href="https://platform.claude.com/docs/en/build-with-claude/effort"><code>effort</code></a> is <code>--effort</code> in Claude Code, where Opus 5.5 defaults to medium, and the docs call it “a behavioral signal, not a strict token budget”; OpenAI Codex’s is <a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a>. The low reply ranks the parcels by value per kg and compares six loads; the high reply adds a bound for why nothing beats 229; neither tries all 256. 228 is A, B, D and G at 630 kg; 181 is the greedy load, D, B, C and G at 410 kg. Per task: low for lookups and subagents, high when hard and checkable.</p>
+            <p>Background for you, not for the slides: as of 2026-10-18, Anthropic’s <a href="https://platform.claude.com/docs/en/build-with-claude/effort"><code>effort</code></a> is <code>--effort</code> in Claude Code, where Opus 5.5 defaults to medium, and the docs call it “a behavioral signal, not a strict token budget”; OpenAI Codex’s is <a href="https://developers.openai.com/codex/config-reference"><code>model_reasoning_effort</code></a>. The low reply ranks the parcels by value per kg and compares six loads; the high reply adds a bound for why nothing beats 229; the max reply splits the loads by how many of the four heavy parcels, A, E, F and H, they take, and checks each case, eleven in two tables; none tries all 256. The max runs were recorded four days after the others, with newer CLIs: Claude Code’s system prompt grew from 2,646 to 2,714 tokens, so the max prompt block is slightly longer. 228 is A, B, D and G at 630 kg; 181 is the greedy load, D, B, C and G at 410 kg. Per task: low for lookups and subagents, high when hard and checkable.</p>
           </div>
         </details>
       </section>
@@ -1425,7 +1424,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track now"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag now" x="472" y="114">effort</text><text class="tag now" x="532" y="114">low</text><path class="dial now" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag now" x="594" y="114">high</text></g>
+          <g class="track now"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag now" x="472" y="114">effort</text><text class="tag now" x="532" y="114">low</text><path class="dial now" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag now" x="594" y="114">max</text></g>
           <g class="node now"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge next"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1504,7 +1503,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">high</text></g>
+          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
           <g class="node now"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge now"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1573,7 +1572,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">high</text></g>
+          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
           <g class="node now"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge now"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge next"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1671,7 +1670,7 @@ Rules:
           <text class="tag next" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">high</text></g>
+          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge done"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node now"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge now"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1751,7 +1750,7 @@ Rules:
           <text class="tag now" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node now"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">high</text></g>
+          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge done"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node now"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge now"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           </svg>
@@ -1819,7 +1818,7 @@ Rules:
           <text class="tag done" x="830" y="135">▸ Act III: agent loop</text>
           <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge now"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
           <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge now"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">high</text></g>
+          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
           <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge now"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
           <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge now"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
           <g class="habits">
@@ -2447,7 +2446,7 @@ Rules:
     if (event.detail > 0 && slide) slide.focus({ preventScroll: true });
     else if (next) next.focus();
   }
-  // The spine's ✓ after the check waits for the reveal too, so it does not answer "Right this time?".
+  // The spine's ✓ after the check waits for the reveal too: the check's verdict on the three runs is part of the run.
   var verdict = slide ? Array.from(slide.querySelectorAll('.spine .verdict, .spine .to-verdict')) : [];
   // Before the reveal, the run is hidden from sight and from assistive tech alike (visibility).
   function show(revealed) {
@@ -2464,20 +2463,20 @@ Rules:
     }).join(' ');
   }
 
-  // A run's label that would cover the room's dashed line moves just past it.
+  // A run's label, high's or max's, that would cover the room's dashed line moves just past it.
   function place() {
     rows.forEach(function (row) {
-      var out = row.querySelector('.eff-out');
       var bet = row.querySelector('.eff-chips [aria-pressed="true"]');
-      if (!out) return;
-      out.style.removeProperty('left');
-      if (!bet || !out.offsetParent) return;
-      var chip = bet.getBoundingClientRect();
-      var line = chip.left + chip.width / 2;
-      var box = out.getBoundingClientRect();
-      if (line > box.left - 6 && line < box.right + 6) {
-        out.style.left = (line - out.offsetParent.getBoundingClientRect().left + 10) + 'px';
-      }
+      row.querySelectorAll('.eff-out').forEach(function (out) {
+        out.style.removeProperty('left');
+        if (!bet || !out.offsetParent) return;
+        var chip = bet.getBoundingClientRect();
+        var line = chip.left + chip.width / 2;
+        var box = out.getBoundingClientRect();
+        if (line > box.left - 6 && line < box.right + 6) {
+          out.style.left = (line - out.offsetParent.getBoundingClientRect().left + 10) + 'px';
+        }
+      });
     });
   }
 

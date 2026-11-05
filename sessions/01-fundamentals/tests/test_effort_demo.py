@@ -39,7 +39,8 @@ SESSION = Path(__file__).resolve().parents[1]
 REPO = SESSION.parents[1]
 RELATIVE = Path("sessions/01-fundamentals/cursus/demos/effort")
 DEMO = REPO / RELATIVE
-RUNS = set(itertools.product(("claude", "codex"), ("low", "high")))
+EFFORTS = ("low", "high", "max")
+RUNS = set(itertools.product(("claude", "codex"), EFFORTS))
 DEFAULTS = {"claude": "claude-opus-5-5", "codex": "gpt-6-astra"}
 NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 ALIASES = {
@@ -138,7 +139,7 @@ def rows(document):
         identity = (row["cli"], row["effort"])
         assert identity not in result, f"Duplicate run: {identity}"
         result[identity] = row
-    assert set(result) == RUNS, "Need exactly Claude/Codex × low/high"
+    assert set(result) == RUNS, "Need exactly Claude/Codex × low/high/max"
     return result
 
 
@@ -694,17 +695,21 @@ def fixture_prices(destination, models):
 def live_payloads(profile, models, optimum):
     payloads, expected = {}, {}
     for cli, effort in sorted(RUNS):
-        factor = (profile + 1) * (1 if effort == "low" else 3)
+        factor = (profile + 1) * {"low": 1, "high": 3, "max": 5}[effort]
         if profile == 0:
             text = {("claude", "low"): f"ANSWER: {optimum + 11}\nANSWER: {optimum}",
                     ("claude", "high"): f"ANSWER: {optimum}\nANSWER: {optimum + 7}",
+                    ("claude", "max"): f"ANSWER: {optimum - 2}",
                     ("codex", "low"): "I do not have a final answer.",
-                    ("codex", "high"): f"ANSWER: {optimum}"}[cli, effort]
+                    ("codex", "high"): f"ANSWER: {optimum}",
+                    ("codex", "max"): f"ANSWER: {optimum}"}[cli, effort]
         else:
             text = {("claude", "low"): f"ANSWER: {optimum}\nANSWER: not-an-integer",
                     ("claude", "high"): f"ANSWER: {optimum}",
+                    ("claude", "max"): f"ANSWER: {optimum}",
                     ("codex", "low"): f"ANSWER: {optimum - 1}",
-                    ("codex", "high"): f"ANSWER: {optimum}"}[cli, effort]
+                    ("codex", "high"): f"ANSWER: {optimum}",
+                    ("codex", "max"): f"ANSWER: **{optimum}**"}[cli, effort]
         if cli == "claude":
             usage = {
                 models[cli]: {"inputTokens": 100 * factor, "outputTokens": 50 * factor,
@@ -800,8 +805,8 @@ def test_d2_stub_live_accounting_scoring_isolation_and_overrides(tmp_path, profi
     observed = rows(document)
     assert document["prices"] == prices
     calls = events_at(log)
-    assert len(calls) == 4 and {(call["cli"], call["effort"]) for call in calls} == RUNS
-    assert len({call["cwd"] for call in calls}) == 4, "Fresh directory for every effort run"
+    assert len(calls) == 6 and {(call["cli"], call["effort"]) for call in calls} == RUNS
+    assert len({call["cwd"] for call in calls}) == 6, "Fresh directory for every effort run"
     prompt = read(DEMO / "prompt.txt")
     for call in calls:
         identity = (call["cli"], call["effort"])
@@ -850,7 +855,7 @@ def test_d2_stub_live_accounting_scoring_isolation_and_overrides(tmp_path, profi
 ])
 def test_d2_claude_cache_duration_accounting(tmp_path, main_hour, aux_hour, five):
     destination, caller, env, _, payload_path, payloads, expected, _, _ = sandbox_live(tmp_path)
-    for effort, factor in (("low", 1), ("high", 3)):
+    for effort, factor in (("low", 1), ("high", 3), ("max", 5)):
         terminal = next(event for event in payloads[f"claude-{effort}"] if event["type"] == "result")
         terminal["usage"]["cache_creation"] = {
             "ephemeral_1h_input_tokens": (main_hour + aux_hour) * factor,
@@ -870,7 +875,7 @@ def test_d2_claude_cache_duration_accounting(tmp_path, main_hour, aux_hour, five
     assert result.returncode == 0, result.stdout + result.stderr
     run_list = field(load(out / "results.json"), ("runs", "results", "rows"))
     observed = {(row["cli"], row["effort"]): row for row in run_list}
-    assert len(run_list) == 2 and set(observed) == {("claude", "low"), ("claude", "high")}
+    assert len(run_list) == 3 and set(observed) == {("claude", effort) for effort in EFFORTS}
     for identity, row in observed.items():
         wanted = expected[identity]
         counts = counters(row, "claude")
@@ -907,11 +912,25 @@ def test_d2_cli_selection_and_script_relative_default_output(tmp_path, cli):
     destination, caller, env, log, *_ = sandbox_live(tmp_path)
     success([sys.executable, destination / "effort.py", "live", "--cli", cli], caller, env)
     calls = events_at(log)
-    assert len(calls) == 2 and {(call["cli"], call["effort"]) for call in calls} == {(cli, "low"), (cli, "high")}
+    assert [(call["cli"], call["effort"]) for call in calls] == [(cli, effort) for effort in EFFORTS]
     document = load(destination / "work/results.json")
     run_list = field(document, ("runs", "results", "rows"))
-    assert {(row["cli"], row["effort"]) for row in run_list} == {(cli, "low"), (cli, "high")}
+    assert {(row["cli"], row["effort"]) for row in run_list} == {(cli, effort) for effort in EFFORTS}
     assert not (caller / "work").exists()
+
+
+def test_d2_effort_selection_runs_only_the_named_levels_in_dial_order(tmp_path):
+    destination, caller, env, log, *_ = sandbox_live(tmp_path)
+    out = tmp_path / "selected"
+    output = success([sys.executable, destination / "effort.py", "live", "--cli", "both",
+                      "--effort", "max", "low", "--out", out], caller, env)
+    wanted = [(cli, effort) for cli in ("claude", "codex") for effort in ("low", "max")]
+    assert [(call["cli"], call["effort"]) for call in events_at(log)] == wanted
+    run_list = field(load(out / "results.json"), ("runs", "results", "rows"))
+    assert [(row["cli"], row["effort"]) for row in run_list] == wanted
+    assert "Max effort divided by low effort" in output and "High effort divided by low effort" not in output
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "codex", "--effort", "medium"], caller, env)
+    assert result.returncode != 0 and "invalid choice" in result.stderr
 
 
 def test_d2_oracle_recomputes_when_capacity_changes(tmp_path):
@@ -952,7 +971,7 @@ def test_d2_oracle_recomputes_when_capacity_changes(tmp_path):
         assert row["answer"] == expected[identity]["answer"]
         assert row["correct"] == expected[identity]["correct"], "Oracle must solve the changed instance"
     calls = events_at(log)
-    assert len(calls) == 4 and all(call["prompt"] == changed_prompt for call in calls)
+    assert len(calls) == 6 and all(call["prompt"] == changed_prompt for call in calls)
 
 
 @pytest.mark.parametrize("bad_counter", ("cached_input_tokens", "reasoning_output_tokens"))

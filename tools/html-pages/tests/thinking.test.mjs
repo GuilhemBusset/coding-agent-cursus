@@ -246,8 +246,8 @@ test('D2: every other slide repeats the spine as an image, its question current 
     const badge = n => part > 5 || n === part ? 'now' : n < part ? 'done' : 'next';
     assert.deepEqual(seen.badges, Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, badge(n)])), `${id}: answered up to question ${part}`);
     if (part <= 5) assert.ok(seen.lit > 0, `${id}: the parts question ${part} is about are lit`);
-    // The model's reply states 229 on #cot-depth. The check's ✓ waits for #effort-demo's reveal, so it
-    // cannot answer the room's "Right this time?" bet; it shows from the next slide on.
+    // The model's reply states 229 on #cot-depth. The check's ✓ waits for #effort-demo's reveal, which
+    // shows the check's verdict on the three runs with them; it shows from the next slide on.
     assert.deepEqual(seen.answer, ['229 EUR'], `${id}: the answer`);
     assert.equal(seen.verdict, order.indexOf(id) > order.indexOf('effort-demo'), `${id}: the check's verdict`);
     const wrap = slide.locator('.spine-wrap');
@@ -345,45 +345,54 @@ test('D3: the running example is the effort demo’s real puzzle and recorded re
 test('D3: #effort-demo draws the recorded run on the bets’ own scale', async t => {
   const results = JSON.parse(await readFile(path.join(cursus, 'demos/effort/recorded/results.json'), 'utf8'));
   const run = effort => results.runs.find(r => r.cli === 'claude' && r.effort === effort);
-  const low = run('low'), high = run('high');
-  const { best, loads } = await puzzle();
+  const low = run('low'), high = run('high'), max = run('max');
+  const { best } = await puzzle();
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const [tokens, bill, answer] = await topic(page, 'effort-demo').locator('[data-eff-row]').evaluateAll(els => els.map(row => {
+  const drawn = await topic(page, 'effort-demo').locator('[data-eff-row]').evaluateAll(els => els.map(row => {
     const box = el => el.getBoundingClientRect();
     const text = el => el?.textContent.replace(/\s+/g, ' ').trim() ?? null;
     return {
       bars: [...row.querySelectorAll('.eff-bar')].map(bar => ({
         left: box(bar).left, width: box(bar).width,
         parts: [...bar.querySelectorAll(':scope > i')].map(part => box(part).width),
-        label: text(bar.closest('.eff-hi')?.querySelector('.eff-out')),
+        label: text(bar.closest('.eff-run')?.querySelector('.eff-out')),
       })),
+      lanes: [...row.querySelectorAll('.eff-lane')].map(lane => text(lane)),
       chips: Object.fromEntries([...row.querySelectorAll('.eff-chips [data-eff-chip]')].map(chip => [chip.textContent, box(chip).left + box(chip).width / 2])),
-      verdict: text(row.querySelector('.eff-verdict')),
     };
   }));
+  // Two rows, the tokens and the bill, each with a lane per effort: no row bets on the answer.
+  assert.equal(drawn.length, 2, 'two rows: the tokens and the bill');
+  const [tokens, bill] = drawn;
+  for (const row of drawn) {
+    assert.deepEqual(row.lanes, ['low', 'high', 'max']);
+    assert.equal(row.bars.length, 3, 'a bar per effort');
+  }
   const close = (a, b, tolerance, label) => assert.ok(Math.abs(a - b) <= tolerance, `${label}: drawn ${a}, expected ${b}`);
   // One scale per row, in times low effort: low effort's bar is ×1, and each bet chip sits at its own value.
   for (const [name, row] of [['tokens', tokens], ['bill', bill]]) {
     const unit = row.bars[0].width;
     for (const v of [1, 2, 5, 10]) close(row.chips[`×${v}`], row.bars[0].left + v * unit, 2, `${name}: chip ×${v} on the scale`);
   }
-  const ratio = row => row.bars[1].width / row.bars[0].width;
+  const ratio = (row, i) => row.bars[i].width / row.bars[0].width;
   const share = parts => parts[0] / sum(parts);
-  close(ratio(tokens), high.tokens.output / low.tokens.output, 0.01, 'tokens: high against low');
-  close(ratio(bill), high.cost_usd / low.cost_usd, 0.01, 'bill: high against low');
-  // Inside the bars: thinking against the reply, and the prompt, paid at both efforts, against the tokens written.
-  close(share(tokens.bars[0].parts), low.tokens.thinking / low.tokens.output, 0.01, 'low: thinking share');
-  close(share(tokens.bars[1].parts), high.tokens.thinking / high.tokens.output, 0.01, 'high: thinking share');
+  const runs = [low, high, max];
   const rate = results.prices.anthropic.models[low.model].output / 1e6;
   const prompt = r => (r.cost_usd - r.tokens.output * rate) / r.cost_usd;
-  close(share(bill.bars[0].parts), prompt(low), 0.01, 'low: the prompt’s share of the bill');
-  close(share(bill.bars[1].parts), prompt(high), 0.01, 'high: the prompt’s share of the bill');
   const fmt = n => n.toLocaleString('en-US');
-  assert.deepEqual(tokens.bars.map(bar => bar.label), [null, `×${ratio(tokens).toFixed(1)} ${fmt(low.tokens.output)} → ${fmt(high.tokens.output)}`]);
-  assert.deepEqual(bill.bars.map(bar => bar.label), [null, `×${ratio(bill).toFixed(1)} $${low.cost_usd.toFixed(3)} → $${high.cost_usd.toFixed(3)}`]);
-  // Right this time: both runs' answers against the check, which tries every load.
-  assert.deepEqual([low.answer, high.answer], [best.eur, best.eur]);
-  assert.equal(answer.verdict, `both said ${best.eur} ✓ = the best of all ${loads.length} loads`);
+  runs.forEach((r, i) => {
+    close(ratio(tokens, i), r.tokens.output / low.tokens.output, 0.01, `tokens: ${r.effort} against low`);
+    close(ratio(bill, i), r.cost_usd / low.cost_usd, 0.01, `bill: ${r.effort} against low`);
+    // Inside the bars: thinking against the reply, and the prompt, paid at every effort, against the tokens written.
+    close(share(tokens.bars[i].parts), r.tokens.thinking / r.tokens.output, 0.01, `${r.effort}: thinking share`);
+    close(share(bill.bars[i].parts), prompt(r), 0.01, `${r.effort}: the prompt’s share of the bill`);
+  });
+  assert.deepEqual(tokens.bars.map(bar => bar.label), [null, ...[high, max].map((r, i) =>
+    `×${ratio(tokens, i + 1).toFixed(1)} ${fmt(low.tokens.output)} → ${fmt(r.tokens.output)}`)]);
+  assert.deepEqual(bill.bars.map(bar => bar.label), [null, ...[high, max].map((r, i) =>
+    `×${ratio(bill, i + 1).toFixed(1)} $${low.cost_usd.toFixed(3)} → $${r.cost_usd.toFixed(3)}`)]);
+  // The answer has no row of its own: the spine's check marks it, and all three runs found the best load.
+  assert.deepEqual(runs.map(r => r.answer), [best.eur, best.eur, best.eur]);
 });
 
 test('D4: the act keeps its promises to Act I and the close', async t => {
@@ -661,10 +670,10 @@ for (const viewport of viewports.slice(0, 2)) {
       shown: [...el.querySelectorAll('[data-eff-run]')].map(run => getComputedStyle(run).visibility === 'visible'),
     }));
     const verdict = () => slide.locator('svg.spine').evaluate(readSpine).then(seen => seen.verdict);
-    const hidden = { state: 'bet', shown: [false, false, false] }, revealed = { state: 'revealed', shown: [true, true, true] };
+    const hidden = { state: 'bet', shown: [false, false, false, false] }, revealed = { state: 'revealed', shown: [true, true, true, true] };
     // The run starts hidden, so the room bets first.
     await eventually(async () => assert.deepEqual(await check(), hidden));
-    assert.deepEqual(await marked(), [[], [], []]);
+    assert.deepEqual(await marked(), [[], []]);
     assert.equal(await verdict(), false, 'the spine keeps the check’s ✓ until the reveal');
     await bigEnough(slide);
     // Clicking a diagram that does not scroll leaves focus on the slide, so the deck still turns.
@@ -672,34 +681,32 @@ for (const viewport of viewports.slice(0, 2)) {
     await stillTurns(page, 'effort-demo');
     await chip(0, '×2').click();
     await chip(0, '×5').click();
-    await chip(2, 'yes').click();
     await chip(1, '×2').click();
-    assert.deepEqual(await marked(), [['×5'], ['×2'], ['yes']], 'one chip per row');
+    assert.deepEqual(await marked(), [['×5'], ['×2']], 'one chip per row');
     await chip(1, '×2').click();
-    await chip(2, 'yes').click();
-    assert.deepEqual(await marked(), [['×5'], [], []], 'pressing the marked chip again unmarks it');
+    assert.deepEqual(await marked(), [['×5'], []], 'pressing the marked chip again unmarks it');
     await stillTurns(page, 'effort-demo');
     // A double-click on Reveal lands its second click on the board, which must not trap the keys.
     await slide.locator('[data-eff-reveal]').dblclick();
     await eventually(async () => assert.deepEqual(await check(), revealed));
     // Read out, each row's bet against the run.
-    assert.match(norm(await slide.locator('[data-eff-status]').textContent()), /^the run is shown\. tokens: the room said ×5; the run, ×1\.5\. the bill: the room did not bet;/);
+    assert.match(norm(await slide.locator('[data-eff-status]').textContent()), /^the run is shown\. tokens: the room said ×5; the run, high ×1\.5, max ×2\.9\. the bill: the room did not bet; the run, high ×1\.2, max ×1\.8\.$/);
     assert.equal(await verdict(), true, 'the reveal also lights the spine’s ✓');
-    // A bet near the run: its dashed line stays in sight, the run's label moving past it.
+    // A bet near the run: its dashed line stays in sight, the high and max labels moving past it.
     await chip(1, '×2').click();
     const clear = await rows.nth(1).evaluate(row => {
       const chip = row.querySelector('.eff-chips [aria-pressed="true"]').getBoundingClientRect();
-      const label = row.querySelector('.eff-out').getBoundingClientRect();
       const line = chip.left + chip.width / 2;
-      return line < label.left || line > label.right;
+      return [...row.querySelectorAll('.eff-out')].map(out => out.getBoundingClientRect())
+        .map(label => line < label.left || line > label.right);
     });
-    assert.ok(clear, 'the bill’s label does not cover the room’s ×2 line');
+    assert.deepEqual(clear, [true, true], 'neither of the bill’s labels covers the room’s ×2 line');
     await chip(1, '×2').click();
     await bigEnough(slide);
     await stillTurns(page, 'effort-demo');
     await slide.locator('[data-eff-reset]').click();
     await eventually(async () => assert.deepEqual(await check(), hidden));
-    assert.deepEqual(await marked(), [[], [], []], 'Reset clears the bets');
+    assert.deepEqual(await marked(), [[], []], 'Reset clears the bets');
     assert.equal(await verdict(), false);
     await stillTurns(page, 'effort-demo');
     await press(page, 'effort-demo', slide.locator('[data-eff-reveal]'));
@@ -766,7 +773,7 @@ async function endStates(page) {
   assert.deepEqual(await van.locator('[data-van-parcel]').evaluateAll(els => els.filter(el => el.checkVisibility()).length), 8, 'the eight parcels');
   assert.equal(await van.locator('[data-van-bay]').isVisible(), true, 'the bay');
   const check = topic(page, 'effort-demo');
-  assert.deepEqual(await check.locator('[data-eff-run]').evaluateAll(els => els.map(el => getComputedStyle(el).visibility)), ['visible', 'visible', 'visible'], 'the run, revealed');
+  assert.deepEqual(await check.locator('[data-eff-run]').evaluateAll(els => els.map(el => getComputedStyle(el).visibility)), ['visible', 'visible', 'visible', 'visible'], 'the run, revealed: high and max in each row');
   assert.equal(await check.locator('[data-eff-reveal]').isVisible(), false, 'nothing left to reveal');
   assert.deepEqual(await filled(page), [25, 39], 'the waffles, filled');
   const sum = topic(page, 'addition-36-59');

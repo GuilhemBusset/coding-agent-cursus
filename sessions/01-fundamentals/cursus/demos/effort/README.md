@@ -1,10 +1,10 @@
-# Act II · the effort dial, one problem at low and high effort
+# Act II · the effort dial, one problem at low, high and max effort
 
 **Instructor runbook.** Six minutes in Act II. The room bets on what turning the effort dial up buys,
-then watches one small operations-research puzzle (a knapsack) solved at `low` and at `high`
-effort. A script counts the tokens, the wall time, the list-price cost, and checks the answer
-against a brute-force oracle. The lesson is the trade: more thinking costs tokens, seconds and
-money, and on a problem the model already gets right it buys nothing else.
+then watches one small operations-research puzzle (a knapsack) solved at `low`, `high` and
+`max` effort. A script counts the tokens, the wall time, the list-price cost, and checks the
+answer against a brute-force oracle. The lesson is the trade: more thinking costs tokens, seconds
+and money, and on a problem the model already gets right it buys nothing else.
 
 Like every demo, this runs on the instructor's Linux machine only (ADR 0010). Students do not run it.
 
@@ -35,7 +35,8 @@ script scores a run as correct only when its last `ANSWER:` line is the integer 
    `uv sync --locked` inside `sessions/01-fundamentals/`). The script uses only the standard
    library, but `uv run` needs the session's `.venv/`.
 2. Check the CLI you will use and that you are logged in: `claude --version` or `codex --version`,
-   then any one-line prompt. The recording used Claude Code 2.1.316 and codex-cli 0.166.0.
+   then any one-line prompt. The low and high runs were recorded with Claude Code 2.1.316 and
+   codex-cli 0.166.0, the max runs with Claude Code 2.1.318 and codex-cli 0.165.0.
 3. Check the fallback works offline: `uv run --offline effort.py replay` must print the table under
    [Expected outcome](#expected-outcome).
 4. Run the [reset](#reset). Open a terminal in this folder (`sessions/01-fundamentals/cursus/demos/effort/`)
@@ -43,8 +44,8 @@ script scores a run as correct only when its last `ANSWER:` line is the integer 
 
 ## Run
 
-From this folder, run the command for the CLI you have. Each one runs the same prompt twice,
-`low` then `high`, and prints the table at the end. Progress lines go to stderr.
+From this folder, run the command for the CLI you have. Each one runs the same prompt three
+times, `low`, `high` then `max`, and prints the table at the end. Progress lines go to stderr.
 
 Claude Code (the effort setting is `--effort`, model `claude-opus-5-5`):
 
@@ -52,25 +53,26 @@ Claude Code (the effort setting is `--effort`, model `claude-opus-5-5`):
 uv run effort.py live --cli claude
 ```
 
-Codex (the effort setting is `-c model_reasoning_effort="low"` or `"high"`, model `gpt-6-astra`):
+Codex (the effort setting is `-c model_reasoning_effort="low"`, `"high"` or `"max"`, model `gpt-6-astra`):
 
 ```sh
 uv run effort.py live --cli codex
 ```
 
-With both CLIs installed, `uv run effort.py live --cli both` runs all four. `--claude-model ID` and
-`--codex-model ID` override the models; add the model's rates to `prices.json` first, or the run
-stops with "No price for model".
+With both CLIs installed, `uv run effort.py live --cli both` runs all six. `--effort` runs only
+the levels it names, in the order low, high, max: `--effort low max` skips high when time is short.
+`--claude-model ID` and `--codex-model ID` override the models; add the model's rates to
+`prices.json` first, or the run stops with "No price for model".
 
 What each run does, so nobody wonders whether the agent "cheated":
 
 - It runs in a fresh, empty temporary folder outside the repository, deleted afterwards. The
   model never sees the oracle, the recording or the repo's `AGENTS.md`.
-- Claude Code: `claude -p --output-format stream-json --verbose --effort <low|high> --model
+- Claude Code: `claude -p --output-format stream-json --verbose --effort <low|high|max> --model
   claude-opus-5-5 --no-session-persistence --strict-mcp-config --tools "" --permission-mode dontAsk`,
   with the prompt on stdin. `--tools ""` removes every tool.
 - Codex: `codex exec --json --ephemeral --skip-git-repo-check -C <tmp> --sandbox read-only
-  -c approval_policy="never" -c model_reasoning_effort="<low|high>" -m gpt-6-astra -`, with the
+  -c approval_policy="never" -c model_reasoning_effort="<low|high|max>" -m gpt-6-astra -`, with the
   prompt on stdin. This command does not remove Codex's shell tool, so the prompt forbids tools,
   the sandbox is read-only, and the script counts tool calls anyway.
 - Any run that called a tool, or where Claude Code still offered tools, is marked `(used tools)`
@@ -78,42 +80,46 @@ What each run does, so nobody wonders whether the agent "cheated":
 
 The settings are documented here (checked 2026-10-11, rechecked 2026-10-18; the Codex reference
 now lists `max` and `ultra` among the possible levels; the prices below were unchanged on
-2026-10-18 and again on 2026-11-01):
+2026-10-18, on 2026-11-01 and again on 2026-11-05, when the Claude effort page still listed `max`
+for Opus 5.5):
 
 - Claude effort parameter: https://platform.claude.com/docs/en/build-with-claude/effort. The levels
   are `low`, `medium`, `high`, `xhigh` and `max`. Opus 5.5 defaults to `medium`.
 - Codex `model_reasoning_effort`: https://developers.openai.com/codex/config-reference. The levels
-  available depend on the model. Always pass it explicitly. The instructor account's default was
-  `xhigh` in the cold-open rehearsal.
+  available depend on the model; `gpt-6-astra` accepted `max` in the recording. Always pass it
+  explicitly. The instructor account's default was `xhigh` in the cold-open rehearsal.
 
 ## Timing (six minutes)
 
 | Time | On screen | Say |
 | --- | --- | --- |
-| 0:00 | `prompt.txt` | Read the puzzle. Ask the [predict question](#predict) and have everyone write down three multipliers and a yes or no. |
-| 1:00 | Launch `uv run effort.py live --cli claude` (or `codex`) | "Same prompt, same model, twice. Only the effort setting changes. No tools, empty folder." |
-| 1:30 | Progress lines on stderr | The low run ends in about 15 s (Claude Code) or 35 s (Codex). The high run takes about as long. |
-| 2:30 | The table | Read one row aloud: output tokens, reasoning tokens, seconds, dollars, answer, correct. |
-| 3:15 | The "High effort divided by low effort" lines | Compare them with the room's bets. If people bet 5× or 10×, that gap is the discussion. |
-| 4:15 | `input tok` and `cache write` columns | About the same at both efforts: that is the agent's own system prompt, paid on every call. On a small puzzle it is about half the bill. |
+| 0:00 | `prompt.txt` | Read the puzzle. Ask the [predict question](#predict) and have everyone write down two multipliers, max over low. |
+| 1:00 | Launch `uv run effort.py live --cli claude` (or `codex`) | "Same prompt, same model, three times. Only the effort setting changes. No tools, empty folder." |
+| 1:15 | Progress lines on stderr | Claude Code: about 15 s each at low and high, 20 s at max, so the table is up before 2:00. Codex: about 35 s each, then 60 s at max, so the table is up at about 3:10: talk over the wait. |
+| 2:30 | The table | Read the three rows of one CLI aloud: output tokens, reasoning tokens, seconds, dollars, answer, correct. |
+| 3:15 | The "High effort divided by low effort" and "Max effort divided by low effort" lines | Compare the max lines with the room's bets. If people bet 5× or 10×, that gap is the discussion. |
+| 4:15 | `input tok` and `cache write` columns | About the same at all three efforts: that is the agent's own system prompt, paid on every call. On a small puzzle it is about half the low bill, and still a third of the max one. |
 | 5:15 | Close | "The dial is an allowance, not a guarantee. Turn it up when the problem is hard and checkable, not by default." |
 
-If the high run is still going after about two minutes, press Ctrl-C and switch to the
-[fallback](#fallback). Do not wait in front of the room.
+If a run is still going after about two minutes (the slowest recorded one, Codex at max, took
+about a minute), press Ctrl-C and switch to the [fallback](#fallback). Do not wait in front of the
+room.
 
 ## Predict
 
 Ask it before launching, and have people commit to numbers:
 
-> At high effort, roughly how many times more output tokens, seconds and dollars will it spend,
-> and will it get right what low effort gets wrong?
+> At max effort, roughly how many times low effort's output tokens will it spend, and how many
+> times its bill?
 
-Offer a scale to bet on (1×, 2×, 5×, 10×) for each of the three. The question is a bet on one run,
-not on an average.
+Offer a scale to bet on (1×, 2×, 5×, 10×) for each of the two, as the slide's chips do. High
+effort is revealed beside max, as the step in between. The question is a bet on one run, not on an
+average.
 
 ## Expected outcome
 
-The recorded run of 2026-11-01, exactly as `uv run --offline effort.py replay` prints it:
+The recorded runs, low and high of 2026-11-01 and max of 2026-11-05, exactly as
+`uv run --offline effort.py replay` prints them:
 
 ```text
 Effort dial - knapsack, capacity 630 kg - optimum by brute force over all subsets: 229
@@ -123,27 +129,35 @@ CLI     effort  model            input tok  output tok  cache read  cache write 
 ------  ------  ---------------  ---------  ----------  ----------  -----------  ---------  -------  --------  ------  -------
 claude  low     claude-opus-5-5          2         820           0        2,646        343     13.3    0.0376     229  yes
 claude  high    claude-opus-5-5          2       1,212           0        2,642        703     14.0    0.0454     229  yes
+claude  max     claude-opus-5-5          2       2,348           0        2,714      1,801     21.4    0.0687     229  yes
 codex   low     gpt-6-astra         15,053         591      12,416            -        366     34.4    0.0683     229  yes
 codex   high    gpt-6-astra         15,053         632      12,416            -        448     32.7    0.0704     229  yes
+codex   max     gpt-6-astra         15,039       1,215      12,288            -      1,034     59.8    0.1005     229  yes
 
 Claude counts input without cache reads/writes; Codex counts cached tokens inside input.
 reasoning = Claude thinking tokens or Codex reasoning tokens, already counted in output.
 High effort divided by low effort, per CLI:
   claude  output tokens x1.5   reasoning x2.0   seconds x1.1   cost x1.2
   codex   output tokens x1.1   reasoning x1.2   seconds x1.0   cost x1.0
+Max effort divided by low effort, per CLI:
+  claude  output tokens x2.9   reasoning x5.3   seconds x1.6   cost x1.8
+  codex   output tokens x2.1   reasoning x2.8   seconds x1.7   cost x1.5
 ```
 
 What to draw from it:
 
-- **Both efforts were correct, in both CLIs.** Here high effort bought no correctness. It bought
-  about 1.2 to 2.0 times the reasoning tokens, 1.0 to 1.1 times the time and 1.0 to 1.2 times
-  the cost. The lesson for this puzzle is cost and time, not accuracy.
+- **All three efforts were correct, in both CLIs.** Here more effort bought no correctness. Over
+  low, high bought about 1.2 to 2.0 times the reasoning tokens, 1.0 to 1.1 times the time and 1.0
+  to 1.2 times the cost; max bought 2.8 to 5.3 times the reasoning tokens, 1.6 to 1.7 times the
+  time and 1.5 to 1.8 times the cost. The lesson for this puzzle is cost and time, not accuracy.
 - **The fixed cost dominates.** The input side (Claude Code's system prompt of about 2,640 tokens
-  written to the 1-hour cache, Codex's 15,053 input tokens) is the same or nearly at both efforts
-  and is 47 to 57 percent of each bill. The effort dial only moves the output side.
+  written to the 1-hour cache, 2,714 in the max run's newer Claude Code; Codex's 15,053 input
+  tokens, 15,039 at max) is the same or nearly at all three efforts. It is 47 to 57 percent of each
+  low and high bill, and still 32 (Claude) and 40 (Codex) percent at max. The effort dial only
+  moves the output side.
 - **If a live run differs,** that is the demo working, not failing. A low run that answers 228
-  (the full van) or 181 (greedy) while high gets 229 is the case where thinking bought
-  correctness. A high run that is slower and still wrong is the overthinking case from the
+  (the full van) or 181 (greedy) while high or max gets 229 is the case where thinking bought
+  correctness. A max run that is slower and still wrong is the overthinking case from the
   deck. Either way, **one sample is an anecdote, not a rate**. Two runs at the same effort can
   differ, as the cold open showed. Claims about effort need many samples and a verifier, which is
   exactly what the test-time-compute lab simulates.
@@ -156,19 +170,20 @@ How the cost is computed (USD list-price equivalent: a subscription login is not
   `modelUsage`. `modelUsage` does not say how long a write is cached, so the script reads the
   result's `usage.cache_creation` split (`ephemeral_1h_input_tokens`, `ephemeral_5m_input_tokens`)
   and prices 1-hour writes at the 1-hour rate ($8 per million for Opus 5.5) and 5-minute writes at
-  the 5-minute rate ($5). Both recorded Claude runs wrote their system prompt (2,646 and 2,642
-  tokens) to the 1-hour cache, kept as `cache_write_1h` next to `cache_write` in `results.json`. Without a
-  reported split, every write is priced at the 5-minute rate.
+  the 5-minute rate ($5). All three recorded Claude runs wrote their system prompt (2,646, 2,642
+  and 2,714 tokens) to the 1-hour cache, kept as `cache_write_1h` next to `cache_write` in
+  `results.json`. Without a reported split, every write is priced at the 5-minute rate.
 - Codex reports inclusive counters per turn: `input_tokens` includes `cached_input_tokens` and
   `cache_write_input_tokens`, and `output_tokens` includes `reasoning_output_tokens`. Cost =
   (input − cached − cache write) × input rate + cached × cached-input rate + cache write ×
   cache-write rate + output × output rate. The script refuses usage where cached plus cache-write
   tokens exceed input or reasoning exceeds output, and a nonzero cache write for a model with no
-  `cache_write` rate in `prices.json`. Both recorded runs report `cache_write_input_tokens` of 0.
-- Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. In both Claude
-  runs it equals the script's cost: low (2 × $4 + 2,646 × $8 + 820 × $20) per million =
-  $0.037576, high (2 × $4 + 2,642 × $8 + 1,212 × $20) per million = $0.045384, so
-  `cost_delta_usd` = `cost_usd` − `reported_cost_usd` is 0 for low and 7 × 10⁻¹⁸ for high, the
+  `cache_write` rate in `prices.json`. All three recorded runs report `cache_write_input_tokens` of 0.
+- Claude Code also reports its own `total_cost_usd`, kept as `reported_cost_usd`. In all three
+  Claude runs it equals the script's cost: low (2 × $4 + 2,646 × $8 + 820 × $20) per million =
+  $0.037576, high (2 × $4 + 2,642 × $8 + 1,212 × $20) per million = $0.045384, max (2 × $4 +
+  2,714 × $8 + 2,348 × $20) per million = $0.06868, so `cost_delta_usd` = `cost_usd` −
+  `reported_cost_usd` is 0 for low, 7 × 10⁻¹⁸ for high and 1.4 × 10⁻¹⁷ for max, the
   floating-point rounding of Claude Code's own sum.
 
 ## Known failure modes
@@ -182,7 +197,7 @@ How the cost is computed (USD list-price equivalent: a subscription login is not
 - **Your own Claude Code hooks and plugins.** `--tools ""` removes tools, but your user-level
   `SessionStart` hooks still run (the recording shows one, with empty output). They do not change
   the counts unless they print context into the session.
-- **A different effort level name.** If a CLI rejects `low` or `high` for a model, the run exits
+- **A different effort level name.** If a CLI rejects `low`, `high` or `max` for a model, the run exits
   nonzero and the script stops with the CLI's error. Check the docs links above.
 - **No network, quota exhausted, or a login prompt.** Switch to the [fallback](#fallback) straight
   away rather than debugging in front of the room.
@@ -197,24 +212,29 @@ uv run --offline effort.py replay
 
 It prints the recorded table above. `--offline` stops uv from touching the network; it works
 because the session's `.venv/` was synced before class. Then continue the timing from 2:30. To show
-the evidence, open `recorded/raw/claude-high.jsonl` (or `codex-high.jsonl`) and find the final
+the evidence, open `recorded/raw/claude-max.jsonl` (or `codex-max.jsonl`) and find the final
 `ANSWER: 229` and the usage counters.
 
 After a live run, `uv run effort.py replay --dir work` prints that run's table again.
 
 ## Recording
 
-Four live runs, one per CLI and effort, made on **2026-11-01** on the instructor's Linux machine
-(WSL2) with `uv run effort.py live --cli both`, both CLIs logged in with the instructor's accounts.
-The run date is the UTC date of the first run's start. The prices are the snapshot read from the vendor
-pages on 2026-10-11, rechecked on 2026-10-18 and on the run day, 2026-11-01, unchanged.
+Six live runs, one per CLI and effort, on the instructor's Linux machine (WSL2), both CLIs logged
+in with the instructor's accounts. The low and high runs were made on **2026-11-01** with
+`uv run effort.py live --cli both`, before the demo had a max level. The max runs were added on
+**2026-11-05** with `uv run effort.py live --cli both --effort max`, from the same prompt, with
+the CLIs installed that day. The run date is the UTC date of the first run's start. The prices are
+the snapshot read from the vendor pages on 2026-10-11, rechecked on 2026-10-18 and on both run
+days, 2026-11-01 and 2026-11-05, unchanged.
 
 | CLI | Version | Model | Effort | Start (UTC) | End (UTC) | Seconds | Exit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Claude Code | 2.1.316 | claude-opus-5-5 | low | 2026-11-01T13:30:59.438Z | 2026-11-01T13:31:12.754Z | 13.316 | 0 |
 | Claude Code | 2.1.316 | claude-opus-5-5 | high | 2026-11-01T13:31:12.755Z | 2026-11-01T13:31:26.776Z | 14.021 | 0 |
+| Claude Code | 2.1.318 | claude-opus-5-5 | max | 2026-11-05T06:50:43.101Z | 2026-11-05T06:51:04.532Z | 21.431 | 0 |
 | Codex | 0.166.0 | gpt-6-astra | low | 2026-11-01T13:31:26.856Z | 2026-11-01T13:32:01.232Z | 34.376 | 0 |
 | Codex | 0.166.0 | gpt-6-astra | high | 2026-11-01T13:32:01.232Z | 2026-11-01T13:32:33.935Z | 32.703 | 0 |
+| Codex | 0.165.0 | gpt-6-astra | max | 2026-11-05T06:51:04.611Z | 2026-11-05T06:52:04.375Z | 59.764 | 0 |
 
 Prices used, standard list prices in USD per million tokens (MTok), as of 2026-10-11:
 
@@ -233,14 +253,19 @@ an auxiliary model. The recorded runs used only `claude-opus-5-5`.
 
 Notes on the recording:
 
+- The max runs came four days after the others, with other CLI versions, so their fixed part
+  differs slightly: Claude Code's system prompt was 2,714 tokens instead of about 2,640, and Codex
+  sent 15,039 input tokens, 12,288 of them cached, instead of 15,053 and 12,416. One run per
+  effort, on two days, is still an anecdote.
 - It replaces the recording of 2026-10-11, made when the van held 63 kg. Every weight and the
   limit were then multiplied by ten, which keeps the same best load and the same traps; that
   recording also gave 229 in all four runs. It is in the repository's history, not kept here.
 - The raw files are the CLIs' stdout, scrubbed: the temporary folder is shown as `<tmp>`, the home
   folder as `~` and the user name as `<user>`. Session IDs and other UUIDs became `<session-id>`,
   message and request IDs `<message-id>` and `<request-id>`, and the local socket path
-  `<socket>`; the working folder appears as `<tmp>` both as `cwd` and `original_cwd`. No e-mail
-  address appeared. No token, timing, model or answer field was changed,
+  `<socket>`; the working folder appears as `<tmp>` both as `cwd` and `original_cwd`, and in the
+  max run's memory folder, `~/.claude/projects/<tmp>/memory/`. No e-mail address appeared. No
+  token, timing, model or answer field was changed,
   and `results.json` re-derives from the raw files.
 - `prompt_sha256` in every meta file is the sha256 of the shipped `prompt.txt`
   (`725863d4eea31e496e15201c2eb2e478717806e5b398ada07edbf13a57892b87`).
