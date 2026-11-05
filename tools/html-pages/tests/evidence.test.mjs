@@ -302,7 +302,7 @@ test('D2: the close opens the five badges into five habits, each with the failur
   assert.match(await face(topic(page, 'wrap')), /next · close/);
 });
 
-test('D3: the opener’s worked row is Act II’s recorded run, word for word', async t => {
+test('D3: the opener’s worked row is Act III’s recorded run, word for word', async t => {
   const run = await json(path.join(runs, 'flipped-sense-claude.json'));
   const meta = await json(path.join(runs, 'raw/flipped-sense-claude.meta.json'));
   const said = run.steps.filter(step => step.type === 'message').map(step => step.text).at(-1);

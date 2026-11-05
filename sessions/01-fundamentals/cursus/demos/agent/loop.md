@@ -22,7 +22,7 @@ verdict and the changed files; the agent's word is not the evidence.
 ## Live in class (#two-harnesses)
 
 The Act III deck (`03-agent.html#two-harnesses`) runs a different version of this demo: interactive,
-in both CLIs, with Act II's short prompt, the one its recorded run used
+in both CLIs, with the short prompt of the run `#harness` replays, the one its recorded run used
 (`fixtures/runs/flipped-sense-claude.json`). The slide draws that recording and its Codex twin; the
 scripted `run loop` above, with its longer `LOOP_PROMPT`, is for rehearsing the loop, not for class.
 

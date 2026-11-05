@@ -6,11 +6,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '../browser.mjs';
 import { openPage, repoRoot, count, eventually, focused, assertCollected } from './component-helpers.mjs';
 
-// The Act III deck opens Act II's last run: the model only wrote text, the harness ran every tool,
+// The Act III deck opens on what an agent is, built in four steps on one picture (the model, + tools,
+// + a loop, = the harness), then one real run: the model only wrote text, the harness ran every tool,
 // re-sent the run on every call, and ended it when a reply held no tool call. Five questions, one per
-// part, pinned as numbered badges on the spine, Act III's mechanism, repeated on every slide with the
-// current part lit; the close opens each badge into a habit. Five slides ask the room to predict, and
-// each reveal shows the room's pick beside what the recording did. Every number is a recording's.
+// part, pinned as numbered badges on the spine, Act III's mechanism and the first picture made small,
+// repeated on every slide after it with the current part lit; the close opens each badge into a habit.
+// Five slides ask the room to predict, and each reveal shows the room's pick beside what the recording
+// did. Every number is a recording's.
 // These are structural floors next to check-page and a person's review of the prose.
 const cursus = path.join(repoRoot, 'sessions/01-fundamentals/cursus');
 const runs = path.join(cursus, 'fixtures/runs');
@@ -22,7 +24,7 @@ const viewports = [
   { width: 1280, height: 720 },
   { width: 390, height: 844 },
 ];
-const order = ['harness', 'two-harnesses', 'resend', 'long-run', 'prefix', 'gate', 'stop', 'ladder', 'time-horizons', 'wrap'];
+const order = ['agent', 'harness', 'two-harnesses', 'resend', 'long-run', 'prefix', 'gate', 'stop', 'ladder', 'time-horizons', 'wrap'];
 const questions = ['Who runs the tools?', 'What does each call see?', 'What loads before you type?', 'What may it run?', 'When does it stop?'];
 // Each part's slides, in order; the landscape and the close sit after part 5.
 const parts = [
@@ -42,8 +44,8 @@ const predicts = [
   { id: 'prefix', p: 'px', answer: '~10k' },
   { id: 'stop', p: 'rp', answer: 'stop and report' },
 ];
-// Only research claims keep a source on the face.
-const cited = ['time-horizons'];
+// Only research claims and the definition keep a source on the face.
+const cited = ['agent', 'time-horizons'];
 // About 30 to 45 words of prose on a face; pictures, controls and the source line are not prose.
 const faceWords = 48;
 const notProse = ['h2', '.eyebrow', '.cite', '.spine-wrap', '[role="img"]', 'table', 'blockquote', 'button', '[role="group"]'];
@@ -190,15 +192,23 @@ test('D1: slide faces are sparse and carry no recording artefacts', async t => {
   }
 });
 
-test('D2: the act opens on Act II’s last run and keeps to its order', async t => {
+test('D2: the act opens on what an agent is, then one real run, and keeps to its order', async t => {
   const page = await pageFor(t, { javaScriptEnabled: false });
   assert.deepEqual(await idsOf(page), order);
-  const opener = topic(page, 'harness');
-  assert.match(norm(await opener.locator('h2').textContent()), /^not the model: the harness ran the tests\.$/);
-  // The notes pick up Act II's close word for word.
+  const opener = topic(page, 'agent');
+  assert.match(norm(await opener.locator('h2').textContent()), /^an agent runs tools in a loop to reach a goal\.$/);
+  assert.match(norm(await topic(page, 'harness').locator('h2').textContent()), /^not the model: the harness ran the tests\.$/);
+  // The opener picks up Act II's last question word for word.
+  const question = 'The model only writes text. So who ran the solver in the cold open?';
   const act2 = await readFile(path.join(cursus, '02-thinking.html'), 'utf8');
-  assert.ok(act2.includes('Who ran the tests on the last slide? Not the model. Agent = model + harness.'));
-  assert.ok((await notesText(opener)).includes(norm('Who ran the tests on the last slide? Not the model. Agent = model + harness.')));
+  assert.ok(act2.includes(question), 'Act II ends on it');
+  assert.ok((await notesText(opener)).includes(norm(question)));
+  // The run slide introduces the run it replays: the task, the bug and the prompt.
+  const meta = await json(path.join(runs, 'raw/flipped-sense-claude.meta.json'));
+  const run = await notesText(topic(page, 'harness'));
+  assert.ok(run.includes(norm(meta.scenario.prompt.replaceAll('`', ''))), 'the prompt, word for word');
+  assert.match(run, /maximizes the cost instead of minimizing it/);
+  assert.match(run, /cost model, not the llm/);
 });
 
 test('D2: the opening spine is the overview: every badge unanswered, each part linking its slide', async t => {
@@ -221,7 +231,9 @@ test('D2: every other slide repeats the spine as an image, its question current 
   const reference = await topic(page, 'harness').locator('svg.spine').evaluate(geometry);
   await count(page.locator('svg.spine [id]'), 0);
   const labels = [];
-  for (const id of order.slice(1)) {
+  // #agent draws the full picture the spine shrinks; the spine starts on #harness, the overview.
+  await count(topic(page, 'agent').locator('svg.spine'), 0);
+  for (const id of order.slice(order.indexOf('harness') + 1)) {
     const slide = topic(page, id);
     const spine = slide.locator('svg.spine');
     await count(spine, 1);
@@ -280,7 +292,108 @@ test('D2: the close opens the five badges into five habits', async t => {
   assert.match(await face(close), /next · act iv/);
 });
 
-test('D3: the opener replays Act II’s run, as recorded', async t => {
+// #agent: one picture built in four steps. Run in the page: each part's step and how it is drawn now, read
+// from the colour its lines take (teal lit, rule dimmed, muted kept as on the overview), the sentences that
+// show, the pressed chip, and whether the slide still fits.
+const steps = ['The model', '+ tools', '+ a loop', '= an agent'];
+function readAgent(slide) {
+  return slide.evaluate(el => {
+    const root = getComputedStyle(document.documentElement);
+    const look = { [root.getPropertyValue('--accent').trim()]: 'now', [root.getPropertyValue('--rule').trim()]: 'next', [root.getPropertyValue('--muted').trim()]: 'done' };
+    return {
+      parts: [...el.querySelectorAll('svg [data-l]')].map(part => [Number(part.getAttribute('data-l')), look[getComputedStyle(part).getPropertyValue('--ag-line').trim()] ?? '?']),
+      says: [...el.querySelectorAll('[data-ag-say]')].filter(say => say.checkVisibility()).map(say => say.textContent.replace(/\s+/g, ' ').trim()),
+      pressed: [...el.querySelectorAll('[data-ag-chip]')].filter(chip => chip.getAttribute('aria-pressed') === 'true').map(chip => chip.textContent.trim()),
+      chips: [...el.querySelectorAll('[data-ag-chip]')].filter(chip => chip.checkVisibility() && !chip.disabled).length,
+      fits: el.scrollHeight <= el.clientHeight + 1,
+    };
+  });
+}
+const lookAt = (parts, at) => parts.every(([step, look]) => look === (step === at ? 'now' : step < at ? 'done' : 'next'));
+
+test('D3: #agent draws the definition’s parts, each added by one of four steps', async t => {
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  const slide = topic(page, 'agent');
+  const drawn = (await labels(slide)).split(' | ');
+  for (const part of ['context', 'model', 'tool call?', 'tools', 'read · edit', 'bash · search', 'your repo', 'permissions',
+    'the harness', 'result appended, call the model again', 'no tool call → stop, reply to you']) {
+    assert.ok(drawn.includes(part), `the picture names ${part}`);
+  }
+  // What each step adds: the model and your goal; the tool call, the tools and your repo; the loop and the stop;
+  // the harness band, its rules and the lock. The context grows with them.
+  const added = await slide.evaluate(el => Object.fromEntries([1, 2, 3, 4].map(step => [step,
+    [...el.querySelectorAll(`svg [data-l="${step}"] text`)].map(text => text.textContent.trim().toLowerCase())])));
+  for (const [step, parts] of Object.entries({
+    1: ['model', 'context', 'your goal', 'the model'],
+    2: ['tool call?', 'tools', 'your repo', 'tool list'],
+    3: ['result appended, call the model again', 'no tool call → stop, reply to you', 'results so far', 'result'],
+    4: ['the harness', 'permissions', 'rules, agents.md'],
+  })) for (const part of parts) assert.ok(added[step].includes(part), `step ${step} adds ${part}`);
+  // With no script the whole picture shows, as on the overview, and all four sentences, in order.
+  const seen = await readAgent(slide);
+  assert.ok(seen.parts.every(([, look]) => look === 'done'), 'no script: every part drawn');
+  assert.equal(seen.chips, 0, 'no chip to press');
+  assert.deepEqual(seen.says.map(say => norm(say.split('.')[0])), steps.map((step, i) => norm(`${i + 1} · ${step}`)));
+  // The definition's source on the face; the notes keep the two loops apart and carry the think-pair-share.
+  assert.match(norm(await slide.locator('.cite').textContent()), /simon willison.*how claude code works/);
+  const talk = await notesText(slide);
+  for (const step of [1, 2, 3, 4]) assert.match(talk, new RegExp(`step ${step}, `));
+  assert.match(talk, /token loop/);
+  assert.match(talk, /think-pair-share: "on your own task, what could check the agent's answer/);
+});
+
+for (const viewport of viewports.slice(0, 2)) {
+  test(`D5: #agent builds one step per chip, from the model to an agent, at ${viewport.width}×${viewport.height}`, async t => {
+    const page = await pageFor(t, { viewport });
+    await goTo(page, 'agent');
+    const slide = topic(page, 'agent');
+    const chips = slide.locator('[data-ag-chip]');
+    await eventually(async () => assert.equal((await readAgent(slide)).chips, 4, 'the four chips show'));
+    assert.deepEqual((await chips.allTextContents()).map(norm), steps.map((step, i) => norm(`${i + 1}${step}`)));
+    let seen = await readAgent(slide);
+    assert.ok(lookAt(seen.parts, 1), 'it opens on the model alone');
+    assert.equal(seen.says.length, 1);
+    await bigEnough(slide);
+    for (const at of [2, 3, 4, 1]) {
+      await chips.nth(at - 1).click();
+      await eventually(async () => {
+        seen = await readAgent(slide);
+        assert.ok(lookAt(seen.parts, at), `step ${at}: its parts lit, the earlier kept, the later dimmed`);
+        assert.deepEqual(seen.pressed.map(norm), [norm(`${at}${steps[at - 1]}`)], 'one chip pressed');
+        assert.equal(seen.says.length, 1, 'one sentence');
+        assert.ok(norm(seen.says[0]).startsWith(norm(`${at} · ${steps[at - 1]}`)), `step ${at}: its own sentence`);
+        assert.equal(seen.fits, true, `step ${at}: the slide still fits`);
+      });
+      assert.match(norm(await slide.locator('[data-ag-status]').textContent()), new RegExp(`^step ${at} of 4\\. ${at} · `), 'announced');
+      await stillTurns(page, 'agent');
+    }
+    // By keyboard the chip acts and the deck stays put.
+    await chips.nth(2).focus();
+    await page.keyboard.press('Enter');
+    await activeSlide(page, 'agent');
+    await eventually(async () => assert.ok(lookAt((await readAgent(slide)).parts, 3)));
+    await focused(chips.nth(2));
+    await chips.nth(3).focus();
+    await page.keyboard.press('Space');
+    await activeSlide(page, 'agent');
+    await eventually(async () => assert.ok(lookAt((await readAgent(slide)).parts, 4)));
+  });
+}
+
+test('D5: print shows #agent whole, whatever step the room left it on', async t => {
+  const page = await pageFor(t);
+  await goTo(page, 'agent');
+  await topic(page, 'agent').locator('[data-ag-chip]').nth(1).click();
+  await page.emulateMedia({ media: 'print' });
+  await eventually(async () => {
+    const seen = await readAgent(topic(page, 'agent'));
+    assert.ok(seen.parts.every(([, look]) => look === 'done'), 'every part drawn');
+    assert.equal(seen.says.length, 4, 'all four sentences');
+    assert.equal(seen.chips, 0, 'no chips on paper');
+  });
+});
+
+test('D3: #harness replays the recorded run', async t => {
   const run = await json(path.join(runs, 'flipped-sense-claude.json'));
   const calls = await callsOf(path.join(runs, 'raw/flipped-sense-claude.jsonl'));
   const tools = run.steps.filter(step => step.type === 'tool_call');
@@ -304,7 +417,7 @@ test('D3: the opener replays Act II’s run, as recorded', async t => {
   assert.ok((await labels(topic(page, 'harness'))).includes(`${Math.round(last)} s`), 'the axis spans the run');
 });
 
-test('D3: the live demo’s notes carry the exact commands and Act II’s prompt, and the lanes count the recorded tools', async t => {
+test('D3: the live demo’s notes carry the exact commands and the recorded prompt, and the lanes count the recorded tools', async t => {
   const meta = await json(path.join(runs, 'raw/flipped-sense-claude.meta.json'));
   const claude = await json(path.join(runs, 'flipped-sense-claude.json'));
   const codex = await json(path.join(runs, 'flipped-sense-codex.json'));
@@ -426,7 +539,7 @@ test('D4: the replay fallbacks in the notes open their recordings in the replay 
     for (const href of await notes(topic(page, id)).locator('a[href*="agent-loop.html#run="]').evaluateAll(els => els.map(el => el.getAttribute('href')))) ids.add(href);
   }
   assert.ok([...ids].some(href => href.endsWith('#run=flipped-sense-claude')) && [...ids].some(href => href.endsWith('#run=flipped-sense-codex')),
-    'Act II’s run and its Codex twin');
+    'the opening run and its Codex twin');
   for (const href of ids) {
     await page.goto(new URL(href, pathToFileURL(file)).href);
     const run = href.split('#run=')[1];

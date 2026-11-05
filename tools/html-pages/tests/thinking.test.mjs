@@ -9,7 +9,7 @@ import { openPage, repoRoot, count, eventually, focused, assertCollected } from 
 // The Act II deck tells one story: a puzzle one pass cannot solve at a glance, then five
 // questions answered in order, one per part. Its mechanism, the spine, sits on every slide: each
 // question is a numbered badge pinned on the part it asks about, the current part is lit and the
-// answered badges are filled; the close opens each badge into a habit. Four slides carry a control
+// answered badges are filled; the last slide hands over to Act III. Four slides carry a control
 // (the van, the bet and the run, the waffles, "Ask it how"): each works by
 // pointer and keyboard without taking the deck's keys, and its slide reads without JS and in print.
 // These are structural floors next to check-page and a person's review of the prose.
@@ -22,7 +22,7 @@ const viewports = [
   { width: 390, height: 844 },
 ];
 const order = ['loop', 'cot-depth', 'search', 'rlvr', 'effort-demo', 'overthinking', 'cot-faithfulness',
-  'addition-36-59', 'world-models', 'repo-model', 'wrap'];
+  'addition-36-59', 'world-models'];
 const questions = ['How does it think?', 'Is it right?', 'How much thinking?', 'Trust what it wrote?', 'What does it know?'];
 // Each part's slides, in order, and the activity linked from a slide's face, if any.
 const parts = [
@@ -34,7 +34,6 @@ const parts = [
   { id: 'cot-faithfulness', part: 4 },
   { id: 'addition-36-59', part: 4 },
   { id: 'world-models', part: 5 },
-  { id: 'repo-model', part: 5 },
 ];
 // Research claims keep a short source on the face; the rest of the sources sit in the notes.
 const cited = ['search', 'rlvr', 'overthinking', 'cot-faithfulness', 'addition-36-59'];
@@ -138,9 +137,9 @@ function readSpine(svg) {
     verdict: getComputedStyle(svg.querySelector('.verdict')).visibility === 'visible',
   };
 }
-// The drawn shapes of a copy, without the close's habits: copies differ only in their classes.
+// The drawn shapes of a copy: copies differ only in their classes.
 function geometry(svg) {
-  return [...svg.querySelectorAll('rect, path, circle')].filter(el => !el.closest('.habits'))
+  return [...svg.querySelectorAll('rect, path, circle')]
     .map(el => ['x', 'y', 'width', 'height', 'd', 'cx', 'cy', 'r'].map(name => el.getAttribute(name) ?? '').join(' '));
 }
 // Per waffle, the cells drawn like the legend's "says so" key.
@@ -232,20 +231,20 @@ test('D2: every other slide repeats the spine as an image, its question current 
   const reference = await topic(page, 'loop').locator('svg.spine').evaluate(geometry);
   await count(page.locator('svg.spine [id]'), 0);
   const labels = [];
-  for (const { id, part } of [...parts, { id: 'wrap', part: 6 }]) {
+  for (const { id, part } of parts) {
     const slide = topic(page, id);
     const spine = slide.locator('svg.spine');
     await count(spine, 1);
     assert.deepEqual(await spine.evaluate(geometry), reference, `${id}: the copy has the same geometry`);
     assert.equal(await spine.getAttribute('role'), 'img');
     const label = norm(await spine.getAttribute('aria-label'));
-    assert.match(label, part > 5 ? /all five questions answered/ : new RegExp(`highlighted: question ${part}\\b`));
+    assert.match(label, new RegExp(`highlighted: question ${part}\\b`));
     labels.push(label);
     await count(spine.locator('a'), 0);
     const seen = await spine.evaluate(readSpine);
-    const badge = n => part > 5 || n === part ? 'now' : n < part ? 'done' : 'next';
+    const badge = n => n === part ? 'now' : n < part ? 'done' : 'next';
     assert.deepEqual(seen.badges, Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, badge(n)])), `${id}: answered up to question ${part}`);
-    if (part <= 5) assert.ok(seen.lit > 0, `${id}: the parts question ${part} is about are lit`);
+    assert.ok(seen.lit > 0, `${id}: the parts question ${part} is about are lit`);
     // The model's reply states 229 on #cot-depth. The check's ✓ waits for #effort-demo's reveal, which
     // shows the check's verdict on the three runs with them; it shows from the next slide on.
     assert.deepEqual(seen.answer, ['229 EUR'], `${id}: the answer`);
@@ -255,43 +254,10 @@ test('D2: every other slide repeats the spine as an image, its question current 
     assert.equal(await wrap.getAttribute('tabindex'), '0');
     assert.ok(await wrap.getAttribute('aria-label'), 'the scrolling wrapper is labelled');
     // The eyebrow names the same part and question as the badge.
-    if (part <= 5) assert.ok(norm(await slide.locator(':scope > .eyebrow').textContent()).startsWith(norm(`Part ${part} · ${questions[part - 1]}`)),
+    assert.ok(norm(await slide.locator(':scope > .eyebrow').textContent()).startsWith(norm(`Part ${part} · ${questions[part - 1]}`)),
       `${id}: the eyebrow names part ${part}`);
   }
   assert.equal(new Set(labels).size, labels.length, 'each copy describes its own slide');
-});
-
-test('D2: the close opens the five badges into five habits', async t => {
-  const page = await pageFor(t, { javaScriptEnabled: false });
-  const close = topic(page, 'wrap');
-  const habits = await close.locator('svg.spine').evaluate(svg => {
-    const inside = (box, el) => {
-      const b = el.getBBox(), x = b.x + b.width / 2, y = b.y + b.height / 2;
-      return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
-    };
-    return [...svg.querySelectorAll('.habits .pill')].map(pill => {
-      const box = pill.getBBox();
-      const numbers = [...svg.querySelectorAll('.habits .bn')].filter(el => inside(box, el)).map(el => el.textContent);
-      const big = [...svg.querySelectorAll('.habits .big')].find(el => inside(box, el));
-      const badge = [...svg.querySelectorAll('.badge')].find(el => el.querySelector('.n').textContent === numbers[0]);
-      return {
-        numbers,
-        habit: [...svg.querySelectorAll('.habits .habit')].filter(el => inside(box, el)).map(el => el.textContent.trim()).join(' '),
-        // The pill hangs from its badge on the spine.
-        fromBadge: !!big && !!badge && big.getAttribute('cx') === badge.querySelector('circle').getAttribute('cx'),
-      };
-    });
-  });
-  assert.equal(habits.length, 5, 'five habits');
-  assert.deepEqual(habits.map(habit => habit.numbers.length), [1, 1, 1, 1, 1], 'each habit carries one number');
-  assert.deepEqual(habits.map(habit => habit.numbers[0]).sort(), ['1', '2', '3', '4', '5']);
-  for (const habit of habits) {
-    assert.ok(words(habit.habit) > 0 && words(habit.habit) <= 6, `habit ${habit.numbers[0]} is a short phrase: ${habit.habit}`);
-    assert.ok(habit.fromBadge, `habit ${habit.numbers[0]} opens from badge ${habit.numbers[0]}`);
-  }
-  // The closing headline answers the opening one.
-  assert.match(norm(await topic(page, 'loop').locator('h2').textContent()), /glance/);
-  assert.match(norm(await close.locator('h2').textContent()), /glance/);
 });
 
 test('D3: the running example is the effort demo’s real puzzle and recorded reply', async t => {
@@ -415,9 +381,9 @@ test('D4: the act keeps its promises to Act I and the close', async t => {
   assert.match(await face(topic(page, 'cot-faithfulness')), /contested/);
   // Overthinking is a warning, not an average: the tasks were built to find it.
   assert.match(await face(topic(page, 'overthinking')), /built to find/);
-  // Act IV returns to injection; Act III adds a check on every turn.
+  // Act IV returns to injection; Act III puts the result back in front of the model on every turn.
   assert.match(await notesText(topic(page, 'cot-faithfulness')), /act iv/);
-  assert.match(await notesText(topic(page, 'wrap')), /every turn/);
+  assert.match(await notesText(topic(page, 'world-models')), /every turn/);
 });
 
 async function localLinks(page) {
@@ -532,38 +498,13 @@ test('D4: part 5 goes on from System 1 and System 2 to a world model, beside a l
   ], 'two machines: what each learns from, what goes in and what comes out');
   assert.deepEqual(drawn.outcomes, ['✗', '✓'], 'the world model imagines both actions, so it can plan');
   assert.match(await face(slide), /your coding agent is the left machine/);
-  // The Act I and part-1 words come back, and the close hands over to Act III on its face.
+  // The Act I and part-1 words come back, and the act's last slide hands over to Act III on its face.
   assert.match(await notesText(slide), /system 1.*system 2.*world model/);
-  const close = topic(page, 'wrap');
-  assert.match(await face(close), /next · act iii who ran the tests on the last slide\? not the model\. agent = model \+ harness\./);
-});
-
-test('D3: #repo-model draws one recorded agent run, quoted from the recording', async t => {
-  const run = JSON.parse(await readFile(path.join(cursus, 'fixtures/runs/flipped-sense-claude.json'), 'utf8'));
-  const said = run.steps.filter(step => step.type === 'message').map(step => step.text);
-  const results = run.steps.filter(step => step.type === 'tool_result').map(step => step.text);
-  const edit = run.steps.find(step => step.type === 'tool_call' && step.tool === 'Edit').input;
-  const meta = JSON.parse(await readFile(path.join(cursus, 'fixtures/runs/raw/flipped-sense-claude.meta.json'), 'utf8'));
-  const page = await pageFor(t, { javaScriptEnabled: false });
-  const svg = topic(page, 'repo-model').locator('svg.run-svg');
-  const chips = await svg.evaluate(el => [...el.querySelectorAll('.run-chip')].map(chip => [...chip.querySelectorAll('text')].map(t => t.textContent).join(' ')));
-  // Picture, repo, picture, repo, picture: acting goes down, observing comes up.
-  assert.deepEqual(await svg.evaluate(el => [...el.querySelectorAll('.run-step')].map(t => t.textContent)), ['act', 'observe', 'act', 'observe']);
-  assert.equal(chips.length, 5);
-  // It starts from the request, word for word, and its first act reads two files and runs the tests.
-  assert.equal(chips[0], `asked “${meta.scenario.prompt.replaceAll('`', '')}”`);
-  assert.ok(run.steps[0].input.command.includes('cat README.md p00_model.py && uv run pytest'), 'one act: read both files, run the tests');
-  assert.match(chips[1], /^reads 2 files, runs uv run pytest /);
-  assert.ok(results[0].includes('1 failed, 29 passed') && results[0].includes('close(1085.0, 485.0)'), 'the first run, as recorded');
-  assert.match(chips[1], /1 failed, 29 passed objective 1085, proven optimum 485$/);
-  assert.equal(said[0], 'The model maximizes instead of minimizing.');
-  assert.equal(chips[2], `says “${said[0]}” “model”: the cost model, not the LLM`);
-  assert.ok(edit.old_string.includes('kMaximize') && edit.new_string.includes('kMinimize'));
-  assert.ok(results.at(-1).includes('30 passed'));
-  assert.match(chips[3], /^edits {2}kMaximize → kMinimize 30 passed ✓/);
-  assert.ok(said.at(-1).startsWith('All 30 tests pass now.'));
-  assert.equal(chips[4], 'says “All 30 tests pass now.”');
-  assert.doesNotMatch(await face(topic(page, 'repo-model')), /lab\b/, 'no lab on part 5');
+  assert.match(await face(slide), /next · act iii the model only writes text\. what runs the command\? an agent\./);
+  assert.match(await notesText(slide), /transition into act iii: /);
+  // Act III opens on what an agent is.
+  const act3 = await readFile(path.join(cursus, '03-agent.html'), 'utf8');
+  assert.ok(act3.includes('<section id="agent" data-slide'), 'Act III opens on #agent');
 });
 
 // The slide controls. A pointer press hands focus back to the slide, so a clicker or the arrow keys

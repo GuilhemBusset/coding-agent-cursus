@@ -404,7 +404,7 @@ svg .tag-t { fill: var(--secondary); font: 700 13px var(--mono); letter-spacing:
 /* == spine:end (Act IV) == */
 </style>
   <style>/* == your-turn == */
-/* The opener: one debrief-card row, filled from Act II's run, and the three sticky notes. What the agent said is
+/* The opener: one debrief-card row, filled from Act III's opening run, and the three sticky notes. What the agent said is
    amber; what the commands printed is teal; the notes carry their word, so colour is never the only signal. */
 .yt-scroll { overflow-x: auto; margin: .7rem 0 0; }
 .yt-card { width: 100%; min-width: 40rem; margin: 0; border-collapse: collapse; background: var(--paper); border: 1px solid var(--muted); }
@@ -783,9 +783,9 @@ svg .tag-t { fill: var(--secondary); font: 700 13px var(--mono); letter-spacing:
           </svg>
           <figcaption id="your-turn-spine-caption" class="visually-hidden">The lab ladder, Act IV’s map; each level links its slide. The lab ladder, left to right. Level 1, Explore, read-only, practises habit 4, grant the least it needs; its evidence: git status --short prints nothing. Level 2, Fix, the tests are the contract, practises habit 1, watch what it runs; its evidence: uv run pytest shows every test passed and git status --short shows only p00_model.py modified. Level 3, Build, a certificate, practises habit 5, “done” is a claim: check it; its main evidence: uv run python check.py prints PASS. Level 4, Stretch, a rule, practises habit 3, keep the prefix lean, and habit 2, one session per task: the rule is tried in a fresh session, so it is loaded; its evidence: git diff HEAD -- AGENTS.md shows the rule. Then the debrief card, one row per level: what the agent claimed against the command you ran; match, yes or no. Five habits from Act III, one or two per level, all five on the ladder.</figcaption>
         </figure>
-        <div class="yt-scroll" role="region" aria-label="The debrief card, one row filled from Act II’s run" tabindex="0">
+        <div class="yt-scroll" role="region" aria-label="The debrief card, one row filled from Act III’s run" tabindex="0">
           <table class="yt-card">
-            <caption>Debrief card · one row, from Act II’s run</caption>
+            <caption>Debrief card · one row, from Act III’s run</caption>
             <thead><tr><th scope="col">What the agent claimed</th><th scope="col">The command I ran, and its output</th><th scope="col">Match?</th><th scope="col">What is still uncertain</th></tr></thead>
             <tbody>
               <tr>
@@ -806,7 +806,7 @@ svg .tag-t { fill: var(--secondary); font: 700 13px var(--mono); letter-spacing:
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
             <p>Talk track: Act III ended on “Your turn on P00, graded by the evidence, not the message.” Before the break you said what you would look at first: the test output, the diff. Point at the ladder: four levels, then the debrief. The numbered circles are Act III’s five habits, one per level, two at L4; under each box, the command that decides “done”.</p>
-            <p>Point at the card. Act II’s run said “All 30 tests pass now.” The evidence is two commands and what they printed: <code>uv run pytest</code>, 30 passed; <code>git status --short</code>, only <code>p00_model.py</code> modified. They match: a green note. The last column is yours to fill.</p>
+            <p>Point at the card. Act III’s opening run said “All 30 tests pass now.” The evidence is two commands and what they printed: <code>uv run pytest</code>, 30 passed; <code>git status --short</code>, only <code>p00_model.py</code> modified. They match: a green note. The last column is yours to fill.</p>
             <p>Activity: pairs, mixed when you can: Claude Code with Codex. L1 and L2 side by side, each on your own laptop, then compare; at L3 you swap seats. Point at the three notes: stick one on your laptop lid and write its word on it. Your card is the table at the bottom of the lab ladder page: copy it on paper, pen ready. Keep every pink note and its output for the debrief.</p>
             <p>Transition: “Level 1 grants the least: read-only. First, what one agent did with more than its task needed.”</p>
             <p>Background for you, not for the slides: <code>fixtures/runs/flipped-sense-claude.json</code>, 2026-10-16, Claude Code 2.1.301, <code>claude-opus-5-5</code>: the recorder’s <code>git status --porcelain</code> prints the same line as <code>--short</code>.</p>
