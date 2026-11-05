@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tests/student_setup'))
-from student_sandbox import Box, STUDENT, course
+from student_sandbox import STUDENT, Box, course
 
 
 def test_discovery_and_failure_recovery(tmp_path):
