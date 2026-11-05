@@ -219,7 +219,11 @@ function Invoke-CursusSetup([hashtable]$State) {
         }
     }
     if (-not $agent) { Write-Line '           (it asks which agent you use: Claude Code, Codex or both)' }
-    Write-Line '  identity your git user.name and user.email: asked for if not set'
+    if ($yes -and $noLogin) {
+        Write-Line '  identity your git user.name and user.email: not asked for (-Yes -NoLogin)'
+    } else {
+        Write-Line '  identity your git user.name and user.email: asked for if not set'
+    }
     if ($noLogin) {
         Write-Line '  logins   skipped (-NoLogin), and so is the setup check'
     } else {
@@ -280,6 +284,9 @@ function Invoke-CursusSetup([hashtable]$State) {
             Stop-Setup 'system tools' "winget could not install the GitHub CLI (exit $code)" 'winget install --id GitHub.cli -e --source winget'
         }
         if (-not $have[$tool]) { Stop-Setup 'system tools' "$tool was installed but is not found" 'open a new PowerShell window and rerun' }
+        if (-not (Test-Floor $have[$tool] $floor[$tool])) {
+            Stop-Setup 'system tools' "$tool $($have[$tool]) at $(Find-Tool $tool) is still below the floor $($floor[$tool]) after installing it" "remove the older $tool, or run winget upgrade --id $id -e --source winget, then rerun"
+        }
         Write-PathChange $before $id
         Say "${tool}: installed $($have[$tool])"
     }
@@ -322,6 +329,9 @@ function Invoke-CursusSetup([hashtable]$State) {
             if ($code -ne 0 -or -not $have[$tool]) {
                 Stop-Setup $steps[$tool] "the $tool installer did not finish (exit $code; log above)" $installers[$tool]
             }
+            if (-not (Test-Floor $have[$tool] $floor[$tool])) {
+                Stop-Setup $steps[$tool] "$tool $($have[$tool]) at $(Find-Tool $tool) is still below the floor $($floor[$tool]) after installing it" "remove that older $tool, open a new PowerShell window and rerun"
+            }
             Write-PathChange $before $tool
             Say "${tool}: installed $($have[$tool])"
         }
@@ -336,6 +346,9 @@ function Invoke-CursusSetup([hashtable]$State) {
     $email = [string](& $git config --global user.email)
     if ($name -and $email) {
         Say 'git identity: already set, left alone'
+    } elseif ($yes -and $noLogin) {
+        # -Yes with -NoLogin runs without a single prompt, terminal or not.
+        Say 'git identity: not set, and not asked for (-Yes -NoLogin). Set it with: git config --global user.name "Your Name"; git config --global user.email "you@example.com"'
     } elseif (Test-Terminal) {
         while (-not $name) { $name = Read-Host '[setup] Your name, for your git commits' }
         while (-not $email) { $email = Read-Host '[setup] Your email, for your git commits' }

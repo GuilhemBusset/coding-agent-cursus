@@ -78,18 +78,23 @@ the same place. After the clone, it runs [`prepare.py`](prepare.py) from the clo
    [`versions.env`](versions.env).
 4. **Agent.** It asks which agent you use, then installs it with its official native installer
    (not npm).
-5. **git identity.** It asks for your name and email if `user.name` or `user.email` is not set.
+5. **git identity.** It asks for your name and email if `user.name` or `user.email` is not set
+   (with `--yes --no-login` it asks nothing, and prints the two `git config` commands instead).
 6. **Logins**, in your browser: `gh auth login` (GitHub.com, HTTPS, gh as git's credential
    helper), then your agent's login. Each is skipped if you are already logged in. The setup never
    prints or stores a token or an API key.
 7. **Clone** the course into `~/coding-agent-cursus`, or reuse the clone it runs from.
 8. **Prepare the clone.** It activates the git hooks, then in every session runs `mise trust`,
-   `mise install` and `mise exec -- uv sync --locked`.
+   `mise install` and `mise exec -- uv sync --locked`. It changes no file in the clone: a hook
+   that is not executable is reported, with the `chmod +x` command that fixes it.
 9. **Check.** It runs the latest session's setup check, which tests the logins, a push and your
    agent, and shows its summary block.
 
 Every tool already at or above the version the setup check requires (git 2.23, gh 2.0, uv 0.5,
-mise 2024.1.0; any version of the agents) is left alone: no upgrade and no second copy.
+mise 2024.1.0; any version of the agents) is left alone: no upgrade and no second copy. After an
+install, the setup checks the version it now finds. If an older copy earlier on your `PATH`
+hides the new one in `~/.local/bin`, it uses the new one and tells you to remove the older one.
+If a tool is still below its version, it stops at that step with the command to run next.
 
 ### Options
 

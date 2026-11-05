@@ -195,20 +195,49 @@ EOF
   if [ "$(id -u)" != 0 ]; then sudo=sudo; fi
 
   # Which tools are there, at which version.
-  local t v
+  floor_of() { case $1 in git) echo "$GIT_FLOOR" ;; gh) echo "$GH_FLOOR" ;; uv) echo "$UV_FLOOR" ;; mise) echo "$MISE_FLOOR" ;; esac; }
+  meets() { [ -n "$1" ] && { [ -z "${2:-}" ] || version_ge "$1" "$2"; }; } # version floor
+  # have_<tool> holds each version; the loop and settle set them through eval.
+  local t v w local_first="" have_git="" have_gh="" have_uv="" have_mise=""
   for t in git gh curl uv mise claude codex; do
     v=""
-    if have "$t"; then
+    # macOS ships /usr/bin/git as a launcher that opens the Command Line Tools dialog when run:
+    # without the Command Line Tools, git is missing and is not run at all.
+    if [ "$t" = git ] && [ "$os" = Darwin ] && ! xcode-select -p >/dev/null 2>&1 </dev/null; then
+      :
+    elif have "$t"; then
       v=$(version_of "$t")
-      # macOS ships /usr/bin/git as a stub that opens the Command Line Tools dialog.
-      if [ "$t" = git ] && [ "$os" = Darwin ] && ! xcode-select -p >/dev/null 2>&1; then v=""; fi
+    fi
+    # A copy in ~/.local/bin at the floor (from an earlier run) wins over an older one on PATH.
+    if ! meets "$v" "$(floor_of "$t")" && [ "$t" != git ] && [ -x "$HOME/.local/bin/$t" ]; then
+      w=$(version_of "$HOME/.local/bin/$t")
+      if meets "$w" "$(floor_of "$t")"; then v=$w local_first=1; fi
     fi
     eval "have_$t=\$v"
   done
+  if [ -n "$local_first" ]; then PATH="$HOME/.local/bin:$PATH"; fi
   ok() { # tool floor: present and at or above the floor
     local v
     eval "v=\${have_$1}"
-    [ -n "$v" ] && { [ -z "${2:-}" ] || version_ge "$v" "$2"; }
+    meets "$v" "${2:-}"
+  }
+  # After an install: the tool now found must meet the floor. If an older copy earlier on PATH
+  # hides the one just installed in ~/.local/bin, use the new one and say so.
+  settle() { # tool floor step next-command
+    local v w
+    v=$(version_of "$1")
+    if ! meets "$v" "$2" && [ -x "$HOME/.local/bin/$1" ]; then
+      w=$(version_of "$HOME/.local/bin/$1")
+      if meets "$w" "$2"; then
+        say "$1: an older $1 ${v:+$v }at $(command -v "$1") comes first on your PATH. This run uses ~/.local/bin/$1; remove the older one, or put ~/.local/bin first on your PATH."
+        PATH="$HOME/.local/bin:$PATH"
+        hash -r
+        v=$w
+      fi
+    fi
+    [ -n "$v" ] || fail "$3" "$1 was installed but is not found" "open a new terminal and rerun"
+    meets "$v" "$2" || fail "$3" "$1 $v is still below the floor $2 after installing it" "$4"
+    eval "have_$1=\$v"
   }
 
   # What is missing, and how each missing tool is installed.
@@ -333,7 +362,11 @@ $sudo dnf install -y gh"
     esac
   done
   if [ -z "$agent" ]; then note "(it asks which agent you use: Claude Code, Codex or both)"; fi
-  printf '  %-8s %s\n' "identity" "your git user.name and user.email: asked for if not set"
+  if [ -n "$yes" ] && [ -n "$no_login" ]; then
+    printf '  %-8s %s\n' "identity" "your git user.name and user.email: not asked for (--yes --no-login)"
+  else
+    printf '  %-8s %s\n' "identity" "your git user.name and user.email: asked for if not set"
+  fi
   if [ -n "$no_login" ]; then
     printf '  %-8s %s\n' "logins" "skipped (--no-login), and so is the setup check"
   else
@@ -415,8 +448,7 @@ $sudo dnf install -y gh"
           fail "system tools" "could not install gh into $dest" "check that ~/.local is writable"
         fi
       fi
-      have_gh=$(version_of gh)
-      [ -n "$have_gh" ] || fail "system tools" "gh was installed but does not run" "open a new terminal and run gh --version"
+      settle gh "$GH_FLOOR" "system tools" "install gh from https://github.com/cli/cli/blob/trunk/docs/install_macos.md, then rerun"
       say "gh: installed $have_gh"
     else
       say "gh: present ${have_gh} (>= $GH_FLOOR), left alone"
@@ -473,18 +505,18 @@ $sudo dnf install -y gh"
     esac
   fi
   if [ "$os" != Darwin ]; then
-    local was floor
+    local floor manual
     for t in git gh; do
-      v=$(version_of "$t")
-      eval "was=\${have_$t}"
-      if [ -z "$v" ]; then fail "system tools" "$t is still not installed" "see 'Install the tools' on the pre-work page"; fi
-      if [ "$t" = git ]; then floor=$GIT_FLOOR; else floor=$GH_FLOOR; fi
-      if [ "$v" = "$was" ]; then
-        say "$t: present $v (>= $floor), left alone"
-      else
-        say "$t: installed $v"
+      floor=$(floor_of "$t")
+      if ok "$t" "$floor"; then
+        eval "say \"$t: present \${have_$t} (>= $floor), left alone\""
+        continue
       fi
-      eval "have_$t=\$v"
+      # The package manager may succeed and still offer only a version below the floor.
+      if [ "$t" = git ]; then manual="install git $floor or newer (https://git-scm.com/install/linux), then rerun"
+      else manual="install gh $floor or newer (https://github.com/cli/cli/blob/trunk/docs/install_linux.md), then rerun"; fi
+      settle "$t" "$floor" "system tools" "$manual"
+      eval "say \"$t: installed \${have_$t}\""
     done
     have curl || fail "system tools" "curl is still not installed" "install curl with your package manager, then rerun"
   fi
@@ -497,8 +529,7 @@ $sudo dnf install -y gh"
     say "uv: installing $UV_VERSION from https://astral.sh/uv/$UV_VERSION/install.sh"
     quiet uv env PATH="$orig_path" sh -c "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh" ||
       fail "user tools" "the uv installer failed (log above)" "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh"
-    have_uv=$(version_of uv)
-    [ -n "$have_uv" ] || fail "user tools" "uv was installed but is not found" "open a new terminal and rerun"
+    settle uv "$UV_FLOOR" "user tools" "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh"
     say "uv: installed $have_uv"
   fi
   if ok mise "$MISE_FLOOR"; then
@@ -507,8 +538,7 @@ $sudo dnf install -y gh"
     say "mise: installing $MISE_VERSION from https://mise.run"
     quiet mise env PATH="$orig_path" sh -c "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh" ||
       fail "user tools" "the mise installer failed (log above)" "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh"
-    have_mise=$(version_of mise)
-    [ -n "$have_mise" ] || fail "user tools" "mise was installed but is not found" "open a new terminal and rerun"
+    settle mise "$MISE_FLOOR" "user tools" "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh"
     say "mise: installed $have_mise"
   fi
 
@@ -530,10 +560,8 @@ $sudo dnf install -y gh"
           fail "agent" "the Codex installer failed (log above)" "curl -fsSL https://chatgpt.com/codex/install.sh | sh"
         ;;
     esac
-    v=$(version_of "$t")
-    [ -n "$v" ] || fail "agent" "$t was installed but is not found" "open a new terminal and rerun"
-    eval "have_$t=\$v"
-    say "$t: installed $v"
+    settle "$t" "" "agent" "open a new terminal and rerun"
+    eval "say \"$t: installed \${have_$t}\""
   done
   after=$(rc_state)
   if [ "$before" != "$after" ]; then
@@ -554,6 +582,9 @@ $sudo dnf install -y gh"
   email=$(git config --global user.email </dev/null)
   if [ -n "$name" ] && [ -n "$email" ]; then
     say "git identity: already set, left alone"
+  elif [ -n "$yes" ] && [ -n "$no_login" ]; then
+    # --yes with --no-login runs without a single prompt, terminal or not.
+    say "git identity: not set, and not asked for (--yes --no-login). Set it with: git config --global user.name \"Your Name\"; git config --global user.email \"you@example.com\""
   elif tty_ok; then
     while [ -z "$name" ]; do ask "[setup] Your name, for your git commits: "; name=$REPLY; done
     while [ -z "$email" ]; do ask "[setup] Your email, for your git commits: "; email=$REPLY; done

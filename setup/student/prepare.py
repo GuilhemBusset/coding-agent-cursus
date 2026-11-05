@@ -4,7 +4,8 @@ install.sh and install.ps1 run this after the clone and uv exist, the same way o
 
     uv run --no-project --python 3.12 python setup/student/prepare.py [--repo DIR] [--no-check]
 
-1. Activate the clone's git hooks, as setup/git-hooks.sh does (core.hooksPath -> .githooks).
+1. Activate the clone's git hooks, as setup/git-hooks.sh does (core.hooksPath -> .githooks). A
+   hook that is not executable is reported, not changed: the clone's files stay as they are.
 2. Sync every session that follows the session contract .github/workflows/session-tests.yml
    enforces: each sessions/*/ folder with a mise.toml, a pyproject.toml and a uv.lock. In each one:
    `mise trust`, `mise install` (the Python and uv the session pins), then
@@ -60,13 +61,14 @@ def activate_hooks(repo: Path) -> None:
                              capture_output=True, text=True).stdout.strip()
     if current != HOOKS:
         subprocess.run(["git", "-C", str(repo), "config", "core.hooksPath", HOOKS], check=True)
-    if os.name != "nt":
-        # Only hooks that lost their executable bit: a clone keeps the mode git checked out.
-        for hook in (repo / HOOKS).iterdir():
-            mode = hook.stat().st_mode
-            if hook.is_file() and not mode & stat.S_IXUSR:
-                hook.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     say("hooks: core.hooksPath is .githooks" + (" (already set)" if current == HOOKS else " (set now)"))
+    if os.name != "nt":
+        # git checks the hooks out executable. One that is not is a change in this clone (or a
+        # filesystem without modes): report it, never rewrite it, since files are left as they are.
+        for hook in sorted((repo / HOOKS).iterdir()):
+            if hook.is_file() and not hook.stat().st_mode & stat.S_IXUSR:
+                rel = hook.relative_to(repo).as_posix()
+                say(f"hooks: {rel} is not executable, so git skips it; left as it is. To fix: chmod +x {rel}")
 
 
 def run_quiet(argv: list[str], cwd: Path) -> tuple[int, str]:
