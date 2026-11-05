@@ -1,6 +1,6 @@
 """Compare the deck's token pictures to the recordings they draw.
 
-#resend draws Act II's run, three model calls, from Claude Code's own usage blocks (cache read,
+#resend draws Act III's opening run, three model calls, from Claude Code's own usage blocks (cache read,
 cache write, uncached); #long-run draws the 26 calls of the long task and their total.
 """
 import json

@@ -274,12 +274,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .spine a:hover .track .loop-bg, .spine a:focus-visible .track .loop-bg { stroke: var(--accent); stroke-width: 1.5; }
 .spine a:focus-visible { outline: none; }
 .spine a:focus-visible .box, .spine a:focus-visible .track .loop-bg { stroke-width: 4; }
-/* The close: each badge opens into its habit. */
-.spine .leader { fill: none; stroke: var(--accent); stroke-width: 2; }
-.spine .pill { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
-.spine .big { fill: var(--accent); }
-.spine .bn { font-size: 20px; font-weight: 700; fill: var(--on); }
-.spine .habit { font-size: 28px; font-weight: 650; fill: var(--ink); }
 /* == spine:end == */
 .speaker-notes { margin: .75rem 0 0; padding: 0; border-top: 1px dashed var(--rule); border-bottom: 0; font-size: .9375rem; line-height: 1.55; }
 .speaker-notes > summary { min-height: 44px; padding-block: .6rem 0; color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; }
@@ -831,7 +825,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 /* The journey so far, then two machines drawn alike: text to the next word; a scene and an action
    to the next scene. */
 .wmx { margin: 0; }
-.wmx-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 33rem); }
+.wmx-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 36rem); }
 .wmx-step rect { fill: var(--paper); stroke: var(--muted); stroke-width: 1.5; }
 .wmx-step.other rect { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 7 5; }
 .wmx-t { fill: var(--ink); font: 700 20px var(--sans); }
@@ -870,44 +864,12 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   .wmx-svg { min-width: 44rem; max-height: none; }
 }
 /* == end proto:world-models == */
-/* The close's teaser for Act III, on one line under the habits. */
-[data-slide] .wrap-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin: .5rem 0 0; padding: .45rem 1rem; }
+/* The last slide's teaser for Act III, on one line under the world-model strip. */
+[data-slide] .wrap-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin: .4rem 0 0; padding: .3rem 1rem; }
+[data-deck-paged] [data-slide] > .callout.wrap-next { margin-block: .25rem 0; padding-block: .3rem; }
+[data-deck-paged] [data-slide] > .wmx-so { margin-bottom: .25rem; }
 [data-slide] .wrap-next p { margin: 0; }
-/* On short screens the habits diagram gives up a little height to the teaser. */
-.spine-close .spine { max-height: calc(100vh - 27.5rem); }
-.wrap-next p:last-child { font-size: 1.375rem; font-weight: 600; }
-/* == proto:repo-model == */
-/* One real run in two lanes: its picture above, your repo below; acting goes down, observing comes up. */
-.run { margin: 0; }
-.run-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 30.5rem); }
-.run-lane { fill: var(--paper); stroke: var(--rule); }
-.run-lane-t { fill: var(--ink); font: 700 19px var(--sans); }
-.run-lane-s { fill: var(--secondary); font: 500 13px var(--sans); }
-.run-chip rect { fill: var(--sheet); stroke: var(--muted); stroke-width: 1.5; }
-.run-chip.is-bad rect { stroke: var(--red); stroke-width: 2; }
-.run-chip.is-good rect { stroke: var(--accent); stroke-width: 2.5; fill: var(--accent-soft); }
-.run-chip.is-say rect { stroke: var(--amber); }
-.run-k { fill: var(--muted); font: 600 13px var(--mono); white-space: pre; }
-.run-code-in { font: 600 15px var(--mono); font-style: normal; }
-.run-gloss { fill: var(--secondary); font: 500 12px var(--mono); }
-.run-code { fill: var(--ink); font: 600 16px var(--mono); }
-.run-quote { fill: var(--ink); font: italic 500 17px var(--sans); }
-.run-big { font: 700 22px var(--mono); }
-.run-chip.is-bad .run-big { fill: var(--red); }
-.run-chip.is-good .run-big { fill: var(--accent); }
-.run-small { fill: var(--secondary); font: 500 13px var(--mono); }
-.run-act { fill: none; stroke: var(--ink); stroke-width: 2; }
-.run-act-h { fill: var(--ink); }
-.run-obs { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
-.run-obs-h { fill: var(--accent); }
-.run-step { fill: var(--ink); font: 600 13px var(--mono); }
-.run-step.is-obs { fill: var(--accent); }
-.run-cap { fill: var(--muted); font: 500 12px var(--mono); }
-@media (max-width: 799px) {
-  .run-scroll { overflow-x: auto; }
-  .run-svg { min-width: 44rem; max-height: none; }
-}
-/* == end proto:repo-model == */
+.wrap-next p:last-child { font-size: 1.25rem; font-weight: 600; }
 </style>
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
   <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
@@ -1707,175 +1669,28 @@ Rules:
           <figcaption class="visually-hidden" id="wmx-desc">System 1, Act I: one pass, a glance. System 2, parts 1 to 4: writing steps, more passes. Then a different machine, a world model, which imagines what an action will do. Left, a language model, learned from text people wrote: from the text so far, “I pushed the glass off the table, and it…”, it predicts the next word, “shattered”: what people would write next. Right, a world model, learned from watching what actions do: from the scene now, a glass at the edge of a table, it imagines each action. Push: the glass in pieces on the floor, ✗. Pull back: the glass safe on the table, ✓. It plans: imagines each action, then acts.</figcaption>
         </figure>
         <p class="wmx-so">Your coding agent is the left machine: it can say what <code>uv run pytest</code> should print; only running it shows what it prints.</p>
+        <div class="callout wrap-next">
+          <p class="label">Next · Act III</p>
+          <p>The model only writes text. What runs the command? An agent.</p>
+        </div>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
             <p>Talk track: point at the strip. Act I: one pass, a glance: System 1. Parts 1 to 4: the same model writing steps, more passes per answer, behaves like System 2. Now the third phrase you will hear about AI: world model. Point at the dashed box: a different machine, not the next stage of your agent.</p>
             <p>Point at the two machines: the same shape, input, model, output, predicting different things. Left, a language model: from the text so far, the next word; it learned from text people wrote. Right, a world model: from the scene now and an action, the next scene; it learns from watching what actions do. That is what planning needs: try each action in imagination, keep the one whose result you want, then act.</p>
             <p>Predict question: “Does a language model have a world model inside?” Take a few answers. Partly. Trained only on Othello moves, a model holds board information that a probe can read, and editing it changes the moves. Trained on orbits, a model predicts them almost perfectly, yet the force laws read off its predictions are not Newton’s. Text teaches the world second-hand, as far as predicting tokens needs.</p>
-            <p>For your agent: it can tell you what a command should do; only running it shows what it does.</p>
-            <p>Transition: “So does your coding agent have a world model of your repo?”</p>
-            <p>Background for you, not for the slides: Mode-1 and Mode-2 are Yann LeCun’s names, by analogy with Kahneman (<a href="https://openreview.net/forum?id=BZ5a1r-kVsf"><cite>A Path Towards Autonomous Machine Intelligence</cite></a>, 2022, §3.1); Mode-2 plans with a world model and a cost, a related idea, not the same mechanism as our System 2 metaphor. Othello: <a href="https://arxiv.org/abs/2210.13382">Li et al., 2022</a>, probes decode the board and interventions change the predicted moves. Kepler: <a href="https://arxiv.org/abs/2507.06952">Vafa et al., 2025</a>, orbit predictions fit with R² above 0.9999; fine-tuned to predict forces, symbolic regression on its predictions gives five different laws on five galaxy samples, none Newton’s. Video and robot world models (Genie 3, V-JEPA 2, Cosmos) are the right-hand machine, dated in the instructor notes; the run on the next slide calls none.</p>
-          </div>
-        </details>
-      </section>
-
-
-      <section id="repo-model" data-slide tabindex="-1" aria-labelledby="repo-model-title">
-        <p class="eyebrow">Part 5 · What does it know? · Your repo</p>
-        <h2 id="repo-model-title">Its picture of your repo is a guess: it acts, then looks.</h2>
-        <div class="spine-wrap" role="region" aria-label="Act II mechanism" tabindex="0">
-          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act II’s mechanism: the context, 8 parcels and 630 kg, goes through one forward pass; the written tokens, 343 hidden, return to the context for another pass, as long as effort allows; the answer, 229 EUR, goes to a check outside the model over all 256 loads, which marks it right; the check’s test output can return to the context. Highlighted: question 5, what does it know: the outer loop, the check’s test output observed back into the context.">
-          <path class="bracket done" d="M198 22 V14 H674 V22"/>
-          <text class="bracket-label done" x="436" y="11" text-anchor="middle">the model</text>
-          <path class="bracket now" d="M878 22 V14 H1046 V22"/>
-          <text class="bracket-label now" x="962" y="11" text-anchor="middle">outside the model</text>
-          <text class="tag done" x="776" y="11" text-anchor="middle">×N tries</text>
-          <path class="edge done" d="M650 78 V109 H110 V87"/><path class="head done" d="M110 78 l-5 9 h10 z"/>
-          <path class="edge dash now" d="M1064 78 V130 H36 V87"/><path class="head now" d="M36 78 l-5 9 h10 z"/>
-          <path class="edge done" d="M170 52 L189 52"/><path class="head done" d="M198 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M420 52 L439 52"/><path class="head done" d="M448 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M674 52 L693 52"/><path class="head done" d="M702 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M860 52 L869 52"/><path class="head done" d="M878 52 l-9 -5 v10 z"/>
-          <path class="edge to-verdict done" d="M1074 52 L1093 52"/><path class="head to-verdict done" d="M1102 52 l-9 -5 v10 z"/>
-          <g class="node done"><rect class="box" x="198" y="26" width="222" height="52" rx="4"/><text class="t" x="309" y="48" text-anchor="middle">One forward pass</text><g class="ghost"><path d="M214 64 H315"/><rect x="214" y="60" width="11" height="8"/><rect x="229" y="60" width="11" height="8"/><rect x="244" y="60" width="11" height="8"/><rect x="259" y="60" width="11" height="8"/><rect x="274" y="60" width="11" height="8"/><rect x="289" y="60" width="11" height="8"/><rect x="304" y="60" width="11" height="8"/></g><text class="s" x="323" y="68">→ 1 token</text></g>
-          <g class="stack done"><rect x="712" y="16" width="148" height="52" rx="4"/><rect x="707" y="21" width="148" height="52" rx="4"/></g>
-          <g class="node done"><rect class="box" x="702" y="26" width="148" height="52" rx="4"/><text class="t" x="776" y="48" text-anchor="middle">Answer</text><text class="s off" x="776" y="68" text-anchor="middle">? EUR</text><text class="s" x="776" y="68" text-anchor="middle">229 EUR</text></g>
-          <text class="tag done" x="538" y="94" text-anchor="middle">▸ effort demo · lab</text>
-          <text class="tag done" x="776" y="94" text-anchor="middle">▸ Best-of-N lab</text>
-          <text class="tag done" x="882" y="94">↳ trains the weights</text>
-          <g class="verdict done"><circle cx="1119" cy="52" r="17"/><path d="M1110 52 l6 6 l11 -12"/></g>
-          <rect class="loop-bg" x="640" y="120" width="390" height="20"/>
-          <text class="tag now" x="648" y="135">observe: test output</text>
-          <text class="tag now" x="830" y="135">▸ Act III: agent loop</text>
-          <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge done"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
-          <g class="node now"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge done"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge done"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
-          <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge done"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
-          <g class="node now"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge now"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
-          </svg>
-        </div>
-        <figure class="run">
-          <div class="run-scroll" role="region" tabindex="0" aria-label="One agent run, its picture against your repo">
-            <svg class="run-svg" viewBox="0 0 1100 280" role="img" aria-labelledby="run-desc">
-              <rect class="run-lane" x="150" y="12" width="949" height="102" rx="4"/><rect class="run-lane" x="150" y="156" width="949" height="98" rx="4"/>
-              <text class="run-lane-t" x="0" y="56">its picture</text><text class="run-lane-s" x="0" y="78">a guess, until it looks</text>
-              <text class="run-lane-t" x="0" y="200">your repo</text><text class="run-lane-s" x="0" y="222">what really happens</text>
-              <g class="run-chip"><rect x="166" y="24" width="276" height="78" rx="3"/><text class="run-k" x="180" y="43">asked</text><text class="run-quote" x="180" y="66">“Run <tspan class="run-code-in">uv run pytest</tspan>, find out</text><text class="run-quote" x="180" y="88">why it fails and fix it.”</text></g>
-              <g class="run-chip is-bad"><rect x="300" y="168" width="300" height="74" rx="3"/><text class="run-k" x="314" y="187">reads 2 files, runs uv run pytest</text><text class="run-big" x="314" y="214">1 failed, 29 passed</text><text class="run-small" x="314" y="234">objective 1085, proven optimum 485</text></g>
-              <g class="run-chip is-say"><rect x="520" y="24" width="312" height="82" rx="3"/><text class="run-k" x="534" y="43">says</text><text class="run-quote" x="534" y="64">“The model maximizes</text><text class="run-quote" x="534" y="84">instead of minimizing.”</text><text class="run-gloss" x="534" y="100">“model”: the cost model, not the LLM</text></g>
-              <g class="run-chip is-good"><rect x="700" y="168" width="272" height="74" rx="3"/><text class="run-k" x="714" y="187">edits  kMaximize → kMinimize</text><text class="run-big" x="714" y="214">30 passed ✓</text><text class="run-small" x="714" y="234">the tests, run again</text></g>
-              <g class="run-chip is-say"><rect x="890" y="24" width="209" height="78" rx="3"/><text class="run-k" x="904" y="43">says</text><text class="run-quote" x="904" y="66">“All 30 tests</text><text class="run-quote" x="904" y="88">pass now.”</text></g>
-              <path class="run-act" d="M360 104 V157"/><path class="run-act-h" d="M360 166 l-5 -9 h10 z"/><text class="run-step" x="368" y="140">act</text>
-              <path class="run-obs" d="M570 166 V117"/><path class="run-obs-h" d="M570 108 l-5 9 h10 z"/><text class="run-step is-obs" x="578" y="140">observe</text>
-              <path class="run-act" d="M770 108 V157"/><path class="run-act-h" d="M770 166 l-5 -9 h10 z"/><text class="run-step" x="778" y="140">act</text>
-              <path class="run-obs" d="M940 166 V113"/><path class="run-obs-h" d="M940 104 l-5 9 h10 z"/><text class="run-step is-obs" x="948" y="140">observe</text>
-              <text class="run-cap" x="150" y="276">Claude Code with Opus 5.5, one run on a broken repo · Act III replays it</text>
-            </svg>
-          </div>
-          <figcaption class="visually-hidden" id="run-desc">Claude Code with Opus 5.5, one run on a broken repo. Its picture starts from the request: “Run uv run pytest, find out why it fails and fix it.” It acts: it reads two files and runs uv run pytest. Your repo answers: 1 failed, 29 passed; the objective is 1085 where the proven optimum is 485. It observes, and says: “The model maximizes instead of minimizing”, meaning the cost model, not the LLM. It acts: it edits kMaximize to kMinimize and runs the tests again. Your repo answers: 30 passed. It observes, and says: “All 30 tests pass now.”</figcaption>
-        </figure>
-        <details class="speaker-notes">
-          <summary>Speaker notes</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: does your coding agent have a world model of your repo? Only a picture: what it read in this call’s context, the files, your AGENTS.md, earlier output. From that it can guess, in words, what an edit will do; nothing trained on your repo predicts what your tests will print. So instead of imagining, it acts and looks.</p>
-            <p>Point at the two lanes: top, its picture; bottom, your repo. A real run of Claude Code on a broken repo, asked to run the tests, find out why they fail and fix it. Its first act, down into the repo: read two files and run the tests. The repo answers: 1 failed, 29 passed, an objective of 1085 where the proven optimum is 485. Up, dashed: once the files and the test output come back, it says what is wrong: the model maximizes instead of minimizing. That model is the cost model in the repo, not the LLM.</p>
-            <p>Predict question, before you point at the second half: “It has made its edit. What should it do next?” Listen for: run the tests again. Then point: one edit, the tests again, 30 passed, and this time “All 30 tests pass now” is backed by the run.</p>
-            <p>Think-pair-share: “On your own task, what could check the agent’s answer, and how often does it see that check?” Listen for pairs with no check.</p>
-            <p>For your agent: make observations cheap and frequent: fast tests, clear errors, an AGENTS.md that says how to run them.</p>
-            <p>Transition: “Five questions, five habits.”</p>
-            <p>Background for you, not for the slides: the run is <code>fixtures/runs/flipped-sense-claude.json</code>, recorded 2026-10-16 with Claude Code 2.1.301 at medium effort; Act III replays it beside Codex. The solver had answered “optimal” all along, because maximizing a cost is a valid problem; only the test against the known optimum caught it: a check outside the model, as in part 2.</p>
-          </div>
-        </details>
-      </section>
-
-      <section id="wrap" data-slide tabindex="-1" aria-labelledby="wrap-title">
-        <p class="eyebrow">Close · Five habits</p>
-        <h2 id="wrap-title">A glance guesses, writing reasons, the world checks.</h2>
-        <div class="spine-wrap spine-close" role="region" aria-label="Act II mechanism and its five habits" tabindex="0">
-          <svg class="spine" viewBox="-2 -104 1142 338" role="img" aria-label="Act II’s mechanism: the context, 8 parcels and 630 kg, goes through one forward pass; the written tokens, 343 hidden, return to the context for another pass, as long as effort allows; the answer, 229 EUR, goes to a check outside the model over all 256 loads, which marks it right; the check’s test output can return to the context. All five questions answered, each badge opened into its habit: 1, ask for the steps; 2, give it a test; 3, set effort per task; 4, read the diff, not the story; 5, feed it observations.">
-          <path class="bracket done" d="M198 22 V14 H674 V22"/>
-          <text class="bracket-label done" x="436" y="11" text-anchor="middle">the model</text>
-          <path class="bracket done" d="M878 22 V14 H1046 V22"/>
-          <text class="bracket-label done" x="962" y="11" text-anchor="middle">outside the model</text>
-          <text class="tag done" x="776" y="11" text-anchor="middle">×N tries</text>
-          <path class="edge done" d="M650 78 V109 H110 V87"/><path class="head done" d="M110 78 l-5 9 h10 z"/>
-          <path class="edge dash done" d="M1064 78 V130 H36 V87"/><path class="head done" d="M36 78 l-5 9 h10 z"/>
-          <path class="edge done" d="M170 52 L189 52"/><path class="head done" d="M198 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M420 52 L439 52"/><path class="head done" d="M448 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M674 52 L693 52"/><path class="head done" d="M702 52 l-9 -5 v10 z"/>
-          <path class="edge done" d="M860 52 L869 52"/><path class="head done" d="M878 52 l-9 -5 v10 z"/>
-          <path class="edge to-verdict done" d="M1074 52 L1093 52"/><path class="head to-verdict done" d="M1102 52 l-9 -5 v10 z"/>
-          <g class="node done"><rect class="box" x="198" y="26" width="222" height="52" rx="4"/><text class="t" x="309" y="48" text-anchor="middle">One forward pass</text><g class="ghost"><path d="M214 64 H315"/><rect x="214" y="60" width="11" height="8"/><rect x="229" y="60" width="11" height="8"/><rect x="244" y="60" width="11" height="8"/><rect x="259" y="60" width="11" height="8"/><rect x="274" y="60" width="11" height="8"/><rect x="289" y="60" width="11" height="8"/><rect x="304" y="60" width="11" height="8"/></g><text class="s" x="323" y="68">→ 1 token</text></g>
-          <g class="stack done"><rect x="712" y="16" width="148" height="52" rx="4"/><rect x="707" y="21" width="148" height="52" rx="4"/></g>
-          <g class="node done"><rect class="box" x="702" y="26" width="148" height="52" rx="4"/><text class="t" x="776" y="48" text-anchor="middle">Answer</text><text class="s off" x="776" y="68" text-anchor="middle">? EUR</text><text class="s" x="776" y="68" text-anchor="middle">229 EUR</text></g>
-          <text class="tag done" x="538" y="94" text-anchor="middle">▸ effort demo · lab</text>
-          <text class="tag done" x="776" y="94" text-anchor="middle">▸ Best-of-N lab</text>
-          <text class="tag done" x="882" y="94">↳ trains the weights</text>
-          <g class="verdict done"><circle cx="1119" cy="52" r="17"/><path d="M1110 52 l6 6 l11 -12"/></g>
-          <rect class="loop-bg" x="640" y="120" width="390" height="20"/>
-          <text class="tag done" x="648" y="135">observe: test output</text>
-          <text class="tag done" x="830" y="135">▸ Act III: agent loop</text>
-          <g class="track done"><rect class="hit" x="126" y="86" width="284" height="46"/><rect class="loop-bg" x="126" y="99" width="284" height="21"/><g class="badge now"><circle cx="142" cy="109" r="10"/><text class="n" x="142" y="113.5" text-anchor="middle">1</text></g><text class="tag done" x="158" y="114">writes a token, reads it back</text></g>
-          <g class="node done"><rect class="box" x="878" y="26" width="196" height="52" rx="4"/><text class="t" x="962" y="48" text-anchor="middle">Check</text><text class="s" x="962" y="68" text-anchor="middle">all 256 loads</text><g class="badge now"><circle cx="1057" cy="42" r="10"/><text class="n" x="1057" y="46.5" text-anchor="middle">2</text></g></g>
-          <g class="track done"><rect class="hit" x="440" y="86" width="196" height="46"/><rect class="loop-bg" x="440" y="99" width="196" height="21"/><g class="badge now"><circle cx="456" cy="109" r="10"/><text class="n" x="456" y="113.5" text-anchor="middle">3</text></g><text class="tag done" x="472" y="114">effort</text><text class="tag done" x="532" y="114">low</text><path class="dial done" d="M566 114 A11 11 0 0 1 588 114 M577 114 L584 106"/><text class="tag done" x="594" y="114">max</text></g>
-          <g class="node done"><rect class="box" x="448" y="26" width="226" height="52" rx="4"/><text class="t" x="552" y="48" text-anchor="middle">Written tokens</text><path class="hidden-run" d="M466 64 H526"/><rect class="shown-run" x="530" y="59" width="22" height="10"/><text class="s" x="560" y="68">343 hidden</text><g class="badge now"><circle cx="657" cy="42" r="10"/><text class="n" x="657" y="46.5" text-anchor="middle">4</text></g></g>
-          <g class="node done"><rect class="box" x="0" y="26" width="170" height="52" rx="4"/><text class="t" x="76" y="48" text-anchor="middle">Context</text><text class="s" x="85" y="68" text-anchor="middle">8 parcels, 630 kg</text><g class="badge now"><circle cx="153" cy="42" r="10"/><text class="n" x="153" y="46.5" text-anchor="middle">5</text></g></g>
-          <g class="habits">
-          <path class="leader" d="M142 119 V150"/>
-          <rect class="pill" x="118" y="150" width="216" height="80" rx="6"/>
-          <circle class="big" cx="142" cy="190" r="17"/><text class="bn" x="142" y="197" text-anchor="middle">1</text>
-          <text class="habit" x="172" y="181" text-anchor="start">ask for</text>
-          <text class="habit" x="172" y="213" text-anchor="start">the steps</text>
-          <path class="leader" d="M1057 32 V-20"/>
-          <rect class="pill" x="913" y="-100" width="168" height="80" rx="6"/>
-          <circle class="big" cx="1057" cy="-60" r="17"/><text class="bn" x="1057" y="-53" text-anchor="middle">2</text>
-          <text class="habit" x="1027" y="-69" text-anchor="end">give it</text>
-          <text class="habit" x="1027" y="-37" text-anchor="end">a test</text>
-          <path class="leader" d="M456 119 V150"/>
-          <rect class="pill" x="432" y="150" width="215" height="80" rx="6"/>
-          <circle class="big" cx="456" cy="190" r="17"/><text class="bn" x="456" y="197" text-anchor="middle">3</text>
-          <text class="habit" x="486" y="181" text-anchor="start">set effort</text>
-          <text class="habit" x="486" y="213" text-anchor="start">per task</text>
-          <path class="leader" d="M657 32 V-20"/>
-          <rect class="pill" x="407" y="-100" width="274" height="80" rx="6"/>
-          <circle class="big" cx="657" cy="-60" r="17"/><text class="bn" x="657" y="-53" text-anchor="middle">4</text>
-          <text class="habit" x="627" y="-69" text-anchor="end">read the diff,</text>
-          <text class="habit" x="627" y="-37" text-anchor="end">not the story</text>
-          <path class="leader" d="M153 32 V-20"/>
-          <rect class="pill" x="129" y="-100" width="272" height="80" rx="6"/>
-          <circle class="big" cx="153" cy="-60" r="17"/><text class="bn" x="153" y="-53" text-anchor="middle">5</text>
-          <text class="habit" x="183" y="-69" text-anchor="start">feed it</text>
-          <text class="habit" x="183" y="-37" text-anchor="start">observations</text>
-          </g>
-          </svg>
-        </div>
-        <div class="callout wrap-next">
-          <p class="label">Next · Act III</p>
-          <p>Who ran the tests on the last slide? Not the model. Agent = model + harness.</p>
-        </div>
-        <details class="speaker-notes">
-          <summary>Speaker notes</summary>
-          <div class="notes-body" tabindex="0">
-            <p>Talk track: read the headline: a glance guesses, writing reasons, the world checks, through a test or the repo answering back. Every badge has opened into its habit. One pass is a glance; writing chains steps, and a check outside the model turns many tries, or a training run, into results. Point at the two arrows into the context: the model’s own tokens, and what the world answers back.</p>
-            <p>One habit per badge, in order:</p>
-            <ul>
-              <li>One, the loop: it writes, so ask for the steps: a plan before it acts.</li>
-              <li>Two, the check: only a check can say, so give it a test or a certificate for the problem you meant, and trust that, not its say-so. The solver on the last slide said “optimal” for the wrong objective.</li>
-              <li>Three, the dial: more can hurt, so set effort per task: low for lookups, high when hard and checkable.</li>
-              <li>Four, the written tokens: a lead, not evidence, so read the diff, not the story: the commands, the test run.</li>
-              <li>Five, the context: its picture of your repo is yours to feed: feed it observations, fast tests, clear errors, an AGENTS.md.</li>
-            </ul>
-            <p>The test-time compute lab stays open after class.</p>
-            <p>Predict question, on the callout: “Who ran the tests on the last slide?” Take answers. Listen for “the agent”, then ask: which part of it?</p>
-            <p>Transition into Act III: “Not the model. The model wrote a tool call; the harness ran it and put the result back in the next call’s context, every turn. Act III: agent = model + harness.”</p>
+            <p>For your agent: it can tell you what a command should do; only running it shows what it does. Its picture of your repo is what it has read in this call’s context, and it goes stale after every edit; reading the files and running the tests again is what refreshes it.</p>
+            <p>Close the act on the five questions, pointing at each badge on the spine: it writes, so ask for the steps; only a check can say it is right; effort is a dial you set; what it wrote is a lead, not evidence; and it predicts tokens, not what happens.</p>
+            <p>Predict question, on the callout: “The model only writes text. So who ran the solver in the cold open?” Take answers. Listen for “the agent”, then ask: which part of it?</p>
+            <p>Transition into Act III: “Not the model. The model writes a tool call; something else runs it and puts the result back in front of the model, every turn. That something, plus the model, is an agent. Act III: what an agent is.”</p>
+            <p>Background for you, not for the slides: Mode-1 and Mode-2 are Yann LeCun’s names, by analogy with Kahneman (<a href="https://openreview.net/forum?id=BZ5a1r-kVsf"><cite>A Path Towards Autonomous Machine Intelligence</cite></a>, 2022, §3.1); Mode-2 plans with a world model and a cost, a related idea, not the same mechanism as our System 2 metaphor. Othello: <a href="https://arxiv.org/abs/2210.13382">Li et al., 2022</a>, probes decode the board and interventions change the predicted moves. Kepler: <a href="https://arxiv.org/abs/2507.06952">Vafa et al., 2025</a>, orbit predictions fit with R² above 0.9999; fine-tuned to predict forces, symbolic regression on its predictions gives five different laws on five galaxy samples, none Newton’s. Video and robot world models (Genie 3, V-JEPA 2, Cosmos) are the right-hand machine, dated in the instructor notes; no coding agent in this session calls one.</p>
           </div>
         </details>
       </section>
 
       <nav data-deck-nav hidden aria-label="Slide navigation">
         <button type="button" data-prev>Previous</button>
-        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 12</span>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 9</span>
         <button type="button" data-next>Next</button>
         <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
       </nav>
@@ -2256,13 +2071,13 @@ Rules:
 (function () {
   'use strict';
   function centre(wrap) {
-    var now = Array.from(wrap.querySelectorAll('svg .now, svg .pill'));
+    var now = Array.from(wrap.querySelectorAll('svg .now'));
     if (!now.length || wrap.scrollWidth <= wrap.clientWidth) return;
     var boxes = now.map(function (node) { return node.getBoundingClientRect(); });
     var left = Math.min.apply(null, boxes.map(function (box) { return box.left; }));
     var right = Math.max.apply(null, boxes.map(function (box) { return box.right; }));
     var frame = wrap.getBoundingClientRect();
-    // Centre the lit parts (and the close's habits) together; if they are wider than the frame, start at the first.
+    // Centre the lit parts together; if they are wider than the frame, start at the first.
     var offset = right - left > frame.width ? left - frame.left : left - frame.left - (frame.width - (right - left)) / 2;
     wrap.scrollLeft += offset;
   }

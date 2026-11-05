@@ -338,6 +338,62 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 }
 /* == end t1 spine == */
 </style>
+  <style>/* == agent: what an agent is, built in four steps == */
+/* One picture, the spine's own layout at full size. Each part carries data-l, the step (1 to 4) that adds it:
+   the model, + tools, + a loop, = the harness. With no script and on paper every part shows as on the overview.
+   With the script, .ag[data-ag-at] lights the current step's parts (teal, as the spine's current part), keeps
+   the earlier ones and dims the later ones; each part reads its colours from the custom properties below. */
+.ag { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; }
+.ag-fig { margin: 0; }
+.ag-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 29rem); }
+.ag-svg [data-l] { --ag-line: var(--muted); --ag-fill: var(--paper); --ag-t: var(--ink); --ag-s: var(--secondary); --ag-li: var(--secondary); --ag-w: 1.5px; --ag-ew: 2px; --ag-tint: var(--rule); --ag-tint-o: .55; }
+.ag[data-ag-at="1"] .ag-svg [data-l="1"], .ag[data-ag-at="2"] .ag-svg [data-l="2"],
+.ag[data-ag-at="3"] .ag-svg [data-l="3"], .ag[data-ag-at="4"] .ag-svg [data-l="4"] {
+  --ag-line: var(--accent); --ag-fill: var(--accent-soft); --ag-t: var(--ink); --ag-s: var(--ink); --ag-li: var(--accent); --ag-w: 3px; --ag-ew: 3px; --ag-tint: var(--accent-soft); --ag-tint-o: .8;
+}
+.ag[data-ag-at="1"] .ag-svg :is([data-l="2"], [data-l="3"], [data-l="4"]), .ag[data-ag-at="2"] .ag-svg :is([data-l="3"], [data-l="4"]),
+.ag[data-ag-at="3"] .ag-svg [data-l="4"] {
+  --ag-line: var(--rule); --ag-fill: var(--paper); --ag-t: var(--muted); --ag-s: var(--muted); --ag-li: var(--muted); --ag-w: 1.5px; --ag-ew: 2px; --ag-tint: var(--rule); --ag-tint-o: .2;
+}
+.ag-band { fill: var(--ag-tint); fill-opacity: var(--ag-tint-o); }
+.ag-band-edge { fill: none; stroke: var(--ag-line); stroke-width: var(--ag-w); stroke-dasharray: 6 4; }
+.ag-mask { fill: var(--sheet); }
+.ag-label { font: 600 14px var(--mono); fill: var(--ag-li); letter-spacing: .08em; text-transform: uppercase; }
+.ag-bracket { fill: none; stroke: var(--ag-line); stroke-width: 1.5; }
+.ag-box { fill: var(--ag-fill); stroke: var(--ag-line); stroke-width: var(--ag-w); }
+.ag-t { font: 650 19px var(--sans); fill: var(--ag-t); }
+.ag-sub { font: 500 15px var(--sans); fill: var(--ag-s); }
+.ag-s { font: 600 15px var(--mono); fill: var(--ag-s); }
+.ag-li { font: 600 15px var(--mono); fill: var(--ag-li); }
+.ag-dot { fill: var(--ag-li); }
+.ag-edge { fill: none; stroke: var(--ag-line); stroke-width: var(--ag-ew); }
+.ag-head { fill: var(--ag-line); }
+.ag-tag { font: 600 14px var(--mono); fill: var(--ag-li); }
+.ag-lock { fill: var(--ag-fill); stroke: var(--ag-line); stroke-width: 2; }
+.ag-shackle { fill: none; stroke: var(--ag-line); stroke-width: 3; }
+/* The four steps: chips to build it, and the current step's sentence beside them. */
+.ag-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.25rem; }
+.ag-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ag-chip { display: inline-flex; align-items: center; gap: .45rem; min-width: 44px; min-height: 44px; padding: .3rem .8rem; border: 1.5px solid var(--muted); border-radius: .2rem; background: var(--paper); color: var(--ink); font: 650 1rem/1.2 var(--sans); }
+.ag-chip:hover:not(:disabled) { border-color: var(--ink); }
+.ag-chip[aria-pressed="true"] { border: 2.5px solid var(--accent); background: var(--accent-soft); }
+.ag-n { display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border: 1.5px solid currentColor; border-radius: 50%; font: 700 .75rem/1 var(--mono); }
+.ag-chip[aria-pressed="true"] .ag-n { border-color: var(--accent); background: var(--accent); color: var(--on); }
+[data-slide] .ag-says { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; color: var(--ink); font: 500 1.0625rem/1.4 var(--sans); }
+[data-slide] .ag-says li { margin: 0; }
+.ag-says b { font-weight: 700; }
+.ag[data-ag-at] .ag-says { flex: 1 1 22rem; }
+@media screen and (max-width: 799px), screen and (max-height: 599px) {
+  .ag-scroll { overflow-x: auto; }
+  .ag-svg { min-width: 44rem; max-height: none; }
+}
+@media print {
+  .ag-chips { display: none !important; }
+  .ag .ag-says li[hidden] { display: block !important; }
+  .ag[data-ag-at] .ag-svg [data-l] { --ag-line: var(--muted); --ag-fill: var(--paper); --ag-t: var(--ink); --ag-s: var(--secondary); --ag-li: var(--secondary); --ag-w: 1.5px; --ag-ew: 2px; --ag-tint: var(--rule); --ag-tint-o: .55; }
+}
+/* == end agent == */
+</style>
   <style>/* == t1: the opener == */
 /* == proto:harness == */
 /* Act II's run again, now in three lanes on a real time axis: the model wrote, the harness ran, your repo answered.
@@ -849,14 +905,119 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     <header class="masthead">
       <p class="eyebrow">Fundamentals · Act III</p>
       <h1 id="deck-title">Agent = model + harness</h1>
-      <p class="lede">Act II’s last run, opened up: the model writes, the harness runs the tools, re-sends the run, decides what loads, what may run and when to stop.</p>
+      <p class="lede">What an agent is, then one real run opened up: the model writes; the harness runs the tools, re-sends the run, decides what loads, what may run and when to stop.</p>
     </header>
     <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
-      <!-- The spine, Act III's mechanism, is repeated on every slide; only the classes on its parts and
-           marks differ (done, now, next; all on the opening overview, which alone carries links).
-           Generated: edit every copy together. -->
+      <section id="agent" data-slide tabindex="-1" aria-labelledby="agent-title">
+        <p class="eyebrow">Act III · What is an agent?</p>
+        <h2 id="agent-title">An agent runs tools in a loop to reach a goal.</h2>
+        <div class="ag" data-ag>
+          <figure class="ag-fig">
+            <div class="ag-scroll" role="region" tabindex="0" aria-label="An agent’s parts: context, model, tool call, tools, your repo, the loop and the harness">
+            <svg class="ag-svg" viewBox="0 0 1100 272" role="img" aria-labelledby="ag-desc">
+              <!-- Each part names the step that adds it (data-l, 1 to 4); the script lights the current step. -->
+              <g data-l="4">
+                <path class="ag-band" d="M8 30 H262 Q268 30 268 36 V164 Q268 170 274 170 H498 Q504 170 504 164 V36 Q504 30 510 30 H904 Q912 30 912 38 V256 Q912 264 904 264 H8 Q0 264 0 256 V38 Q0 30 8 30 Z"/>
+                <path class="ag-band-edge" d="M262 30 H8 Q0 30 0 38 V256 Q0 264 8 264 H904 Q912 264 912 256 V38 Q912 30 904 30 H510"/>
+                <text class="ag-label" x="14" y="22">the harness</text>
+                <text class="ag-label" x="520" y="22">the harness</text>
+              </g>
+              <g data-l="1">
+                <path class="ag-bracket" d="M290 36 V30 H482 V36"/>
+                <text class="ag-label" x="386" y="22" text-anchor="middle">the model</text>
+              </g>
+              <g data-l="1">
+                <rect class="ag-box" x="14" y="44" width="236" height="152" rx="4"/>
+                <text class="ag-t" x="28" y="70">Context</text>
+                <text class="ag-sub" x="28" y="92">what the model reads</text>
+              </g>
+              <g data-l="4"><rect class="ag-dot" x="28" y="110" width="8" height="8"/><text class="ag-li" x="44" y="118">rules, AGENTS.md</text></g>
+              <g data-l="2"><rect class="ag-dot" x="28" y="133" width="8" height="8"/><text class="ag-li" x="44" y="141">tool list</text></g>
+              <g data-l="1"><rect class="ag-dot" x="28" y="156" width="8" height="8"/><text class="ag-li" x="44" y="164">your goal</text></g>
+              <g data-l="3"><rect class="ag-dot" x="28" y="179" width="8" height="8"/><text class="ag-li" x="44" y="187">results so far</text></g>
+              <g data-l="1"><path class="ag-edge" d="M250 97 H281"/><path class="ag-head" d="M290 97 l-9 -5 v10 z"/></g>
+              <g data-l="1">
+                <rect class="ag-box" x="290" y="44" width="192" height="106" rx="4"/>
+                <text class="ag-t" x="386" y="76" text-anchor="middle">Model</text>
+                <text class="ag-s" x="386" y="102" text-anchor="middle">Acts I and II</text>
+                <text class="ag-s" x="386" y="126" text-anchor="middle">text in, text out</text>
+              </g>
+              <g data-l="2"><path class="ag-edge" d="M482 97 H519"/><path class="ag-head" d="M528 97 l-9 -5 v10 z"/></g>
+              <g data-l="2">
+                <rect class="ag-box" x="528" y="44" width="136" height="106" rx="4"/>
+                <text class="ag-t" x="596" y="76" text-anchor="middle">Tool call?</text>
+                <text class="ag-s" x="596" y="102" text-anchor="middle">a name</text>
+                <text class="ag-s" x="596" y="126" text-anchor="middle">+ its input</text>
+              </g>
+              <g data-l="2"><path class="ag-edge" d="M664 97 H727"/><path class="ag-head" d="M736 97 l-9 -5 v10 z"/></g>
+              <g data-l="4">
+                <path class="ag-shackle" d="M692 88 V81 A8 8 0 0 1 708 81 V88"/>
+                <rect class="ag-lock" x="686" y="88" width="28" height="19" rx="3"/>
+                <text class="ag-tag" x="700" y="168" text-anchor="middle">permissions</text>
+              </g>
+              <g data-l="2">
+                <rect class="ag-box" x="736" y="44" width="166" height="106" rx="4"/>
+                <text class="ag-t" x="819" y="76" text-anchor="middle">Tools</text>
+                <text class="ag-s" x="819" y="102" text-anchor="middle">Read · Edit</text>
+                <text class="ag-s" x="819" y="126" text-anchor="middle">Bash · Search</text>
+              </g>
+              <g data-l="2"><path class="ag-edge" d="M902 97 H931"/><path class="ag-head" d="M940 97 l-9 -5 v10 z"/></g>
+              <g data-l="2">
+                <rect class="ag-box" x="940" y="44" width="150" height="106" rx="4"/>
+                <text class="ag-t" x="1015" y="76" text-anchor="middle">Your repo</text>
+                <text class="ag-s" x="1015" y="102" text-anchor="middle">files · tests</text>
+                <text class="ag-s" x="1015" y="126" text-anchor="middle">the shell</text>
+              </g>
+              <g data-l="3">
+                <path class="ag-edge" d="M596 150 V180"/><path class="ag-head" d="M596 189 l-5 -9 h10 z"/>
+                <text class="ag-tag" x="610" y="193">no tool call → stop, reply to you</text>
+                <path class="ag-edge" d="M1015 150 V236 H132 V205"/><path class="ag-head" d="M132 196 l-5 9 h10 z"/>
+                <text class="ag-tag" x="1025" y="200">result</text>
+              </g>
+              <g data-l="4"><rect class="ag-mask" x="300" y="226" width="336" height="20"/><rect class="ag-band" x="300" y="226" width="336" height="20"/></g>
+              <g data-l="3"><text class="ag-tag" x="312" y="241">result appended, call the model again</text></g>
+            </svg>
+            </div>
+            <figcaption class="visually-hidden" id="ag-desc">What an agent is, built in four steps. Step 1, the model, Acts I and II: it reads its context, here your goal, and writes text; alone, it runs nothing. Step 2, tools: the context also lists the tools; the model can write a tool call, a tool name and its input, and the harness runs that tool, Read, Edit, Bash or Search, on your repo: its files, its tests, the shell. Step 3, a loop: the result is appended to the context, under results so far, and the harness calls the model again, until a reply holds no tool call; then it stops, and that reply goes to you. Step 4, the harness: everything but the model, shaded: the context with your rules and AGENTS.md, the tools, the permissions that decide what may run, and the loop. Agent = model + harness.</figcaption>
+          </figure>
+          <div class="ag-row">
+            <div class="ag-chips" role="group" aria-label="Build the agent one part at a time" hidden>
+              <button type="button" class="ag-chip" data-ag-chip aria-pressed="false" disabled><span class="ag-n" aria-hidden="true">1</span>The model</button>
+              <button type="button" class="ag-chip" data-ag-chip aria-pressed="false" disabled><span class="ag-n" aria-hidden="true">2</span>+ tools</button>
+              <button type="button" class="ag-chip" data-ag-chip aria-pressed="false" disabled><span class="ag-n" aria-hidden="true">3</span>+ a loop</button>
+              <button type="button" class="ag-chip" data-ag-chip aria-pressed="false" disabled><span class="ag-n" aria-hidden="true">4</span>= an agent</button>
+            </div>
+            <ol class="ag-says">
+              <li data-ag-say><b>1 · The model.</b> Text in, text out: alone, it runs nothing.</li>
+              <li data-ag-say><b>2 · + Tools.</b> It writes a tool call; the harness runs it.</li>
+              <li data-ag-say><b>3 · + A loop.</b> The result goes back in, until a reply has no tool call.</li>
+              <li data-ag-say><b>4 · = An agent.</b> The harness is everything but the model.</li>
+            </ol>
+          </div>
+          <p class="visually-hidden" role="status" data-ag-status></p>
+        </div>
+        <p class="cite">Source: Simon Willison, <cite>What is agentic engineering?</cite>, <a href="https://simonwillison.net/guides/agentic-engineering-patterns/what-is-agentic-engineering/">simonwillison.net</a>, 2026; “harness”: Anthropic, <cite>How Claude Code works</cite>, <a href="https://code.claude.com/docs/en/how-claude-code-works">code.claude.com</a>.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: Act II ended on a question: “The model only writes text. So who ran the solver in the cold open?” Not the model. This slide builds the answer, one part at a time; press each step as you say it.</p>
+            <p>Step 1, the model: Acts I and II in one box. It reads its context, here only your goal, and writes text. Alone, it cannot open a file or run a test; a chatbot is this box.</p>
+            <p>Step 2, tools. The harness lists the tools in the context: Read, Edit, Bash, Search. Now the model can write a tool call: a structured request, a tool name and its input, as text the harness can parse. The harness runs it on your repo. The model still only wrote text.</p>
+            <p>Step 3, a loop. The result is appended to the context and the harness calls the model again, with everything so far. Round and round, until a reply holds no tool call: that reply goes to you, and the run stops. This is the agent loop. Do not confuse it with Act II’s token loop, which writes one reply inside the Model box.</p>
+            <p>Step 4, the harness: everything but the model. It builds the context, loads your rules and AGENTS.md, lists the tools, decides what may run, runs it, loops and stops. Claude Code and Codex are harnesses. Agent = model + harness: if it is not the model, it is the harness.</p>
+            <p>Read the headline: an agent runs tools in a loop to reach a goal. Every part of this picture is one of the act’s five questions, and the next slide numbers them.</p>
+            <p>Think-pair-share: “On your own task, what could check the agent’s answer, and how often does it see that check?” Alone first, then with your neighbour. Listen for pairs with no check: Act IV is about them.</p>
+            <p>Transition: “That is the picture. Now one real run of it.”</p>
+            <p>Background for you, not for the slides: the headline paraphrases Simon Willison, “Agents run tools in a loop to achieve a goal” (<a href="https://simonwillison.net/guides/agentic-engineering-patterns/what-is-agentic-engineering/">What is agentic engineering?</a>, updated 2026-03-15). Claude Code’s docs name the parts: models that reason, tools that act, and “the layer around the model that provides the tools and manages the context the model sees”, the agentic harness (<a href="https://code.claude.com/docs/en/how-claude-code-works">How Claude Code works</a>). Anthropic’s <a href="https://www.anthropic.com/engineering/building-effective-agents">Building effective agents</a> (2024-12-19) says the same in one line: LLMs “using tools based on environmental feedback in a loop”. The shape is older: Russell and Norvig’s agent perceives its environment and acts on it, and ReAct (<a href="https://arxiv.org/abs/2210.03629">Yao et al., 2022</a>) interleaves reasoning with acting.</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- The spine, Act III's mechanism, is repeated on every slide after #agent, whose picture it shrinks;
+           only the classes on its parts and marks differ (done, now, next; all on the opening overview, which
+           alone carries links). Generated: edit every copy together. -->
       <section id="harness" data-slide tabindex="-1" aria-labelledby="harness-title">
-        <p class="eyebrow">Act III · Agent = model + harness</p>
+        <p class="eyebrow">Act III · One real run</p>
         <h2 id="harness-title">Not the model: the harness ran the tests.</h2>
         <figure class="spine-wrap" role="group" aria-labelledby="harness-spine-caption">
           <svg class="spine" viewBox="-2 0 1142 140">
@@ -893,7 +1054,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </ol>
         <div class="hn" data-hn data-hn-state="revealed">
           <figure class="hn-fig">
-            <div class="hn-scroll" role="region" tabindex="0" aria-label="Act II’s run in three lanes: the model, the harness, your repo">
+            <div class="hn-scroll" role="region" tabindex="0" aria-label="One real run in three lanes: the model, the harness, your repo">
             <svg class="hn-svg" viewBox="0 0 1100 158" role="img" aria-labelledby="hn-desc">
               <rect class="hn-lane" x="190" y="0" width="906" height="60" rx="4"/>
               <rect class="hn-lane is-harness" x="190" y="66" width="906" height="26" rx="4"/>
@@ -940,7 +1101,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               <path class="hn-axis" d="M200.0 136 H1083.5"/><path class="hn-tick" d="M200.0 136 v5"/><text class="hn-tick-t" x="200.0" y="154" text-anchor="middle">0</text><path class="hn-tick" d="M347.0 136 v5"/><text class="hn-tick-t" x="347.0" y="154" text-anchor="middle">2</text><path class="hn-tick" d="M494.0 136 v5"/><text class="hn-tick-t" x="494.0" y="154" text-anchor="middle">4</text><path class="hn-tick" d="M641.0 136 v5"/><text class="hn-tick-t" x="641.0" y="154" text-anchor="middle">6</text><path class="hn-tick" d="M788.0 136 v5"/><text class="hn-tick-t" x="788.0" y="154" text-anchor="middle">8</text><path class="hn-tick" d="M935.0 136 v5"/><text class="hn-tick-t" x="935.0" y="154" text-anchor="middle">10</text><path class="hn-tick" d="M1082.0 136 v5"/><text class="hn-tick-t" x="1082.0" y="154" text-anchor="middle">12 s</text>
             </svg>
             </div>
-            <figcaption class="visually-hidden" id="hn-desc">Act II’s last run, replayed on a time axis from 0 to 12 seconds, in three lanes. The harness sends your prompt, “Run uv run pytest, find out why it fails and fix it.”, to the model. <span data-hn-run>The model was called 3 times and only wrote text. Call 1, from 0 to 3.5 seconds, wrote one tool call: Bash, ls, cat README.md and p00_model.py, then uv run pytest. The harness ran it at 3.8 seconds in your repo, which answered 1 failed, 29 passed; the harness appended that and called the model again. Call 2, from 3.8 to 7.3 seconds, wrote “The model maximizes instead of minimizing.”, an Edit of p00_model.py and a Bash call; the harness applied the edit at 6.85 seconds, while the model was still writing, and ran the tests at 7.5 seconds: 30 passed. Call 3, from 7.5 to 12 seconds, wrote “All 30 tests pass now.” and no tool call, so the harness stopped. In all: 3 model calls, 3 tool runs, 2 of them test runs, 12 seconds.</span></figcaption>
+            <figcaption class="visually-hidden" id="hn-desc">One real run, Claude Code with Opus 5.5 on a copy of P00 whose cost model maximizes instead of minimizing, replayed on a time axis from 0 to 12 seconds, in three lanes. The harness sends your prompt, “Run uv run pytest, find out why it fails and fix it.”, to the model. <span data-hn-run>The model was called 3 times and only wrote text. Call 1, from 0 to 3.5 seconds, wrote one tool call: Bash, ls, cat README.md and p00_model.py, then uv run pytest. The harness ran it at 3.8 seconds in your repo, which answered 1 failed, 29 passed; the harness appended that and called the model again. Call 2, from 3.8 to 7.3 seconds, wrote “The model maximizes instead of minimizing.”, an Edit of p00_model.py and a Bash call; the harness applied the edit at 6.85 seconds, while the model was still writing, and ran the tests at 7.5 seconds: 30 passed. Call 3, from 7.5 to 12 seconds, wrote “All 30 tests pass now.” and no tool call, so the harness stopped. In all: 3 model calls, 3 tool runs, 2 of them test runs, 12 seconds.</span></figcaption>
           </figure>
           <div class="hn-predict" role="group" aria-labelledby="hn-q">
             <p class="hn-q" id="hn-q">One reply, then the model stops. How many replies?</p>
@@ -961,9 +1122,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: Act II ended on “Who ran the tests on the last slide? Not the model. Agent = model + harness.” Point at the spine: the Model box is Act II, and it only writes text. The shaded band around it is the harness, here Claude Code. A tool call is a structured request, a tool name and its input, written as text the harness can parse.</p>
+            <p>Talk track: the last slide’s picture, now small, and one real run of it. Point at the spine: Context, the Model, which only writes text, the tool call, the lock, the tool run, your repo and the loop back; the shaded band is the harness, here Claude Code. Each part carries one of the act’s five questions, one badge each; read them out.</p>
+            <p>The run: Claude Code with Opus 5.5 on a copy of P00, a small transport-cost model with one bug planted: it maximizes the cost instead of minimizing it. The prompt, word for word: “Run <code>uv run pytest</code>, find out why it fails and fix it.”</p>
             <p>Predict question: “One reply, then the model stops. How many replies?” Hands up, press the room’s pick, then Reveal. Each reply is one model call: the word the next slides use.</p>
-            <p>Point at the lanes. The harness sends your prompt. Call 1 writes a Bash call; the harness runs it: 1 failed. Call 2 writes a sentence and two tool calls: 30 passed. Three calls, three tool runs, but not one each: call 2 wrote two tool calls, call 3 wrote none, and a reply with no tool call ends the run.</p>
+            <p>Point at the lanes. The harness sends your prompt. Call 1 writes a Bash call; the harness runs it: 1 failed. Call 2 writes a sentence, “The model maximizes instead of minimizing”, where the model is P00’s cost model, not the LLM; then two tool calls: 30 passed. Three calls, three tool runs, but not one each: call 2 wrote two tool calls, call 3 wrote none, and a reply with no tool call ends the run.</p>
             <p>Activity: “Call 3 says all 30 pass: which lane proves it?” Listen for: your repo’s 30 passed, run by the harness; the sentence is a claim.</p>
             <p>Transition: “Same prompt, another harness: Codex.”</p>
             <p>Background for you, not for the slides: <code>fixtures/runs/flipped-sense-claude.json</code>, 2026-10-16, Claude Code 2.1.301, <code>claude-opus-5-5</code>, <code>acceptEdits</code>, Bash allowed. Three API message ids; <code>num_turns</code> says 4. t = 0 is the recorder’s start; API time 10.9 s, tools 0.55 s, so call 1’s bar includes start-up.</p>
@@ -1020,7 +1182,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: the top lane is Act II’s run. Point at its boxes: one Bash command reads two files and runs the tests, red; one edit, <code>kMaximize</code> to <code>kMinimize</code>; the tests again, 30 passed; then a reply with no tool call, and the harness stops. Each tick marks when a tool call arrives; its result comes back shortly after. The gaps are Claude’s three model calls. Point at the line under each name: accept edits, Bash allowed; a sandbox that never asks. Live, I use ask first, so you will see it ask.</p>
+            <p>Talk track: the top lane is the run from the last slide. Point at its boxes: one Bash command reads two files and runs the tests, red; one edit, <code>kMaximize</code> to <code>kMinimize</code>; the tests again, 30 passed; then a reply with no tool call, and the harness stops. Each tick marks when a tool call arrives; its result comes back shortly after. The gaps are Claude’s three model calls. Point at the line under each name: accept edits, Bash allowed; a sandbox that never asks. Live, I use ask first, so you will see it ask.</p>
             <p>Predict question: “Same prompt, same broken repo, another harness and model. Will Codex take the same path?” Press the majority’s chip. Run it live, then Reveal: the room, the recording and our run side by side.</p>
             <p>Six tool runs, not three: one file per command, a patch, then its own diff. Point at the box top right: both runs, one loop, look, test, edit, test; the same fix, the same 30 passed. The model and the harness both differ between the lanes, so this shows the loop holds, not which harness is better.</p>
             <p>Demo. Before class: both CLIs logged in, the uv cache warmed with <code>uv sync</code> in <code>sessions/01-fundamentals</code>, and both launch lines typed into their terminals, at the repository root, without pressing Enter. Claude Code first: its reset prints 1 failed, 29 passed; paste the prompt. Read each permission prompt aloud and press 1, Yes, never 2: that switches the session to accept edits, and part 4 needs it to keep asking. Expect red, one edit to <code>p00_model.py</code>, then 30 passed, about 15 s plus your clicks. Then Codex: no prompts. If either asks to trust the folder, accept; if Codex offers an update, press Esc; if a run stalls, Ctrl-C and use the replay. Keep both sessions open for parts 3 and 4.</p>
@@ -1126,7 +1288,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: with fixed weights, the context alone decides the next-token distribution; the harness supplies the memory. What the model learned stays in its weights; what it was told this session is only in the context. Point at the bars: Act II’s three model calls, to scale. Call 1 sends 16,272 tokens: grey, Claude Code’s prompt and tools, cached by earlier runs; teal, the rest of the prefix and your prompt. Point at the band: the harness re-sends call 1 inside call 2, then appends call 1’s Bash call and its result. Grey is the KV cache from Act I: the prefix’s keys and values, kept from the last call.</p>
+            <p>Talk track: with fixed weights, the context alone decides the next-token distribution; the harness supplies the memory. What the model learned stays in its weights; what it was told this session is only in the context. Point at the bars: the opening run’s three model calls, to scale. Call 1 sends 16,272 tokens: grey, Claude Code’s prompt and tools, cached by earlier runs; teal, the rest of the prefix and your prompt. Point at the band: the harness re-sends call 1 inside call 2, then appends call 1’s Bash call and its result. Grey is the KV cache from Act I: the prefix’s keys and values, kept from the last call.</p>
             <p>Predict question: “Call 3 adds 487 new tokens. How many does it send?” Press the majority’s chip, then Reveal: 20,174.</p>
             <p>Activity: ask why grey is cheaper but not free. Listen for: the cache reuses the keys and values already computed for that prefix; the new tokens still need computing.</p>
             <p>Transition: “Three calls is a short run. What does call 26 of a long one send?”</p>
@@ -1421,7 +1583,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               <text class="gt-mark" x="900" y="225" text-anchor="middle">▼ Codex run, sandboxed</text>
             </svg>
           </div>
-          <figcaption class="visually-hidden" id="gt-desc">Where each control acts, on the run Act II showed. The model reads AGENTS.md, which asks it never to edit the contract: the tests, the checker and the data. Model call 1 writes a Bash call to list, read and run pytest; model call 2 writes an Edit, kMaximize to kMinimize, and a Bash call, uv run pytest; model call 3 writes no tool call, and the run stops. Every tool call crosses the gate, the permissions, before anything runs. The log records who decided: a rule allowed both Bash calls, the accept-edits mode allowed the edit. A PreToolUse hook at the gate could enforce the instruction by blocking an Edit on the contract, and a Stop hook could run the tests before the stop; none was set in this run. The sandbox sets what a command can reach: in the Codex run, with workspace-write, commands wrote only in the folder and had no network; the Claude Code run had no sandbox. The gate’s mode, from asking most to asking least: plan, ask first, accept edits, never ask; never ask grants no extra access. Today’s live demo asks first; the Claude Code run accepted edits with a rule allowing Bash; the Codex run never asked, inside its sandbox.</figcaption>
+          <figcaption class="visually-hidden" id="gt-desc">Where each control acts, on the act’s opening run. The model reads AGENTS.md, which asks it never to edit the contract: the tests, the checker and the data. Model call 1 writes a Bash call to list, read and run pytest; model call 2 writes an Edit, kMaximize to kMinimize, and a Bash call, uv run pytest; model call 3 writes no tool call, and the run stops. Every tool call crosses the gate, the permissions, before anything runs. The log records who decided: a rule allowed both Bash calls, the accept-edits mode allowed the edit. A PreToolUse hook at the gate could enforce the instruction by blocking an Edit on the contract, and a Stop hook could run the tests before the stop; none was set in this run. The sandbox sets what a command can reach: in the Codex run, with workspace-write, commands wrote only in the folder and had no network; the Claude Code run had no sandbox. The gate’s mode, from asking most to asking least: plan, ask first, accept edits, never ask; never ask grants no extra access. Today’s live demo asks first; the Claude Code run accepted edits with a rule allowing Bash; the Codex run never asked, inside its sandbox.</figcaption>
         </figure>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
@@ -1489,9 +1651,9 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: same prompt as Act II, on a copy of P00 where the code is correct and someone has committed one new test: the delivery plan must cost at most 400. Its file says “budget”: that is the plan’s cost, not the agent’s tokens. Point at the rule: every test is contract; that rule rides in the prefix, part 3. Point at the axis: no plan costs less than 485, so no code passes both.</p>
+            <p>Talk track: same prompt as the opening run, on a copy of P00 where the code is correct and someone has committed one new test: the delivery plan must cost at most 400. Its file says “budget”: that is the plan’s cost, not the agent’s tokens. Point at the rule: every test is contract; that rule rides in the prefix, part 3. Point at the axis: no plan costs less than 485, so no code passes both.</p>
             <p>Predict question: “What should the agent do?” Press the majority’s chip, then Reveal.</p>
-            <p>Both stopped and reported: no file changed, the new test still red. AGENTS.md also says done means every test passes: two rules in conflict, so they stopped. Stopping with a red test can be correct. A reply with no tool call is the model proposing to stop and the harness ending the run: Act II’s run stopped green; the same rule ends this one red. Separate from the test’s 400, the harness has its own stop limits: headless, <code>claude -p --max-turns</code> and the spending cap <code>--max-budget-usd</code>; in any CLI you can interrupt.</p>
+            <p>Both stopped and reported: no file changed, the new test still red. AGENTS.md also says done means every test passes: two rules in conflict, so they stopped. Stopping with a red test can be correct. A reply with no tool call is the model proposing to stop and the harness ending the run: the opening run stopped green; the same rule ends this one red. Separate from the test’s 400, the harness has its own stop limits: headless, <code>claude -p --max-turns</code> and the spending cap <code>--max-budget-usd</code>; in any CLI you can interrupt.</p>
             <p>Point at the other chips, illustrative: a faked green, which Act IV measures; other tests red; a runaway loop.</p>
             <p>Activity, think-pair-share: “When should an agent on your repo stop and ask you?”</p>
             <p>Transition: “How much of this loop do today’s tools hand to the harness?”</p>
@@ -1789,7 +1951,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 
       <nav data-deck-nav hidden aria-label="Slide navigation">
         <button type="button" data-prev>Previous</button>
-        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 10</span>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 11</span>
         <button type="button" data-next>Next</button>
         <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
       </nav>
@@ -2242,6 +2404,41 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+</script>
+  <script>/* Page-specific: agent, build the picture one step at a time: the model, + tools, + a loop, = an agent.
+   It opens on step 1; a chip shows its step's parts lit and its sentence. Without the script, and in print,
+   the whole picture and all four sentences show. */
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-ag]');
+  if (!root) return;
+  var chips = Array.from(root.querySelectorAll('[data-ag-chip]'));
+  var says = Array.from(root.querySelectorAll('[data-ag-say]'));
+  var row = root.querySelector('.ag-chips');
+  var status = root.querySelector('[data-ag-status]');
+  var slide = root.closest('[data-slide]');
+  if (!chips.length || chips.length !== says.length || !row || !status) return;
+
+  // As on the predicts: a pointer press hands focus back to the slide, a keyboard press keeps it.
+  function settle(event) {
+    if (event.detail > 0 && slide) slide.focus({ preventScroll: true });
+  }
+  function show(step, announce) {
+    root.setAttribute('data-ag-at', String(step));
+    chips.forEach(function (chip, i) { chip.setAttribute('aria-pressed', String(i + 1 === step)); });
+    says.forEach(function (say, i) { say.hidden = i + 1 !== step; });
+    if (announce) status.textContent = 'Step ' + step + ' of ' + says.length + '. ' + says[step - 1].textContent.trim();
+  }
+  chips.forEach(function (chip, i) {
+    chip.disabled = false;
+    chip.addEventListener('click', function (event) {
+      show(i + 1, true);
+      settle(event);
+    });
+  });
+  row.hidden = false;
+  show(1, false);
 })();
 </script>
   <script>/* Page-specific: harness, mark the room's guess on a chip, then reveal the run's three lanes beside it. */
