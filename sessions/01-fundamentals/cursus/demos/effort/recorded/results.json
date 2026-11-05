@@ -112,6 +112,34 @@
       "started_at": "2026-11-01T13:31:12.755Z"
     },
     {
+      "cli": "claude",
+      "cli_version": "2.1.318 (Claude Code)",
+      "model": "claude-opus-5-5",
+      "effort": "max",
+      "tokens": {
+        "input": 2,
+        "output": 2348,
+        "cache_read": 0,
+        "cache_write": 2714,
+        "cache_write_1h": 2714,
+        "cached_input": 0,
+        "reasoning_output": 0,
+        "thinking": 1801,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.06868,
+      "reported_cost_usd": 0.06867999999999999,
+      "cost_delta_usd": 1.3877787807814457e-17,
+      "wall_seconds": 21.431,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/claude-max.jsonl",
+      "meta": "raw/claude-max.meta.json",
+      "started_at": "2026-11-05T06:50:43.101Z"
+    },
+    {
       "cli": "codex",
       "cli_version": "codex-cli 0.166.0",
       "model": "gpt-6-astra",
@@ -162,6 +190,32 @@
       "raw": "raw/codex-high.jsonl",
       "meta": "raw/codex-high.meta.json",
       "started_at": "2026-11-01T13:32:01.232Z"
+    },
+    {
+      "cli": "codex",
+      "cli_version": "codex-cli 0.165.0",
+      "model": "gpt-6-astra",
+      "effort": "max",
+      "tokens": {
+        "input": 15039,
+        "output": 1215,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_write_1h": 0,
+        "cached_input": 12288,
+        "reasoning_output": 1034,
+        "thinking": 0,
+        "cache_write_input": 0
+      },
+      "tool_calls": 0,
+      "pure_reasoning": true,
+      "cost_usd": 0.100548,
+      "wall_seconds": 59.764,
+      "answer": 229,
+      "correct": true,
+      "raw": "raw/codex-max.jsonl",
+      "meta": "raw/codex-max.meta.json",
+      "started_at": "2026-11-05T06:51:04.611Z"
     }
   ]
 }

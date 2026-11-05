@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--effort",
+    "max",
+    "--model",
+    "claude-opus-5-5",
+    "--no-session-persistence",
+    "--strict-mcp-config",
+    "--tools",
+    "",
+    "--permission-mode",
+    "dontAsk"
+  ],
+  "cwd_kind": "tempdir-outside-repo",
+  "prompt_sha256": "725863d4eea31e496e15201c2eb2e478717806e5b398ada07edbf13a57892b87",
+  "cli_version": "2.1.318 (Claude Code)",
+  "started_at": "2026-11-05T06:50:43.101Z",
+  "ended_at": "2026-11-05T06:51:04.532Z",
+  "wall_seconds": 21.431,
+  "exit_code": 0
+}

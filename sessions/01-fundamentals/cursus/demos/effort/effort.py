@@ -1,12 +1,14 @@
-"""Effort dial demo: one small knapsack puzzle at low and at high effort.
+"""Effort dial demo: one small knapsack puzzle at low, high and max effort.
 
     uv run effort.py                 # same as `replay`
     uv run effort.py replay          # print the recorded, dated results (no network)
-    uv run effort.py live --cli claude|codex|both [--out work] [--claude-model ID] [--codex-model ID]
+    uv run effort.py live --cli claude|codex|both [--effort low high max] [--out work]
+                         [--claude-model ID] [--codex-model ID]
     uv run effort.py prompt          # print the prompt rendered from PARCELS and CAPACITY
 
-`live` sends prompt.txt on stdin to each CLI, once at `low` and once at `high` effort, each
-time from a fresh empty temporary folder outside the repository. It keeps every CLI's raw
+`live` sends prompt.txt on stdin to each CLI, once at `low`, once at `high` and once at `max`
+effort (or only the levels `--effort` names), each time from a fresh empty temporary folder
+outside the repository. It keeps every CLI's raw
 stdout verbatim plus a meta sidecar, and writes results.json and a table. Costs are list-price
 equivalents computed from prices.json (USD per million tokens). See README.md.
 """
@@ -40,7 +42,7 @@ PARCELS = (
 )
 CAPACITY = 630
 
-EFFORTS = ("low", "high")
+EFFORTS = ("low", "high", "max")
 CLIS = ("claude", "codex")
 DEFAULT_MODELS = {"claude": "claude-opus-5-5", "codex": "gpt-6-astra"}
 TIMEOUT_SECONDS = 900
@@ -299,7 +301,7 @@ def live(args):
     runs = []
     for cli in clis:
         version = cli_version(cli)
-        for effort in EFFORTS:
+        for effort in (effort for effort in EFFORTS if effort in args.effort):
             runs.append(run_one(cli, effort, models[cli], version, prompt, prices, out))
     document = dict(
         run_date=min(row["started_at"] for row in runs)[:10],
@@ -351,19 +353,21 @@ def print_table(document):
     print("Claude counts input without cache reads/writes; Codex counts cached tokens inside input.")
     print("reasoning = Claude thinking tokens or Codex reasoning tokens, already counted in output.")
     by_key = {(row["cli"], row["effort"]): row for row in runs}
-    ratios = []
-    for cli in CLIS:
-        low, high = by_key.get((cli, "low")), by_key.get((cli, "high"))
-        if low and high and low["tokens"]["output"] and low["wall_seconds"] and low["cost_usd"]:
-            reasoning = "thinking" if cli == "claude" else "reasoning_output"
-            extra = (f"   reasoning x{high['tokens'][reasoning] / low['tokens'][reasoning]:.1f}"
-                     if low["tokens"][reasoning] else "")
-            ratios.append(f"  {cli:<6}  output tokens x{high['tokens']['output'] / low['tokens']['output']:.1f}{extra}"
-                          f"   seconds x{high['wall_seconds'] / low['wall_seconds']:.1f}"
-                          f"   cost x{high['cost_usd'] / low['cost_usd']:.1f}")
-    if ratios:
-        print("High effort divided by low effort, per CLI:")
-        print("\n".join(ratios))
+    # One block per effort above low; a ratio line names its CLI only, so it never reads as a row.
+    for effort in EFFORTS[1:]:
+        ratios = []
+        for cli in CLIS:
+            low, run = by_key.get((cli, "low")), by_key.get((cli, effort))
+            if low and run and low["tokens"]["output"] and low["wall_seconds"] and low["cost_usd"]:
+                reasoning = "thinking" if cli == "claude" else "reasoning_output"
+                extra = (f"   reasoning x{run['tokens'][reasoning] / low['tokens'][reasoning]:.1f}"
+                         if low["tokens"][reasoning] else "")
+                ratios.append(f"  {cli:<6}  output tokens x{run['tokens']['output'] / low['tokens']['output']:.1f}{extra}"
+                              f"   seconds x{run['wall_seconds'] / low['wall_seconds']:.1f}"
+                              f"   cost x{run['cost_usd'] / low['cost_usd']:.1f}")
+        if ratios:
+            print(f"{effort.capitalize()} effort divided by low effort, per CLI:")
+            print("\n".join(ratios))
 
 
 def replay(args):
@@ -379,8 +383,10 @@ def main(argv=None):
     replay_parser = commands.add_parser("replay", help="print recorded results; no network, no CLI")
     replay_parser.add_argument("--dir", default="recorded",
                                help="folder holding results.json, relative to this script (default: recorded)")
-    live_parser = commands.add_parser("live", help="run the CLIs at low and high effort")
+    live_parser = commands.add_parser("live", help="run the CLIs at low, high and max effort")
     live_parser.add_argument("--cli", choices=("claude", "codex", "both"), required=True)
+    live_parser.add_argument("--effort", nargs="+", choices=EFFORTS, default=list(EFFORTS),
+                             help="effort levels to run, in the order low, high, max (default: all three)")
     live_parser.add_argument("--out", default="work", help="output folder, relative to this script (default: work)")
     live_parser.add_argument("--claude-model", default=DEFAULT_MODELS["claude"])
     live_parser.add_argument("--codex-model", default=DEFAULT_MODELS["codex"])
