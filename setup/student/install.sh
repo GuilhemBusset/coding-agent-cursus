@@ -194,11 +194,28 @@ EOF
   esac
   if [ "$(id -u)" != 0 ]; then sudo=sudo; fi
 
+  # Temporary folders, removed on exit: $work (installer logs) and $pick_dir (see pick).
+  local work="" pick_dir=""
+  # shellcheck disable=SC2064 # expand the folders now, while they are set.
+  set_cleanup() { trap "rm -rf ${work:+'$work'} ${pick_dir:+'$pick_dir'}" EXIT; }
+  # Runs this copy of one tool from now on, without changing which copy of any other tool runs:
+  # a link to it goes in a private folder put first on PATH (never all of ~/.local/bin, which
+  # may also hold an older copy of another tool).
+  pick() { # tool path
+    if [ -z "$pick_dir" ]; then
+      pick_dir=$(mktemp -d "${TMPDIR:-/tmp}/cursus-path.XXXXXX") || fail "plan" "cannot create a temporary folder" "check that ${TMPDIR:-/tmp} is writable"
+      set_cleanup
+      PATH="$pick_dir:$PATH"
+    fi
+    ln -sf "$2" "$pick_dir/$1" || fail "plan" "cannot link $2 into $pick_dir" "check that ${TMPDIR:-/tmp} is writable"
+    hash -r
+  }
+
   # Which tools are there, at which version.
   floor_of() { case $1 in git) echo "$GIT_FLOOR" ;; gh) echo "$GH_FLOOR" ;; uv) echo "$UV_FLOOR" ;; mise) echo "$MISE_FLOOR" ;; esac; }
   meets() { [ -n "$1" ] && { [ -z "${2:-}" ] || version_ge "$1" "$2"; }; } # version floor
   # have_<tool> holds each version; the loop and settle set them through eval.
-  local t v w local_first="" have_git="" have_gh="" have_uv="" have_mise=""
+  local t v w have_git="" have_gh="" have_uv="" have_mise=""
   for t in git gh curl uv mise claude codex; do
     v=""
     # macOS ships /usr/bin/git as a launcher that opens the Command Line Tools dialog when run:
@@ -211,11 +228,10 @@ EOF
     # A copy in ~/.local/bin at the floor (from an earlier run) wins over an older one on PATH.
     if ! meets "$v" "$(floor_of "$t")" && [ "$t" != git ] && [ -x "$HOME/.local/bin/$t" ]; then
       w=$(version_of "$HOME/.local/bin/$t")
-      if meets "$w" "$(floor_of "$t")"; then v=$w local_first=1; fi
+      if meets "$w" "$(floor_of "$t")"; then v=$w; pick "$t" "$HOME/.local/bin/$t"; fi
     fi
     eval "have_$t=\$v"
   done
-  if [ -n "$local_first" ]; then PATH="$HOME/.local/bin:$PATH"; fi
   ok() { # tool floor: present and at or above the floor
     local v
     eval "v=\${have_$1}"
@@ -230,8 +246,7 @@ EOF
       w=$(version_of "$HOME/.local/bin/$1")
       if meets "$w" "$2"; then
         say "$1: an older $1 ${v:+$v }at $(command -v "$1") comes first on your PATH. This run uses ~/.local/bin/$1; remove the older one, or put ~/.local/bin first on your PATH."
-        PATH="$HOME/.local/bin:$PATH"
-        hash -r
+        pick "$1" "$HOME/.local/bin/$1"
         v=$w
       fi
     fi
@@ -402,10 +417,9 @@ $sudo dnf install -y gh"
     case $REPLY in "" | y | Y | yes | Yes) ;; *) say "Stopped: nothing was changed."; return 0 ;; esac
   fi
 
-  local work log before after
+  local log before after
   work=$(mktemp -d "${TMPDIR:-/tmp}/cursus-setup.XXXXXX") || fail "plan" "cannot create a temporary folder" "check that ${TMPDIR:-/tmp} is writable"
-  # shellcheck disable=SC2064 # expand $work now, while it is set.
-  trap "rm -rf '$work'" EXIT
+  set_cleanup
   # Runs an installer with its output in a log; on failure, shows the end of it.
   quiet() { # name command...
     log="$work/$1.log"
