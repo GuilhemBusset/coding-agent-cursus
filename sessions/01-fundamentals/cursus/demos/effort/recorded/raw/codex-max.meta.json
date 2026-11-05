@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "codex",
+    "exec",
+    "--json",
+    "--ephemeral",
+    "--skip-git-repo-check",
+    "-C",
+    "<tmp>",
+    "--sandbox",
+    "read-only",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "model_reasoning_effort=\"max\"",
+    "-m",
+    "gpt-6-astra",
+    "-"
+  ],
+  "cwd_kind": "tempdir-outside-repo",
+  "prompt_sha256": "725863d4eea31e496e15201c2eb2e478717806e5b398ada07edbf13a57892b87",
+  "cli_version": "codex-cli 0.165.0",
+  "started_at": "2026-11-05T06:51:04.611Z",
+  "ended_at": "2026-11-05T06:52:04.375Z",
+  "wall_seconds": 59.764,
+  "exit_code": 0
+}
