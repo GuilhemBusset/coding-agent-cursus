@@ -168,8 +168,11 @@ kinds of environment, each with its own exactly pinned ty:
   0010), which catches an API only one of them has:
   `... ty check --python-platform <linux|darwin|win32> exercises`.
 
-Warnings fail like errors. ty also merges a user-level `~/.config/ty/ty.toml` if you have one;
-CI has none, so its result is the one that counts. To bump ty, change the pin in
+Warnings fail like errors. ty also merges a user-level `~/.config/ty/ty.toml` if you have one,
+and searches `$PYTHONPATH` before the tree's own folders, so a `PYTHONPATH` naming another
+checkout makes it check this one against that one's modules (`scripts/check-changed.sh` runs
+ty without it; by hand, `env -u PYTHONPATH ...`). CI has neither, so its result is the one that
+counts. To bump ty, change the pin in
 `setup/pyproject.toml` and in every session's `typecheck` group together (CI rejects a session
 whose pin differs), relock each with the uv CI uses (0.11.28: `uv lock --project setup` from the
 root, `uv lock` in each session folder), and fix what the new version reports in the same pull
@@ -256,6 +259,9 @@ The rules err wide:
 - a deleted or renamed file counts under its old path;
 - a page is checked when it changes, when a file it loads changes, or when a file it links to is
   deleted or renamed.
+
+The selected Node suites run three files at a time, as on one of CI's 4-vCPU shard runners;
+`node --test`'s own default (one per core) overloads a larger machine past the suites' timeouts.
 
 CI makes the same selection: on a pull request, ci.yml's `changes` job runs `impact.py github`
 on the pull request's `BASE...HEAD`, and only the selected jobs, Node suites and pages run.

@@ -39,6 +39,8 @@ RUNTIME = re.compile(r"""\s(?:src|data|poster)\s*=\s*["']([^"'#?]+)|<link\b[^>]*
 LINK = re.compile(r"""\shref\s*=\s*["']([^"'#?]+)""", re.IGNORECASE)
 # The platforms students run the exercises on (ADR 0010), as ty names them.
 PLATFORMS = ("linux", "darwin", "win32")
+# Node suite files run at once locally, as on one of html-pages.yml's shards.
+NODE_CONCURRENCY = 3
 
 
 @functools.cache
@@ -260,10 +262,25 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         out.append((session, ["uv", "run", "--locked", "--group", "parallel", "pytest", "-q", "-m", "not live", "-n", "auto"],
                     ROOT / session))
     if plan.suites:
-        out.append((f"{len(plan.suites)} node suite(s)", ["node", "--test", *plan.suites], ROOT))
+        # As many suite files at once as on a CI shard's runner (4 vCPUs, so node's default is 3):
+        # node's default on a larger machine starts a browser per core, and the suites' timeouts
+        # and timing thresholds are set for CI's load, not that one.
+        out.append((f"{len(plan.suites)} node suite(s)", ["node", "--test", f"--test-concurrency={NODE_CONCURRENCY}",
+                                                          *plan.suites], ROOT))
     if plan.pages:
         out.append((f"{len(plan.pages)} page(s)", ["node", "tools/html-pages/check-repo-pages.mjs", *plan.pages], ROOT))
     return out
+
+
+def command_env(command: list[str]) -> dict[str, str]:
+    """The environment a check runs in. ty adds $PYTHONPATH to its module search paths, ahead of
+    the tree's own folders, so an inherited one (an activated environment, a wrapper that loads a
+    pytest plugin from another checkout) would type-check this tree against someone else's modules;
+    the type checks run without it, as in CI. Every other check inherits the environment as is."""
+    env = dict(os.environ)
+    if "ty" in command:
+        env.pop("PYTHONPATH", None)
+    return env
 
 
 def github_output(plan: Plan, path: str) -> None:
@@ -308,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     failed = []
     for label, command, cwd in commands(plan):
         print(f"\n== {label}: {' '.join(command)}", flush=True)
-        if subprocess.run(command, cwd=cwd, check=False).returncode != 0:
+        if subprocess.run(command, cwd=cwd, env=command_env(command), check=False).returncode != 0:
             failed.append(label)
     print("\n" + (f"FAILED: {', '.join(failed)}" if failed else "All selected checks passed."))
     return 1 if failed else 0

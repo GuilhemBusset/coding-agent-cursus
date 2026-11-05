@@ -127,6 +127,20 @@ def test_github_outputs(tmp_path):
     assert dict(line.split("=", 1) for line in out.read_text().splitlines())["shards"] == "[1, 2, 3]"
 
 
+def test_type_checks_run_without_an_inherited_pythonpath(monkeypatch):
+    monkeypatch.setenv("PYTHONPATH", "/elsewhere/tools/implementation-loop")
+    plan = impact.Plan(units={"typecheck", "turn-in"}, sessions=["sessions/01-x"])
+    for label, command, _ in impact.commands(plan):
+        env = impact.command_env(command)
+        assert ("PYTHONPATH" in env) == ("ty" not in command), label
+
+
+def test_node_suites_run_as_many_at_once_as_on_a_ci_shard():
+    plan = impact.Plan(suites=["tools/html-pages/tests/a.test.mjs", "tools/html-pages/tests/b.test.mjs"])
+    [(_, command, _)] = impact.commands(plan)
+    assert command[:3] == ["node", "--test", "--test-concurrency=3"] and command[3:] == plan.suites
+
+
 def test_commands_type_check_the_repository_and_each_session():
     plan = impact.Plan(units={"typecheck", "imports"}, sessions=["sessions/01-x"])
     run = {label: (command, cwd) for label, command, cwd in impact.commands(plan)}
