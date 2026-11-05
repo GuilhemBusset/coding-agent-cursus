@@ -8,14 +8,14 @@ import sys
 from student_sandbox import REPO
 
 sys.path.insert(0, str(REPO / "tools/test-impact"))
-import impact  # noqa: E402
+import impact
 
 WORKFLOWS = REPO / ".github/workflows"
 
 
 def test_the_jobs_run_the_non_interactive_setup_twice_where_the_issue_asks():
     flow = (WORKFLOWS / "student-setup.yml").read_text(encoding="utf-8")
-    images = re.findall(r"^\s+- image: (\S+)$", flow, re.M)
+    images = re.findall(r"^\s+- image: (\S+)$", flow, re.MULTILINE)
     assert sorted(i.split(":")[0] for i in images) == ["archlinux", "debian", "fedora", "ubuntu"]
     for image in images:
         tag = image.split(":")[1]

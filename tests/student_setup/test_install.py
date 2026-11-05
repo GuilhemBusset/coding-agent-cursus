@@ -135,8 +135,8 @@ def test_existing_clone_on_a_feature_branch_is_left_as_it_is(tmp_path):
     out = result.stdout
     assert f"clone: using the clone this script runs from, {repo} (left as it is)" in out
     for tool in ("git", "gh", "uv", "mise", "claude"):
-        assert re.search(rf"^\[setup\] {tool}: present \S+.*left alone$", out, re.M), tool
-    assert not re.search(r"^\[setup\] .*\b(installing|installed)\b", out, re.M)
+        assert re.search(rf"^\[setup\] {tool}: present \S+.*left alone$", out, re.MULTILINE), tool
+    assert not re.search(r"^\[setup\] .*\b(installing|installed)\b", out, re.MULTILINE)
     assert "logins: skipped (--no-login)" in out and "setup check: skipped (--no-login)" in out
     assert "[setup] sessions/01-alpha: synced" in out
     assert git(repo, "config", "--get", "core.hooksPath").strip() == ".githooks"
@@ -187,7 +187,7 @@ def test_windows_run_through_iex_leaves_an_existing_clone_as_it_is(tmp_path):
     assert result.returncode == 0, result.stdout + result.stderr
     assert snapshot(repo) == before
     for tool in ("git", "gh", "uv", "mise", "claude", "codex"):
-        assert re.search(rf"^\[setup\] {tool}: present \S+.*left alone$", result.stdout, re.M), tool
+        assert re.search(rf"^\[setup\] {tool}: present \S+.*left alone$", result.stdout, re.MULTILINE), tool
     assert f"clone: {repo} already exists, left as it is" in result.stdout
     assert "[setup] sessions/01-alpha: synced" in result.stdout and "setup check: skipped (-NoLogin)" in result.stdout
     assert not [c for c in box.calls() if c.startswith("winget") or " auth " in c]

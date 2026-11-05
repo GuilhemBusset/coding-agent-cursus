@@ -34,7 +34,7 @@ def code_lines(path):
 
 def test_shell_scripts_pass_pinned_shellcheck():
     result = subprocess.run(["uv", "run", "--no-project", "--with", "shellcheck-py==0.10.0.1", "shellcheck",
-                             *map(str, SHELL)], capture_output=True, text=True, timeout=300)
+                             *map(str, SHELL)], capture_output=True, text=True, timeout=300, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
@@ -48,7 +48,8 @@ def test_powershell_scripts_parse_as_windows_powershell_5_1():
     for path in POWERSHELL:
         assert path.read_bytes().isascii(), f"{path.name}: Windows PowerShell 5.1 reads a BOM-less file as ANSI"
         command = "$path = '" + str(path).replace("'", "''") + "'\n" + PS51
-        result = subprocess.run([powershell(), "-NoProfile", "-Command", command], capture_output=True, text=True, timeout=60)
+        result = subprocess.run([powershell(), "-NoProfile", "-Command", command], capture_output=True, text=True, timeout=60,
+                                check=False)
         assert result.returncode == 0, f"{path.name}: parser errors or PowerShell 7-only syntax"
 
 
@@ -82,8 +83,8 @@ def statuses_in_record():
 def statuses_in_docs():
     docs = (STUDENT / "README.md").read_text(encoding="utf-8")
     found = {}
-    for heading, body in re.findall(r"^### ([^\n]+)\n(.*?)(?=^##)", docs + "\n##", re.M | re.S):
-        match = re.search(r"^\*\*Status:\*\* CI: (.+?)\. Live run: (.+?)\.", body, re.M)
+    for heading, body in re.findall(r"^### ([^\n]+)\n(.*?)(?=^##)", docs + "\n##", re.MULTILINE | re.DOTALL):
+        match = re.search(r"^\*\*Status:\*\* CI: (.+?)\. Live run: (.+?)\.", body, re.MULTILINE)
         if match:
             found[heading.strip()] = (match[1], match[2])
     return found

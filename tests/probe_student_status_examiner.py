@@ -1,5 +1,4 @@
 """Public track labels must agree with the verification record, including outstanding live runs."""
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

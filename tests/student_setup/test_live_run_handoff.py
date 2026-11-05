@@ -45,7 +45,7 @@ def on_a_terminal(argv: list[str], env: dict[str, str], cwd) -> tuple[int, str, 
         fcntl.ioctl(0, termios.TIOCSCTTY, 0)
 
     proc = subprocess.Popen(argv, stdin=slave, stdout=slave, stderr=slave, env=env, cwd=cwd,
-                            preexec_fn=controlling_tty, close_fds=True)
+                            preexec_fn=controlling_tty, close_fds=True)  # noqa: PLW1509 - the test spawns no threads; the child needs the pty as its controlling terminal
     os.close(slave)
     out, asked, deadline = "", [], time.monotonic() + 120
     while time.monotonic() < deadline:
@@ -92,7 +92,7 @@ def test_an_interactive_run_asks_on_the_terminal_logs_in_and_runs_the_check(tmp_
     assert asked == [prompt for prompt, _ in ANSWERS], (asked, out)
     home_git = ["git", "config", "--global", "--get"]
     for key, value in (("user.name", "Ada Student"), ("user.email", "ada@example.com")):
-        got = subprocess.run([*home_git, key], env=box.env, capture_output=True, text=True).stdout.strip()
+        got = subprocess.run([*home_git, key], env=box.env, capture_output=True, text=True, check=False).stdout.strip()
         assert got == value, key
     calls = box.calls()
     for login in ("gh auth login --hostname github.com --git-protocol https --web <tty",
@@ -114,7 +114,7 @@ def live_runs_recorded() -> str:
 def test_no_track_is_labeled_tested_live_without_a_recorded_run():
     record, docs = statuses_in_record(), statuses_in_docs()
     runs = live_runs_recorded()
-    headings = re.findall(r"^### (.+)$", runs, re.M)
+    headings = re.findall(r"^### (.+)$", runs, re.MULTILINE)
     for track, (_, live) in record.items():
         if live == "tested live":
             assert any(track in h for h in headings), f"{track} is tested live with no run under 'Live runs'"

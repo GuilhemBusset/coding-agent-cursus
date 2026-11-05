@@ -27,7 +27,7 @@ def test_piped_rerun_skips_all_six_tools_and_preserves_state(tmp_path):
                          CURSUS_RAW_BASE=f'file://{repo}', CURSUS_DIR=str(repo))
         assert result.returncode == 0, result.stdout + result.stderr
         for tool in ('git', 'gh', 'uv', 'mise', 'claude', 'codex'):
-            assert re.search(rf'^\[setup\] {tool}: present .*left alone$', result.stdout, re.M)
-        assert not re.search(r'^\[setup\] .*\b(?:installing|installed|upgrading)\b', result.stdout, re.M)
+            assert re.search(rf'^\[setup\] {tool}: present .*left alone$', result.stdout, re.MULTILINE)
+        assert not re.search(r'^\[setup\] .*\b(?:installing|installed|upgrading)\b', result.stdout, re.MULTILINE)
         assert before == (git(repo, 'rev-parse', 'HEAD'), git(repo, 'ls-files', '-s'), git(repo, 'status', '--porcelain'), tree(repo, skip=('.git',)))
         assert 'result: PASS' not in result.stdout and 'setup check: skipped' in result.stdout

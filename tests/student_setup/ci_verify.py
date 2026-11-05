@@ -52,7 +52,7 @@ def version(tool: str) -> tuple[int, int, int] | None:
     path = shutil.which(tool)
     if not path:
         return None
-    out = subprocess.run([path, "--version"], capture_output=True, text=True, stdin=subprocess.DEVNULL).stdout
+    out = subprocess.run([path, "--version"], capture_output=True, text=True, stdin=subprocess.DEVNULL, check=False).stdout
     match = VERSION.search(out.splitlines()[0] if out else "")
     return (int(match[1]), int(match[2]), int(match[3] or 0)) if match else None
 
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         if found is None or found < floor:
             failed.append(f"{tool} --version is missing or below its floor")
     hooks = subprocess.run(["git", "-C", str(args.clone), "config", "--get", "core.hooksPath"],
-                           capture_output=True, text=True).stdout.strip()
+                           capture_output=True, text=True, check=False).stdout.strip()
     print(f"core.hooksPath: {hooks}")
     if hooks != ".githooks":
         failed.append("core.hooksPath is not .githooks")
@@ -116,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         if f"[setup] {name}: synced" not in first:
             failed.append(f"the first run did not sync {name}")
         code = subprocess.run(["mise", "exec", "--", "uv", "sync", "--locked"], cwd=session,
-                              stdin=subprocess.DEVNULL).returncode
+                              stdin=subprocess.DEVNULL, check=False).returncode
         print(f"{name}: mise exec -- uv sync --locked exited {code}")
         if code:
             failed.append(f"mise exec -- uv sync --locked failed in {name}")
@@ -125,10 +125,10 @@ def main(argv: list[str] | None = None) -> int:
     if re.search(r"result: PASS", first + second):
         failed.append("a run without logins reported the setup check as passed")
     for tool in [t for t in args.preinstalled.split(",") if t]:
-        if not re.search(rf"^\[setup\] {tool}: present \S+.*left alone", first, re.M):
+        if not re.search(rf"^\[setup\] {tool}: present \S+.*left alone", first, re.MULTILINE):
             failed.append(f"the first run did not leave the preinstalled {tool} alone")
     for tool in tools:
-        if not re.search(rf"^\[setup\] {tool}: present \S+.*left alone", second, re.M):
+        if not re.search(rf"^\[setup\] {tool}: present \S+.*left alone", second, re.MULTILINE):
             failed.append(f"the second run did not report {tool} present and left alone")
     installs = [line for line in second.splitlines() if re.match(r"\[setup\] .*\b(installing|installed|upgrad)", line)]
     if installs:

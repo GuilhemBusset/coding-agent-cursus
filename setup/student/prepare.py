@@ -58,7 +58,7 @@ def latest_check(found: list[Path]) -> Path | None:
 
 def activate_hooks(repo: Path) -> None:
     current = subprocess.run(["git", "-C", str(repo), "config", "--get", "core.hooksPath"],
-                             capture_output=True, text=True).stdout.strip()
+                             capture_output=True, text=True, check=False).stdout.strip()
     if current != HOOKS:
         subprocess.run(["git", "-C", str(repo), "config", "core.hooksPath", HOOKS], check=True)
     say("hooks: core.hooksPath is .githooks" + (" (already set)" if current == HOOKS else " (set now)"))
@@ -74,7 +74,7 @@ def activate_hooks(repo: Path) -> None:
 def run_quiet(argv: list[str], cwd: Path) -> tuple[int, str]:
     try:
         result = subprocess.run(argv, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True, errors="replace")
+                                stderr=subprocess.STDOUT, text=True, errors="replace", check=False)
     except FileNotFoundError:
         return 127, f"{argv[0]}: not found on PATH"
     return result.returncode, result.stdout
@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
         say(f"setup check: not run, so nothing is verified yet. Once you are logged in, run it from the clone: {command}")
         return 0
     say(f"setup check: {check.relative_to(repo).as_posix()} (the agent smoke test can take a minute or two)")
-    code = subprocess.run([sys.executable, str(check)], cwd=repo, stdin=subprocess.DEVNULL).returncode
+    code = subprocess.run([sys.executable, str(check)], cwd=repo, stdin=subprocess.DEVNULL, check=False).returncode
     # The latest session's pre-work page, or else the first one any session has.
     pages = [check.parent / "00-prework.html", *sorted(repo.glob("sessions/*/exercises/00-prework.html"))]
     page = next((p for p in pages if p.is_file()), pages[0]).relative_to(repo).as_posix()

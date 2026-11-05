@@ -111,7 +111,7 @@ class Box:
         # A new session has no controlling terminal, as in CI: /dev/tty cannot be opened.
         return subprocess.run(argv, cwd=cwd or self.root, env={**self.env, **env}, input=input,
                               stdin=None if input is not None else subprocess.DEVNULL,
-                              capture_output=True, text=True, timeout=120, start_new_session=True)
+                              capture_output=True, text=True, timeout=120, start_new_session=True, check=False)
 
 
 def tree(root: Path, skip: tuple[str, ...] = ()) -> dict[str, tuple[int, bytes]]:
