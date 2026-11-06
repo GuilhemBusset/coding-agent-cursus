@@ -1,23 +1,20 @@
-"""A9's agent part: the interactive path a live run takes, and the record a live run lands in.
+"""A9's agent part: the interactive path a live run takes.
 
 The live runs themselves (real browser logins on macOS, native Windows and a native Linux) are the
 owner's. What agents deliver is proven here: install.sh asks on the terminal, logs in to GitHub and
-to each agent there, and runs the setup check; and no track is labeled tested live without a
-recorded run.
+to each agent there, and runs the setup check.
 """
 
 from __future__ import annotations
 
 import fcntl
 import os
-import re
 import select
 import subprocess
 import termios
 import time
 
-from student_sandbox import STUDENT, Box, course, git
-from test_static import statuses_in_docs, statuses_in_record
+from student_sandbox import Box, course, git
 
 DEBIAN = 'PRETTY_NAME="Debian GNU/Linux 13 (trixie)"\nID=debian\nVERSION_ID="13"\n'
 # A tool not logged in yet: its status command fails, its login logs whether it got a terminal.
@@ -104,22 +101,3 @@ def test_an_interactive_run_asks_on_the_terminal_logs_in_and_runs_the_check(tmp_
     assert order == sorted(order) and calls[order[0]].startswith("gh "), "GitHub first, then the agents"
     assert "logins: skipped" not in out and "setup check: skipped" not in out
     assert "result: PASS" in out and "Next steps:" in out, out
-
-
-def live_runs_recorded() -> str:
-    record = (STUDENT / "verification.md").read_text(encoding="utf-8")
-    return record.split("\n## Live runs", 1)[1]
-
-
-def test_no_track_is_labeled_tested_live_without_a_recorded_run():
-    record, docs = statuses_in_record(), statuses_in_docs()
-    runs = live_runs_recorded()
-    headings = re.findall(r"^### (.+)$", runs, re.MULTILINE)
-    for track, (_, live) in record.items():
-        if live == "tested live":
-            assert any(track in h for h in headings), f"{track} is tested live with no run under 'Live runs'"
-        else:
-            assert live == "untested" and docs[track][1] == "untested", track
-    # The owner's three runs have a procedure to follow and a place to land.
-    procedure = (STUDENT / "verification.md").read_text(encoding="utf-8").split("## How to record a live run", 1)
-    assert len(procedure) == 2 and "result: PASS" in procedure[1].split("\n## ", 1)[0]

@@ -123,10 +123,10 @@ installers support them ([sources](#sources)): Claude Code supports macOS 13+, W
 or Windows Server 2019+, Ubuntu 20.04+, Debian 10+ and Alpine 3.19+, on x64 or ARM64 with 4 GB of
 RAM or more. Codex ships macOS (Apple silicon and Intel), Linux (x86_64 and ARM64) and Windows
 (x64 and ARM64) builds; on Windows, OpenAI recommends Windows 11 and supports a fully updated
-Windows 10 1809+ on a best-effort basis. Each track's status comes from the
-[verification record](verification.md): "tested in CI" means the non-interactive run
-(`--yes --agent both --no-login`, twice) passes in CI; a live run is a person's full interactive
-run with real logins and the setup check passing. A track with no live run is labeled untested.
+Windows 10 1809+ on a best-effort basis. In each track's status, "tested in CI" means the
+non-interactive run (`--yes --agent both --no-login`, twice) passes in CI; a live run is a
+person's full interactive run with real logins and the setup check passing. A track with no live
+run is labeled untested.
 
 ### Windows (PowerShell)
 
@@ -303,7 +303,8 @@ For maintainers. [`versions.env`](versions.env) is the one place for the setup's
 
 Then run `uv run --no-project --with pytest==8.3.5 pytest -q tests/student_setup` and open a pull
 request: CI runs the setup for real on every track it covers. Pinned container images live in
-`.github/workflows/student-setup.yml`; bump them with [verification.md](verification.md).
+`.github/workflows/student-setup.yml`; when you bump one, change the image named in that
+track's status above too.
 
 ## Sources
 

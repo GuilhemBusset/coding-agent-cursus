@@ -72,8 +72,8 @@ Linux, macOS or Windows (ADR 0010), and have Claude Code or Codex, not necessari
    Ubuntu LTS, Debian, Fedora and Arch containers, on `macos-latest` with `/bin/bash` and on
    `windows-latest` with Windows PowerShell 5.1. It runs on pull requests that change the setup
    (`[units.student-setup]` in `tools/test-impact/impact.toml`) and on every full run. What CI
-   cannot do, real logins and GUI prompts, is a live run by a person, recorded per track in
-   `setup/student/verification.md`; a track without one is labeled untested.
+   cannot do, real logins and GUI prompts, is a live run by a person; a track without one is
+   labeled untested in `setup/student/README.md`.
 
 ## Consequences
 
@@ -86,4 +86,5 @@ Linux, macOS or Windows (ADR 0010), and have Claude Code or Codex, not necessari
 - The student-setup CI jobs take several minutes and download real installers, so they run only
   when the setup or what it reads changes, and nightly.
 - Bumping uv, mise or gh is an edit to `versions.env` (see `setup/student/README.md`); bumping a
-  container image is an edit to `student-setup.yml` and the verification record.
+  container image is an edit to `student-setup.yml` and to that track's status in
+  `setup/student/README.md`.

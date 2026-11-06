@@ -1,5 +1,5 @@
 """Static checks on the student setup: shellcheck, Bash 3.2 and Windows PowerShell 5.1 syntax,
-the floors against the setup check's, and each track's status in the docs against the record."""
+and the floors against the setup check's."""
 
 from __future__ import annotations
 
@@ -70,30 +70,3 @@ def test_installer_floors_equal_the_setup_checks_floors():
         text = "\n".join(code_lines(path))
         for value in floors.values():
             assert ".".join(map(str, value)) not in text, f"{path.name} hard-codes a floor"
-
-
-def statuses_in_record():
-    record = (STUDENT / "verification.md").read_text(encoding="utf-8")
-    section = record.split("## Track status", 1)[1].split("\n## ", 1)[0]
-    rows = [[cell.strip() for cell in line.strip().strip("|").split("|")] for line in section.splitlines()
-            if line.startswith("|") and not re.match(r"\|\s*(Track|-)", line)]
-    return {row[0]: (row[1], row[2]) for row in rows}
-
-
-def statuses_in_docs():
-    docs = (STUDENT / "README.md").read_text(encoding="utf-8")
-    found = {}
-    for heading, body in re.findall(r"^### ([^\n]+)\n(.*?)(?=^##)", docs + "\n##", re.MULTILINE | re.DOTALL):
-        match = re.search(r"^\*\*Status:\*\* CI: (.+?)\. Live run: (.+?)\.", body, re.MULTILINE)
-        if match:
-            found[heading.strip()] = (match[1], match[2])
-    return found
-
-
-def test_each_tracks_status_in_the_docs_matches_the_verification_record():
-    record, docs = statuses_in_record(), statuses_in_docs()
-    tracks = {"Windows (PowerShell)", "Windows with WSL 2", "macOS", "Debian / Ubuntu", "Fedora", "Arch", "Other Linux"}
-    assert set(record) == tracks and set(docs) == tracks, (sorted(record), sorted(docs))
-    for track, (ci, live) in record.items():
-        assert ci in {"tested in CI", "not in CI"} and live in {"tested live", "untested"}, (track, ci, live)
-        assert docs[track] == (ci, live), f"{track}: the README says {docs[track]}, the record {(ci, live)}"

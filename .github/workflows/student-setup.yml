@@ -11,7 +11,7 @@ name: Student setup
 # on Windows with Windows PowerShell 5.1. ci_verify.py then checks the tools against the floors,
 # the hooks, every session's sync, that the second run installed nothing, and that the clone's
 # `git status --porcelain` and HEAD did not change. The logins and the setup check need a
-# person: they are the live runs recorded in setup/student/verification.md (ADR 0015).
+# person: a live run (ADR 0015).
 on:
   workflow_call:
   workflow_dispatch:
@@ -36,7 +36,7 @@ jobs:
         run: uv run --no-project --with pytest==8.3.5 pytest -q tests/student_setup
 
   # Pinned images: an Ubuntu LTS, a Debian stable, a Fedora release and Arch. Bump a tag here and
-  # in setup/student/verification.md together.
+  # in that track's status in setup/student/README.md together.
   linux:
     name: linux (${{ matrix.image }})
     runs-on: ubuntu-latest
