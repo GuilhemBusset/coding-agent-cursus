@@ -13,6 +13,8 @@ ready course clone: see [`setup/student/README.md`](setup/student/README.md).
 
 Repository-wide installation instructions, dependency manifests, setup scripts, and diagnostics live in
 [`setup/`](setup/README.md). Start there after cloning, including when configuring a fork.
+Setup also configures VS Code when available. Open [`setup/cursus.code-workspace`](setup/cursus.code-workspace)
+for the whole course, or open a session folder on its own.
 
 ## Turning in homework
 

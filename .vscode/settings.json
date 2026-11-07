@@ -1,0 +1,10 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/setup/.venv",
+  "python.languageServer": "None",
+  "ty.path": [
+    "${workspaceFolder}/setup/.venv/bin/ty",
+    "${workspaceFolder}/setup/.venv/Scripts/ty.exe"
+  ],
+  "ty.diagnosticMode": "workspace",
+  "ty.disableLanguageServices": false
+}

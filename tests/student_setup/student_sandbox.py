@@ -140,6 +140,8 @@ def course(root: Path, sessions: dict[str, tuple[str, ...]]) -> Path:
     (repo / "setup/student").mkdir(parents=True)
     for name in ("install.sh", "install.ps1", "prepare.py", "versions.env"):
         shutil.copy2(STUDENT / name, repo / "setup/student" / name)
+    for name in ("editor.py", "editor.json"):
+        shutil.copy2(REPO / "setup" / name, repo / "setup" / name)
     (repo / "setup").joinpath("session-01-fundamentals.sh").write_bytes((REPO / "setup/session-01-fundamentals.sh").read_bytes())
     shutil.copytree(REPO / ".githooks", repo / ".githooks")
     for session, files in sessions.items():

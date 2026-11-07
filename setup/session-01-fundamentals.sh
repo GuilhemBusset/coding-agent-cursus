@@ -5,8 +5,9 @@
 #
 # Activates the clone's git hooks (as setup/git-hooks.sh does), then, in every session that has a
 # mise.toml, a pyproject.toml and a uv.lock: `mise trust`, `mise install` (the Python and uv the
-# session pins) and `mise exec -- uv sync --locked` (its runtime dependencies from uv.lock; the
-# build-only `fixtures` group is not installed). It does not run the setup check. Needs mise and
+# session pins) and `mise exec -- uv sync --locked` (runtime packages and the default ty group
+# from uv.lock; fixtures stay opt-in). Syncs setup/.venv and installs pinned VS Code extensions
+# through setup/editor.py when code is available. It does not run the setup check. Needs mise and
 # uv, which the pre-work installs; setup/student/install.sh installs everything from scratch.
 # Paths are resolved from this script's location, so pass its path from any directory. Safe to
 # run repeatedly.

@@ -22,10 +22,15 @@ typecheck = [
     "ty==0.0.95",
 ]
 
+[tool.uv]
+# The editor and CI use the same checker; a plain sync must keep it installed.
+default-groups = ["typecheck"]
+
 # ty (https://docs.astral.sh/ty/): `uv run --locked --group typecheck ty check` from this folder.
 # Copied with this file into the P00 export: only its excludes name paths that exist only here,
 # and an exclude that matches nothing is ignored.
 [tool.ty.environment]
+python = ".venv"
 # Exercises run on Linux, macOS and Windows (ADR 0010): check every platform's branches. An API
 # only one platform has passes here; CI also checks exercises/ with --python-platform per platform.
 python-platform = "all"

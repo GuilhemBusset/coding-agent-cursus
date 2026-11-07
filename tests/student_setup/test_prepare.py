@@ -40,6 +40,7 @@ def test_syncs_exactly_the_sessions_that_follow_the_contract(tmp_path):
     assert git(repo, "config", "--get", "core.hooksPath").strip() == ".githooks"
     assert "sessions/03-gamma" not in result.stdout
     assert "setup check: not run" in result.stdout and "the check ran" not in result.stdout + result.stderr
+    assert "no VS Code CLI found" in result.stdout and "code setup/cursus.code-workspace" in result.stdout
 
 
 def test_a_failed_sync_names_the_step_and_the_command(tmp_path):
@@ -73,3 +74,32 @@ def test_session_01_wrapper_still_works_from_the_root_and_from_a_session(tmp_pat
         assert syncs(box) == {str(repo / "sessions/01-alpha"): SYNC, str(repo / "sessions/02-beta"): SYNC}
         assert "uv run --no-project --python 3.12 python" in "\n".join(box.calls())
     assert git(repo, "config", "--get", "core.hooksPath").strip() == ".githooks"
+
+
+def test_syncs_the_repositories_pinned_tools_when_the_manifest_exists(tmp_path):
+    box, repo = fixture(tmp_path)
+    (repo / "setup/pyproject.toml").write_text("# repository tooling\n")
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f"uv sync --project {repo / 'setup'} --locked" in box.calls()
+    assert "repository tooling: syncing setup/.venv from setup/uv.lock" in result.stdout
+
+
+def test_a_failed_repository_tool_sync_stops_with_its_recovery_command(tmp_path):
+    box, repo = fixture(tmp_path)
+    (repo / "setup/pyproject.toml").write_text("# repository tooling\n")
+    box.stub("uv", "#!/bin/sh\necho 'package download failed'\nexit 9\n")
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+    assert result.returncode == 1
+    assert "FAILED at repository tooling" in result.stdout and "package download failed" in result.stdout
+    assert "Next: uv sync --project setup --locked" in result.stdout
+    assert "no VS Code CLI found" not in result.stdout
+
+
+def test_a_detected_editor_failure_stops_prepare_even_with_no_check(tmp_path):
+    box, repo = fixture(tmp_path)
+    box.stub("code", "#!/bin/sh\necho 'editor unavailable'\nexit 7\n")
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+    assert result.returncode == 1
+    assert "editor: FAILED" in result.stdout and "editor unavailable" in result.stdout
+    assert "setup check: not run" not in result.stdout

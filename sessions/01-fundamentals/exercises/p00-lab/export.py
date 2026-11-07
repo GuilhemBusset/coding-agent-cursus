@@ -22,6 +22,7 @@ from pathlib import Path
 
 PACK = Path(__file__).resolve().parent
 SESSION = PACK.parents[1]
+REPO = SESSION.parents[1]
 
 # Textual patches applied to the exported p00_model.py. Each `old` must occur exactly once in
 # the reference model, so a refactor of the model cannot silently turn a bug into a no-op.
@@ -32,8 +33,8 @@ BUGS = {
     ],
     "dropped-demand": [
         (
-            "    for c in customer_ids:\n        h.addConstr(sum(x[p, c] for p in plant_ids) == demand[c])\n",
-            "    for c in customer_ids[:-1]:\n        h.addConstr(sum(x[p, c] for p in plant_ids) == demand[c])\n",
+            "    for c in customer_ids:\n        h.addConstr(h.qsum(x[p, c] for p in plant_ids) == demand[c])\n",
+            "    for c in customer_ids[:-1]:\n        h.addConstr(h.qsum(x[p, c] for p in plant_ids) == demand[c])\n",
         ),
     ],
     "relaxed-binary": [
@@ -58,6 +59,10 @@ COPIED = [
     (SESSION / "pyproject.toml", "pyproject.toml"),
     (SESSION / "uv.lock", "uv.lock"),
     (SESSION / "mise.toml", "mise.toml"),
+    (SESSION / ".vscode" / "settings.json", ".vscode/settings.json"),
+    (SESSION / ".vscode" / "extensions.json", ".vscode/extensions.json"),
+    (REPO / "setup" / "editor.py", "setup/editor.py"),
+    (REPO / "setup" / "editor.json", "setup/editor.json"),
 ]
 
 AGENTS_TEMPLATE = """\
@@ -81,6 +86,7 @@ answer. If a test fails, the fix belongs in `p00_model.py`.
 
 ```sh
 mise install && uv sync
+uv run python setup/editor.py
 uv run pytest
 ```
 

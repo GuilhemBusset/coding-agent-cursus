@@ -42,6 +42,7 @@ def test_ci_runs_the_jobs_when_the_selector_says_and_requires_them():
 
 def test_a_student_setup_change_selects_its_tests_and_jobs(tmp_path):
     for path in ("setup/student/install.sh", "setup/student/install.ps1", "setup/student/versions.env",
+                 "setup/editor.py", "setup/editor.json",
                  "tests/student_setup/ci_verify.py", "sessions/01-fundamentals/uv.lock",
                  "sessions/01-fundamentals/exercises/check_setup.py"):
         plan = impact.select(impact.Change({path}))
@@ -53,3 +54,10 @@ def test_a_student_setup_change_selects_its_tests_and_jobs(tmp_path):
     out = tmp_path / "out"
     impact.github_output(plan, str(out))
     assert "student_setup=true" in out.read_text().splitlines()
+
+
+def test_editor_inputs_select_the_session_checks_that_read_and_export_them():
+    for path in ("ty.toml", ".vscode/settings.json", ".vscode/extensions.json", "setup/cursus.code-workspace",
+                 "setup/editor.py", "setup/editor.json"):
+        plan = impact.select(impact.Change({path}))
+        assert "sessions/01-fundamentals" in plan.sessions, path

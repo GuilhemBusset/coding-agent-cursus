@@ -39,8 +39,9 @@ Two constraints shape where a checker runs:
    environment, `setup/pyproject.toml` and `setup/uv.lock`, run with
    `uv run --project setup --locked ty check`.
 3. **Each session checks itself**, from its folder, with its `pyproject.toml`'s `[tool.ty]` and
-   ty from a non-default `typecheck` dependency group, locked in its `uv.lock`:
-   `uv run --locked --group typecheck ty check`. Students' `uv sync` installs nothing new. Only
+   ty from a default `typecheck` dependency group, locked in its `uv.lock`:
+   `uv run --locked ty check`. Plain `uv sync` installs and retains the editor's checker
+   (updated by [ADR 0016](0016-reproducible-python-editor-setup.md)). Only
    the configuration's excludes name paths that exist only in the session, and an exclude that
    matches nothing is ignored, so ty also works in the P00 export. `python-platform = "all"`
    checks every platform's branches instead of treating the Windows and macOS ones as unreachable
@@ -69,9 +70,9 @@ Two constraints shape where a checker runs:
   instructor tooling, not taught material, so ADR 0001's freedom for sessions to use different
   tool versions does not extend to it.
 - Editors that run ty's language server pick up the same configuration: `ty.toml` at the root,
-  `[tool.ty]` in a session opened as its own workspace folder. Third-party packages resolve
-  against the interpreter selected in the editor, which `ty.toml` deliberately does not override:
-  with a session's `.venv` selected, its code completes and hovers even from the repository root.
+  `[tool.ty]` in a session opened as its own workspace folder. Each configuration binds imports
+  to its project's environment. The course workspace includes both the repository and sessions;
+  opening only the repository root does not apply nested session projects (ADR 0016).
 - ty merges a user-level configuration (`~/.config/ty/ty.toml`) into every run, so a local result
   can differ from CI's, which has none.
 

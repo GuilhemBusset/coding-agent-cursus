@@ -86,6 +86,8 @@ paths = [
 [units.student-setup]
 paths = [
   "setup/student/**",
+  "setup/editor.py",
+  "setup/editor.json",
   "tests/student_setup/**",
   "setup/session-01-fundamentals.sh",
   "setup/git-hooks.sh",
@@ -104,6 +106,7 @@ paths = [
   "setup/pyproject.toml",
   "setup/uv.lock",
   "setup/browser-libs.py",
+  "setup/editor.py",
   "tools/implementation-loop/**",
   "tests/turn_in/**",
   "setup/student/*.py",
@@ -119,7 +122,11 @@ paths = ["**/*.py", "ruff.toml", "setup/pyproject.toml", "setup/uv.lock"]
 # changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks. Its type
 # check (ty, from the session's `typecheck` group) runs with it.
 [sessions]
-shared = ["scripts/turn-in.sh", ".githooks/**"]
+shared = [
+  "scripts/turn-in.sh", ".githooks/**",
+  "ty.toml", ".vscode/**", "setup/cursus.code-workspace", "setup/editor.py", "setup/editor.json",
+  "sessions/*/pyproject.toml",
+]
 
 # check-page.mjs runs on a teaching page when the page changes or a file it references (src,
 # href, data) changes, is deleted or renamed; on every page when one of these changes.

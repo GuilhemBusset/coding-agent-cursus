@@ -30,6 +30,7 @@ EXPORT_FILES = {
     "README.md", "p00_model.py", "p00_checker.py", "test_p00_contract.py",
     "data/plants.csv", "data/customers.csv", "data/costs.csv",
     "pyproject.toml", "uv.lock", "mise.toml", "AGENTS.md", "CLAUDE.md", ".gitignore",
+    ".vscode/settings.json", ".vscode/extensions.json", "setup/editor.py", "setup/editor.json",
 }
 
 
@@ -311,6 +312,14 @@ def test_export_is_standalone_repo(exports):
         for name in ("pyproject.toml", "uv.lock", "mise.toml"):
             assert (directory / name).read_bytes() == (SESSION / name).read_bytes(), (
                 f"setup contract: copy pinned session {name} byte-for-byte"
+            )
+        for name in (".vscode/settings.json", ".vscode/extensions.json"):
+            assert (directory / name).read_bytes() == (SESSION / name).read_bytes(), (
+                f"editor contract: portable session configuration must survive export: {name}"
+            )
+        for name in ("setup/editor.py", "setup/editor.json"):
+            assert (directory / name).read_bytes() == (COURSE / name).read_bytes(), (
+                f"editor contract: the standalone installer must survive export: {name}"
             )
         for name in ("p00_checker.py", "test_p00_contract.py", "data/plants.csv", "data/customers.csv", "data/costs.csv"):
             assert (directory / name).read_bytes() == (PACK / name).read_bytes(), f"export contract: preserve {name}"

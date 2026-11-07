@@ -21,8 +21,9 @@ and test pattern carry forward to the P01 take-home.
 | `export.py` | Builds a standalone student repo | no |
 | `README.md` | These notes | no |
 
-The export also gets the session's `pyproject.toml`, `uv.lock` and `mise.toml`, copied
-byte-for-byte, plus a generated `AGENTS.md` (a task-scoped navigation rule), `CLAUDE.md`
+The export also gets the session's `pyproject.toml`, `uv.lock`, `mise.toml` and `.vscode/`, copied
+byte-for-byte, the repository's standalone `setup/editor.py` and pinned `setup/editor.json`,
+plus a generated `AGENTS.md` (a task-scoped navigation rule), `CLAUDE.md`
 (`@AGENTS.md`) and `.gitignore`. All of it is committed as a single `Initial commit` in a fresh
 `git init`.
 

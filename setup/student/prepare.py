@@ -11,7 +11,10 @@ install.sh and install.ps1 run this after the clone and uv exist, the same way o
    `mise trust`, `mise install` (the Python and uv the session pins), then
    `mise exec -- uv sync --locked` (its packages from uv.lock). A new session that follows the
    contract needs no change here.
-3. Unless --no-check: run the latest session's setup check (exercises/check_setup.py), which
+3. Sync the repository's setup/ tooling when present, then install/verify the pinned VS Code
+   extensions through setup/editor.py when the editor's CLI is available. No editor is required
+   for command-line students; workspace settings are already checked in, not generated here.
+4. Unless --no-check: run the latest session's setup check (exercises/check_setup.py), which
    proves the logins, the push and the agent, and shows its summary block; then the next steps.
 
 It never pulls, resets, switches or commits anything: a clone's branches, HEAD, index and files
@@ -102,6 +105,28 @@ def check_command(check: Path, repo: Path) -> str:
     return f"bash {rel.as_posix()}/check-setup.sh"
 
 
+def prepare_editor(repo: Path) -> int:
+    """Install the pinned checker for the repository workspace, then its editor integration."""
+    if (repo / "setup" / "pyproject.toml").is_file():
+        command = ["uv", "sync", "--project", str(repo / "setup"), "--locked"]
+        say("repository tooling: syncing setup/.venv from setup/uv.lock")
+        code, output = run_quiet(command, repo)
+        if code:
+            tail = "\n".join(output.strip().splitlines()[-15:])
+            if tail:
+                print(tail, flush=True)
+            return fail("repository tooling", f"uv sync exited {code}", "uv sync --project setup --locked")
+    helper = repo / "setup" / "editor.py"
+    if not helper.is_file():
+        return fail("editor setup", f"{helper} is missing", "check that the clone is complete (git status)")
+    code = subprocess.run([sys.executable, str(helper), "--repo", str(repo)], cwd=repo,
+                          stdin=subprocess.DEVNULL, check=False).returncode
+    if code:
+        return code
+    say("VS Code workspace: code setup/cursus.code-workspace")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[2],
@@ -120,6 +145,8 @@ def main(argv: list[str] | None = None) -> int:
     for session in found:
         if sync(repo, session):
             return 1
+    if prepare_editor(repo):
+        return 1
     check = latest_check(found)
     if check is None:
         say("setup check: no session has exercises/check_setup.py, so nothing was checked")

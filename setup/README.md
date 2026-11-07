@@ -93,7 +93,9 @@ wrapper over the student setup's shared step, [`student/prepare.py`](student/pre
 activates the git hooks, then in every session that has a `mise.toml`, a `pyproject.toml` and a
 `uv.lock` (Session 1 included) runs `mise trust mise.toml`, `mise install` (the Python and uv
 pinned in that session's `mise.toml`) and `mise exec -- uv sync --locked` (the runtime
-dependencies from its `uv.lock`). It does not install the build-only `fixtures` group, and does
+dependencies and default `typecheck` group from its `uv.lock`). It also syncs the repository's
+tools into `setup/.venv` and installs the pinned Python and ty VS Code extensions when the
+`code` CLI is available. It does not install the build-only `fixtures` group, and does
 not run the setup check. Repeating it is safe. The session's own
 [README](../sessions/01-fundamentals/README.md) covers running and validating it.
 
@@ -175,9 +177,9 @@ kinds of environment, each with its own exactly pinned ty:
   on Linux whatever the interpreter. Remove it with `rm -rf setup/.venv`.
 - **Each session's Python**: configured in the session's `pyproject.toml` (`[tool.ty]`, required:
   without it, ty walks up to the root `ty.toml` and checks the repository's code instead) and
-  pinned in its non-default `typecheck` dependency group, locked in its `uv.lock`. From the
-  session folder: `uv run --locked --group typecheck ty check`, which adds ty to the session's
-  `.venv/` (a later plain `uv sync` removes it again; students' `uv sync` never installs it). CI
+  pinned in its `typecheck` dependency group, locked in its `uv.lock`. This is a uv default group:
+  plain `uv sync --locked` installs ty into the session's `.venv/` and keeps it on later syncs.
+  From the session folder: `uv run --locked ty check`. CI
   and `scripts/check-changed.sh` then check the exercises as each platform students use (ADR
   0010), which catches an API only one of them has:
   `... ty check --python-platform <linux|darwin|win32> exercises`.
@@ -192,10 +194,44 @@ whose pin differs), relock each with the uv CI uses (0.11.28: `uv lock --project
 root, `uv lock` in each session folder), and fix what the new version reports in the same pull
 request.
 
-In an editor (VS Code with Astral's ty extension, for example), ty resolves third-party packages
-against the interpreter selected in the editor. Select `sessions/<NN>-*/.venv` to get completions
-and hover types for a session's packages (highspy, numpy), and `setup/.venv` for the repository's
-own code. Opening a session folder as its own workspace folder also applies its `[tool.ty]`.
+### VS Code
+
+The student setup and session helper configure VS Code as part of installation. They sync the
+locked Python environments, then run [`editor.py`](editor.py). If `code` (or `code-insiders`)
+is on PATH, it installs and verifies the exact extension versions in [`editor.json`](editor.json):
+Python, its Pylance/debugpy/Python Environments pack members, and ty. Pinning the pack members
+prevents Python's automatic extension-pack installation from introducing unpinned tools. ty
+provides language features; Pylance remains inactive in this workspace. The supported VS Code CLI
+also routes installation to WSL when
+invoked there with Remote - WSL installed. It changes no user settings. A failed extension
+installation fails setup with a retry command. Without a VS Code CLI, setup explicitly reports
+that editor installation was skipped; terminal work and other editors still work. On macOS,
+VS Code's **Shell Command: Install 'code' command in PATH** enables this integration.
+
+Open the course with `code setup/cursus.code-workspace`, or open a session folder on its own.
+The checked-in workspace gives the repository and each session its own project: ty currently
+uses one project per workspace folder, and the root `ty.toml` deliberately covers only repository
+tooling. When adding a session, add it to [`cursus.code-workspace`](cursus.code-workspace).
+Root-only folder mode covers repository tooling; use the course workspace for session checks.
+
+The workspace and `.vscode/settings.json` files make ty the Python language server, with
+completions, navigation and diagnostics from the same pinned executable as CI. Paths use
+`${workspaceFolder}` and include Linux/macOS and Windows executable locations. Each project's
+ty configuration binds its imports to its local environment (`setup/.venv` for the repository,
+`.venv` for a session), independently of a previously selected editor interpreter. The Python
+extension also defaults to that environment for running and debugging code.
+
+VS Code's normal workspace trust prompt still applies: trust this checkout to use its configured
+executable. An already open window may need **Developer: Reload Window** after setup. To rerun
+only extension installation, run `uv run --no-project python setup/editor.py` from the repository
+root. P00 exports carry their own settings and the same installer, so they work outside the
+course checkout. Remove the extensions with `code --uninstall-extension astral-sh.ty` and
+`code --uninstall-extension ms-python.python`; its pack members can be removed individually with
+the same command and their IDs in `editor.json`. Deleting a project's `.venv` removes its tools.
+
+References: [ty editor integration](https://docs.astral.sh/ty/editors/),
+[ty editor settings](https://docs.astral.sh/ty/reference/editor-settings/),
+[VS Code extension CLI](https://code.visualstudio.com/docs/configure/command-line#_working-with-extensions).
 
 ## Lint rules
 
@@ -455,7 +491,8 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | GitHub rulesets | [`pr-only-main.json`](pr-only-main.json) and [`homework-branches.json`](homework-branches.json); applied to the selected repository only when an administrator runs `apply-ruleset.sh` |
 | Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | ty, and pytest for its import resolution, for the repository's own Python | `uv run --project setup --locked` installs the versions and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, using a Python 3.11 or newer that uv finds or downloads; configured by the root `ty.toml` |
-| ty for each session's Python | The session's `typecheck` dependency group, locked in its `uv.lock`; `uv run --locked --group typecheck` installs it into the session's `.venv/` |
+| ty for each session's Python | The session's default `typecheck` dependency group, locked in its `uv.lock`; plain `uv sync --locked` installs it into the session's `.venv/` |
+| VS Code Python and ty extensions | `editor.py`, called by student/session setup, installs and verifies the exact Python, Pylance, debugpy, Python Environments and ty releases in `editor.json` with the detected `code` CLI, into its local or remote extension host; checked-in `.vscode` settings and `cursus.code-workspace` select the locked project tools; no user settings are written |
 | Ruff, to lint and sort imports | `uv run --project setup --locked` installs the version and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, beside ty (`uvx ruff@0.17.3` fetches the same version into uv's per-user cache); configured by the root `ruff.toml`, whose `required-version` matches the pin |
 | Change-based check selection | Checked-in `tools/test-impact/` (standard-library Python) and `scripts/check-changed.sh`; installs nothing, runs the checks above with their own tools |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |

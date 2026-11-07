@@ -85,7 +85,13 @@ the same place. After the clone, it runs [`prepare.py`](prepare.py) from the clo
    prints or stores a token or an API key.
 7. **Clone** the course into `~/coding-agent-cursus`, or reuse the clone it runs from.
 8. **Prepare the clone.** It activates the git hooks, then in every session runs `mise trust`,
-   `mise install` and `mise exec -- uv sync --locked`. It changes no file in the clone: a hook
+   `mise install` and `mise exec -- uv sync --locked`, including the default ty checker. It syncs
+   repository tools into `setup/.venv` and, when VS Code's `code` CLI is available, installs and
+   verifies the Python and ty extensions pinned in [`../editor.json`](../editor.json). Checked-in
+   settings select the right Python environment and checker; no user settings are rewritten.
+   Open `setup/cursus.code-workspace` for the whole course, or a session folder on its own.
+   Without VS Code, editor installation is explicitly skipped. See [editor setup](../README.md#vs-code).
+   It changes no tracked file in the clone: a hook
    that is not executable is reported, with the `chmod +x` command that fixes it.
 9. **Check.** It runs the latest session's setup check, which tests the logins, a push and your
    agent, and shows its summary block.

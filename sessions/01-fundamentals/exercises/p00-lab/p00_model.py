@@ -59,9 +59,9 @@ def solve(data_dir=DATA_DIR, time_limit=10.0):
     }
 
     for c in customer_ids:
-        h.addConstr(sum(x[p, c] for p in plant_ids) == demand[c])
+        h.addConstr(h.qsum(x[p, c] for p in plant_ids) == demand[c])
     for p in plant_ids:
-        h.addConstr(sum(x[p, c] for c in customer_ids) - capacity[p] * y[p] <= 0)
+        h.addConstr(h.qsum(x[p, c] for c in customer_ids) - capacity[p] * y[p] <= 0)
 
     h.changeObjectiveSense(highspy.ObjSense.kMinimize)
     h.run()

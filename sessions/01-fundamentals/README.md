@@ -24,8 +24,12 @@ From any other directory, pass the helper's path instead, for example
 the repository from its own location, activates the git hooks, then runs `mise trust mise.toml`,
 `mise install` and `uv sync --locked` (through `mise exec`) inside `sessions/01-fundamentals/`
 and every other session folder that has a `mise.toml`, `pyproject.toml` and `uv.lock`.
+It also prepares the repository tools and installs the pinned VS Code extensions when VS Code's
+`code` CLI is available. Open `setup/cursus.code-workspace` from the repository root for the whole
+course, or open this session folder on its own; the checked-in settings select the local Python
+environment and ty automatically. See [editor setup](../../setup/README.md#vs-code).
 
-To do the same by hand, inside this directory:
+To install this session's Python environment by hand, inside this directory:
 
 ```sh
 mise trust
@@ -48,11 +52,10 @@ uv run --group parallel pytest -n auto
 ```
 
 CI also type-checks the session's Python with [ty](https://docs.astral.sh/ty/), configured in
-`pyproject.toml`'s `[tool.ty]` and pinned in the `typecheck` dependency group, which `uv sync`
-does not install either:
+`pyproject.toml`'s `[tool.ty]` and pinned in the default `typecheck` dependency group:
 
 ```sh
-uv run --group typecheck ty check
+uv run --locked ty check
 ```
 
 The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
@@ -64,8 +67,9 @@ directory on `PATH`, or set `CURSUS_PWSH`). The agent-timeout scenarios shorten 
 live proof that the check passes with only Claude Code and with only Codex. It needs both agents
 installed and logged in, and costs one short prompt to each.
 
-`uv sync` installs only the runtime dependencies (`pytest`, `highspy`, `numpy`) into this
-session's `.venv/`, at the versions pinned in `uv.lock`. The `fixtures` dependency group
+`uv sync` installs the runtime dependencies (`pytest`, `highspy`, `numpy`) and ty into this
+session's `.venv/`, at the versions pinned in `uv.lock`. The editor and CI use that same checker;
+later syncs keep it installed. The `fixtures` dependency group
 (`torch`, `transformers`) is for building the files in `cursus/fixtures/` only. Students never
 need it, and `uv sync` never installs torch. Instructors who rebuild fixtures opt in per command
 with `uv run --group fixtures` (see [Regenerating fixtures](#regenerating-fixtures)).

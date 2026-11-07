@@ -1,0 +1,18 @@
+{
+  "folders": [
+    { "name": "Repository", "path": ".." },
+    { "name": "Session 01", "path": "../sessions/01-fundamentals" }
+  ],
+  "settings": {
+    "python.languageServer": "None",
+    "ty.path": [
+      "${workspaceFolder:Repository}/setup/.venv/bin/ty",
+      "${workspaceFolder:Repository}/setup/.venv/Scripts/ty.exe"
+    ],
+    "ty.diagnosticMode": "workspace",
+    "ty.disableLanguageServices": false
+  },
+  "extensions": {
+    "recommendations": ["ms-python.python", "astral-sh.ty"]
+  }
+}
