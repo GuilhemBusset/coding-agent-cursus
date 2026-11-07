@@ -24,7 +24,7 @@ const viewports = [
   { width: 1280, height: 720 },
   { width: 390, height: 844 },
 ];
-const order = ['agent', 'harness', 'two-harnesses', 'resend', 'long-run', 'prefix', 'gate', 'stop', 'ladder', 'time-horizons', 'wrap'];
+const order = ['agent', 'harness', 'two-harnesses', 'resend', 'long-run', 'prefix', 'mcp-skills', 'gate', 'stop', 'ladder', 'time-horizons', 'wrap'];
 const questions = ['Who runs the tools?', 'What does each call see?', 'What loads before you type?', 'What may it run?', 'When does it stop?'];
 // Each part's slides, in order; the landscape and the close sit after part 5.
 const parts = [
@@ -32,6 +32,7 @@ const parts = [
   { id: 'resend', part: 2 },
   { id: 'long-run', part: 2 },
   { id: 'prefix', part: 3 },
+  { id: 'mcp-skills', part: 3 },
   { id: 'gate', part: 4 },
   { id: 'stop', part: 5 },
 ];
@@ -41,11 +42,12 @@ const predicts = [
   { id: 'harness', p: 'hn', answer: '3' },
   { id: 'two-harnesses', p: 'rp', answer: 'same loop, other steps' },
   { id: 'resend', p: 'rs', answer: 'about 20k' },
-  { id: 'prefix', p: 'px', answer: '~10k' },
+  { id: 'prefix', p: 'cw', answer: 'middle' },
+  { id: 'mcp-skills', p: 'px', answer: '~10k' },
   { id: 'stop', p: 'rp', answer: 'stop and report' },
 ];
 // Only research claims and the definition keep a source on the face.
-const cited = ['agent', 'time-horizons'];
+const cited = ['agent', 'prefix', 'time-horizons'];
 // About 30 to 45 words of prose on a face; pictures, controls and the source line are not prose.
 const faceWords = 48;
 const notProse = ['h2', '.eyebrow', '.cite', '.spine-wrap', '[role="img"]', 'table', 'blockquote', 'button', '[role="group"]'];
@@ -380,6 +382,68 @@ for (const viewport of viewports.slice(0, 2)) {
   });
 }
 
+// #long-run: the run priced in three steps. Run in the page: which layers show, the pressed chip, the sentence.
+const priceSteps = ['At full price', 'With the cache', 'After a break'];
+function readLongRun(slide) {
+  return slide.evaluate(el => ({
+    layers: [1, 2, 3].map(step => [...el.querySelectorAll(`svg [data-lr-l="${step}"]`)].every(layer => getComputedStyle(layer).visibility === 'visible' && getComputedStyle(layer).opacity === '1')),
+    says: [...el.querySelectorAll('[data-lr-say]')].filter(say => say.checkVisibility()).map(say => say.textContent.replace(/\s+/g, ' ').trim()),
+    pressed: [...el.querySelectorAll('[data-lr-chip]')].filter(chip => chip.getAttribute('aria-pressed') === 'true').map(chip => chip.textContent.trim()),
+    chips: [...el.querySelectorAll('[data-lr-chip]')].filter(chip => chip.checkVisibility() && !chip.disabled).length,
+  }));
+}
+
+test('D5: #long-run without a script shows every layer and all three sentences', async t => {
+  const page = await pageFor(t, { javaScriptEnabled: false });
+  const seen = await readLongRun(topic(page, 'long-run'));
+  assert.deepEqual(seen.layers, [true, true, true]);
+  assert.deepEqual(seen.says.map(say => norm(say.split('.')[0])), priceSteps.map((step, i) => norm(`${i + 1} · ${step}`)));
+  assert.equal(seen.chips, 0, 'no chip to press');
+});
+
+for (const viewport of viewports.slice(0, 2)) {
+  test(`D5: #long-run adds one layer per chip, at ${viewport.width}×${viewport.height}`, async t => {
+    const page = await pageFor(t, { viewport });
+    await goTo(page, 'long-run');
+    const slide = topic(page, 'long-run');
+    const chips = slide.locator('[data-lr-chip]');
+    await eventually(async () => assert.equal((await readLongRun(slide)).chips, 3, 'the three chips show'));
+    await eventually(async () => assert.deepEqual((await readLongRun(slide)).layers, [true, false, false], 'it opens at full price'));
+    await bigEnough(slide);
+    for (const at of [2, 3, 1]) {
+      await chips.nth(at - 1).click();
+      await eventually(async () => {
+        const seen = await readLongRun(slide);
+        assert.deepEqual(seen.layers, [1, 2, 3].map(step => step <= at), `step ${at}: its layer on top of the earlier ones`);
+        assert.deepEqual(seen.pressed.map(norm), [norm(`${at}${priceSteps[at - 1]}`)], 'one chip pressed');
+        assert.equal(seen.says.length, 1, 'one sentence');
+        assert.ok(norm(seen.says[0]).startsWith(norm(`${at} · ${priceSteps[at - 1]}`)), `step ${at}: its own sentence`);
+      });
+      assert.match(norm(await slide.locator('[data-lr-status]').textContent()), new RegExp(`^step ${at} of 3\\. ${at} · `), 'announced');
+      await stillTurns(page, 'long-run');
+    }
+    // By keyboard the chip acts and the deck stays put.
+    await chips.nth(2).focus();
+    await page.keyboard.press('Enter');
+    await activeSlide(page, 'long-run');
+    await eventually(async () => assert.deepEqual((await readLongRun(slide)).layers, [true, true, true]));
+    await focused(chips.nth(2));
+  });
+}
+
+test('D5: print shows #long-run whole, whatever step the room left it on', async t => {
+  const page = await pageFor(t);
+  await goTo(page, 'long-run');
+  await eventually(async () => assert.deepEqual((await readLongRun(topic(page, 'long-run'))).layers, [true, false, false]));
+  await page.emulateMedia({ media: 'print' });
+  await eventually(async () => {
+    const seen = await readLongRun(topic(page, 'long-run'));
+    assert.deepEqual(seen.layers, [true, true, true], 'every layer');
+    assert.equal(seen.says.length, 3, 'all three sentences');
+    assert.equal(seen.chips, 0, 'no chips on paper');
+  });
+});
+
 test('D5: print shows #agent whole, whatever step the room left it on', async t => {
   const page = await pageFor(t);
   await goTo(page, 'agent');
@@ -445,10 +509,8 @@ test('D3: the live demo’s notes carry the exact commands and the recorded prom
   assert.match(shown, /kmaximize → kminimize/);
 });
 
-test('D3: #resend and #long-run draw their recordings to scale', async t => {
+test('D3: #resend draws its recording to scale, and #long-run prices the long run', async t => {
   const calls = await callsOf(path.join(runs, 'raw/flipped-sense-claude.jsonl'));
-  const long = await json(path.join(runs, 'context-bomb-claude.json'));
-  const inputs = long.steps.filter(step => step.tokens?.input != null).map(step => step.tokens.input);
   const page = await pageFor(t, { javaScriptEnabled: false });
   // Each bar: its cached part and its new part, on one scale for all three calls.
   const bars = await topic(page, 'resend').locator('.rs-bar').evaluateAll(els => els.map(bar => ({
@@ -464,32 +526,73 @@ test('D3: #resend and #long-run draw their recordings to scale', async t => {
     assert.ok(Math.abs(bar.cached - call.cache_read_input_tokens * scale) < 1, `call ${i + 1}: cached part to scale`);
     assert.ok(Math.abs(bar.fresh - call.cache_creation_input_tokens * scale) < 1, `call ${i + 1}: new part to scale`);
   });
-  // #long-run: every one of the 26 calls, on one scale: the previous call re-sent, then what was appended.
-  const rows = await topic(page, 'long-run').locator('.lr-bar').evaluateAll(els => els.map(bar => ({
-    title: bar.querySelector('title').textContent,
-    resent: Number(bar.querySelector('rect.lr-cached')?.getAttribute('width') ?? 0),
-    added: Number(bar.querySelector('rect.lr-new').getAttribute('width')),
-  })));
-  assert.equal(rows.length, inputs.length);
-  const unit = rows.at(-1).resent / inputs.at(-2);
-  rows.forEach((row, i) => {
-    const before = i ? inputs[i - 1] : 0;
-    assert.ok(row.title.includes(fmt(inputs[i])) && row.title.includes(fmt(inputs[i] - before)), row.title);
-    assert.ok(Math.abs(row.resent - before * unit) < 1, `call ${i + 1}: the re-sent part to scale`);
-    assert.ok(Math.abs(row.added - (inputs[i] - before) * unit) < 1, `call ${i + 1}: the appended part to scale`);
+  // #long-run: every one of the 26 calls priced, on one dollar scale: grey what it read from the cache, teal what
+  // it wrote to it (and its uncached tokens), at Opus 5.5 list prices; the run wrote with the 1-hour lifetime.
+  const raw = path.join(runs, 'raw/context-bomb-claude.jsonl');
+  const usage = await callsOf(raw);
+  assert.equal(usage.length, 26);
+  const price = { input: 4, read: 0.2, write1h: 8, output: 20 }; // $ per million tokens
+  const priced = usage.map(u => {
+    assert.equal(u.cache_creation.ephemeral_1h_input_tokens, u.cache_creation_input_tokens, 'written with the 1-hour lifetime');
+    return {
+      sent: u.cache_read_input_tokens + u.cache_creation_input_tokens + u.input_tokens,
+      read: u.cache_read_input_tokens * price.read / 1e6,
+      fresh: (u.cache_creation_input_tokens * price.write1h + u.input_tokens * price.input) / 1e6,
+    };
   });
-  const longText = norm(await topic(page, 'long-run').evaluate(el => el.textContent));
-  assert.equal(inputs.length, 26);
-  for (const n of [inputs[0], inputs.at(-1)]) assert.ok(longText.includes(fmt(n)), fmt(n));
-  // The rule given in call 1 still held at the last call, in both CLIs.
-  for (const vendor of ['claude', 'codex']) {
-    assert.equal((await json(path.join(runs, `raw/context-bomb-${vendor}.meta.json`))).outcome.final_ends_with_rule, true, vendor);
-  }
-  assert.match(longText, /-- checked/);
+  // The scale is the chart's own axis: $0 on the axis line, $0.50, $1.00 and $1.50 on its grid lines.
+  const chart = await topic(page, 'long-run').evaluate(el => {
+    const y = path => Number(path.getAttribute('d').match(/^M[\d.]+ ([\d.]+)/)[1]);
+    const num = (node, name) => Number(node.getAttribute(name));
+    return {
+      base: y(el.querySelector('.lr-axis')),
+      grid: [...el.querySelectorAll('.lr-grid')].map(y),
+      columns: [...el.querySelectorAll('.lr-bar')].map(bar => {
+        const [read, fresh] = ['rect.lr-cached', 'rect.lr-new'].map(sel => bar.querySelector(sel));
+        return { title: bar.querySelector('title').textContent, readY: num(read, 'y'), read: num(read, 'height'), freshY: num(fresh, 'y'), fresh: num(fresh, 'height') };
+      }),
+      dots: [...el.querySelectorAll('.lr-full-dot')].map(dot => num(dot, 'cy')),
+      expired: el.querySelector('.lr-break title').textContent,
+    };
+  });
+  const perDollar = (chart.base - chart.grid[2]) / 1.5;
+  assert.deepEqual(chart.grid.map(y => Math.round((chart.base - y) / perDollar * 100) / 100), [0.5, 1, 1.5], 'evenly spaced grid');
+  assert.equal(chart.columns.length, priced.length);
+  chart.columns.forEach((column, i) => {
+    assert.ok(column.title.includes(`${fmt(priced[i].sent)} tokens sent`), column.title);
+    assert.ok(Math.abs(column.readY + column.read - chart.base) < 0.05, `call ${i + 1}: stands on the axis`);
+    assert.ok(Math.abs(column.freshY + column.fresh - column.readY) < 0.05, `call ${i + 1}: teal on top of grey`);
+    assert.ok(Math.abs(column.read - priced[i].read * perDollar) < 0.05, `call ${i + 1}: the cache read to scale`);
+    assert.ok(Math.abs(column.fresh - priced[i].fresh * perDollar) < 0.05, `call ${i + 1}: the cache write to scale`);
+  });
+  // The amber line: each call's tokens at the input price, on the same axis.
+  assert.equal(chart.dots.length, priced.length);
+  chart.dots.forEach((cy, i) => assert.ok(Math.abs(chart.base - cy - priced[i].sent * price.input / 1e6 * perDollar) < 0.1, `call ${i + 1}: full price to scale`));
+  // The 27th call after a break: call 26's input written to the cache again, computed.
+  const expired = priced.at(-1).sent * price.write1h / 1e6;
+  assert.ok(chart.expired.includes(`$${expired.toFixed(2)}`) && chart.expired.includes('computed'), chart.expired);
+  // The bill is the CLI's own; the full price is the same tokens at the input price, and says it is computed.
+  const result = (await jsonl(raw)).find(event => event.type === 'result');
+  const billed = priced.reduce((sum, call) => sum + call.read + call.fresh, 0) + result.usage.output_tokens * price.output / 1e6;
+  assert.ok(Math.abs(billed - result.total_cost_usd) < 0.005, 'list prices reproduce the CLI’s total');
+  const full = priced.reduce((sum, call) => sum + call.sent, 0) * price.input / 1e6 + result.usage.output_tokens * price.output / 1e6;
+  const drawn = (await labels(topic(page, 'long-run'))).split(' | ');
+  assert.ok(drawn.includes(`$${result.total_cost_usd.toFixed(2)}`), 'the billed total');
+  assert.ok(drawn.includes(`$${full.toFixed(2)}`), 'the full price');
+  assert.ok(drawn.filter(label => label === 'computed').length >= 2, 'the full price and the 27th call say they are computed');
+  assert.ok(drawn.includes(`≈ $${Math.round(expired)}`), 'the 27th call, rounded');
+  const cost = call => call.read + call.fresh;
+  for (const call of [priced[0], priced.at(-1)]) assert.ok(drawn.includes(`$${cost(call).toFixed(2)}`), `$${cost(call).toFixed(2)}`);
+  const ratio = Math.round(priced.at(-1).sent / priced[0].sent);
+  assert.ok(drawn.includes(`call 26: ${ratio}× the tokens,`) && drawn.includes(`${Math.round(cost(priced.at(-1)) / cost(priced[0]))}× the cost of call 1`), 'tokens against cost');
+  assert.match(norm(await topic(page, 'long-run').locator('h2').textContent()), new RegExp(`^call 26 sends ${ratio}× the tokens\\. does it cost ${ratio}×\\?$`));
+  // The misses: a call that read no more from the cache than the one before it, so it wrote that call's tokens again.
+  const misses = usage.map((_, i) => i).filter(i => i > 0 && usage[i].cache_read_input_tokens === usage[i - 1].cache_read_input_tokens).map(i => String(i + 1));
+  assert.deepEqual(await topic(page, 'long-run').locator('.lr-xl.is-miss').allTextContents(), misses);
 });
 
-test('D3: #prefix and #stop show the recorded numbers', async t => {
-  // #prefix draws one measurement only: Claude Code's own /context, captured before and after adding
+test('D3: #prefix, #mcp-skills and #stop show the recorded numbers', async t => {
+  // #mcp-skills draws one measurement only: Claude Code's own /context, captured before and after adding
   // one noisy MCP server (its tools deferred, as installed; then loaded, with tool search off).
   const captures = (await readFile(path.join(recorded, 'bomb-claude-run1-context-before.txt'), 'utf8') +
     await readFile(path.join(recorded, 'bomb-claude-run1-context-after.txt'), 'utf8')).split(/^\$ /m).filter(Boolean).map(block => ({
@@ -502,18 +605,52 @@ test('D3: #prefix and #stop show the recorded numbers', async t => {
   assert.equal(deferred.rows['MCP tools (deferred)'], '8k');
   assert.deepEqual([loaded.rows['MCP server instructions'], loaded.rows['MCP tools']], ['1.6k', '8k']);
   const page = await pageFor(t, { javaScriptEnabled: false });
-  const drawn = await labels(topic(page, 'prefix'));
-  for (const n of ['13k', '14.6k', '1.6k', '8k', '9.6k', '2.7k', '7.7k']) assert.ok(drawn.includes(n), `#prefix draws ${n}`);
+  const drawn = await labels(topic(page, 'mcp-skills'));
+  for (const n of ['13k', '14.6k', 'instructions 1.6k', '8k', '+9.6k', '2.7k', 'its tools 7.7k', '2.4k']) assert.ok(drawn.split(' | ').some(label => label.includes(norm(n))), `#mcp-skills draws ${n}`);
+  // Row 2 adds the server's share to row 1's 13k, drawn as a dashed outline: the sum was never captured.
+  assert.match(drawn, /row 1's 13k, for scale/);
+  // The bad server's own words, as the model reads them, and a link to its code.
+  const server = await readFile(path.join(cursus, 'demos/agent/context_bomb.py'), 'utf8');
+  assert.ok(server.includes('Filler tool {_i:02d} — intentionally useless. ') && server.includes('"Do not call this tool; it exists only to inflate context.'), 'the quote is the server’s');
+  assert.match(drawn, /"filler tool 01 — intentionally/);
+  assert.ok(await topic(page, 'mcp-skills').locator('a[href="demos/agent/context_bomb.py"]').count() >= 1, 'the bad server is linked');
   // With tool search off, Claude Code also loaded its own deferred tools: that capture is told, not drawn.
-  assert.match(await notesText(topic(page, 'prefix')), /36\.5k/);
-  assert.doesNotMatch(await face(topic(page, 'prefix')), /17,233|18,909|40,377|1,676|23,144/, 'the billed totals stay in the notes: one measure on the face');
+  assert.match(await notesText(topic(page, 'mcp-skills')), /36\.5k/);
+  assert.doesNotMatch(await face(topic(page, 'mcp-skills')), /17,233|18,909|40,377|1,676|23,144/, 'the billed totals stay in the notes: one measure on the face');
+  // #prefix: the strip uses the same /context capture; the study's numbers are Liu et al.'s Table 6.
+  const strip = await labels(topic(page, 'prefix'));
+  for (const n of ['tools 7.7k', 'system prompt 2.7k', 'skills 2.4k']) assert.ok(strip.includes(n), `#prefix draws ${n}`);
+  for (const n of ['75.8%', '10th: 53.8%, below no documents', '63.2%', 'GPT-3.5-Turbo, no documents: 56.1%']) assert.ok(strip.includes(norm(n)), `#prefix draws ${n}`);
+  // Both series of Table 6, every point on one percentage axis read from the chart's 80% and 50% grid lines.
+  const table6 = { 'GPT-3.5-Turbo': [75.8, 57.2, 53.8, 55.4, 63.2], 'Claude 1.3': [59.9, 55.9, 56.8, 57.2, 60.1] };
+  const study = await topic(page, 'prefix').evaluate(el => {
+    const ys = el.querySelector('.cw-grid').getAttribute('d').match(/M[\d.]+ ([\d.]+)/g).map(m => Number(m.split(' ')[1]));
+    return {
+      top: ys[0], bottom: ys.at(-1),
+      closed: Number(el.querySelector('.cw-closed').getAttribute('d').match(/^M[\d.]+ ([\d.]+)/)[1]),
+      dots: [...el.querySelectorAll('.cw-dot, .cw-dot-c')].map(dot => ({ title: dot.querySelector('title').textContent, cy: Number(dot.getAttribute('cy')) })),
+    };
+  });
+  const yOf = pct => study.bottom - (pct - 50) / 30 * (study.bottom - study.top);
+  assert.ok(Math.abs(study.closed - yOf(56.1)) < 0.1, 'no documents: 56.1% on the axis');
+  for (const [model, values] of Object.entries(table6)) {
+    const dots = study.dots.filter(dot => dot.title.startsWith(`${model},`));
+    assert.deepEqual(dots.map(dot => Number(dot.title.match(/: ([\d.]+)%$/)[1])), values, `${model}: Table 6`);
+    dots.forEach((dot, i) => assert.ok(Math.abs(dot.cy - yOf(values[i])) < 0.1, `${model}, point ${i + 1} on the axis`));
+  }
+  assert.match(norm(await topic(page, 'prefix').locator('.cite').textContent()), /liu et al\., lost in the middle/);
+  // The rule given in call 1 still held at the last call, in both CLIs: told in #prefix's notes.
+  for (const vendor of ['claude', 'codex']) {
+    assert.equal((await json(path.join(runs, `raw/context-bomb-${vendor}.meta.json`))).outcome.final_ends_with_rule, true, vendor);
+  }
+  assert.match(await notesText(topic(page, 'prefix')), /-- checked/);
   // Codex: the same server adds nothing, in /status and in every recorded pair.
   const status = async name => (await readFile(path.join(recorded, name), 'utf8')).match(/Context window:.*\(([\d.]+K) used/)[1];
   assert.equal(await status('bomb-codex-run1-status-after.txt'), await status('bomb-codex-run1-status-before.txt'));
   const codex = async name => (await jsonl(path.join(recorded, name))).filter(event => event.type === 'turn.completed')
     .reduce((sum, event) => sum + event.usage.input_tokens + event.usage.output_tokens, 0);
   for (const run of [1, 2]) assert.equal(await codex(`bomb-codex-run${run}-with.jsonl`), await codex(`bomb-codex-run${run}-without.jsonl`), `Codex run ${run}: +0`);
-  assert.match(await notesText(topic(page, 'prefix')), /13\.8k/, 'Codex’s /status in the notes');
+  assert.match(await notesText(topic(page, 'mcp-skills')), /13\.8k/, 'Codex’s /status in the notes');
   // #gate: who let each tool call through, as the run's own log records it.
   const decisions = (await jsonl(path.join(runs, 'raw/flipped-sense-claude.jsonl'))).flatMap(event => event.tool_result_meta ?? [])
     .map(meta => meta.permission_decision);
@@ -634,7 +771,9 @@ for (const viewport of viewports.slice(0, 2)) {
       const texts = (await chips.allTextContents()).map(text => text.trim());
       const wrong = texts.find(text => text !== answer);
       const chip = text => chips.filter({ hasText: text }).first();
-      await chip(texts.find(text => text !== wrong)).click();
+      const tag = el => el.evaluate(node => [getComputedStyle(node, '::before').content, getComputedStyle(node, '::after').content].join(' '));
+      await chip(answer).click();
+      assert.match(await tag(chip(answer)), /room/, 'before the reveal the measured chip looks like any pick');
       await chip(wrong).click();
       assert.deepEqual((await readPredict(slide, p)).pressed, [wrong], 'one pick at a time');
       await stillTurns(page, id);

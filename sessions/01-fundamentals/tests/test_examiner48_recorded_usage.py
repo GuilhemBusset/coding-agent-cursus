@@ -1,7 +1,7 @@
 """Compare the deck's token pictures to the recordings they draw.
 
 #resend draws Act III's opening run, three model calls, from Claude Code's own usage blocks (cache read,
-cache write, uncached); #long-run draws the 26 calls of the long task and their total.
+cache write, uncached); #long-run prices the 26 calls of the long task and shows the CLI's own bill.
 """
 import json
 from html.parser import HTMLParser
@@ -68,17 +68,19 @@ def test_resend_draws_the_three_calls_of_act_two_run():
         assert abs(after['cache_read_input_tokens'] - before) <= 2
 
 
-def test_long_run_draws_the_first_and_last_call_and_the_total():
+def test_long_run_prices_every_call_of_the_long_task_and_shows_the_cli_bill():
     slides = Slides((SESSION / 'cursus/03-agent.html').read_text(encoding='utf-8')).text
     run = json.loads((RUNS / 'context-bomb-claude.json').read_text(encoding='utf-8'))
-    calls = [s['tokens'] for s in run['steps'] if s.get('tokens') and s['tokens'].get('input') is not None]
+    raw = RUNS / 'raw/context-bomb-claude.jsonl'
+    calls = usage_per_call(raw)
     assert len(calls) == 26
-    total = sum(c['input'] for c in calls)
-    cached = sum(c.get('cached_input') or 0 for c in calls)
-    assert total == run['totals']['input'] and cached == run['totals']['cached_input']
+    sent = [c['cache_read_input_tokens'] + c['cache_creation_input_tokens'] + c['input_tokens'] for c in calls]
+    # The normalized replay and the raw usage blocks agree on what each call sent.
+    replay = [s['tokens']['input'] for s in run['steps'] if s.get('tokens') and s['tokens'].get('input') is not None]
+    assert sent == replay
+    result = next(e for e in map(json.loads, raw.read_text(encoding='utf-8').splitlines()) if e.get('type') == 'result')
     text = slides['long-run']
-    assert f"{calls[0]['input']:,}" in text
-    assert f"{calls[-1]['input']:,}" in text
-    assert f"about {round(calls[-1]['input'] / calls[0]['input'])}×" in text
-    assert f"{total:,}" in text
-    assert f"{round(100 * cached / total)}%" in text
+    for n in sent:
+        assert f"{n:,} tokens sent" in text, n
+    assert f"${result['total_cost_usd']:.2f}" in text
+    assert f"{round(sent[-1] / sent[0])}× the tokens" in text

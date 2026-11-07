@@ -619,7 +619,6 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .rs-svg, .lr-svg { width: 100%; height: auto; }
 /* Short screens: the chart shrinks so the slide never scrolls (as Act II's run lanes do). */
 .rs-svg { max-height: calc(100vh - 33.5rem); }
-.lr-svg { max-height: calc(100vh - 30.25rem); }
 .rs-scroll, .lr-scroll { overflow-x: auto; }
 .rs-cached, .lr-cached { fill: var(--muted); fill-opacity: .6; }
 .rs-new, .lr-new { fill: var(--accent); }
@@ -673,24 +672,47 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 }
 /* == end proto:resend == */
 /* == proto:long-run == */
-.lr-window { fill: none; stroke: var(--muted); stroke-width: 1.5; }
-.lr-win { font: 600 13px var(--mono); fill: var(--secondary); }
-.lr-head { font: 600 15px var(--sans); fill: var(--secondary); }
-.lr-code { font-family: var(--mono); fill: var(--ink); }
-.lr-hit { fill: transparent; }
+/* The long run priced, one column per call on one dollar scale, built in three steps: amber, every token at the
+   input price (computed); the bill, grey read from the cache under teal written to it; coral, a 27th call after
+   the cache expired (computed). Each layer carries data-lr-l, the step that adds it. With no script and on paper
+   every layer and all three sentences show. */
+.lr-fig { margin: 0; }
+.lr-svg { display: block; max-height: max(10rem, calc(100vh - 33.75rem)); }
+.lr-axis { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.lr-xl { font: 600 14px var(--mono); fill: var(--secondary); }
+.lr-xl.is-break, .lr-xl.is-miss { fill: var(--red); }
+.lr-key-s { font: 500 13px var(--mono); fill: var(--muted); }
+.lr-full { fill: none; stroke: var(--amber); stroke-width: 2.5; stroke-dasharray: 7 4; }
+.lr-full-dot { fill: var(--amber); }
+.lr-full-key { fill: none; stroke: var(--amber); stroke-width: 2.5; stroke-dasharray: 7 4; }
+.lr-full-t { font: 700 18px var(--mono); fill: var(--amber); }
 .lr-bar:hover .lr-cached { fill-opacity: .85; }
-.lr-rulecol { fill: var(--faint); }
-.lr-rule { fill: var(--ink); stroke: var(--sheet); stroke-width: 1.5; }
-.lr-call { font: 700 15px var(--sans); fill: var(--ink); }
-.lr-rk { font: 600 20px var(--sans); fill: var(--secondary); }
-.lr-rn { font: 700 34px var(--sans); fill: var(--ink); }
-.lr-ru { font: 500 18px var(--sans); fill: var(--secondary); }
-.lr-rx { font-size: 26px; font-weight: 700; fill: var(--ink); }
-.lr-line { font: 500 22px var(--sans); fill: var(--ink); }
-.lr-b { font-weight: 700; }
-.lr-line.is-kept { font-size: 19px; }
-.lr-line.is-kept .lr-code { font-weight: 700; }
-.lr-sub { font: 500 16px var(--sans); fill: var(--secondary); }
+.lr-val { font: 700 17px var(--mono); fill: var(--ink); }
+.lr-miss { fill: none; stroke: var(--red); stroke-width: 2; }
+.lr-miss-t { font: 600 14px var(--sans); fill: var(--red); }
+.lr-break { fill: var(--red-soft); stroke: var(--red); stroke-width: 2; }
+.lr-zig { fill: none; stroke: var(--sheet); stroke-width: 5; }
+.lr-break-t { font: 700 20px var(--mono); fill: var(--red); }
+.lr-tk { font: 500 16px var(--sans); fill: var(--secondary); }
+.lr-tn { font: 700 32px var(--sans); fill: var(--ink); font-variant-numeric: tabular-nums; }
+.lr-tn.is-full { fill: var(--amber); }
+.lr-b { font-weight: 700; fill: var(--ink); }
+.lr[data-lr-at="1"] :is([data-lr-l="2"], [data-lr-l="3"]), .lr[data-lr-at="2"] [data-lr-l="3"] { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  .lr [data-lr-l] { transition: opacity .25s ease, visibility .25s; }
+}
+/* The three steps: chips to build it, and the current step's sentence beside them (as on #agent). */
+.lr-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.25rem; margin-top: .35rem; }
+.lr-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.lr-chip { display: inline-flex; align-items: center; gap: .45rem; min-width: 44px; min-height: 44px; padding: .3rem .8rem; border: 1.5px solid var(--muted); border-radius: .2rem; background: var(--paper); color: var(--ink); font: 650 1rem/1.2 var(--sans); }
+.lr-chip:hover:not(:disabled) { border-color: var(--ink); }
+.lr-chip[aria-pressed="true"] { border: 2.5px solid var(--accent); background: var(--accent-soft); }
+.lr-n { display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border: 1.5px solid currentColor; border-radius: 50%; font: 700 .75rem/1 var(--mono); }
+.lr-chip[aria-pressed="true"] .lr-n { border-color: var(--accent); background: var(--accent); color: var(--on); }
+[data-slide] .lr-says { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; color: var(--ink); font: 500 1.0625rem/1.4 var(--sans); }
+[data-slide] .lr-says li { margin: 0; }
+.lr-says b { font-weight: 700; }
+.lr[data-lr-at] .lr-says { flex: 1 1 22rem; }
 /* == end proto:long-run == */
 @media (max-width: 799px) {
   /* On a phone the charts keep their desktop size and scroll sideways inside their region. */
@@ -701,18 +723,87 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   .rs [data-rs-run] { opacity: 1 !important; visibility: visible !important; }
   .rs [data-rs-ask], .rs-reveal, .rs-reset { display: none !important; }
   .rs-svg, .lr-svg { min-width: 0; max-height: none; }
+  .lr [data-lr-l] { opacity: 1 !important; visibility: visible !important; }
+  .lr-chips { display: none !important; }
+  .lr .lr-says li[hidden] { display: block !important; }
 }
 </style>
   <style>/* Page-specific: Act III parts 3 and 4, the harness's own pieces. */
-/* == proto:prefix == */
-/* One figure, one 0–40k token scale, three rows from Claude Code's /context: what loads before you type; one bad
-   MCP server with its tools loaded; the same server as installed. Grey is the harness's own, red the server. */
+/* == proto:window == */
+/* #prefix: one call's window as a strip, schematic (grey, what the harness loads before you type; ink, your
+   prompt; teal, the run appended to it), over Liu et al.'s accuracy by the position of the answer, revealed after
+   the room's pick. The study's main line is ink, its low point coral, the other model grey. */
+.cw-fig { margin: 0; }
+/* The height caps keep the paged slide from scrolling; max() keeps a short, wide continuous page readable. */
+.cw-svg { display: block; width: 100%; height: auto; max-height: max(8rem, calc(100vh - 36rem)); }
+.cw-own { fill: var(--faint); stroke: var(--muted); stroke-width: 1.5; }
+.cw-you { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+.cw-run { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.cw-new { fill: var(--accent); stroke: var(--accent); stroke-width: 1.5; }
+.cw-in { fill: var(--ink); font: 650 15.5px var(--sans); }
+.cw-new + .cw-in { fill: var(--on); }
+.cw-brace { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.cw-brace-t { fill: var(--secondary); font: 500 15px var(--sans); }
+.cw-frame { fill: none; stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 6 5; }
+.cw-qmark { fill: var(--muted); font: 700 30px var(--mono); }
+.cw-grid { fill: none; stroke: var(--rule); stroke-width: 1; }
+.cw-tick { fill: var(--muted); font: 500 13px var(--mono); }
+.cw-closed { fill: none; stroke: var(--secondary); stroke-width: 1.5; stroke-dasharray: 2 5; stroke-linecap: round; }
+.cw-closed-t { fill: var(--secondary); font: 500 14px var(--sans); }
+.cw-gpt { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.cw-claude { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linejoin: round; }
+.cw-dot { fill: var(--ink); stroke: var(--sheet); stroke-width: 2; }
+.cw-dot.is-low { fill: var(--red); }
+.cw-dot-c { fill: var(--muted); }
+.cw-v { fill: var(--ink); font: 700 16px var(--mono); }
+.cw-v.is-low { fill: var(--red); font-size: 15px; }
+.cw-lbl { fill: var(--ink); font: 650 14px var(--sans); }
+.cw-lbl-c { fill: var(--secondary); font: 600 14px var(--sans); }
+.cw-amber { fill: var(--amber); font: 600 14px var(--mono); }
+.cw-pos { fill: var(--secondary); font: 600 13px var(--mono); }
+/* The bet: the question, four chips, then Reveal and Reset on the right, as on #mcp-skills. */
+.cw-bet { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-top: .35rem; }
+[data-slide] .cw-q { flex: 0 1 24rem; margin: 0; color: var(--ink); font-size: 1.0625rem; font-weight: 600; line-height: 1.3; }
+.cw-w { position: relative; display: inline-flex; }
+.cw-chip { min-width: 3.5rem; height: 2.75rem; padding: 0 .9rem; border: 1.5px solid var(--muted); border-radius: .2rem; background: var(--paper); color: var(--ink); font: 650 1rem/1 var(--sans); }
+.cw-chip:disabled { color: var(--ink); border-color: var(--muted); }
+.cw-chip:hover:not(:disabled) { border-color: var(--ink); }
+/* The room's pick in ink, never teal: teal is the measured answer. */
+.cw-chip[aria-pressed="true"]::after { content: "room"; content: "room" / ""; position: absolute; top: -.75rem; right: -.3rem; }
+.cw-runtag { position: absolute; z-index: 1; top: -.75rem; left: -.3rem; padding: 0 .3rem; border-radius: .2rem; background: var(--accent); color: var(--on); font: 700 .8125rem/1.25rem var(--mono); white-space: nowrap; pointer-events: none; }
+/* Once revealed, if the room picked the measured chip, one tag says both; before, its "room" tag stays as on any chip. */
+.cw:not([data-cw-state="bet"]) .cw-w:has(.cw-runtag) .cw-chip[aria-pressed="true"]::after { content: none; }
+.cw:not([data-cw-state="bet"]) .cw-w:has(.cw-chip[aria-pressed="true"]) .cw-runtag::after { content: " + room"; }
+[data-slide] .cw-ctl { display: flex; gap: .5rem; margin-left: auto; }
+.cw-reveal { padding: .5rem 1.2rem; border-color: var(--accent); background: var(--sheet); color: var(--accent); font-size: 1.0625rem; font-weight: 650; }
+.cw[data-cw-state="bet"] [data-cw-run] { visibility: hidden; }
+.cw:not([data-cw-state="bet"]) [data-cw-ask] { display: none; }
+#prefix .cite { margin-top: .4rem; padding-top: .3rem; }
+@media (max-width: 799px) {
+  .cw-scroll { overflow-x: auto; }
+  .cw-svg { min-width: 46rem; max-height: none; }
+}
+@media print {
+  .cw [data-cw-run] { visibility: visible !important; }
+  .cw [data-cw-ask], .cw-ctl { display: none !important; }
+  .cw-svg { max-height: none; }
+}
+/* == end proto:window == */
+/* == proto:mcp-skills == */
+/* #mcp-skills: one figure, one token scale, from Claude Code's /context: what loads before you type, in #prefix's
+   order, its skills outlined in ink; after the reveal, one bad MCP server with its tools loaded, beside row 1's 13k
+   drawn dashed for scale (that sum was never a captured state), and the default under it. Grey is the harness's own,
+   red the server; the server's own words sit in a box beside row 1. */
 .px-fig { margin: 0; }
-.px-svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 34rem); }
+.px-svg { display: block; width: 100%; height: auto; max-height: max(8rem, calc(100vh - 35.75rem)); }
 .px-row-t { fill: var(--ink); font: 700 16px var(--sans); }
 .px-row-s { fill: var(--secondary); font-weight: 500; }
 .px-name { fill: var(--secondary); font: 500 15px var(--sans); }
 .px-own { fill: var(--faint); stroke: var(--muted); stroke-width: 1.5; }
+.px-own.is-skill { stroke: var(--ink); stroke-width: 2; }
+.px-skill { fill: var(--ink); font: 600 15px var(--sans); }
+.px-ghost { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.px-ghost-t { fill: var(--secondary); font: 500 15px var(--sans); }
 .px-bad { fill: var(--red-soft); stroke: var(--red); stroke-width: 2; }
 .px-wait { fill: none; stroke: var(--red); stroke-width: 2; stroke-dasharray: 6 4; }
 .px-in { fill: var(--ink); font: 600 15px var(--sans); }
@@ -720,13 +811,18 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .px-total { fill: var(--ink); font: 700 19px var(--mono); }
 .px-tail { fill: var(--secondary); font: 500 15px var(--sans); }
 .px-split { fill: none; stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 3 3; }
-/* Row 2 closes on what the server adds; it prints no total (13k + 9.6k was never captured as a state). */
 .px-close { fill: var(--red); font: 500 15px var(--sans); }
 .px-close-n { font: 700 18px var(--mono); }
 .px-bad-t { fill: var(--red); font: 600 15px var(--sans); }
-.px-bad-t .px-total { fill: var(--ink); }
-.px-axis { fill: none; stroke: var(--muted); stroke-width: 1.5; }
-.px-tick { fill: var(--secondary); font: 500 15px var(--mono); }
+.px-quote rect { fill: var(--red-soft); fill-opacity: .45; stroke: var(--red); stroke-width: 1.5; }
+.px-quote-k { fill: var(--secondary); font: 600 14px var(--sans); }
+.px-quote-t { fill: var(--ink); font: 500 14.5px var(--mono); }
+.px-quote-s { fill: var(--red); font: 600 13px var(--mono); }
+/* The two definitions and the bad server's code, on one line under the figure. */
+[data-slide] .px-defs { display: flex; flex-wrap: wrap; gap: .2rem 1.5rem; margin: .3rem 0 0; color: var(--secondary); font-size: 1rem; line-height: 1.35; }
+[data-slide] .px-defs div { display: flex; gap: .4rem; margin: 0; }
+[data-slide] .px-defs dt { color: var(--ink); font-weight: 700; }
+[data-slide] .px-defs dd { margin: 0; }
 /* The question sits left of the chips, on two lines at most; Reveal and Reset keep to the right. */
 [data-slide] .px-q { flex: 0 1 31rem; margin: 0; color: var(--ink); font-size: 1.0625rem; font-weight: 600; line-height: 1.3; }
 /* The bet: four chips, then Reveal and Reset on the right, as on the other predicts. */
@@ -740,9 +836,9 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .px-chip[aria-pressed="true"]::after { content: "room"; content: "room" / ""; position: absolute; top: -.75rem; right: -.3rem; padding: 0 .3rem; border: 1px solid var(--ink); border-radius: .2rem; background: var(--paper); color: var(--ink); font: 600 .8125rem/1.15rem var(--mono); }
 /* "measured" sits at the chip's upper left. */
 .px-runtag { position: absolute; z-index: 1; top: -.75rem; left: -.3rem; padding: 0 .3rem; border-radius: .2rem; background: var(--accent); color: var(--on); font: 700 .8125rem/1.25rem var(--mono); white-space: nowrap; pointer-events: none; }
-/* If the room picked the measured chip, one tag says both, on that chip. */
-.px-cw:has(.px-runtag) .px-chip[aria-pressed="true"]::after { content: none; }
-.px-cw:has(.px-chip[aria-pressed="true"]) .px-runtag::after { content: " + room"; }
+/* Once revealed, if the room picked the measured chip, one tag says both; before, its "room" tag stays as on any chip. */
+.px:not([data-px-state="bet"]) .px-cw:has(.px-runtag) .px-chip[aria-pressed="true"]::after { content: none; }
+.px:not([data-px-state="bet"]) .px-cw:has(.px-chip[aria-pressed="true"]) .px-runtag::after { content: " + room"; }
 [data-slide] .px-ctl { display: flex; gap: .5rem; margin-left: auto; }
 .px-reveal { padding: .5rem 1.2rem; border-color: var(--accent); background: var(--sheet); color: var(--accent); font-size: 1.0625rem; font-weight: 650; }
 .px[data-px-state="bet"] [data-px-run] { visibility: hidden; }
@@ -758,7 +854,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   .px-ctl { display: none !important; }
   .px-svg { max-height: none; }
 }
-/* == end proto:prefix == */
+/* == end proto:mcp-skills == */
 /* == proto:gate == */
 /* The loop, top to bottom: the model writes calls; each crosses the gate (rules + mode); the harness runs it,
    inside a sandbox when there is one. Hollow dashed pins are hooks this run did not set; the strip is the mode. */
@@ -888,8 +984,8 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 </style>
   <style>/* Act III: one look for the room's pick on every predict, an ink frame and an ink "room" tag, never teal and
    never a tick; teal is what the run did. */
-:is(.hn-chip, .rp-chip, .rs-chip, .px-chip)[aria-pressed="true"] { border: 2.5px solid var(--ink); background: var(--paper); color: var(--ink); }
-:is(.hn-chip, .rs-chip, .px-chip)[aria-pressed="true"]::after, .rp-chip[aria-pressed="true"]::before { padding: 0 .35rem; border: 0; border-radius: .2rem; background: var(--ink); color: var(--paper); font: 700 .75rem/1.2rem var(--mono); letter-spacing: 0; }
+:is(.hn-chip, .rp-chip, .rs-chip, .px-chip, .cw-chip)[aria-pressed="true"] { border: 2.5px solid var(--ink); background: var(--paper); color: var(--ink); }
+:is(.hn-chip, .rs-chip, .px-chip, .cw-chip)[aria-pressed="true"]::after, .rp-chip[aria-pressed="true"]::before { padding: 0 .35rem; border: 0; border-radius: .2rem; background: var(--ink); color: var(--paper); font: 700 .75rem/1.2rem var(--mono); letter-spacing: 0; }
 /* Print: a landscape page keeps the charts at desk size; whatever the paper, no chart is cut by its scroller. */
 @media print {
   @page { size: landscape; }
@@ -1291,17 +1387,17 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <p>Talk track: with fixed weights, the context alone decides the next-token distribution; the harness supplies the memory. What the model learned stays in its weights; what it was told this session is only in the context. Point at the bars: the opening run’s three model calls, to scale. Call 1 sends 16,272 tokens: grey, Claude Code’s prompt and tools, cached by earlier runs; teal, the rest of the prefix and your prompt. Point at the band: the harness re-sends call 1 inside call 2, then appends call 1’s Bash call and its result. Grey is the KV cache from Act I: the prefix’s keys and values, kept from the last call.</p>
             <p>Predict question: “Call 3 adds 487 new tokens. How many does it send?” Press the majority’s chip, then Reveal: 20,174.</p>
             <p>Activity: ask why grey is cheaper but not free. Listen for: the cache reuses the keys and values already computed for that prefix; the new tokens still need computing.</p>
-            <p>Transition: “Three calls is a short run. What does call 26 of a long one send?”</p>
+            <p>Transition: “Three calls is a short run. What does a long one cost?”</p>
             <p>Background for you, not for the slides: <code>fixtures/runs/raw/flipped-sense-claude.jsonl</code> (Claude Code 2.1.301, 2026-10-16). Cache reads cost $0.20 per million tokens on Opus 5.5 instead of $4 (list prices as of 2026-10-18); cache writes cost more than base input. Each call also sent 2 uncached tokens.</p>
           </div>
         </details>
       </section>
 
       <section id="long-run" data-slide tabindex="-1" aria-labelledby="long-run-title">
-        <p class="eyebrow">Part 2 · What does each call see? · A long task</p>
-        <h2 id="long-run-title">Call 26 re-sends everything the first 25 read.</h2>
-        <div class="spine-wrap" role="region" aria-label="Act III mechanism, part 2 lit: a long task" tabindex="0">
-          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act III’s mechanism. The harness is everything but the model. It holds the context: a prefix loaded before you typed, then the run so far, all of it re-sent on every call; by the third call 81% of it is prefix. It sends the context to the model, Act II folded into one box, which only writes text and was called 3 times. If a reply holds a tool call, here Bash, Edit, Bash, a gate decides whether it may run and the harness runs it in your repo, 3 runs in 0.6 s: 1 failed, then 30 passed. The harness appends the result to the context and calls the model again. A reply with no tool call ends the run: “All 30 tests pass now.” Highlighted: question 2, what does each call see: the context, the run appended to it, and the edge that appends each result. This slide: a long task of 26 calls.">
+        <p class="eyebrow">Part 2 · What does each call see? · What it costs</p>
+        <h2 id="long-run-title">Call 26 sends 24× the tokens. Does it cost 24×?</h2>
+        <div class="spine-wrap" role="region" aria-label="Act III mechanism, part 2 lit: what a long task costs" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act III’s mechanism. The harness is everything but the model. It holds the context: a prefix loaded before you typed, then the run so far, all of it re-sent on every call; by the third call 81% of it is prefix. It sends the context to the model, Act II folded into one box, which only writes text and was called 3 times. If a reply holds a tool call, here Bash, Edit, Bash, a gate decides whether it may run and the harness runs it in your repo, 3 runs in 0.6 s: 1 failed, then 30 passed. The harness appends the result to the context and calls the model again. A reply with no tool call ends the run: “All 30 tests pass now.” Highlighted: question 2, what does each call see: the context, the run appended to it, and the edge that appends each result. This slide: what the 26 calls of a long task cost, with and without the cache.">
           <path class="harness-fill done" d="M8 18 H240 Q246 18 246 24 V86 Q246 92 252 92 H456 Q462 92 462 86 V24 Q462 18 468 18 H884 Q892 18 892 26 V131 Q892 139 884 139 H8 Q0 139 0 131 V26 Q0 18 8 18 Z"/>
           <path class="harness-edge done" d="M240 18 H8 Q0 18 0 26 V131 Q0 139 8 139 H884 Q892 139 892 131 V26 Q892 18 884 18 H468"/>
           <text class="bracket-label done" x="48" y="11">the harness</text>
@@ -1325,106 +1421,239 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <g class="track next"><rect class="hit" x="486" y="96" width="384" height="24"/><rect class="loop-bg" x="488" y="99" width="380" height="21"/><rect class="band-tint done" x="488" y="99" width="380" height="21"/><g class="badge next"><circle cx="500" cy="109" r="10"/><text class="n" x="500" y="113.5" text-anchor="middle">5</text></g><text class="tag next" x="516" y="114">no tool call → stop</text><text class="quote next" x="688" y="114">“All 30 tests pass now.”</text></g>
           </svg>
         </div>
-        <figure class="lr">
-          <div class="lr-scroll" role="region" tabindex="0" aria-label="Tokens sent by each of a long run’s 26 model calls, against the context window">
-            <svg class="lr-svg" viewBox="0 0 1100 280" role="img" aria-labelledby="lr-desc">
-              <rect class="lr-window" x="92" y="32" width="988" height="222"/>
-              <path class="lr-grid" d="M339.0 32 V254"/>
-              <path class="lr-grid" d="M586.0 32 V254"/>
-              <path class="lr-grid" d="M833.0 32 V254"/>
-              <text class="lr-tick" x="92.0" y="274" text-anchor="start">0</text>
-              <text class="lr-tick" x="339.0" y="274" text-anchor="middle">250k</text>
-              <text class="lr-tick" x="586.0" y="274" text-anchor="middle">500k</text>
-              <text class="lr-tick" x="833.0" y="274" text-anchor="middle">750k</text>
-              <text class="lr-tick" x="215.5" y="274" text-anchor="middle">tokens sent per call</text>
-              <text class="lr-win" x="1080" y="274" text-anchor="end">1M: the context window</text>
-              <rect class="lr-cached" x="628" y="9" width="14" height="14" rx="2"/><text class="lr-key" x="648" y="21">the previous call, re-sent</text>
-              <rect class="lr-new" x="860" y="9" width="14" height="14" rx="2"/><text class="lr-key" x="880" y="21">appended since the last call</text>
-              <rect class="lr-rulecol" x="63" y="32" width="18" height="222" rx="2"/>
-              <path class="lr-rule" d="M72 9 l6 6 l-6 6 l-6 -6 z"/>
-              <text class="lr-head" x="84" y="21">rule from call 1: last line exactly “<tspan class="lr-code">-- checked</tspan>”</text>
-              <g class="lr-bar"><title>call 1: 15,654 tokens sent; the previous call re-sent (0) + 15,654 appended</title><rect class="lr-hit" x="92" y="39" width="988" height="8"/><rect class="lr-new" x="92.0" y="40" width="15.5" height="6"/></g>
-              <path class="lr-rule" d="M72 39.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 1</title></path>
-              <g class="lr-bar"><title>call 2: 16,791 tokens sent; the previous call re-sent (15,654) + 1,137 appended</title><rect class="lr-hit" x="92" y="47" width="988" height="8"/><rect class="lr-cached" x="92" y="48" width="14.5" height="6"/><rect class="lr-new" x="107.5" y="48" width="1.1" height="6"/></g>
-              <path class="lr-rule" d="M72 47.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 2</title></path>
-              <g class="lr-bar"><title>call 3: 31,519 tokens sent; the previous call re-sent (16,791) + 14,728 appended</title><rect class="lr-hit" x="92" y="55" width="988" height="8"/><rect class="lr-cached" x="92" y="56" width="15.6" height="6"/><rect class="lr-new" x="108.6" y="56" width="14.5" height="6"/></g>
-              <path class="lr-rule" d="M72 55.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 3</title></path>
-              <g class="lr-bar"><title>call 4: 46,214 tokens sent; the previous call re-sent (31,519) + 14,695 appended</title><rect class="lr-hit" x="92" y="63" width="988" height="8"/><rect class="lr-cached" x="92" y="64" width="30.1" height="6"/><rect class="lr-new" x="123.1" y="64" width="14.6" height="6"/></g>
-              <path class="lr-rule" d="M72 63.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 4</title></path>
-              <g class="lr-bar"><title>call 5: 61,134 tokens sent; the previous call re-sent (46,214) + 14,920 appended</title><rect class="lr-hit" x="92" y="71" width="988" height="8"/><rect class="lr-cached" x="92" y="72" width="44.7" height="6"/><rect class="lr-new" x="137.7" y="72" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 71.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 5</title></path>
-              <g class="lr-bar"><title>call 6: 75,847 tokens sent; the previous call re-sent (61,134) + 14,713 appended</title><rect class="lr-hit" x="92" y="79" width="988" height="8"/><rect class="lr-cached" x="92" y="80" width="59.4" height="6"/><rect class="lr-new" x="152.4" y="80" width="14.5" height="6"/></g>
-              <path class="lr-rule" d="M72 79.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 6</title></path>
-              <g class="lr-bar"><title>call 7: 90,667 tokens sent; the previous call re-sent (75,847) + 14,820 appended</title><rect class="lr-hit" x="92" y="87" width="988" height="8"/><rect class="lr-cached" x="92" y="88" width="73.9" height="6"/><rect class="lr-new" x="166.9" y="88" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 87.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 7</title></path>
-              <g class="lr-bar"><title>call 8: 105,530 tokens sent; the previous call re-sent (90,667) + 14,863 appended</title><rect class="lr-hit" x="92" y="95" width="988" height="8"/><rect class="lr-cached" x="92" y="96" width="88.6" height="6"/><rect class="lr-new" x="181.6" y="96" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 95.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 8</title></path>
-              <g class="lr-bar"><title>call 9: 120,620 tokens sent; the previous call re-sent (105,530) + 15,090 appended</title><rect class="lr-hit" x="92" y="103" width="988" height="8"/><rect class="lr-cached" x="92" y="104" width="103.3" height="6"/><rect class="lr-new" x="196.3" y="104" width="14.9" height="6"/></g>
-              <path class="lr-rule" d="M72 103.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 9</title></path>
-              <g class="lr-bar"><title>call 10: 135,530 tokens sent; the previous call re-sent (120,620) + 14,910 appended</title><rect class="lr-hit" x="92" y="111" width="988" height="8"/><rect class="lr-cached" x="92" y="112" width="118.2" height="6"/><rect class="lr-new" x="211.2" y="112" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 111.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 10</title></path>
-              <g class="lr-bar"><title>call 11: 150,158 tokens sent; the previous call re-sent (135,530) + 14,628 appended</title><rect class="lr-hit" x="92" y="119" width="988" height="8"/><rect class="lr-cached" x="92" y="120" width="132.9" height="6"/><rect class="lr-new" x="225.9" y="120" width="14.5" height="6"/></g>
-              <path class="lr-rule" d="M72 119.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 11</title></path>
-              <g class="lr-bar"><title>call 12: 164,909 tokens sent; the previous call re-sent (150,158) + 14,751 appended</title><rect class="lr-hit" x="92" y="127" width="988" height="8"/><rect class="lr-cached" x="92" y="128" width="147.4" height="6"/><rect class="lr-new" x="240.4" y="128" width="14.5" height="6"/></g>
-              <path class="lr-rule" d="M72 127.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 12</title></path>
-              <g class="lr-bar"><title>call 13: 180,012 tokens sent; the previous call re-sent (164,909) + 15,103 appended</title><rect class="lr-hit" x="92" y="135" width="988" height="8"/><rect class="lr-cached" x="92" y="136" width="161.9" height="6"/><rect class="lr-new" x="254.9" y="136" width="15.0" height="6"/></g>
-              <path class="lr-rule" d="M72 135.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 13</title></path>
-              <g class="lr-bar"><title>call 14: 195,175 tokens sent; the previous call re-sent (180,012) + 15,163 appended</title><rect class="lr-hit" x="92" y="143" width="988" height="8"/><rect class="lr-cached" x="92" y="144" width="176.9" height="6"/><rect class="lr-new" x="269.9" y="144" width="14.9" height="6"/></g>
-              <path class="lr-rule" d="M72 143.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 14</title></path>
-              <g class="lr-bar"><title>call 15: 210,182 tokens sent; the previous call re-sent (195,175) + 15,007 appended</title><rect class="lr-hit" x="92" y="151" width="988" height="8"/><rect class="lr-cached" x="92" y="152" width="191.8" height="6"/><rect class="lr-new" x="284.8" y="152" width="14.9" height="6"/></g>
-              <path class="lr-rule" d="M72 151.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 15</title></path>
-              <g class="lr-bar"><title>call 16: 224,985 tokens sent; the previous call re-sent (210,182) + 14,803 appended</title><rect class="lr-hit" x="92" y="159" width="988" height="8"/><rect class="lr-cached" x="92" y="160" width="206.7" height="6"/><rect class="lr-new" x="299.7" y="160" width="14.6" height="6"/></g>
-              <path class="lr-rule" d="M72 159.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 16</title></path>
-              <g class="lr-bar"><title>call 17: 239,807 tokens sent; the previous call re-sent (224,985) + 14,822 appended</title><rect class="lr-hit" x="92" y="167" width="988" height="8"/><rect class="lr-cached" x="92" y="168" width="221.3" height="6"/><rect class="lr-new" x="314.3" y="168" width="14.6" height="6"/></g>
-              <path class="lr-rule" d="M72 167.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 17</title></path>
-              <g class="lr-bar"><title>call 18: 254,393 tokens sent; the previous call re-sent (239,807) + 14,586 appended</title><rect class="lr-hit" x="92" y="175" width="988" height="8"/><rect class="lr-cached" x="92" y="176" width="235.9" height="6"/><rect class="lr-new" x="328.9" y="176" width="14.4" height="6"/></g>
-              <path class="lr-rule" d="M72 175.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 18</title></path>
-              <g class="lr-bar"><title>call 19: 269,290 tokens sent; the previous call re-sent (254,393) + 14,897 appended</title><rect class="lr-hit" x="92" y="183" width="988" height="8"/><rect class="lr-cached" x="92" y="184" width="250.3" height="6"/><rect class="lr-new" x="343.3" y="184" width="14.8" height="6"/></g>
-              <path class="lr-rule" d="M72 183.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 19</title></path>
-              <g class="lr-bar"><title>call 20: 284,266 tokens sent; the previous call re-sent (269,290) + 14,976 appended</title><rect class="lr-hit" x="92" y="191" width="988" height="8"/><rect class="lr-cached" x="92" y="192" width="265.1" height="6"/><rect class="lr-new" x="358.1" y="192" width="14.8" height="6"/></g>
-              <path class="lr-rule" d="M72 191.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 20</title></path>
-              <g class="lr-bar"><title>call 21: 299,155 tokens sent; the previous call re-sent (284,266) + 14,889 appended</title><rect class="lr-hit" x="92" y="199" width="988" height="8"/><rect class="lr-cached" x="92" y="200" width="279.9" height="6"/><rect class="lr-new" x="372.9" y="200" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 199.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 21</title></path>
-              <g class="lr-bar"><title>call 22: 314,084 tokens sent; the previous call re-sent (299,155) + 14,929 appended</title><rect class="lr-hit" x="92" y="207" width="988" height="8"/><rect class="lr-cached" x="92" y="208" width="294.6" height="6"/><rect class="lr-new" x="387.6" y="208" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 207.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 22</title></path>
-              <g class="lr-bar"><title>call 23: 328,672 tokens sent; the previous call re-sent (314,084) + 14,588 appended</title><rect class="lr-hit" x="92" y="215" width="988" height="8"/><rect class="lr-cached" x="92" y="216" width="309.3" height="6"/><rect class="lr-new" x="402.3" y="216" width="14.4" height="6"/></g>
-              <path class="lr-rule" d="M72 215.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 23</title></path>
-              <g class="lr-bar"><title>call 24: 343,482 tokens sent; the previous call re-sent (328,672) + 14,810 appended</title><rect class="lr-hit" x="92" y="223" width="988" height="8"/><rect class="lr-cached" x="92" y="224" width="323.7" height="6"/><rect class="lr-new" x="416.7" y="224" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 223.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 24</title></path>
-              <g class="lr-bar"><title>call 25: 358,380 tokens sent; the previous call re-sent (343,482) + 14,898 appended</title><rect class="lr-hit" x="92" y="231" width="988" height="8"/><rect class="lr-cached" x="92" y="232" width="338.4" height="6"/><rect class="lr-new" x="431.4" y="232" width="14.7" height="6"/></g>
-              <path class="lr-rule" d="M72 231.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 25</title></path>
-              <g class="lr-bar"><title>call 26: 373,202 tokens sent; the previous call re-sent (358,380) + 14,822 appended</title><rect class="lr-hit" x="92" y="239" width="988" height="8"/><rect class="lr-cached" x="92" y="240" width="353.1" height="6"/><rect class="lr-new" x="446.1" y="240" width="14.6" height="6"/></g>
-              <path class="lr-rule" d="M72 239.5 l3.5 3.5 l-3.5 3.5 l-3.5 -3.5 z"><title>rule from call 1 · still in call 26</title></path>
-              <text class="lr-call" x="0" y="48.5">call 1</text>
-              <text class="lr-call" x="0" y="248.5">call 26</text>
-              <text class="lr-rk" x="500" y="66">call 1</text><text class="lr-rn" x="760" y="66" text-anchor="end">15,654</text><text class="lr-ru" x="774" y="66">tokens sent</text>
-              <text class="lr-rk" x="500" y="104">call 26</text><text class="lr-rn" x="760" y="104" text-anchor="end">373,202</text><text class="lr-ru" x="774" y="104">tokens sent · <tspan class="lr-rx">about 24×</tspan></text>
-              <text class="lr-line" x="500" y="142">after call 2, each call appends <tspan class="lr-b">about 15k</tspan></text>
-              <text class="lr-sub" x="500" y="163">one log back + its own previous output</text>
-              <path class="lr-rule" d="M507 178 l7 7 l-7 7 l-7 -7 z"/>
-              <text class="lr-line is-kept" x="522" y="192">call 1’s rule is re-sent in every call:</text>
-              <text class="lr-line is-kept" x="522" y="216">the final answer still ends with “<tspan class="lr-code">-- checked</tspan>”, in both CLIs</text>
-              <text class="lr-sub" x="500" y="242">4,889,658 tokens sent in all · 92% read from the cache</text>
-            </svg>
+        <div class="lr" data-lr>
+          <figure class="lr-fig">
+            <div class="lr-scroll" role="region" tabindex="0" aria-label="The cost of each of a long run’s 26 model calls, with and without the cache">
+              <svg class="lr-svg" viewBox="0 0 1100 222" role="img" aria-labelledby="lr-desc">
+              <path class="lr-grid" d="M60 145.5 H779.5"/><text class="lr-tick" x="56" y="150.5" text-anchor="end">$0.50</text>
+              <path class="lr-grid" d="M60 95.0 H779.5"/><text class="lr-tick" x="56" y="100.0" text-anchor="end">$1.00</text>
+              <path class="lr-grid" d="M60 44.5 H779.5"/><text class="lr-tick" x="56" y="49.5" text-anchor="end">$1.50</text>
+              <path class="lr-axis" d="M60 196.0 H779.5"/><text class="lr-tick" x="56" y="201.0" text-anchor="end">$0</text>
+              <text class="lr-xl" x="77.2" y="216.0" text-anchor="middle">call 1</text>
+              <text class="lr-xl" x="739.8" y="216.0" text-anchor="middle">26</text>
+              <g class="lr-l" data-lr-l="1">
+              <polyline class="lr-full" points="77.2,189.7 103.8,189.2 130.2,183.3 156.8,177.3 183.2,171.3 209.8,165.4 236.2,159.4 262.8,153.4 289.2,147.3 315.8,141.2 342.2,135.3 368.8,129.4 395.2,123.3 421.8,117.1 448.2,111.1 474.8,105.1 501.2,99.1 527.8,93.2 554.2,87.2 580.8,81.2 607.2,75.1 633.8,69.1 660.2,63.2 686.8,57.2 713.2,51.2 739.8,45.2"/>
+              <circle class="lr-full-dot" cx="77.2" cy="189.7" r="3.5"><title>call 1: 15,654 tokens at $4 per million: $0.063 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="103.8" cy="189.2" r="3.5"><title>call 2: 16,791 tokens at $4 per million: $0.067 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="130.2" cy="183.3" r="3.5"><title>call 3: 31,519 tokens at $4 per million: $0.126 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="156.8" cy="177.3" r="3.5"><title>call 4: 46,214 tokens at $4 per million: $0.185 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="183.2" cy="171.3" r="3.5"><title>call 5: 61,134 tokens at $4 per million: $0.245 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="209.8" cy="165.4" r="3.5"><title>call 6: 75,847 tokens at $4 per million: $0.303 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="236.2" cy="159.4" r="3.5"><title>call 7: 90,667 tokens at $4 per million: $0.363 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="262.8" cy="153.4" r="3.5"><title>call 8: 105,530 tokens at $4 per million: $0.422 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="289.2" cy="147.3" r="3.5"><title>call 9: 120,620 tokens at $4 per million: $0.482 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="315.8" cy="141.2" r="3.5"><title>call 10: 135,530 tokens at $4 per million: $0.542 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="342.2" cy="135.3" r="3.5"><title>call 11: 150,158 tokens at $4 per million: $0.601 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="368.8" cy="129.4" r="3.5"><title>call 12: 164,909 tokens at $4 per million: $0.660 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="395.2" cy="123.3" r="3.5"><title>call 13: 180,012 tokens at $4 per million: $0.720 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="421.8" cy="117.1" r="3.5"><title>call 14: 195,175 tokens at $4 per million: $0.781 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="448.2" cy="111.1" r="3.5"><title>call 15: 210,182 tokens at $4 per million: $0.841 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="474.8" cy="105.1" r="3.5"><title>call 16: 224,985 tokens at $4 per million: $0.900 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="501.2" cy="99.1" r="3.5"><title>call 17: 239,807 tokens at $4 per million: $0.959 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="527.8" cy="93.2" r="3.5"><title>call 18: 254,393 tokens at $4 per million: $1.018 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="554.2" cy="87.2" r="3.5"><title>call 19: 269,290 tokens at $4 per million: $1.077 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="580.8" cy="81.2" r="3.5"><title>call 20: 284,266 tokens at $4 per million: $1.137 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="607.2" cy="75.1" r="3.5"><title>call 21: 299,155 tokens at $4 per million: $1.197 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="633.8" cy="69.1" r="3.5"><title>call 22: 314,084 tokens at $4 per million: $1.256 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="660.2" cy="63.2" r="3.5"><title>call 23: 328,672 tokens at $4 per million: $1.315 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="686.8" cy="57.2" r="3.5"><title>call 24: 343,482 tokens at $4 per million: $1.374 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="713.2" cy="51.2" r="3.5"><title>call 25: 358,380 tokens at $4 per million: $1.434 (computed)</title></circle>
+              <circle class="lr-full-dot" cx="739.8" cy="45.2" r="3.5"><title>call 26: 373,202 tokens at $4 per million: $1.493 (computed)</title></circle>
+              <text class="lr-full-t" x="733.8" y="36.2" text-anchor="end">$1.49</text>
+              <path class="lr-full-key" d="M0 13 H26"/><text class="lr-key" x="34" y="18">nothing cached: input at $4 per million <tspan class="lr-key-s">computed</tspan></text>
+              </g>
+              <g class="lr-l" data-lr-l="2">
+              <g class="lr-bar"><title>call 1: 15,654 tokens sent: 10,443 read from the cache, $0.002; 5,209 written to it and 2 uncached, $0.042; $0.044 in all</title><rect class="lr-cached" x="68.8" y="195.79" width="17.0" height="0.21"/><rect class="lr-new" x="68.8" y="191.58" width="17.0" height="4.21"/></g>
+              <g class="lr-bar"><title>call 2: 16,791 tokens sent: 15,652 read from the cache, $0.003; 1,137 written to it and 2 uncached, $0.009; $0.012 in all</title><rect class="lr-cached" x="95.2" y="195.68" width="17.0" height="0.32"/><rect class="lr-new" x="95.2" y="194.76" width="17.0" height="0.92"/></g>
+              <g class="lr-bar"><title>call 3: 31,519 tokens sent: 16,789 read from the cache, $0.003; 14,728 written to it and 2 uncached, $0.118; $0.121 in all</title><rect class="lr-cached" x="121.8" y="195.66" width="17.0" height="0.34"/><rect class="lr-new" x="121.8" y="183.76" width="17.0" height="11.90"/></g>
+              <g class="lr-bar"><title>call 4: 46,214 tokens sent: 16,789 read from the cache, $0.003; 29,423 written to it and 2 uncached, $0.235; $0.239 in all</title><rect class="lr-cached" x="148.2" y="195.66" width="17.0" height="0.34"/><rect class="lr-new" x="148.2" y="171.89" width="17.0" height="23.77"/></g>
+              <g class="lr-bar"><title>call 5: 61,134 tokens sent: 46,212 read from the cache, $0.009; 14,920 written to it and 2 uncached, $0.119; $0.129 in all</title><rect class="lr-cached" x="174.8" y="195.07" width="17.0" height="0.93"/><rect class="lr-new" x="174.8" y="183.01" width="17.0" height="12.06"/></g>
+              <g class="lr-bar"><title>call 6: 75,847 tokens sent: 46,212 read from the cache, $0.009; 29,633 written to it and 2 uncached, $0.237; $0.246 in all</title><rect class="lr-cached" x="201.2" y="195.07" width="17.0" height="0.93"/><rect class="lr-new" x="201.2" y="171.12" width="17.0" height="23.94"/></g>
+              <g class="lr-bar"><title>call 7: 90,667 tokens sent: 75,845 read from the cache, $0.015; 14,820 written to it and 2 uncached, $0.119; $0.134 in all</title><rect class="lr-cached" x="227.8" y="194.47" width="17.0" height="1.53"/><rect class="lr-new" x="227.8" y="182.49" width="17.0" height="11.98"/></g>
+              <g class="lr-bar"><title>call 8: 105,530 tokens sent: 90,665 read from the cache, $0.018; 14,863 written to it and 2 uncached, $0.119; $0.137 in all</title><rect class="lr-cached" x="254.2" y="194.17" width="17.0" height="1.83"/><rect class="lr-new" x="254.2" y="182.16" width="17.0" height="12.01"/></g>
+              <g class="lr-bar"><title>call 9: 120,620 tokens sent: 105,528 read from the cache, $0.021; 15,090 written to it and 2 uncached, $0.121; $0.142 in all</title><rect class="lr-cached" x="280.8" y="193.87" width="17.0" height="2.13"/><rect class="lr-new" x="280.8" y="181.67" width="17.0" height="12.19"/></g>
+              <g class="lr-bar"><title>call 10: 135,530 tokens sent: 120,618 read from the cache, $0.024; 14,910 written to it and 2 uncached, $0.119; $0.143 in all</title><rect class="lr-cached" x="307.2" y="193.56" width="17.0" height="2.44"/><rect class="lr-new" x="307.2" y="181.52" width="17.0" height="12.05"/></g>
+              <g class="lr-bar"><title>call 11: 150,158 tokens sent: 135,528 read from the cache, $0.027; 14,628 written to it and 2 uncached, $0.117; $0.144 in all</title><rect class="lr-cached" x="333.8" y="193.26" width="17.0" height="2.74"/><rect class="lr-new" x="333.8" y="181.44" width="17.0" height="11.82"/></g>
+              <g class="lr-bar"><title>call 12: 164,909 tokens sent: 150,156 read from the cache, $0.030; 14,751 written to it and 2 uncached, $0.118; $0.148 in all</title><rect class="lr-cached" x="360.2" y="192.97" width="17.0" height="3.03"/><rect class="lr-new" x="360.2" y="181.05" width="17.0" height="11.92"/></g>
+              <g class="lr-bar"><title>call 13: 180,012 tokens sent: 164,907 read from the cache, $0.033; 15,103 written to it and 2 uncached, $0.121; $0.154 in all</title><rect class="lr-cached" x="386.8" y="192.67" width="17.0" height="3.33"/><rect class="lr-new" x="386.8" y="180.46" width="17.0" height="12.20"/></g>
+              <g class="lr-bar"><title>call 14: 195,175 tokens sent: 180,010 read from the cache, $0.036; 15,163 written to it and 2 uncached, $0.121; $0.157 in all</title><rect class="lr-cached" x="413.2" y="192.36" width="17.0" height="3.64"/><rect class="lr-new" x="413.2" y="180.11" width="17.0" height="12.25"/></g>
+              <g class="lr-bar"><title>call 15: 210,182 tokens sent: 195,173 read from the cache, $0.039; 15,007 written to it and 2 uncached, $0.120; $0.159 in all</title><rect class="lr-cached" x="439.8" y="192.06" width="17.0" height="3.94"/><rect class="lr-new" x="439.8" y="179.93" width="17.0" height="12.13"/></g>
+              <g class="lr-bar"><title>call 16: 224,985 tokens sent: 210,180 read from the cache, $0.042; 14,803 written to it and 2 uncached, $0.118; $0.160 in all</title><rect class="lr-cached" x="466.2" y="191.75" width="17.0" height="4.25"/><rect class="lr-new" x="466.2" y="179.79" width="17.0" height="11.96"/></g>
+              <g class="lr-bar"><title>call 17: 239,807 tokens sent: 224,983 read from the cache, $0.045; 14,822 written to it and 2 uncached, $0.119; $0.164 in all</title><rect class="lr-cached" x="492.8" y="191.46" width="17.0" height="4.54"/><rect class="lr-new" x="492.8" y="179.48" width="17.0" height="11.98"/></g>
+              <g class="lr-bar"><title>call 18: 254,393 tokens sent: 239,805 read from the cache, $0.048; 14,586 written to it and 2 uncached, $0.117; $0.165 in all</title><rect class="lr-cached" x="519.2" y="191.16" width="17.0" height="4.84"/><rect class="lr-new" x="519.2" y="179.37" width="17.0" height="11.79"/></g>
+              <g class="lr-bar"><title>call 19: 269,290 tokens sent: 254,391 read from the cache, $0.051; 14,897 written to it and 2 uncached, $0.119; $0.170 in all</title><rect class="lr-cached" x="545.8" y="190.86" width="17.0" height="5.14"/><rect class="lr-new" x="545.8" y="178.82" width="17.0" height="12.04"/></g>
+              <g class="lr-bar"><title>call 20: 284,266 tokens sent: 269,288 read from the cache, $0.054; 14,976 written to it and 2 uncached, $0.120; $0.174 in all</title><rect class="lr-cached" x="572.2" y="190.56" width="17.0" height="5.44"/><rect class="lr-new" x="572.2" y="178.46" width="17.0" height="12.10"/></g>
+              <g class="lr-bar"><title>call 21: 299,155 tokens sent: 284,264 read from the cache, $0.057; 14,889 written to it and 2 uncached, $0.119; $0.176 in all</title><rect class="lr-cached" x="598.8" y="190.26" width="17.0" height="5.74"/><rect class="lr-new" x="598.8" y="178.23" width="17.0" height="12.03"/></g>
+              <g class="lr-bar"><title>call 22: 314,084 tokens sent: 299,153 read from the cache, $0.060; 14,929 written to it and 2 uncached, $0.119; $0.179 in all</title><rect class="lr-cached" x="625.2" y="189.96" width="17.0" height="6.04"/><rect class="lr-new" x="625.2" y="177.89" width="17.0" height="12.06"/></g>
+              <g class="lr-bar"><title>call 23: 328,672 tokens sent: 314,082 read from the cache, $0.063; 14,588 written to it and 2 uncached, $0.117; $0.180 in all</title><rect class="lr-cached" x="651.8" y="189.66" width="17.0" height="6.34"/><rect class="lr-new" x="651.8" y="177.87" width="17.0" height="11.79"/></g>
+              <g class="lr-bar"><title>call 24: 343,482 tokens sent: 328,670 read from the cache, $0.066; 14,810 written to it and 2 uncached, $0.118; $0.184 in all</title><rect class="lr-cached" x="678.2" y="189.36" width="17.0" height="6.64"/><rect class="lr-new" x="678.2" y="177.39" width="17.0" height="11.97"/></g>
+              <g class="lr-bar"><title>call 25: 358,380 tokens sent: 343,480 read from the cache, $0.069; 14,898 written to it and 2 uncached, $0.119; $0.188 in all</title><rect class="lr-cached" x="704.8" y="189.06" width="17.0" height="6.94"/><rect class="lr-new" x="704.8" y="177.02" width="17.0" height="12.04"/></g>
+              <g class="lr-bar"><title>call 26: 373,202 tokens sent: 358,378 read from the cache, $0.072; 14,822 written to it and 2 uncached, $0.119; $0.190 in all</title><rect class="lr-cached" x="731.2" y="188.76" width="17.0" height="7.24"/><rect class="lr-new" x="731.2" y="176.78" width="17.0" height="11.98"/></g>
+              <text class="lr-val" x="66.8" y="181.6">$0.04</text>
+              <text class="lr-val" x="748.2" y="167.8" text-anchor="end">$0.19</text>
+              <path class="lr-miss" d="M156.8 166.9 v-12"/>
+              <text class="lr-xl is-miss" x="156.8" y="216.0" text-anchor="middle">4</text>
+              <path class="lr-miss" d="M209.8 166.1 v-12"/>
+              <text class="lr-xl is-miss" x="209.8" y="216.0" text-anchor="middle">6</text>
+              <text class="lr-miss-t" x="221.8" y="216.0">← the cache missed</text>
+              <rect class="lr-cached" x="470" y="4" width="15" height="15" rx="2"/><text class="lr-key" x="492" y="18">re-sent, read from the cache: $0.20 per million</text>
+              <rect class="lr-new" x="900" y="4" width="15" height="15" rx="2"/><text class="lr-key" x="922" y="18">new, written to it: $8</text>
+              </g>
+              <g class="lr-l" data-lr-l="3">
+              <rect class="lr-break" x="757.8" y="30.0" width="17.0" height="166.0"><title>call 27 after a break: the cache expired, so call 26’s 373,202 tokens are written to it again at $8 per million: about $2.99 (computed)</title></rect>
+              <path class="lr-zig" d="M754.8 44.0 l5.8 -6 l5.8 6 l5.8 -6 l5.8 6"/>
+              <text class="lr-xl is-break" x="766.2" y="216.0" text-anchor="middle">27</text>
+              <text class="lr-break-t" x="782.8" y="46.0">≈ $3</text>
+              <text class="lr-key-s" x="782.8" y="64.0">computed</text>
+              </g>
+              <g class="lr-l" data-lr-l="1">
+              <text class="lr-tk" x="866" y="62">26 calls, nothing cached</text>
+              <text class="lr-tn is-full" x="866" y="96">$19.65</text><text class="lr-key-s" x="1000" y="96">computed</text>
+              </g>
+              <g class="lr-l" data-lr-l="2">
+              <text class="lr-tk" x="866" y="132">26 calls, billed</text>
+              <text class="lr-tn" x="866" y="166">$4.13</text>
+              <text class="lr-tk" x="866" y="196">call 26: 24× the tokens,</text>
+              <text class="lr-tk" x="866" y="216"><tspan class="lr-b">4× the cost</tspan> of call 1</text>
+              </g>
+              </svg>
+            </div>
+            <figcaption class="visually-hidden" id="lr-desc">The cost of each of the 26 model calls of one Claude Code run with Opus 5.5, reading 24 logs, at list prices. Step 1, computed: if nothing were cached, every input token would cost $4 per million: call 1 $0.06, call 26 $1.49, $19.65 for the run with its output at $20 per million. <span data-lr-l="2">Step 2, billed: the re-sent run is read from the cache at $0.20 per million and what is new is written to it at $8 per million: call 1 cost $0.04, call 26 $0.19, about 4 times as much for 24 times the tokens; calls 4 and 6, where the cache missed, cost $0.24 and $0.25. The run was billed $4.13.</span> <span data-lr-l="3">Step 3, computed: a 27th call after the cache expired writes call 26’s 373,202 tokens again, about $2.99.</span></figcaption>
+          </figure>
+          <div class="lr-row">
+            <div class="lr-chips" role="group" aria-label="Price the run one step at a time" hidden>
+              <button type="button" class="lr-chip" data-lr-chip aria-pressed="false" disabled><span class="lr-n" aria-hidden="true">1</span>At full price</button>
+              <button type="button" class="lr-chip" data-lr-chip aria-pressed="false" disabled><span class="lr-n" aria-hidden="true">2</span>With the cache</button>
+              <button type="button" class="lr-chip" data-lr-chip aria-pressed="false" disabled><span class="lr-n" aria-hidden="true">3</span>After a break</button>
+            </div>
+            <ol class="lr-says">
+              <li data-lr-say><b>1 · At full price.</b> Each call re-sends the whole run.</li>
+              <li data-lr-say><b>2 · With the cache.</b> Re-sent tokens cost a twentieth; you pay for what is new.</li>
+              <li data-lr-say><b>3 · After a break.</b> The cache expired: the next call writes it all again.</li>
+            </ol>
           </div>
-          <figcaption class="visually-hidden" id="lr-desc">One Claude Code run of 26 model calls, reading 24 logs one at a time; each row is one call, drawn to scale against the 1M-token context window. Each row is the previous call’s whole input, re-sent, plus what this call appended. Tokens sent per call, from call 1 to call 26: 15,654; 16,791; 31,519; 46,214; 61,134; 75,847; 90,667; 105,530; 120,620; 135,530; 150,158; 164,909; 180,012; 195,175; 210,182; 224,985; 239,807; 254,393; 269,290; 284,266; 299,155; 314,084; 328,672; 343,482; 358,380; 373,202. Call 1 sends 15,654; call 26 sends 373,202, about 24 times as many. After call 2, each call appends about 15,000 tokens: one log back plus its own previous output. The largest call fills 37% of the window. A column marks the rule from call 1, that the last line of the final answer must be exactly “-- checked”: it is re-sent in every call, so the final answer still ends with it, in Claude Code and in Codex. In all, 4,889,658 tokens were sent, 92% of them read from the cache.</figcaption>
-        </figure>
+          <p class="visually-hidden" role="status" data-lr-status></p>
+        </div>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: same bars, longer task: reading 24 logs. Point at the teal: after call 2, each call gets one log back plus its own previous output, about 15,000 tokens. Grey: the harness re-sends the rest. Call 1 sends 15,654 tokens; call 26 sends 373,202, about 24 times as many. That answers why message 30 costs more than message 1 when both are the same length. The frame is the 1M-token window. When the window fills, the harness compacts: it replaces old turns with a summary, and a summary loses detail; <code>/compact</code> does it by hand. A rule only in the chat can be lost; AGENTS.md and CLAUDE.md are re-read. This run never got there (37%). Point at the diamonds: call 1’s rule rides in every call, so the answer kept it, in both CLIs.</p>
-            <p>Activity: for long reads there is a subagent: a second model call with its own window, which reads for you and returns a summary. Ask: “Your task needs 50 files read. What would you change?”</p>
-            <p>Transition: “That is what a run appends. What did the harness load before you typed?”</p>
-            <p>Background for you, not for the slides: <code>fixtures/runs/raw/context-bomb-claude.jsonl</code> (Claude Code 2.1.301, Opus 5.5, 2026-10-16). At list prices as of 2026-10-18, call 26 cost about $0.19, call 1 about $0.04: 4 times, not 24.</p>
+            <p>Talk track: same bars as before, now in dollars, on a longer task: 26 calls reading 24 logs. Call 26 sends 373,202 tokens, 24 times call 1. Ask the room: does it cost 24 times as much? Press 1, At full price. The amber line is what each call would cost with nothing cached, every input token at $4 per million: $0.06 for call 1, $1.49 for call 26, $19.65 for the run. It is computed, not billed.</p>
+            <p>Press 2, With the cache. Grey is the re-sent run, read from the cache at $0.20 per million, a twentieth of the price. Teal is what is new, written to the cache at $8 per million. Call 26: 358,378 re-sent cost $0.07, the 14,822 new cost $0.12. Billed for the run: $4.13; call 26 cost about 4 times call 1, not 24. Point at calls 4 and 6: the cache missed, the new part was written twice, and each cost more than call 26. Cheaper is not smaller: those tokens still fill the window.</p>
+            <p>Press 3, After a break. Claude Code asked for an hour of cache here; the API’s default is shorter. Any change early in the context, another model, another tool, breaks everything after it. A 27th call after lunch writes all 373,202 tokens again: about $3, computed.</p>
+            <p>Activity: “Your session has been open since this morning, and you ask it something unrelated. What does that cost, and what would you do instead?” Listen for: a fresh session, habit 2.</p>
+            <p>Transition: “Cached tokens are cheap, but they still fill the window. What is in it, and does the model use all of it equally?”</p>
+            <p>Background for you, not for the slides: <code>fixtures/runs/raw/context-bomb-claude.jsonl</code> (Claude Code 2.1.301, Opus 5.5, 2026-10-16), whose usage blocks give each call’s cache reads and writes; this run wrote with the 1-hour time to live. Opus 5.5 list prices as of 2026-10-18: input $4, cache read $0.20, cache write $5 (default lifetime) or $8 (1 hour), output $20 per million. The CLI’s own <code>total_cost_usd</code> is $4.13; writes are $3.14 of it. The chart leaves out output tokens, $0.09 for the whole run; the full-price total includes them. On a subscription the same tokens draw down your usage limits instead of dollars.</p>
           </div>
         </details>
       </section>
 
       <section id="prefix" data-slide tabindex="-1" aria-labelledby="prefix-title">
         <p class="eyebrow">Part 3 · What loads before you type?</p>
-        <h2 id="prefix-title">What the harness loads rides on every call.</h2>
-        <div class="spine-wrap" role="region" aria-label="Act III mechanism, part 3 lit" tabindex="0">
-          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act III’s mechanism. The harness is everything but the model. It holds the context: a prefix loaded before you typed, then the run so far, all of it re-sent on every call; by the third call 81% of it is prefix. It sends the context to the model, Act II folded into one box, which only writes text and was called 3 times. If a reply holds a tool call, here Bash, Edit, Bash, a gate decides whether it may run and the harness runs it in your repo, 3 runs in 0.6 s: 1 failed, then 30 passed. The harness appends the result to the context and calls the model again. A reply with no tool call ends the run: “All 30 tests pass now.” Highlighted: question 3, what loads before you type: the prefix, 81% of the context. This slide: what the harness loads before you type.">
+        <h2 id="prefix-title">One window holds everything a call sees, in order.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act III mechanism, part 3 lit: inside the window" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act III’s mechanism. The harness is everything but the model. It holds the context: a prefix loaded before you typed, then the run so far, all of it re-sent on every call; by the third call 81% of it is prefix. It sends the context to the model, Act II folded into one box, which only writes text and was called 3 times. If a reply holds a tool call, here Bash, Edit, Bash, a gate decides whether it may run and the harness runs it in your repo, 3 runs in 0.6 s: 1 failed, then 30 passed. The harness appends the result to the context and calls the model again. A reply with no tool call ends the run: “All 30 tests pass now.” Highlighted: question 3, what loads before you type: the prefix, 81% of the context. This slide: what one call’s window holds, in order, and where in it a model finds an answer least often.">
+          <path class="harness-fill done" d="M8 18 H240 Q246 18 246 24 V86 Q246 92 252 92 H456 Q462 92 462 86 V24 Q462 18 468 18 H884 Q892 18 892 26 V131 Q892 139 884 139 H8 Q0 139 0 131 V26 Q0 18 8 18 Z"/>
+          <path class="harness-edge done" d="M240 18 H8 Q0 18 0 26 V131 Q0 139 8 139 H884 Q892 139 892 131 V26 Q892 18 884 18 H468"/>
+          <text class="bracket-label done" x="48" y="11">the harness</text>
+          <text class="bracket-label done" x="480" y="11">the harness</text>
+          <path class="bracket done" d="M260 18 V14 H448 V18"/><text class="bracket-label done" x="354" y="11" text-anchor="middle">the model</text>
+          <text class="tag done" x="787" y="11" text-anchor="middle">▸ live demo</text>
+          <path class="edge done" d="M236 52 L251 52"/><path class="head done" d="M260 52 l-9 -5 v10 z"/>
+          <path class="edge done" d="M440 52 L469 52"/><path class="head done" d="M478 52 l-9 -5 v10 z"/>
+          <path class="edge done" d="M642 52 L685 52"/><path class="head done" d="M694 52 l-9 -5 v10 z"/>
+          <path class="edge done" d="M880 52 L899 52"/><path class="head done" d="M908 52 l-9 -5 v10 z"/>
+          <path class="edge done" d="M1090 78 V130 H46 V87"/><path class="head done" d="M46 78 l-5 9 h10 z"/>
+          <path class="edge next" d="M500 78 V99"/>
+          <g class="stack qa done"><rect x="268" y="18" width="180" height="52" rx="4"/><rect x="264" y="22" width="180" height="52" rx="4"/></g>
+          <g class="node model done"><rect class="box" x="260" y="26" width="180" height="52" rx="4"/><text class="t" x="350" y="48" text-anchor="middle">Model</text><text class="s q off" x="350" y="68" text-anchor="middle">writes text · ×?</text><text class="s qa" x="350" y="68" text-anchor="middle">writes text · ×3</text></g>
+          <g class="node repo done"><rect class="box" x="908" y="26" width="202" height="52" rx="4"/><text class="t" x="1009" y="48" text-anchor="middle">Your repo</text><text class="s" x="1009" y="68" text-anchor="middle"><tspan class="bad">1 failed</tspan> → <tspan class="good">30 passed</tspan></text></g>
+          <g class="node now"><rect class="box" x="10" y="26" width="226" height="52" rx="4"/><text class="t" x="22" y="48">Context</text><rect class="appended done" x="198" y="37" width="14" height="10"/><text class="s" x="123" y="68" text-anchor="middle">the run so far, re-sent</text></g><rect class="hit" x="10" y="78" width="226" height="40"/><g class="track done"><rect class="hit" x="90" y="118" width="300" height="22"/><rect class="loop-bg" x="96" y="121" width="290" height="16"/><rect class="band-tint done" x="96" y="121" width="290" height="16"/><g class="badge done"><circle cx="110" cy="129" r="10"/><text class="n" x="110" y="133.5" text-anchor="middle">2</text></g><text class="tag done" x="126" y="134">append the result, call again</text></g>
+          <g class="part3"><rect class="hit" x="130" y="30" width="105" height="24"/><path class="prefix now" d="M136 42 H196"/><g class="badge now"><circle cx="224" cy="42" r="10"/><text class="n" x="224" y="46.5" text-anchor="middle">3</text></g></g>
+          <g class="node done"><rect class="box" x="478" y="26" width="164" height="52" rx="4"/><text class="t" x="560" y="48" text-anchor="middle">Tool call?</text><text class="s q off" x="560" y="68" text-anchor="middle">?</text><text class="s qa" x="560" y="68" text-anchor="middle">Bash·Edit·Bash</text></g>
+          <g class="node done"><rect class="box" x="694" y="26" width="186" height="52" rx="4"/><text class="t" x="770" y="48" text-anchor="middle">Runs the tool</text><text class="s q off" x="776" y="68" text-anchor="middle">? runs</text><text class="s qa" x="776" y="68" text-anchor="middle">3 runs, 0.6 s</text><g class="badge done"><circle cx="866" cy="42" r="10"/><text class="n" x="866" y="46.5" text-anchor="middle">1</text></g></g>
+          <g class="gate next"><rect class="hit" x="646" y="26" width="44" height="62"/><path class="shackle" d="M659 42 V35 A9 9 0 0 1 677 35 V42"/><rect class="lockbody" x="653" y="42" width="30" height="20" rx="3"/><g class="badge next"><circle cx="668" cy="76" r="10"/><text class="n" x="668" y="80.5" text-anchor="middle">4</text></g></g>
+          <g class="track next"><rect class="hit" x="486" y="96" width="384" height="24"/><rect class="loop-bg" x="488" y="99" width="380" height="21"/><rect class="band-tint done" x="488" y="99" width="380" height="21"/><g class="badge next"><circle cx="500" cy="109" r="10"/><text class="n" x="500" y="113.5" text-anchor="middle">5</text></g><text class="tag next" x="516" y="114">no tool call → stop</text><text class="quote next" x="688" y="114">“All 30 tests pass now.”</text></g>
+          </svg>
+        </div>
+        <div class="cw" data-cw>
+          <figure class="cw-fig">
+            <div class="cw-scroll" role="region" tabindex="0" aria-label="One call’s window in order, and where in a prompt a model finds an answer">
+              <svg class="cw-svg" viewBox="0 0 1100 180" role="img" aria-labelledby="cw-desc">
+              <rect class="cw-own" x="40" y="4" width="118" height="36"/><text class="cw-in" x="99" y="28" text-anchor="middle">tools 7.7k</text>
+              <rect class="cw-own" x="158" y="4" width="180" height="36"/><text class="cw-in" x="248" y="28" text-anchor="middle">system prompt 2.7k</text>
+              <rect class="cw-own" x="338" y="4" width="112" height="36"/><text class="cw-in" x="394" y="28" text-anchor="middle">skills 2.4k</text>
+              <rect class="cw-own" x="450" y="4" width="114" height="36"/><text class="cw-in" x="507" y="28" text-anchor="middle">AGENTS.md</text>
+              <rect class="cw-you" x="564" y="4" width="116" height="36"/><text class="cw-in" x="622" y="28" text-anchor="middle">your prompt</text>
+              <rect class="cw-run" x="680" y="4" width="284" height="36"/><text class="cw-in" x="822" y="28" text-anchor="middle">the run: replies, tool results …</text>
+              <rect class="cw-new" x="964" y="4" width="96" height="36"/><text class="cw-in" x="1012" y="28" text-anchor="middle">newest</text>
+              <path class="cw-brace" d="M40.0 46 v5 H564.0 v-5"/><text class="cw-brace-t" x="302" y="67" text-anchor="middle">before you type, on every call · order and widths schematic</text>
+              <path class="cw-brace" d="M680.0 46 v5 H1060.0 v-5"/><text class="cw-brace-t" x="870" y="67" text-anchor="middle">appended as the run goes</text>
+              <g class="cw-ask" data-cw-ask>
+              <rect class="cw-frame" x="40.0" y="70.0" width="1020.0" height="108.0"/><text class="cw-qmark" x="550.0" y="133.0" text-anchor="middle">?</text>
+              </g>
+              <g data-cw-run>
+              <path class="cw-grid" d="M40.0 76.0 H1060.0 M40.0 103.33333333333334 H1060.0 M40.0 130.66666666666666 H1060.0 M40.0 158.0 H1060.0"/>
+              <text class="cw-tick" x="34.0" y="81.0" text-anchor="end">80%</text><text class="cw-tick" x="34.0" y="108.33333333333334" text-anchor="end">70%</text><text class="cw-tick" x="34.0" y="135.66666666666666" text-anchor="end">60%</text><text class="cw-tick" x="34.0" y="163.0" text-anchor="end">50%</text>
+              <path class="cw-closed" d="M40.0 141.3 H1060.0"/>
+              <polyline class="cw-claude" points="60.0,130.9 266.3,141.9 524.2,139.4 782.1,138.3 1040.0,130.4"/>
+              <polyline class="cw-gpt" points="60.0,87.5 266.3,138.3 524.2,147.6 782.1,143.2 1040.0,121.9"/>
+              <circle class="cw-dot-c" cx="60.0" cy="130.9" r="3.5"><title>Claude 1.3, answer in document 1 of 20: 59.9%</title></circle>
+              <circle class="cw-dot-c" cx="266.3" cy="141.9" r="3.5"><title>Claude 1.3, answer in document 5 of 20: 55.9%</title></circle>
+              <circle class="cw-dot-c" cx="524.2" cy="139.4" r="3.5"><title>Claude 1.3, answer in document 10 of 20: 56.8%</title></circle>
+              <circle class="cw-dot-c" cx="782.1" cy="138.3" r="3.5"><title>Claude 1.3, answer in document 15 of 20: 57.2%</title></circle>
+              <circle class="cw-dot-c" cx="1040.0" cy="130.4" r="3.5"><title>Claude 1.3, answer in document 20 of 20: 60.1%</title></circle>
+              <circle class="cw-dot" cx="60.0" cy="87.5" r="5.5"><title>GPT-3.5-Turbo, answer in document 1 of 20: 75.8%</title></circle>
+              <circle class="cw-dot" cx="266.3" cy="138.3" r="5.5"><title>GPT-3.5-Turbo, answer in document 5 of 20: 57.2%</title></circle>
+              <circle class="cw-dot is-low" cx="524.2" cy="147.6" r="5.5"><title>GPT-3.5-Turbo, answer in document 10 of 20: 53.8%</title></circle>
+              <circle class="cw-dot" cx="782.1" cy="143.2" r="5.5"><title>GPT-3.5-Turbo, answer in document 15 of 20: 55.4%</title></circle>
+              <circle class="cw-dot" cx="1040.0" cy="121.9" r="5.5"><title>GPT-3.5-Turbo, answer in document 20 of 20: 63.2%</title></circle>
+              <text class="cw-pos" x="60.0" y="176.0" text-anchor="middle">1st</text>
+              <text class="cw-pos" x="1040.0" y="176.0" text-anchor="middle">20th</text>
+              <text class="cw-v" x="72.0" y="93.5">75.8%</text>
+              <text class="cw-lbl" x="136.0" y="93.5">GPT-3.5-Turbo</text>
+              <text class="cw-v is-low" x="510.2" y="160.6" text-anchor="end">10th: 53.8%, below no documents</text>
+              <text class="cw-v" x="1028.0" y="113.9" text-anchor="end">63.2%</text>
+              <text class="cw-lbl-c" x="72.0" y="154.0">Claude 1.3</text>
+              <text class="cw-closed-t" x="794.1" y="159.3">GPT-3.5-Turbo, no documents: 56.1%</text>
+              <text class="cw-amber" x="1060.0" y="86.0" text-anchor="end">a 2023 study: % answered correctly, answer in 1 of 20 documents (~4K tokens)</text>
+              </g>
+              </svg>
+            </div>
+            <figcaption class="visually-hidden" id="cw-desc">One call’s window, from start to end, schematic in its widths and in the order inside the prefix: loaded before you type, on every call, the harness’s tools (7.7k tokens), its system prompt (2.7k), the skills’ names and descriptions (2.4k) and your AGENTS.md or CLAUDE.md; then your prompt; then the run so far, replies, tool calls and results, appended as it goes; the newest result last. <span data-cw-run>Below, a study: the share of questions answered correctly when the answer sat in document 1, 5, 10, 15 or 20 of 20 (Liu et al., about 4,000 tokens, 2023 models). GPT-3.5-Turbo: 75.8%, 57.2%, 53.8%, 55.4%, 63.2%; with no documents at all, 56.1%, so in the middle it did worse than with nothing. Claude 1.3: 59.9%, 55.9%, 56.8%, 57.2%, 60.1%, and 48.3% with no documents.</span></figcaption>
+          </figure>
+          <div class="cw-bet" role="group" aria-labelledby="cw-q">
+            <p class="cw-q" id="cw-q">The answer is in 1 of 20 documents: where is it found least often?</p>
+            <span class="cw-w"><button type="button" class="cw-chip" data-cw-chip data-cw-say="at the start" aria-pressed="false" disabled>start</button></span>
+            <span class="cw-w"><button type="button" class="cw-chip" data-cw-chip data-cw-say="in the middle" aria-pressed="false" disabled>middle</button><span class="cw-runtag" data-cw-run>measured</span></span>
+            <span class="cw-w"><button type="button" class="cw-chip" data-cw-chip data-cw-say="at the end" aria-pressed="false" disabled>end</button></span>
+            <span class="cw-w"><button type="button" class="cw-chip" data-cw-chip data-cw-say="no difference" aria-pressed="false" disabled>no difference</button></span>
+            <span class="cw-ctl"><button type="button" class="cw-reveal" data-cw-reveal hidden>Reveal</button> <button type="button" class="cw-reset" data-cw-reset hidden>Reset</button></span>
+          </div>
+          <p class="visually-hidden" role="status" data-cw-status></p>
+        </div>
+        <p class="cite">Source: Nelson F. Liu et al., <cite>Lost in the Middle: How Language Models Use Long Contexts</cite>, <a href="https://arxiv.org/abs/2307.03172">arxiv.org</a>, 2023; TACL 2024.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Talk track: everything a call sends is one window, read in order. Walk the strip left to right: first what the harness loads before you type, its tool definitions, its system prompt, one line per skill, your AGENTS.md or CLAUDE.md; then your prompt; then the run, every reply and tool result appended; the newest result last. On a long run your request ends up near the start, and old tool results in the middle.</p>
+            <p>Predict question: “The answer to a question sits in one of 20 documents. Where does the model find it least often?” Press the majority’s chip, then Reveal. Point at the curve: 75.8% when the answer comes first, 63.2% last, 53.8% in the middle, lower than the 56.1% it scores with no documents at all. The grey line, Claude 1.3, dips less: the shape depends on the model. These are 2023 models on short prompts; today’s models score near-perfectly on simple lookups, yet still lose accuracy as the input grows. So keep the window lean, put rules in AGENTS.md, and the request in your last message. The long run’s rule from its first call, end with “-- checked”, still held at the end of the run, in both CLIs.</p>
+            <p>Showcase, live: switch to the Claude Code terminal from part 1, still open in <code>/tmp/cursus-s1-agent/loop</code>, and type:</p>
+            <div class="notes-prompt">
+              <p>In the open Claude Code session: <button type="button" data-copy="cw-live-context" data-copy-what="the /context command" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
+              <pre id="cw-live-context">/context</pre>
+            </div>
+            <p>Point at the lines the strip shows: system prompt and system tools, the harness’s own; system tools, deferred, only their names until the model searches for one; the memory files line, this folder’s CLAUDE.md, which imports AGENTS.md; skills; messages, part 1’s run; free space; the autocompact buffer: when the run reaches it, the harness replaces old turns with a summary, which loses detail; <code>/compact</code> does it by hand, and AGENTS.md is read again. Then the Codex terminal, <code>/tmp/cursus-s1-codex/loop</code>: type <code>/status</code> and read the context window line, a total without the breakdown. Expect other totals than the slides: another folder, other settings. Fallback: the <a href="labs/agent-loop.html#run=bomb-claude-run1-without">recorded <code>/context</code></a>, in the replay’s captures.</p>
+            <p>Transition: “Tools and skills were two of those lines. Where do they come from, and what does a bad one cost?”</p>
+            <p>Background for you, not for the slides: Liu et al., Table 6, multi-document question answering with 20 retrieved documents; the paper measures accuracy by position, not attention, and Claude 1.3 scores 48.3% with no documents. Chroma’s <a href="https://www.trychroma.com/research/context-rot">Context Rot</a> (Hong, Troynikov and Huber, 2025-07-14): models with “near-perfect scores” on needle-in-a-haystack still degrade “with increasing input length”, across the models tested. The strip’s sizes are Claude Code’s own <code>/context</code> estimates, captured 2026-10-16 with 2.1.301 in a fresh folder. The API renders tools, then the system prompt, then the messages; where Claude Code places the instruction files and skills inside that is not shown here. The rule: <code>fixtures/runs/raw/context-bomb-*.meta.json</code>, <code>final_ends_with_rule</code>.</p>
+          </div>
+        </details>
+      </section>
+
+      <section id="mcp-skills" data-slide tabindex="-1" aria-labelledby="mcp-skills-title">
+        <p class="eyebrow">Part 3 · What loads before you type? · MCP servers and skills</p>
+        <h2 id="mcp-skills-title">MCP servers and skills: what each adds to every call.</h2>
+        <div class="spine-wrap" role="region" aria-label="Act III mechanism, part 3 lit: MCP servers and skills" tabindex="0">
+          <svg class="spine" viewBox="-2 0 1142 140" role="img" aria-label="Act III’s mechanism. The harness is everything but the model. It holds the context: a prefix loaded before you typed, then the run so far, all of it re-sent on every call; by the third call 81% of it is prefix. It sends the context to the model, Act II folded into one box, which only writes text and was called 3 times. If a reply holds a tool call, here Bash, Edit, Bash, a gate decides whether it may run and the harness runs it in your repo, 3 runs in 0.6 s: 1 failed, then 30 passed. The harness appends the result to the context and calls the model again. A reply with no tool call ends the run: “All 30 tests pass now.” Highlighted: question 3, what loads before you type: the prefix, 81% of the context. This slide: what MCP servers and skills add to every call, with one bad server.">
           <path class="harness-fill done" d="M8 18 H240 Q246 18 246 24 V86 Q246 92 252 92 H456 Q462 92 462 86 V24 Q462 18 468 18 H884 Q892 18 892 26 V131 Q892 139 884 139 H8 Q0 139 0 131 V26 Q0 18 8 18 Z"/>
           <path class="harness-edge done" d="M240 18 H8 Q0 18 0 26 V131 Q0 139 8 139 H884 Q892 139 892 131 V26 Q892 18 884 18 H468"/>
           <text class="bracket-label done" x="48" y="11">the harness</text>
@@ -1450,42 +1679,51 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         </div>
         <div class="px" data-px>
           <figure class="px-fig">
-            <div class="px-scroll" role="region" tabindex="0" aria-label="What Claude Code loads on every call, with and without one bad MCP server">
-              <svg class="px-svg" viewBox="0 0 1100 198" role="img" aria-labelledby="px-desc">
-                <!-- One scale for every bar: 0 to 30k tokens, 35.33 units per 1k. Grey: the harness's own; red: the server. -->
-                <text class="px-row-t" x="0" y="13">Before you type</text>
-                <rect class="px-own" x="0" y="18" width="95.4" height="24"/><text class="px-in" x="47.7" y="35" text-anchor="middle">2.7k</text>
-                <rect class="px-own" x="95.4" y="18" width="272.1" height="24"/><text class="px-in" x="231.4" y="35" text-anchor="middle">tool definitions 7.7k</text>
-                <rect class="px-own" x="367.5" y="18" width="90.4" height="24"/><text class="px-in" x="412.7" y="35" text-anchor="middle">2.6k</text>
-                <text class="px-total" x="464.8" y="37">13k</text>
-                <text class="px-tail" x="509.8" y="36">+ your AGENTS.md or CLAUDE.md, your prompt</text>
-                <text class="px-name" x="0" y="57">system prompt</text>
-                <text class="px-name" x="412.7" y="57" text-anchor="middle">skills, agents</text>
-                <g data-px-run>
-                  <text class="px-row-t" x="0" y="85">+ one bad MCP server, <tspan class="px-row-s">its tools loaded</tspan></text>
-                  <rect class="px-own" x="0" y="96" width="457.8" height="24"/><text class="px-in" x="228.9" y="113" text-anchor="middle">same 13k</text>
-                  <rect class="px-bad" x="457.8" y="96" width="339.2" height="24"/><path class="px-split" d="M514.4 99 V117"/>
-                  <text class="px-in is-bad" x="627.4" y="113" text-anchor="middle">its instructions + 5 tool definitions</text>
-                  <text class="px-close" x="805.0" y="114"><tspan class="px-close-n">+9.6k</tspan> from one server, on every call</text>
-                  <text class="px-row-t" x="0" y="144">the same server, <tspan class="px-row-s">default settings</tspan></text>
-                  <rect class="px-own" x="0" y="150" width="457.8" height="24"/><text class="px-in" x="228.9" y="167" text-anchor="middle">same 13k</text>
-                  <rect class="px-bad" x="457.8" y="150" width="56.5" height="24"/>
-                  <text class="px-bad-t" x="522.4" y="167">its instructions 1.6k → <tspan class="px-total">14.6k</tspan></text>
-                  <rect class="px-wait" x="786.4" y="150" width="282.7" height="24"/><text class="px-in is-bad" x="927.7" y="167" text-anchor="middle">its 5 tool definitions 8k</text>
-                  <text class="px-tail" x="1069.1" y="144" text-anchor="end">wait outside: names only until used</text>
+            <div class="px-scroll" role="region" tabindex="0" aria-label="What Claude Code loads on every call, its skills, and one bad MCP server">
+              <svg class="px-svg" viewBox="0 0 1100 156" role="img" aria-labelledby="px-desc">
+                <!-- One scale for every bar: 29.5 units per 1k tokens. Grey: the harness’s own, in #prefix’s order; red: the server. -->
+                <text class="px-row-t" x="0" y="15">Claude Code, before you type</text>
+                <rect class="px-own" x="0" y="22" width="227.2" height="26"/><text class="px-in" x="113.6" y="40" text-anchor="middle">its tools 7.7k</text>
+                <rect class="px-own" x="227.2" y="22" width="79.7" height="26"/><text class="px-in" x="267.0" y="40" text-anchor="middle">2.7k</text>
+                <rect class="px-own is-skill" x="306.8" y="22" width="70.8" height="26"/><text class="px-in" x="342.2" y="40" text-anchor="middle">2.4k</text>
+                <rect class="px-own" x="377.6" y="22" width="4.7" height="26"><title>custom agents, 158 tokens</title></rect>
+                <text class="px-total" x="391.5" y="42">13k</text>
+                <text class="px-name" x="227.2" y="66">system prompt · <tspan class="px-skill">skills: one line each until used</tspan></text>
+                <g class="px-quote">
+                <rect x="768" y="1" width="331" height="154" rx="4"/>
+                <text class="px-quote-k" x="782" y="21">one tool of the bad server:</text>
+                <text class="px-quote-t" x="782" y="44">“Filler tool 01 — intentionally</text>
+                <text class="px-quote-t" x="782" y="63">useless. Do not call this tool;</text>
+                <text class="px-quote-t" x="782" y="82">it exists only to inflate</text>
+                <text class="px-quote-t" x="782" y="101">context.”</text>
+                <text class="px-quote-s" x="782" y="124">+ 70 lines of “Irrelevant directive…”</text>
+                <text class="px-quote-s" x="782" y="144">the server in all: 82,000 characters</text>
                 </g>
-                <path class="px-axis" d="M0 182 H1060.0 M0.75 182 v5 M353.3 182 v5 M706.7 182 v5 M1059.25 182 v5"/>
-                <text class="px-tick" x="0" y="198">0</text><text class="px-tick" x="353.3" y="198" text-anchor="middle">10k</text><text class="px-tick" x="706.7" y="198" text-anchor="middle">20k</text><text class="px-tick" x="1060.0" y="198" text-anchor="end">30k tokens</text>
-              </svg>
+                <g data-px-run>
+                <text class="px-row-t" x="0" y="94">+ one bad MCP server, <tspan class="px-row-s">tools loaded</tspan></text>
+                <rect class="px-ghost" x="0.75" y="100.75" width="382.0" height="24.5"/><text class="px-ghost-t" x="191.8" y="118" text-anchor="middle">row 1’s 13k, for scale</text>
+                <rect class="px-bad" x="383.5" y="100" width="283.2" height="26"/><path class="px-split" d="M430.7 103 V123"/>
+                <text class="px-bad-t" x="385.5" y="94">instructions 1.6k</text>
+                <text class="px-in is-bad" x="548.7" y="118" text-anchor="middle">5 tool descriptions 8k</text>
+                <text class="px-close" x="674.7" y="119"><tspan class="px-close-n">+9.6k</tspan></text>
+                <path class="px-wait" d="M430.7 132 v6 H666.7 v-6"/>
+                <text class="px-tail" x="666.7" y="153" text-anchor="end">default settings: these wait outside, names only → <tspan class="px-total">14.6k</tspan></text>
+                </g>
+                </svg>
             </div>
-            <figcaption class="visually-hidden" id="px-desc"><span>Claude Code’s own count of what it sends on every call, before you type: a system prompt of 2.7k tokens, 7.7k of tool definitions, 2.6k of skill and agent descriptions, 13k in all; your AGENTS.md or CLAUDE.md and your prompt come on top.</span> <span data-px-run>Add one bad MCP server with its tools loaded: the same 13k plus 9.6k from the server, its instructions and five tool definitions, on every call. The same server with default settings: its instructions 1.6k bring the call to 14.6k, and its five tool definitions, 8k, wait outside, names only until used.</span></figcaption>
+            <figcaption class="visually-hidden" id="px-desc"><span>Claude Code’s own count of what it sends on every call, before you type: 7.7k tokens of its tool definitions, a system prompt of 2.7k, 2.4k of skill descriptions and 158 tokens of agent descriptions, 13k in all. A skill is a folder of instructions: only its name and one line load, 20 skills 2.4k, and its body loads when used. A bad MCP server, a program that adds tools: one of its tool descriptions reads “Filler tool 01 — intentionally useless. Do not call this tool; it exists only to inflate context.”, then 70 lines of “Irrelevant directive”; 5 tools and the server’s instructions, 82,000 characters.</span> <span data-px-run>With its tools loaded, the server adds 9.6k to every call, drawn beside row 1’s 13k for scale: its instructions, 1.6k, and five tool descriptions, 8k. With default settings only its instructions come in, 14.6k in all; the five tool descriptions, 8k, wait outside, names only until used.</span></figcaption>
           </figure>
+          <dl class="px-defs">
+            <div><dt>MCP server</dt><dd>a program that adds tools</dd></div>
+            <div><dt>Skill</dt><dd>a folder of instructions, read when used</dd></div>
+            <div><dt>Example</dt><dd><a href="demos/agent/context_bomb.py">the bad server’s code</a></dd></div>
+          </dl>
           <div class="px-bet" role="group" aria-labelledby="px-q">
             <p class="px-q" id="px-q">One MCP server, 82,000 characters of filler. If its tools load, how much does it add to every call?</p>
             <span class="px-cw"><button type="button" class="px-chip" data-px-chip data-px-say="about 0" aria-pressed="false" disabled>~0</button></span>
             <span class="px-cw"><button type="button" class="px-chip" data-px-chip data-px-say="about 2k" aria-pressed="false" disabled>~2k</button></span>
             <span class="px-cw"><button type="button" class="px-chip" data-px-chip data-px-say="about 10k" aria-pressed="false" disabled>~10k</button><span class="px-runtag" data-px-run>measured</span></span>
-            <span class="px-cw"><button type="button" class="px-chip" data-px-chip data-px-say="about 80k" aria-pressed="false" disabled>~80k</button></span>
+            <span class="px-cw"><button type="button" class="px-chip" data-px-chip data-px-say="about 20k" aria-pressed="false" disabled>~20k</button></span>
             <span class="px-ctl"><button type="button" class="px-reveal" data-px-reveal hidden>Reveal</button> <button type="button" class="px-reset" data-px-reset hidden>Reset</button></span>
           </div>
           <p class="visually-hidden" role="status" data-px-status></p>
@@ -1493,13 +1731,16 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: point at row 1. Before you type, Claude Code already sends 13k tokens: a system prompt, its standing instructions; tool definitions, the actions it may call; skill and agent descriptions, procedures it loads when needed; then your instruction files, AGENTS.md or CLAUDE.md, read every session, and your prompt. All of it rides on every call.</p>
-            <p>Predict question: “MCP connects the agent to a server of extra tools. Add one with 82,000 characters of filler: if its tools load, how much does it add to every call?” Press the room’s chip, then Reveal.</p>
-            <p>Point at row 2: the red 9.6k, the server’s instructions and five tool definitions, now on every call. Point at row 3, the default settings: tool search defers tools, only their names ride along until the model searches for one. If the room said ~2k: that is row 3, the default: only the instructions come in.</p>
-            <p>In our capture Codex’s <code>/status</code> read 13.8K with and without the server, while <code>/mcp</code> listed it connected, 5 tools.</p>
-            <p>Activity: type <code>/context</code> in the open Claude Code session, <code>/status</code> in Codex. Expect other totals: another folder, other settings.</p>
+            <p>Talk track: two ways you add to what loads before you type. An MCP server is a program the harness starts or connects to, which offers tools: GitHub, a database, a browser; each tool’s name and description is text the model reads, so it can choose the tool. A skill is a folder of instructions: only its name and a one-line description ride along, and the model reads the rest when it uses the skill. Point at row 1: Claude Code’s own 13k; twenty skills cost 2.4k in all. Point at the box: a deliberately bad server built for this demo, five tools and its instructions, 82,000 characters of filler.</p>
+            <p>Predict question: “If its tools load, how much does it add to every call?” Press the majority’s chip, then Reveal. Row 2: 9.6k on every call, more than the harness’s own tools, drawn beside row 1’s 13k for scale. The bracket under it is the default: tool search keeps the descriptions outside, names only, until the model searches for one; only the 1.6k of instructions come in, 14.6k in all. If the room said ~20k: Claude Code cuts each description at 4,096 characters. For this one-word prompt Codex added nothing: it defers every MCP tool until it searches for one.</p>
+            <p>Showcase, live: in a new terminal at the repository root, paste the line below. The reset touches only <code>bomb/</code>; part 1’s sessions stay open.</p>
+            <div class="notes-prompt">
+              <p>Claude Code with the bad server, for this session only: <button type="button" data-copy="px-live-bomb" data-copy-what="the command" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
+              <pre id="px-live-bomb">cd sessions/01-fundamentals/cursus/demos/agent &amp;&amp; uv run agent_demo.py reset bomb --work-root /tmp/cursus-s1-agent &amp;&amp; cd /tmp/cursus-s1-agent/bomb &amp;&amp; claude --strict-mcp-config --mcp-config mcp.json</pre>
+            </div>
+            <p>Accept the trust prompt. Type <code>/mcp</code>: <code>context_bomb</code>, connected, 5 tools. Type <code>/context</code>: point at the server instructions, 1.6k, and the MCP tools, deferred, 8k. Then a skill: open <code>.claude/skills/html-page/SKILL.md</code> from this repository; in this repository its name and description, at the top, ride on every call, and the rest is read on use. Open <a href="demos/agent/context_bomb.py">the server’s code</a> if they ask what a tool description looks like. Then type <code>/exit</code> and go back to part 1’s terminal in <code>/tmp/cursus-s1-agent/loop</code> for part 4. Fallback: the replays, <a href="labs/agent-loop.html#run=bomb-claude-run1-with">with the server</a> and <a href="labs/agent-loop.html#run=bomb-claude-run1-with-tool-search-off">tool search off</a>.</p>
             <p>Transition: “It loads what you allow. Who decides what runs?”</p>
-            <p>Background for you, not for the slides: <code>/context</code> captures of 2026-10-16, Claude Code 2.1.301, <code>claude-haiku-5-5</code>, two identical runs. With tool search off, Claude Code also loads its own 14k of deferred tools: <code>/context</code> read 36.5k. Billed for “Reply with exactly: OK”: 17,233 tokens without the server, 18,909 with, 40,377 with tool search off.</p>
+            <p>Background for you, not for the slides: the <a href="demos/agent/context-bomb.md">runbook</a>, captures of 2026-10-16, Claude Code 2.1.301, <code>claude-haiku-5-5</code>, two identical runs. With tool search off, Claude Code also loads its own 14k of deferred tools: <code>/context</code> read 36.5k, so row 2 is the server’s share, not a captured total. Billed for “Reply with exactly: OK”: 17,233 tokens without the server, 18,909 with, 40,377 with tool search off. In our capture Codex’s <code>/status</code> read 13.8K with and without the server. Never add this server to a configuration.</p>
           </div>
         </details>
       </section>
@@ -2612,10 +2853,10 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   show(false);
 })();
 </script>
-  <script>/* Page-specific: prefix, mark the room's bet on a chip, then reveal rows 2 and 3 and the measured chip. */
+  <script>/* Page-specific: mcp-skills, mark the room's bet on a chip, then reveal rows 2 and 3 and the measured chip. */
 (function () {
   'use strict';
-  var root = document.querySelector('#prefix [data-px]');
+  var root = document.querySelector('#mcp-skills [data-px]');
   if (!root) return;
   var chips = Array.from(root.querySelectorAll('[data-px-chip]'));
   var reveal = root.querySelector('[data-px-reveal]');
@@ -2666,6 +2907,96 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   });
   reset.hidden = false;
   show(false);
+})();
+</script>
+  <script>/* Page-specific: prefix, mark the room's pick on a chip, then reveal the study's curve and the measured chip. */
+(function () {
+  'use strict';
+  var root = document.querySelector('#prefix [data-cw]');
+  if (!root) return;
+  var chips = Array.from(root.querySelectorAll('[data-cw-chip]'));
+  var reveal = root.querySelector('[data-cw-reveal]');
+  var reset = root.querySelector('[data-cw-reset]');
+  var status = root.querySelector('[data-cw-status]');
+  var slide = root.closest('[data-slide]');
+  if (!chips.length || !reveal || !reset || !status) return;
+
+  // As on the other predicts: a pointer press hands focus back to the slide, a keyboard press keeps it.
+  function settle(event, next) {
+    if (event.detail > 0 && slide) slide.focus({ preventScroll: true });
+    else if (next) next.focus();
+  }
+  // Before the reveal, the curve and the measured tag are hidden from sight and from assistive tech (visibility).
+  // Once revealed, the pick is frozen: the chips are disabled until Reset (a focused chip hands focus to Reset).
+  function show(revealed) {
+    root.setAttribute('data-cw-state', revealed ? 'revealed' : 'bet');
+    reveal.hidden = revealed;
+    var focused = chips.indexOf(document.activeElement) >= 0;
+    chips.forEach(function (chip) { chip.disabled = revealed; });
+    if (revealed && focused) reset.focus();
+  }
+  function said() {
+    var pick = chips.filter(function (chip) { return chip.getAttribute('aria-pressed') === 'true'; })[0];
+    return 'The room ' + (pick ? 'said ' + pick.getAttribute('data-cw-say') : 'did not pick') +
+      '. Measured, GPT-3.5-Turbo: 75.8% with the answer first, 53.8% in the middle, 63.2% last; 56.1% with no documents at all.';
+  }
+
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function (event) {
+      if (root.getAttribute('data-cw-state') === 'revealed') return;
+      var on = chip.getAttribute('aria-pressed') !== 'true';
+      chips.forEach(function (other) { other.setAttribute('aria-pressed', String(other === chip && on)); });
+      settle(event);
+    });
+  });
+  reveal.addEventListener('click', function (event) {
+    show(true);
+    status.textContent = 'The study is shown. ' + said();
+    settle(event, reset);
+  });
+  reset.addEventListener('click', function (event) {
+    chips.forEach(function (chip) { chip.setAttribute('aria-pressed', 'false'); });
+    show(false);
+    status.textContent = 'Pick cleared; the study is hidden again.';
+    settle(event);
+  });
+  reset.hidden = false;
+  show(false);
+})();
+</script>
+  <script>/* Page-specific: long-run, price the run one step at a time: at full price, with the cache, after a break.
+   It opens on step 1; each chip shows its step's layers on top of the earlier ones, and its sentence. Without the
+   script, and in print, every layer and all three sentences show. */
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-lr]');
+  if (!root) return;
+  var chips = Array.from(root.querySelectorAll('[data-lr-chip]'));
+  var says = Array.from(root.querySelectorAll('[data-lr-say]'));
+  var row = root.querySelector('.lr-chips');
+  var status = root.querySelector('[data-lr-status]');
+  var slide = root.closest('[data-slide]');
+  if (!chips.length || chips.length !== says.length || !row || !status) return;
+
+  // As on #agent: a pointer press hands focus back to the slide, a keyboard press keeps it.
+  function settle(event) {
+    if (event.detail > 0 && slide) slide.focus({ preventScroll: true });
+  }
+  function show(step, announce) {
+    root.setAttribute('data-lr-at', String(step));
+    chips.forEach(function (chip, i) { chip.setAttribute('aria-pressed', String(i + 1 === step)); });
+    says.forEach(function (say, i) { say.hidden = i + 1 !== step; });
+    if (announce) status.textContent = 'Step ' + step + ' of ' + says.length + '. ' + says[step - 1].textContent.trim();
+  }
+  chips.forEach(function (chip, i) {
+    chip.disabled = false;
+    chip.addEventListener('click', function (event) {
+      show(i + 1, true);
+      settle(event);
+    });
+  });
+  row.hidden = false;
+  show(1, false);
 })();
 </script>
 </body>
