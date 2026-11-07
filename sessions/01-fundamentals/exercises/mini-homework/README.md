@@ -39,7 +39,7 @@ Start your agent in plan mode, so it cannot edit anything yet: `claude --permiss
 in Claude Code; in Codex, start `codex`, then type `/plan` and press Enter. Send this prompt:
 
 ```text
-Plan only: do not create or edit any file yet. Read exercises/mini-homework/README.md. Propose a model for this problem using HiGHS through highspy: the decision variables and their type, the coverage constraint for each day including the wraparound, and the objective. Say how we will check the result without trusting the solver. The code will go in exercises/mini-homework/work/model.py and write exercises/mini-homework/solution.json; check.py and data/ must not change.
+Plan only: do not create or edit any file yet. Read exercises/mini-homework/README.md. Propose a model for this problem using HiGHS through highspy: the decision variables and their type, the coverage constraint for each day including the wraparound, and the objective. Say how we will check the result without trusting the solver. Once I accept the plan, implement it in exercises/mini-homework/work/model.py, run it so that it writes exercises/mini-homework/solution.json, then run uv run python exercises/mini-homework/check.py and show its full output. If it prints FAIL, fix the model, never check.py or data/.
 ```
 
 Review the plan before any code exists. Look for one integer variable per start day; for each
@@ -49,10 +49,13 @@ solver's status. If something is missing, say so and let the agent revise the pl
 
 ### 3. Build
 
-Accept the plan when the agent asks (in Codex, *Yes, implement this plan*), then send:
+Accept the plan when the agent asks: a *Yes* option in Claude Code, *Yes, implement this plan* in
+Codex. The agent then builds, runs the model and runs the checker, as the plan prompt asked. Read
+each command before you approve it. If it does not ask, leave plan mode (Shift+Tab in Claude
+Code, `/plan` again in Codex) and send:
 
 ```text
-Implement the plan in exercises/mini-homework/work/model.py. Run it so that it writes exercises/mini-homework/solution.json, then run uv run python exercises/mini-homework/check.py and show its full output. If it prints FAIL, fix the model, never check.py or data/.
+Implement the plan.
 ```
 
 ### 4. Check
@@ -73,10 +76,10 @@ agent: each line starts with the contract that broke.
 ### 5. Ship
 
 In your agent, `/turn-in 01` in Claude Code or `$turn-in 01` in Codex. Without an agent, run
-`bash scripts/turn-in.sh 01` from the repository root.
+`bash scripts/turn-in.sh 01` from the repository root (in Git Bash on Windows).
 
 The turn-in reruns this checker first, then P01's, which only warns until you solve P01. A
-malformed `solution.json` or an edited `data/` stops it. It then commits only
+malformed `solution.json` or an edited `data/`, here or in P01, stops it. It then commits only
 `sessions/01-fundamentals/exercises/` to your own branch, `homework/s01/<handle>`, and pushes
 it, never to `main`. Homework branches are public. Tonight's P01 turn-in adds a commit to the
 same branch.

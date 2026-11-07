@@ -8,7 +8,7 @@ student statement, the model (patched for the chosen bug), the independent check
 contract tests, the data and the session's pinned Python setup, committed in a fresh git repo.
 Nothing written to the export names the chosen bug. With --tests-dir, the contract suite goes to
 tests/test_p00_contract.py (beside an empty tests/__init__.py), AGENTS.md names tests/ and
-.gitignore also ignores .claude/settings.local.json; the lab ladder's done checks
+.gitignore also ignores .claude/settings.local.json; the recorded agent runs' checks
 (`git diff --stat -- tests/`, `git status --short`) rely on that layout. Without it, the export
 is unchanged.
 """
@@ -107,7 +107,7 @@ CLAUDE_MD = "@AGENTS.md\n"
 
 GITIGNORE = ".venv/\n__pycache__/\n.pytest_cache/\n"
 # --tests-dir: also ignore Claude Code's per-user permission file, so `git status --short`
-# in the lab ladder's done checks only shows what the agent changed.
+# in the recorded runs' checks only shows what the agent changed.
 GITIGNORE_TESTS_DIR = GITIGNORE + ".claude/settings.local.json\n"
 
 # Variables that would point git at another repository instead of the export.
@@ -173,7 +173,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Export a standalone P00 lab repository.")
     parser.add_argument("--bug", required=True, choices=sorted(BUGS), help="bug to plant ('none' for the reference)")
     parser.add_argument("--out", required=True, type=Path, help="new or empty directory outside the course repo")
-    parser.add_argument("--tests-dir", action="store_true", help="put the contract suite in tests/ (lab ladder layout)")
+    parser.add_argument("--tests-dir", action="store_true", help="put the contract suite in tests/")
     args = parser.parse_args(argv)
 
     out = args.out.expanduser().resolve()

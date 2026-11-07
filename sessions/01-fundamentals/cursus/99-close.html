@@ -316,15 +316,15 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               </div>
             </fieldset>
             <fieldset data-predict-question>
-              <legend>Act IV · The agent says “done: 11 people”. What makes it done?</legend>
+              <legend>Act IV · The agent says “done”. What proves it?</legend>
               <div class="choice-grid">
                 <div class="choice"><input type="radio" id="q4-summary" name="exit-act-4" value="summary"><label for="q4-summary">Its summary says so</label></div>
-                <div class="choice"><input type="radio" id="q4-check" name="exit-act-4" value="check" data-correct><label for="q4-check"><code>check.py</code>, run by you, prints PASS</label></div>
+                <div class="choice"><input type="radio" id="q4-check" name="exit-act-4" value="check" data-correct><label for="q4-check">PASS from your own <code>check.py</code> run</label></div>
                 <div class="choice"><input type="radio" id="q4-optimal" name="exit-act-4" value="optimal"><label for="q4-optimal">HiGHS said Optimal</label></div>
               </div>
               <p data-predict-result></p>
               <div data-predict-answer>
-                <p>A check you run is the evidence: <code>check.py</code> recomputes the roster from the file, with no solver. HiGHS also called the LP relaxation optimal, at 10.2 people.</p>
+                <p><code>check.py</code> recomputes it from the file, with no solver.</p>
               </div>
             </fieldset>
           </div>

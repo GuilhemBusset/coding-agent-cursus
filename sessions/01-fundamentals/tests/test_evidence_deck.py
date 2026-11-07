@@ -26,8 +26,13 @@ def cards():
     assert section, "Act IV has a #check slide"
     found = {}
     for key, body in re.findall(r'<div class="ck-card" data-ck="(\w)">(.*?)<span class="rp-q-mark', section[0], re.S):
-        text = lambda cls: html.unescape(re.sub(r"<[^>]+>", "", re.search(rf'class="{cls}"[^>]*>(.*?)</(?:p|pre)>', body, re.S)[1]))
-        claim = float(re.search(r"(\d+(?:\.\d+)?) people", text("ck-claim"))[1])
+        def text(cls, body=body):
+            match = re.search(rf'class="{cls}"[^>]*>(.*?)</(?:p|pre)>', body, re.S)
+            assert match, f"card {key} has a {cls}"
+            return html.unescape(re.sub(r"<[^>]+>", "", match[1]))
+        people = re.search(r"(\d+(?:\.\d+)?) people", text("ck-claim"))
+        assert people, f"card {key} claims a headcount"
+        claim = float(people[1])
         roster = [float(value) for value in text("ck-roster").split()[1:]]
         found[key] = claim, roster, text("rp-ans").splitlines()
     assert sorted(found) == ["A", "B", "C"], found

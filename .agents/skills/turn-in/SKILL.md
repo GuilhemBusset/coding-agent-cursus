@@ -19,7 +19,7 @@ The deterministic mechanics (resolve the GitHub handle, switch to the homework b
 ## Preflight
 
 2. Confirm `gh` is authenticated (`gh auth status`); if not, tell the student to run `gh auth login`, then stop.
-3. Show what will be submitted: `git status --short -- sessions/<NN>-*/exercises/`. Only that folder is ever committed; other changes stay in the working tree, untouched. Mention it if the folder has no changes: the run still records a new submission commit.
+3. Show what will be submitted: `cd "$(git rev-parse --show-toplevel)" && git status --short -- sessions/<NN>-*/exercises/` (from the repository root, wherever the agent was started). Only that folder is ever committed; other changes stay in the working tree, untouched. Mention it if the folder has no changes: the run still records a new submission commit.
 
 ## Turn it in
 

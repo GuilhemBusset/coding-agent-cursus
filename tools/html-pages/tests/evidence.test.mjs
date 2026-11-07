@@ -121,8 +121,11 @@ test('D1: faces are sparse, carry no provenance, and link exercises only from th
       assert.equal(await link.evaluate(el => !!el.closest('details.speaker-notes')), true, `#${id}: ${await link.getAttribute('href')} sits in the notes`);
     }
   }
-  // Every step slide says what the students do now, in one line.
-  for (const id of ['read', 'plan', 'build', 'check', 'ship']) await count(topic(page, id).locator('p.do'), 1);
+  // Every step slide says what the students do now, in one line that points at the README's step.
+  for (const [i, id] of steps.entries()) {
+    await count(topic(page, id).locator('p.do'), 1);
+    assert.match(norm(await topic(page, id).locator('p.do').textContent()), i ? new RegExp(`^do ?readme step ${i + 1}: `) : /exercises\/mini-homework\/readme\.md/, `#${id}`);
+  }
 });
 
 test('D2: the act opens on Act III’s last line, then names three outcomes, each on its step', async t => {
@@ -131,9 +134,10 @@ test('D2: the act opens on Act III’s last line, then names three outcomes, eac
   const line = 'Your turn: one small problem, end to end, graded by the evidence, not the message.';
   assert.ok(actThree.includes(`<p>${line}</p>`), 'Act III’s close hands over with this line');
   assert.ok((await notesText(topic(page, 'goals'))).includes(norm(`Act III ended on “${line}”`)), '#goals opens on it');
-  const goals = await topic(page, 'goals').locator('ol.goals li').evaluateAll(els => els.map(el => [
-    el.querySelector('.goal-n').textContent, el.querySelector('.goal-step').textContent.replace(/^\d/, '').trim().toLowerCase()]));
-  assert.deepEqual(goals, [['2', 'plan'], ['4', 'check'], ['5', 'ship']], 'each outcome names the step that practises it');
+  // Each outcome names the step that practises it, by name: no numbers out of order.
+  const goals = await topic(page, 'goals').locator('ol.goals .goal-step').allTextContents();
+  assert.deepEqual(goals.map(norm), ['plan', 'check', 'ship']);
+  await count(topic(page, 'goals').locator('ol.goals :is(.goal-n, .n)'), 0);
   // The overview spine: every step drawn, each linking its own slide, in loop order.
   const overview = topic(page, 'goals').locator('svg.spine');
   assert.deepEqual(await overview.locator('a').evaluateAll(els => els.map(el => el.getAttribute('href'))), steps.map(id => `#${id}`));

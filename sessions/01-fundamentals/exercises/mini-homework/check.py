@@ -12,7 +12,7 @@ The first output line is PASS or FAIL. Each problem line starts with the contrac
 (data, format, feasibility, integrality, objective, optimality). The exit code is 0 on PASS
 and 1 on FAIL. With --turn-in (what exercises/turn-in-check.sh runs) a missing solution only
 warns, a data or format problem blocks (exit 1), and any other verdict is printed and turned in
-(exit 0), as with P01.
+(exit 0), as with P01. The data is checked even when the solution is missing.
 """
 
 import csv
@@ -246,7 +246,8 @@ def main(argv):
         print("format: give at most one solution file, for example: python check.py solution.json")
         return 1
     path = Path(argv[0]) if argv else DEFAULT_SOLUTION
-    if turn_in and not path.is_file():
+    # At turn-in, only an absent solution is let through with a warning, and only with the data intact.
+    if turn_in and not path.exists() and not data_problems():
         where = str(path).encode("ascii", "backslashreplace").decode("ascii")
         print(f"WARNING: no mini homework solution.json at {where}. Turning in without a checked roster;")
         print("run your model, then `uv run python exercises/mini-homework/check.py`.")

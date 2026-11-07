@@ -16,9 +16,16 @@ independent checker certifies.
 
 Run every command from `sessions/01-fundamentals/` in your course checkout.
 
-1. **Read [`PROBLEM.md`](PROBLEM.md)** and the CSVs in `data/`.
-2. **Have your agent build `p01_model.py`.** Ask Claude Code or Codex to formulate PROBLEM.md as
-   a MILP on HiGHS through `highspy`, keeping the API of the stub:
+These are the five steps of the mini homework you did in class: read, plan, build, check, ship.
+
+1. **Read [`PROBLEM.md`](PROBLEM.md)** and the CSVs in `data/`, yourself, before your agent does.
+2. **Plan.** Start your agent in plan mode (`claude --permission-mode plan`, or `codex` then
+   `/plan`) and give it the prompt in [`../home.html`](../home.html), part 3. Review the plan
+   before any code exists: the decision variables and their types, the constraints for each rule
+   of PROBLEM.md, the objective's three terms, and the checker as the judge. If something is
+   missing, say so and let the agent revise it.
+3. **Build.** Accept the plan; the agent writes `p01_model.py` as a MILP on HiGHS through
+   `highspy`, keeping the API of the stub:
    - `DATA_DIR`;
    - `contract_status(model_status, has_solution)`, which returns `optimal`, `feasible` or
      `no_solution`;
@@ -27,9 +34,9 @@ Run every command from `sessions/01-fundamentals/` in your course checkout.
 
    Use only `highspy` and the session's dependencies. Do not edit `data/`,
    `p01_checker.py` or `p01_contract.py`, because grading uses the copies on `main`.
-3. **Solve:** `uv run python exercises/homework-p01/p01_model.py` writes
+   `uv run python exercises/homework-p01/p01_model.py` writes
    `exercises/homework-p01/solution.json`.
-4. **Prove it:**
+4. **Check**, yourself, whatever the agent reports:
    - `uv run python exercises/homework-p01/p01_checker.py` replays your plan with no solver and
      prints PASS or FAIL;
    - `uv run pytest exercises/homework-p01/p01_contract.py` runs the solve-contract suite, with
@@ -37,12 +44,12 @@ Run every command from `sessions/01-fundamentals/` in your course checkout.
 
    When something fails, give the failure line to your agent. Each line starts with the contract
    that broke.
-5. **Turn in:** `/turn-in 01` in Claude Code, `$turn-in 01` in Codex, or
-   `scripts/turn-in.sh 01` from a terminal at the repository root. The turn-in first runs
-   `exercises/turn-in-check.sh`, which runs the checker. A missing `solution.json` only warns.
-   A malformed `solution.json` or an edited `data/` stops the turn-in, so you can fix it. An
-   infeasible or suboptimal plan is reported and still turned in. Every run adds a commit to
-   your homework branch, which is public.
+5. **Ship:** `/turn-in 01` in Claude Code, `$turn-in 01` in Codex, or
+   `bash scripts/turn-in.sh 01` from a terminal at the repository root (in Git Bash on Windows).
+   The turn-in first runs `exercises/turn-in-check.sh`, which runs the mini homework's checker,
+   then this one. A missing `solution.json` only warns. A malformed `solution.json` or an edited
+   `data/` stops the turn-in, so you can fix it. An infeasible or suboptimal plan is reported and
+   still turned in. Every run adds a commit to your homework branch, which is public.
 
 `uv run pytest` on its own (the session suite) does not collect `p01_contract.py`. Name the file
 explicitly, as above.
@@ -119,4 +126,4 @@ lower number.
 | `p01_checker.py` | Independent checker, standard library only, no solver |
 | `p01_contract.py` | Solve-contract suite, run by explicit path |
 | `INSTRUCTOR.md` | Provenance, revisions and how the known optimum was obtained |
-| `../turn-in-check.sh` | The session's turn-in gate (runs the checker with `--turn-in`) |
+| `../turn-in-check.sh` | The session's turn-in gate (runs the mini homework's checker, then this one, with `--turn-in`) |

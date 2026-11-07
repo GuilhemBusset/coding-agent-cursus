@@ -463,7 +463,8 @@ def test_check_command_default_and_override(copied_pack, tmp_path):
     verdict(run_check(alternate, pack=copied_pack, cwd=tmp_path), False, {"objective"})
 
 
-# The three rosters Act IV's #check slide shows, each a claim check.py rejects for a different contract.
+# Three seeded wrong rosters, each rejected for a different contract (Act IV's #check slide uses the same three;
+# test_evidence_deck.py reads them from the deck).
 SEEDED = {
     "understaffed": ((4, 1, 2, 1, 1, 1, 0), 10, {"feasibility", "optimality"}),
     "fractional": (LP_POINT, 10.2, {"integrality", "optimality"}),
@@ -495,6 +496,8 @@ def test_seeded_wrong_solution(name, tmp_path):
     ("understaffed", 0, "FAIL"),
     ("malformed", 1, "FAIL"),
     ("edited data", 1, "FAIL"),
+    ("missing, edited data", 1, "FAIL"),
+    ("a directory", 1, "FAIL"),
 ])
 def test_turn_in_gate_blocks_only_data_and_format(case, code, first, copied_pack):
     # Same policy as P01's --turn-in: a missing file warns, data or format blocks, a verdict is submitted.
@@ -506,8 +509,11 @@ def test_turn_in_gate_blocks_only_data_and_format(case, code, first, copied_pack
         solution.write_text(json.dumps(payload(starts, reported)), encoding="utf-8")
     elif case == "malformed":
         solution.write_text("{", encoding="utf-8")
-    elif case == "edited data":
-        solution.write_text(json.dumps(payload()), encoding="utf-8")
+    elif case == "a directory":
+        solution.mkdir()
+    if "edited data" in case:
+        if case == "edited data":
+            solution.write_text(json.dumps(payload()), encoding="utf-8")
         csv_path = copied_pack / "data" / "demand.csv"
         csv_path.write_text(csv_path.read_text(encoding="utf-8").replace("Mon,8", "Mon,7"), encoding="utf-8")
     result = subprocess.run([sys.executable, str(copied_pack / "check.py"), "--turn-in"], cwd=copied_pack,
@@ -515,3 +521,39 @@ def test_turn_in_gate_blocks_only_data_and_format(case, code, first, copied_pack
     assert result.returncode == code and result.stdout.splitlines()[0].startswith(first), result.stdout
     assert result.stdout.isascii() and "Traceback" not in result.stderr, result.stdout + result.stderr
     assert ("submitted as is" in result.stdout) == (case in ("optimal", "understaffed")), result.stdout
+
+
+def test_readme_done_criterion_in_a_git_checkout(tmp_path):
+    """README step 4, as a student runs it from sessions/01-fundamentals: PASS, and git status lists only the two
+    new paths; an edited check.py shows up as a modified line. uv's interpreter selection is the only substitution."""
+    readme = (PACK / "README.md").read_text(encoding="utf-8")
+    block = re.search(r"### 4\. Check.*?```sh\n(.*?)\n```", readme, re.S)
+    assert block, "README step 4 gives its commands"
+    commands = block[1].splitlines()
+    session = tmp_path / "course" / "sessions" / "01-fundamentals"
+    pack = session / "exercises" / "mini-homework"
+    shutil.copytree(PACK, pack)
+    env = {key: value for key, value in child_env().items() if not key.startswith("GIT_")}
+    git = ["git", "-c", "user.name=student", "-c", "user.email=student@example.invalid"]
+    for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "course"]):
+        subprocess.run(git + args, cwd=tmp_path / "course", env=env, check=True, capture_output=True)
+    (pack / "work").mkdir()
+    (pack / "work" / "model.py").write_text(
+        "import json, pathlib\n"
+        f"roster = {payload()!r}\n"
+        "pathlib.Path(__file__).resolve().parents[1].joinpath('solution.json').write_text(json.dumps(roster))\n",
+        encoding="utf-8")
+
+    def run(command):
+        args = command.split()
+        if args[:3] == ["uv", "run", "python"]:
+            args = [sys.executable, *args[3:]]
+        return subprocess.run(args, cwd=session, env=env, capture_output=True, text=True, encoding="utf-8", timeout=30)
+
+    model, check, status = (run(command) for command in commands)
+    assert model.returncode == 0, model.stderr
+    assert check.returncode == 0 and check.stdout.splitlines()[0] == "PASS", check.stdout
+    assert status.stdout.splitlines() == ["?? exercises/mini-homework/solution.json", "?? exercises/mini-homework/work/"]
+    with (pack / "check.py").open("a", encoding="utf-8") as stream:
+        stream.write("# edited\n")
+    assert " M exercises/mini-homework/check.py" in run(commands[2]).stdout.splitlines()

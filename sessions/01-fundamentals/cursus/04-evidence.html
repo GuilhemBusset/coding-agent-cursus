@@ -345,11 +345,10 @@ figure.spine-wrap { margin: 0 0 .5rem; }
 [data-slide] .do { display: flex; align-items: baseline; gap: .7rem; margin: .5rem 0 0; padding: .35rem .8rem; border-left: 3px solid var(--accent); background: var(--paper); color: var(--ink); font: 600 1.0625rem/1.4 var(--sans); }
 .do-k { flex: none; color: var(--accent); font: 700 .8125rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .do code { font-size: .9375rem; }
-/* The opener: three outcomes, each beside the step that practises it. */
+/* The opener: three outcomes, each beside the step that practises it (named, not numbered). */
 .goals { list-style: none; margin: .25rem 0 1.1rem; padding: 0; display: grid; gap: .6rem; }
-.goals li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: baseline; gap: 1rem; margin: 0; }
-.goal-step { display: inline-flex; align-items: center; gap: .5rem; color: var(--accent); font: 700 1rem/1.2 var(--mono); }
-.goal-n { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--accent); color: var(--on); font: 700 .875rem/1 var(--mono); }
+.goals li { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); align-items: baseline; gap: 1rem; margin: 0; }
+.goal-step { color: var(--accent); font: 700 .9375rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .goal-t { color: var(--ink); font: 650 clamp(1.25rem, 2.3vw, 1.85rem)/1.25 var(--sans); }
 @media (max-width: 599px) { .goals li { grid-template-columns: minmax(0, 1fr); gap: .2rem; } }
 /* Every face picture scrolls sideways on a phone rather than shrinking its labels. */
@@ -491,9 +490,9 @@ figure.spine-wrap { margin: 0 0 .5rem; }
         <p class="eyebrow">Act IV · Your turn</p>
         <h2 id="goals-title">One small problem, end to end: three things to learn.</h2>
         <ol class="goals" aria-label="What you will learn">
-          <li><span class="goal-step"><span class="goal-n">2</span>Plan</span><span class="goal-t">Review the agent’s plan before any code exists.</span></li>
-          <li><span class="goal-step"><span class="goal-n">4</span>Check</span><span class="goal-t">Done means a check you ran prints PASS.</span></li>
-          <li><span class="goal-step"><span class="goal-n">5</span>Ship</span><span class="goal-t">Ship with one command; the check runs again.</span></li>
+          <li><span class="goal-step">Plan</span><span class="goal-t">Review the agent’s plan before any code exists.</span></li>
+          <li><span class="goal-step">Check</span><span class="goal-t">Done means a check you ran prints PASS.</span></li>
+          <li><span class="goal-step">Ship</span><span class="goal-t">Ship with one command; the check runs again.</span></li>
         </ol>
         <p class="how">How: five steps, the same as P01 tonight</p>
         <figure class="spine-wrap" role="group" aria-labelledby="goals-spine-caption">
@@ -517,7 +516,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
             <p>Talk track: Act III ended on “Your turn: one small problem, end to end, graded by the evidence, not the message.” Read the three lines: that is what you take home today. Point at the steps underneath: read, plan, build, check, ship. They are tonight’s P01 homework at a size you can check by hand: seven numbers instead of forty legs. Above each box, who does it: you read, the agent drafts the plan and you review it, the agent builds, you check, you ship.</p>
             <p>Activity: pairs, side by side, each on your own laptop; one on Claude Code and one on Codex when you can. Each of you ships your own. In a terminal in <code>sessions/01-fundamentals</code>, open <code>exercises/mini-homework/README.md</code>: every prompt and command is there, numbered like these steps. Sticky notes on your lid: green when your own check prints PASS, yellow when you are stuck, pink when the agent said done and a command disagrees.</p>
             <p>Transition: “Step one is yours: read the problem before your agent does.”</p>
-            <p>Background for you, not for the slides: the mini homework is the former lab-ladder L3, trimmed to its README, <code>data/demand.csv</code> and <code>check.py</code>; the turn-in gate reruns its checker. Owners of the old ladder: P00 stays the running example of Acts II and III.</p>
+            <p>Background for you, not for the slides: the mini homework is the staffing problem that was the lab ladder’s level 3, trimmed to its README, <code>data/demand.csv</code> and <code>check.py</code>; the turn-in gate reruns its checker. P00 stays the running example of Acts II and III.</p>
           </div>
         </details>
       </section>
@@ -563,7 +562,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
           </div>
           <figcaption class="visually-hidden" id="rd-desc">Staff needed each day, Monday to Sunday: 8, 7, 8, 9, 8, 5 and 6. Below, one person whose block starts on Friday: on duty Friday, Saturday, Sunday, Monday and Tuesday, off on Wednesday and Thursday; the week wraps from Sunday to Monday.</figcaption>
         </figure>
-        <p class="do"><span class="do-k">Do</span>Read <code>exercises/mini-homework/README.md</code> yourself, before your agent does.</p>
+        <p class="do"><span class="do-k">Do</span>From <code>sessions/01-fundamentals</code>, read <code>exercises/mini-homework/README.md</code> yourself.</p>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
@@ -689,7 +688,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
           </div>
           <p class="visually-hidden" role="status" data-rp-status></p>
         </div>
-        <p class="do"><span class="do-k">Do</span>Plan mode, then review the plan against the list.</p>
+        <p class="do"><span class="do-k">Do</span>README step 2: plan mode, then review the plan against the list.</p>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
@@ -704,10 +703,10 @@ figure.spine-wrap { margin: 0 0 .5rem; }
               <p class="notes-cmd">Or Codex, then type <code>/plan</code> and press Enter before the prompt: <button type="button" data-copy="plan-codex" data-copy-what="the Codex command" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
               <pre id="plan-codex">codex</pre>
               <p class="notes-cmd">The plan prompt, the same in both: <button type="button" data-copy="plan-prompt" data-copy-what="the plan prompt" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
-              <pre id="plan-prompt">Plan only: do not create or edit any file yet. Read exercises/mini-homework/README.md. Propose a model for this problem using HiGHS through highspy: the decision variables and their type, the coverage constraint for each day including the wraparound, and the objective. Say how we will check the result without trusting the solver. The code will go in exercises/mini-homework/work/model.py and write exercises/mini-homework/solution.json; check.py and data/ must not change.</pre>
+              <pre id="plan-prompt">Plan only: do not create or edit any file yet. Read exercises/mini-homework/README.md. Propose a model for this problem using HiGHS through highspy: the decision variables and their type, the coverage constraint for each day including the wraparound, and the objective. Say how we will check the result without trusting the solver. Once I accept the plan, implement it in exercises/mini-homework/work/model.py, run it so that it writes exercises/mini-homework/solution.json, then run uv run python exercises/mini-homework/check.py and show its full output. If it prints FAIL, fix the model, never check.py or data/.</pre>
             </div>
             <p>Transition: “The plan holds. Now the agent builds it.”</p>
-            <p>Background for you, not for the slides: CLI flags and Codex’s <code>/plan</code> as of 2026-10-18 (Claude Code 2.1.302, codex-cli 0.162.1), from the lab-ladder rehearsal. An older Codex without <code>/plan</code>: <code>codex --sandbox read-only</code>, then <code>/permissions</code> before the build.</p>
+            <p>Background for you, not for the slides: CLI flags and Codex’s <code>/plan</code> as of 2026-10-18 (Claude Code 2.1.302, codex-cli 0.162.1; <code>sources/fact-check.md</code>). Codex’s “Implement this plan?” prompt is interactive only and not in its docs. An older Codex without <code>/plan</code>: <code>codex --sandbox read-only</code>, then <code>/permissions</code> before the build.</p>
           </div>
         </details>
       </section>
@@ -749,16 +748,16 @@ figure.spine-wrap { margin: 0 0 .5rem; }
           </div>
           <figcaption class="visually-hidden" id="bd-desc">The folder exercises/mini-homework. Given and never edited: README.md, data/demand.csv and check.py. The agent writes work/model.py, which runs HiGHS and writes solution.json, an objective and one start per day: one integer start per day, each day covered, the headcount minimised.</figcaption>
         </figure>
-        <p class="do"><span class="do-k">Do</span>Accept the plan, send the build prompt, read each command before you approve it.</p>
+        <p class="do"><span class="do-k">Do</span>README step 3: accept the plan, then read each command before you approve it.</p>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
             <p>Talk track: the agent writes <code>work/model.py</code>; the model writes <code>solution.json</code>. Point at the locks: the README, the data and <code>check.py</code> are given, and nothing in the build changes them. Watch what it runs: read each command before you approve it. If it asks to edit <code>check.py</code> or <code>data/</code>, say no and ask why: they are the contract, not its work. When the agent reports PASS, that is its account of a run; in step 4 you make the run yourself.</p>
-            <p>Activity: accept the plan when the agent asks: in Claude Code a Yes option, in Codex <em>Yes, implement this plan</em>. If it does not ask, leave plan mode (Shift+Tab in Claude Code, <code>/plan</code> again in Codex). Then send the build prompt. A model this size solves in milliseconds; most of the time goes to reading what the agent proposes.</p>
+            <p>Activity: accept the plan when the agent asks: in Claude Code a Yes option, in Codex <em>Yes, implement this plan</em>. It then builds, runs the model and runs the checker, because the plan prompt already asked for all three. If it does not ask, leave plan mode (Shift+Tab in Claude Code, <code>/plan</code> again in Codex) and send the one-line prompt below. A model this size solves in milliseconds; most of the time goes to reading what the agent proposes.</p>
             <div class="notes-prompt">
               <p class="notes-cmd">The students read the same steps in <a href="../exercises/mini-homework/README.md">the mini homework’s README</a>, step 3.</p>
-              <p class="notes-cmd">The build prompt: <button type="button" data-copy="build-prompt" data-copy-what="the build prompt" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
-              <pre id="build-prompt">Implement the plan in exercises/mini-homework/work/model.py. Run it so that it writes exercises/mini-homework/solution.json, then run uv run python exercises/mini-homework/check.py and show its full output. If it prints FAIL, fix the model, never check.py or data/.</pre>
+              <p class="notes-cmd">Only if the agent did not start building: <button type="button" data-copy="build-prompt" data-copy-what="the build prompt" hidden>Copy</button><span class="visually-hidden" data-copy-status role="status"></span></p>
+              <pre id="build-prompt">Implement the plan.</pre>
             </div>
             <p>Transition: “It says it is done. Three things said that before; how many were right?”</p>
           </div>
@@ -820,7 +819,7 @@ feasibility: Mon has 7 on duty, needs 8
           </div>
           <p class="visually-hidden" role="status" data-rp-status></p>
         </div>
-        <p class="do"><span class="do-k">Do</span>Run the three check commands yourself, in your own terminal.</p>
+        <p class="do"><span class="do-k">Do</span>README step 4: run its three commands yourself, in your own terminal.</p>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
@@ -921,7 +920,7 @@ git status --short exercises/mini-homework</pre>
           </div>
           <figcaption class="visually-hidden" id="sh-desc">You type /turn-in 01. The gate runs check.py again; a data or format problem stops it. Then a commit of only the exercises folder, pushed to your branch homework/s01/your handle, which is public, never to main.</figcaption>
         </figure>
-        <p class="do"><span class="do-k">Do</span><code>/turn-in 01</code> in Claude Code, <code>$turn-in 01</code> in Codex; open the URL it prints.</p>
+        <p class="do"><span class="do-k">Do</span>README step 5: <code>/turn-in 01</code> in Claude Code, <code>$turn-in 01</code> in Codex.</p>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">

@@ -162,7 +162,7 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `exercises/mini-homework/` | The mini homework, done end to end in Act IV: a weekly staffing MILP to model from a word problem, with its statement, data, the five steps (read, plan, build, check, ship), the solution-file format and an independent stdlib checker (`check.py`), which the turn-in reruns |
 | `exercises/home.html` | The homework sheet: rerun two demos, three sentences on "sampling, not retrieval", solve P01, turn in with `/turn-in 01` or `$turn-in 01`. Each part says what a good answer looks like, and the grading rule is that checker-proven feasibility counts more than the objective value. Students write their notes in `exercises/home-notes.md` |
 | `exercises/homework-p01/` | P01, the take-home: EV linehaul scheduling and charging. Statement, revised data, an empty `p01_model.py` for the student's agent to build, an independent stdlib checker (`p01_checker.py`), the solve-contract suite (`p01_contract.py`) and instructor notes |
-| `exercises/turn-in-check.sh` | The session's turn-in gate, run by `/turn-in 01`, `$turn-in 01` and `scripts/turn-in.sh 01`; it runs the P01 checker with `--turn-in` |
+| `exercises/turn-in-check.sh` | The session's turn-in gate, run by `/turn-in 01`, `$turn-in 01` and `scripts/turn-in.sh 01`; it runs the mini homework's checker, then P01's, each with `--turn-in` |
 | `tests/` | The session's pytest suite |
 | `tests/fixtures/p01_upstream/` | The untouched 2025 P01 files and their MIT licence, pinned by hash, from which `exercises/homework-p01/data/` is derived |
 
