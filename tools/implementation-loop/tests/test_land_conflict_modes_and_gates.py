@@ -271,16 +271,13 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
             self.assert_main_state(f, disk_state(self.repo.merger / f))
         self.assertEqual(git("ls-tree", "origin/main", "--", targets[1], cwd=self.repo.merger).split()[0], "100755")
 
-    def test_builder_mode_change_to_a_locked_test_is_reverted(self):
-        for mid_merge in (False, True):
-            for change in ("chmod", "symlink"):
-                with self.subTest(mid_merge=mid_merge, change=change):
-                    self.builder_mode_change_case(mid_merge, change)
+    def test_builder_chmod_of_a_locked_test_is_reverted(self):
+        self.builder_mode_change_case(mid_merge=False, change="chmod")
+
+    def test_builder_symlink_over_a_locked_test_mid_merge_is_reverted(self):
+        self.builder_mode_change_case(mid_merge=True, change="symlink")
 
     def builder_mode_change_case(self, mid_merge, change):
-        if mid_merge or change != "chmod":
-            self.repo.cleanup()
-            self.new_fixture()
         # Without a conflict, a blocking finding at the first examination (where the
         # test locks) brings the second build that tampers.
         self.setup_issues(pair=mid_merge, locked=True, **({} if mid_merge else {"findings": 1}))
@@ -402,14 +399,12 @@ class LandConflictModesAndGatesTests(unittest.TestCase):
         self.assert_independent_gates(log, exams, barriers)
 
     def test_exact_head_after_main_moves_between_land_sync_and_ship(self):
-        for conflicting in (False, True):
-            with self.subTest(conflicting=conflicting):
-                self.exact_head_case(conflicting)
+        self.exact_head_case(conflicting=False)
+
+    def test_exact_head_after_main_moves_with_a_conflict_between_land_sync_and_ship(self):
+        self.exact_head_case(conflicting=True)
 
     def exact_head_case(self, conflicting):
-        if conflicting:
-            self.repo.cleanup()
-            self.new_fixture()
         self.setup_issues()
         agents = ObservedAgents(self)
         log, exams, barriers, recording = self.logged_checks(agents)

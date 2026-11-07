@@ -5,18 +5,17 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 import { createPage } from '../create-page.mjs';
-import { discoverSuites, testsDir, SUITE_SUFFIX } from './suites.mjs';
+import { discoverAllSuites, testsDir, SUITE_SUFFIX } from './suites.mjs';
 
 export const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
 export const sample = path.join(repoRoot, 'sessions/01-fundamentals/cursus/demos/components.html');
 export const sizes = [{ width: 1440, height: 900 }, { width: 1280, height: 720 }, { width: 390, height: 844 }];
-// Every Node suite in this directory, by name ('pages' for pages.test.mjs), found by listing it.
-export const suites = discoverSuites().map(file => path.basename(file, SUITE_SUFFIX));
 export const read = relative => readFile(path.join(repoRoot, relative), 'utf8');
 
-// `npm --prefix setup test` runs run-all.mjs, which runs every suite in this directory: a suite
-// is collected by existing here, with nothing to register. This checks both halves for `name`.
+// `npm --prefix setup test` runs run-all.mjs, which runs every suite in the suite directories: a
+// suite is collected by existing there, with nothing to register. This checks both halves for `name`.
 export async function assertCollected(name) {
+  const suites = discoverAllSuites().map(file => path.basename(file, SUITE_SUFFIX));
   const pkg = JSON.parse(await read('setup/package.json'));
   const [command, ...args] = pkg.scripts.test.trim().split(/\s+/);
   assert.deepEqual([command, ...args.map(arg => path.resolve(repoRoot, 'setup', arg))],
@@ -108,7 +107,7 @@ export async function initialPredict(root) {
   for (const result of await root.locator('[data-predict-result]').all()) assert.equal(await textOf(result), '');
 }
 
-export function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 export function stepperMarkup(id, n = 3, extra = '') {
   return `<section id="${id}" data-stepper><div data-step-stage tabindex="0" aria-label="${id} stage">

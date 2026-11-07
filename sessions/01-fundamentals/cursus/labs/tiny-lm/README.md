@@ -39,7 +39,7 @@ hashes), re-run the script, then re-run the test below.
 ## Test
 
 ```sh
-node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/tiny-lm.test.mjs
+node tools/html-pages/tests/run-suite.mjs sessions/01-fundamentals/tests/lessons/tiny-lm.test.mjs
 ```
 
 The suite decodes the weights and tokenizer from the page itself and compiles

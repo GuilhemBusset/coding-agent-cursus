@@ -21,10 +21,9 @@ source of truth is `assets/theme.css`; the templates demonstrate its components.
   metadata to the SHA-256 of the replacement asset. These hashes record asset provenance,
   not a requirement to use the newest version. Page-specific CSS belongs after the shared
   block and uses its variables. Do not silently refresh other sessions.
-- The six core semantic colors are a compatibility contract checked independently of asset
-  versions. If intentionally evolving that palette, add an accepted palette to the checker
-  rather than replacing the old one and forcing historical pages to change. Snapshot hashes
-  must match their embedded blocks; they are integrity checks, not signatures of authorship.
+- Keep the six core semantic colors stable: evolving the palette should not force historical
+  pages to change. No check pins them. Snapshot hashes must match their embedded blocks; they
+  are integrity checks, not signatures of authorship.
 - If a requested live service is essential, provide a clearly labelled offline example and
   distinguish example data from live results. Agree on the changed delivery contract before
   introducing a server requirement; never simulate a successful service response.
@@ -213,11 +212,15 @@ Before calling the page finished:
 - Exercise every custom control with pointer and keyboard, including limits and reset. Add a
   small page-specific Playwright check when generic checks cannot establish correct state.
   During authoring put disposable checks under `tools/html-pages/`, import browser tools
-  from `./browser.mjs`, and remove the checks after use. Keep reusable checks in
-  `tools/html-pages/tests/`, naming the target page; use `pathToFileURL` to open its actual file.
-  Name such a suite `<name>.test.mjs`: `npm --prefix setup test` runs every `*.test.mjs` file in
-  that directory, so a new suite is collected without registering it anywhere.
-  Such checks are authoring infrastructure, not runtime imports in a session.
+  from `./browser.mjs`, and remove the checks after use. Keep a reusable check next to what it
+  tests: a session page's suite in that session's `tests/lessons/` (a deck, a teaching lab, a
+  demo), a shared component's or the tooling's in `tools/html-pages/tests/`. Use `pathToFileURL`
+  to open the page's actual file. Name such a suite `<name>.test.mjs`: `npm --prefix setup test`
+  runs every `*.test.mjs` file in those folders, so a new suite is collected without registering
+  it anywhere. A suite checks what the page does (its controls, its numbers against the real
+  data), not how it looks or what it says: `check-page.mjs` is the one generic check of layout,
+  accessibility and loading. Such checks are authoring infrastructure, not runtime imports in a
+  session.
 - Verify no-JavaScript reading, reduced motion, and print behavior. Check meaningful formulas,
   tables and diagrams at the intended projector size, not just in a tiny screenshot.
 - Re-run checks after fixes. If browser execution is blocked, state exactly what was not

@@ -34,6 +34,7 @@ jobs:
       student_setup: ${{ steps.select.outputs.student_setup }}
       session_tests: ${{ steps.select.outputs.session_tests }}
       sessions: ${{ steps.select.outputs.sessions }}
+      parts: ${{ steps.select.outputs.parts }}
       html: ${{ steps.select.outputs.html }}
       suites: ${{ steps.select.outputs.suites }}
       shards: ${{ steps.select.outputs.shards }}
@@ -68,12 +69,15 @@ jobs:
     if: needs.changes.outputs.engine == 'true'
     uses: ./.github/workflows/engine-tests.yml
 
-  # A session's suite runs when its folder changes, or the turn-in script or hooks it runs.
+  # A session's lesson tests run when what is taught live changes (cursus/), its lab tests when
+  # what students run changes (exercises/, the turn-in script, the hooks), its type check when its
+  # Python or pins change.
   session-tests:
     needs: changes
     if: needs.changes.outputs.session_tests == 'true'
     uses: ./.github/workflows/session-tests.yml
     with:
+      parts: ${{ needs.changes.outputs.parts }}
       sessions: ${{ needs.changes.outputs.sessions }}
 
   # The one-command student setup, run for real on Linux containers, macOS and Windows (ADR 0015).

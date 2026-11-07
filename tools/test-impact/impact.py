@@ -29,7 +29,9 @@ from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 MAP = Path(__file__).with_name("impact.toml")
-SUITES_DIR = "tools/html-pages/tests"
+# Node suites: the page tooling's own (project), and each session's next to the pytest part they
+# belong to (sessions/<NN>-*/tests/lessons/*.test.mjs). tools/html-pages/tests/suites.mjs lists the same.
+SUITE_GLOBS = ("tools/html-pages/tests/*.test.mjs", "sessions/*/tests/*/*.test.mjs")
 SUITE_SUFFIX = ".test.mjs"
 PAGE_RE = re.compile(r"^(docs|sessions)/.*\.html?$", re.IGNORECASE)
 MARKER = re.compile(r"""data-design-system\s*=\s*["']cursus["']""", re.IGNORECASE)
@@ -107,12 +109,17 @@ def load_map() -> dict:
 
 
 def discover_suites() -> list[str]:
-    folder = ROOT / SUITES_DIR
-    return sorted(f"{SUITES_DIR}/{p.name}" for p in folder.iterdir() if p.is_file() and p.name.endswith(SUITE_SUFFIX))
+    return sorted(p.relative_to(ROOT).as_posix() for pattern in SUITE_GLOBS for p in ROOT.glob(pattern) if p.is_file())
 
 
-def discover_sessions() -> list[str]:
-    return sorted(f"sessions/{p.parent.name}" for p in (ROOT / "sessions").glob("*/tests") if p.is_dir())
+def discover_parts() -> list[str]:
+    """Each session's pytest parts: sessions/<NN>-*/tests/<part>, one folder per part (lessons, labs)."""
+    return sorted(p.relative_to(ROOT).as_posix() for p in ROOT.glob("sessions/*/tests/*")
+                  if p.is_dir() and not p.name.startswith((".", "__")) and any(p.glob("test_*.py")))
+
+
+def session_of(part: str) -> str:
+    return part.split("/tests/", 1)[0]
 
 
 def discover_pages() -> list[str]:
@@ -155,37 +162,41 @@ def resolve(page: str, values: set[str]) -> set[str]:
 class Plan:
     everything: bool = False
     reasons: list[str] = field(default_factory=list)
-    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, imports, turn-in, engine, student-setup
-    sessions: list[str] = field(default_factory=list)
+    units: set[str] = field(default_factory=set)        # repo-config, ship, typecheck, imports, turn-in, engine, ...
+    sessions: list[str] = field(default_factory=list)   # sessions whose Python is type-checked
+    parts: list[str] = field(default_factory=list)      # session pytest parts: sessions/<NN>-*/tests/<part>
     suites: list[str] = field(default_factory=list)
     pages: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {"everything": self.everything, "reasons": self.reasons, "units": sorted(self.units),
-                "sessions": self.sessions, "suites": self.suites, "pages": self.pages}
+                "sessions": self.sessions, "parts": self.parts, "suites": self.suites, "pages": self.pages}
 
 
 def select(change: Change, rules: dict | None = None, suites: list[str] | None = None,
-           sessions: list[str] | None = None, pages: list[str] | None = None, everything: bool = False,
+           parts: list[str] | None = None, pages: list[str] | None = None, everything: bool = False,
            refs: dict[str, tuple[set[str], set[str]]] | None = None) -> Plan:
     rules = rules if rules is not None else load_map()
     suites = suites if suites is not None else discover_suites()
-    sessions = sessions if sessions is not None else discover_sessions()
+    parts = parts if parts is not None else discover_parts()
     pages = pages if pages is not None else discover_pages()
+    sessions = sorted({session_of(part) for part in parts})
+    part_rules = rules["sessions"]["parts"]
+    types = rules["sessions"]["types"]
     units = {name: unit["paths"] for name, unit in rules.get("units", {}).items()}
     node = rules.get("node", {})
     mapped = node.get("suites", {})
     plan = Plan()
 
     def full(reasons: list[str]) -> Plan:
-        return Plan(True, reasons, set(units), list(sessions), list(suites), list(pages))
+        return Plan(True, reasons, set(units), list(sessions), list(parts), list(suites), list(pages))
 
     reasons = ["--all"] if everything else []
     reasons += [f"{path} runs everything" for path in sorted(change.paths) if matches(path, rules["all"]["paths"])]
     if reasons:
         return full(reasons)
 
-    chosen_suites, chosen_pages, chosen_sessions = set(), set(), set()
+    chosen_suites, chosen_pages, chosen_sessions, chosen_parts = set(), set(), set(), set()
     # A suite the map does not know runs on every change.
     chosen_suites.update(s for s in suites if Path(s).name[:-len(SUITE_SUFFIX)] not in mapped)
     page_refs = refs if refs is not None else {page: references(page) for page in pages}
@@ -196,8 +207,22 @@ def select(change: Change, rules: dict | None = None, suites: list[str] | None =
                 plan.units.add(name)
                 hit = True
         for session in sessions:
-            if path.startswith(session + "/") or matches(path, rules["sessions"]["shared"]):
+            mine = [part for part in parts if session_of(part) == session]
+            inside = path.startswith(session + "/")
+            relative = path[len(session) + 1:] if inside else ""
+            if inside and relative.endswith(SUITE_SUFFIX):
+                continue                     # a Node suite: [node] selects it, not pytest
+            if inside and matches(relative, types):
                 chosen_sessions.add(session)
+            def rule(part: str, key: str) -> list[str]:
+                return part_rules.get(part.rsplit("/", 1)[1], {}).get(key, [])
+
+            chosen = {part for part in mine if inside and matches(relative, rule(part, "reads"))}
+            if inside and not chosen:
+                chosen = set(mine)           # a session file no part reads, such as its lockfile: every part
+            chosen |= {part for part in mine if matches(path, rule(part, "shared"))}
+            if chosen:
+                chosen_parts.update(chosen)
                 hit = True
         if matches(path, node.get("shared", [])):
             chosen_suites.update(suites)
@@ -219,6 +244,7 @@ def select(change: Change, rules: dict | None = None, suites: list[str] | None =
     if plan.reasons:
         return full(plan.reasons)
     plan.sessions = sorted(chosen_sessions)
+    plan.parts = sorted(chosen_parts)
     plan.suites = sorted(chosen_suites)
     plan.pages = sorted(chosen_pages - change.gone)
     return plan
@@ -229,7 +255,8 @@ def describe(plan: Plan) -> str:
     if plan.everything:
         lines.append("Everything runs: " + "; ".join(plan.reasons))
     lines.append("units: " + (", ".join(sorted(plan.units)) or "none"))
-    lines.append("sessions: " + (", ".join(plan.sessions) or "none"))
+    lines.append("session types: " + (", ".join(plan.sessions) or "none"))
+    lines.append("session tests: " + (", ".join(plan.parts) or "none"))
     lines.append(f"node suites ({len(plan.suites)}): " + (", ".join(Path(s).name for s in plan.suites) or "none"))
     lines.append(f"pages ({len(plan.pages)}): " + (", ".join(plan.pages) or "none"))
     return "\n".join(lines)
@@ -248,6 +275,9 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         out.append(("imports", ["uv", "run", "--project", "setup", "--locked", "ruff", "check", "--select", "I", "."], ROOT))
     if "turn-in" in plan.units:
         out.append(("turn-in", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/turn_in"], ROOT))
+    if "session-layout" in plan.units:
+        out.append(("session layout", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tests/sessions"],
+                    ROOT))
     if plan.everything:
         out.append(("selector", ["uv", "run", "--no-project", "--with", "pytest==8.3.5", "pytest", "-q", "tools/test-impact"], ROOT))
     if "student-setup" in plan.units:
@@ -261,8 +291,10 @@ def commands(plan: Plan) -> list[tuple[str, list[str], Path]]:
         for platform in PLATFORMS:   # exercises run on each (ADR 0010); "all" misses an API only one has
             out.append((f"{session} exercise types ({platform})", ["uv", "run", "--locked", "--group", "typecheck", "ty",
                                                                  "check", "--python-platform", platform, "exercises"], ROOT / session))
-        out.append((session, ["uv", "run", "--locked", "--group", "parallel", "pytest", "-q", "-m", "not live", "-n", "auto"],
-                    ROOT / session))
+    for part in plan.parts:
+        session = session_of(part)
+        out.append((part, ["uv", "run", "--locked", "--group", "parallel", "pytest", "-q", "-m", "not live", "-n", "auto",
+                           part[len(session) + 1:]], ROOT / session))
     if plan.suites:
         # As many suite files at once as on a CI shard's runner (4 vCPUs, so node's default is 3):
         # node's default on a larger machine starts a browser per core, and the suites' timeouts
@@ -295,7 +327,8 @@ def github_output(plan: Plan, path: str) -> None:
         "engine": str("engine" in plan.units).lower(),
         "student_setup": str("student-setup" in plan.units).lower(),
         "sessions": json.dumps(plan.sessions),
-        "session_tests": str(bool(plan.sessions)).lower(),
+        "parts": json.dumps(plan.parts),
+        "session_tests": str(bool(plan.sessions or plan.parts)).lower(),
         "suites": "all" if every else " ".join(plan.suites) or "none",
         "shards": json.dumps(shards),
         "pages": "all" if every else " ".join(plan.pages) or "none",

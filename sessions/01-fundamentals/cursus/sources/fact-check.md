@@ -38,11 +38,11 @@ removed: every one either still held or could be corrected from its source. The 
   news article, a recap or an aggregator, with no primary page and no second independent source.
   Those claims are listed under A2 below.
 
-`tests/test_sources.py` enforces the dates. Every as-of, checked, read or accessed date on a
-delivered page must be on or after the pass date in `sources.html` (`data-fact-check`). An older
-snapshot date passes only next to a "rechecked" date that is on or after the pass date. The test
-also checks two more things: `sources.html` lists every external link the pages cite, and the pass
-date is no earlier than the latest date in this log.
+The rule for dates: every as-of, checked, read or accessed date on a delivered page is on or after
+the pass date in `sources.html` (`data-fact-check`). An older snapshot date stands only next to a
+"rechecked" date that is on or after the pass date. `sources.html` lists every external link the
+pages cite, and the pass date is no earlier than the latest date in this log. These are editorial
+rules for the fact-check pass; no test enforces them.
 
 ## Claim log
 
@@ -218,4 +218,4 @@ The PR description repeats this list.
 - **New:**
   - `cursus/sources.html`, the bibliography by act with access dates;
   - this log;
-  - `tests/test_sources.py`.
+  - `tests/test_sources.py` (removed on 2026-11-07: dates and citations are editorial, not tested).

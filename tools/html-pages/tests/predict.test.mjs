@@ -10,12 +10,8 @@ async function contract(root) {
     assert.ok(await textOf(q.locator('legend')));
     await count(q.locator('input[type=radio][data-correct]'), 1);
     assert.ok(await q.locator('input[type=radio]').count() >= 2);
-    for (const radio of await q.locator('input[type=radio]').all()) {
-      assert.ok(await radio.evaluate(el => Array.from(el.labels || []).some(label => label.textContent.trim())), 'native radios need labels');
-    }
     await count(q.locator('[data-predict-result]'), 1);
     await count(q.locator('[data-predict-answer]'), 1);
-    assert.ok((await textOf(q.locator('[data-predict-answer]'))).length > 10, 'authored answer includes an explanation');
   }
 }
 

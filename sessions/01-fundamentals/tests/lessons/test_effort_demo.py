@@ -1,0 +1,823 @@
+"""The effort demo (cursus/demos/effort): offline replay of the recorded runs, and live mode.
+
+Tests never call real model CLIs: live tests use disposable executable stubs; recorded
+evidence is independently decoded, so the numbers replay shows are re-derived from the
+raw streams. Claude cache writes use the raw result's duration split: 1h writes are a
+subset of total writes; absent duration evidence falls back to the 5m rate.
+
+Only the agreed filenames, CLI interface, event formats and evidence fields are
+contracts. Helpers accept flat or nested token counters and common price layouts;
+no implementation function or constant name is required. Puzzle data are read
+from literal Python constants, and solved by exhaustive enumeration here.
+All git writes below are confined to a disposable reset-test repository.
+"""
+
+import ast
+import copy
+import hashlib
+import itertools
+import json
+import math
+import os
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import pytest
+
+SESSION = Path(__file__).resolve().parents[2]
+REPO = SESSION.parents[1]
+RELATIVE = Path("sessions/01-fundamentals/cursus/demos/effort")
+DEMO = REPO / RELATIVE
+EFFORTS = ("low", "high", "max")
+RUNS = set(itertools.product(("claude", "codex"), EFFORTS))
+DEFAULTS = {"claude": "claude-opus-5-5", "codex": "gpt-6-astra"}
+NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+ALIASES = {
+    "input": ("input", "input_tokens", "inputTokens"),
+    "output": ("output", "output_tokens", "outputTokens"),
+    "cache_read": ("cache_read", "cache_read_tokens", "cache_read_input_tokens", "cacheReadInputTokens"),
+    "cache_write": ("cache_write", "cache_write_tokens", "cache_creation_input_tokens", "cacheCreationInputTokens"),
+    "cache_write_1h": ("cache_write_1h", "cache_write_1h_tokens"),
+    "cached_input": ("cached_input", "cached_input_tokens"),
+    "reasoning_output": ("reasoning_output", "reasoning_output_tokens"),
+}
+RATE_ALIASES = {
+    "input": ("input", "input_usd_per_million", "input_per_million", "input_per_million_usd"),
+    "output": ("output", "output_usd_per_million", "output_per_million", "output_per_million_usd"),
+    "cache_read": ("cache_read", "cache_read_usd_per_million", "cache_read_per_million"),
+    "cache_write_5m": ("cache_write_5m", "cache_write_5m_usd_per_million", "cache_write_5m_per_million"),
+    "cache_write_1h": ("cache_write_1h", "cache_write_1h_usd_per_million", "cache_write_1h_per_million"),
+    "cached_input": ("cached_input", "cached_input_usd_per_million", "cached_input_per_million"),
+}
+
+
+def read(path):
+    assert path.is_file(), f"Missing required artifact: {path}"
+    text = path.read_text(encoding="utf-8")
+    assert text.strip(), f"Empty artifact: {path}"
+    return text
+
+
+def load(path):
+    return json.loads(read(path))
+
+
+def normalized(value):
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def field(mapping, aliases, default=None, required=True):
+    wanted = {normalized(alias) for alias in aliases}
+    found = [value for key, value in mapping.items() if normalized(key) in wanted]
+    if not found:
+        assert not required, f"Missing one of {aliases}: {mapping}"
+        return default
+    assert all(value == found[0] for value in found), f"Conflicting aliases: {aliases}"
+    return found[0]
+
+
+def finite(value, positive=False):
+    assert type(value) in (int, float) and math.isfinite(value)
+    assert value > 0 if positive else value >= 0
+    return value
+
+
+def integer(value):
+    assert type(value) is int and value >= 0, f"Expected nonnegative integer counter: {value!r}"
+    return value
+
+
+def counters(row, cli):
+    mapping = dict(row)
+    for container in ("tokens", "usage", "token_counts", "token_counters"):
+        if isinstance(row.get(container), dict):
+            mapping.update(row[container])
+    required = {"input", "output", "cache_write_1h"} | ({"cache_read", "cache_write"} if cli == "claude"
+                                     else {"cached_input", "reasoning_output"})
+    return {name: integer(field(mapping, aliases, 0, name in required))
+            for name, aliases in ALIASES.items()}
+
+
+def child_env(**changes):
+    env = os.environ.copy()
+    for key in list(env):
+        if key.startswith("GIT_") or key in {"PYTHONPATH", "PYTHONHOME", "PYTEST_ADDOPTS", "PYTEST_PLUGINS"}:
+            env.pop(key)
+    env.update(UV_OFFLINE="1", PYTHONDONTWRITEBYTECODE="1", GIT_CONFIG_NOSYSTEM="1",
+               GIT_CONFIG_GLOBAL=os.devnull, GIT_TERMINAL_PROMPT="0")
+    env.update(changes)
+    return env
+
+
+def run(args, cwd, env=None):
+    return subprocess.run([str(arg) for arg in args], cwd=cwd, env=env or child_env(),
+                          capture_output=True, text=True, encoding="utf-8", timeout=60, check=False)
+
+
+def success(args, cwd, env=None):
+    result = run(args, cwd, env)
+    assert result.returncode == 0, f"{args}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    return result.stdout
+
+
+def rows(document):
+    items = field(document, ("runs", "results", "rows"))
+    assert isinstance(items, list)
+    result = {}
+    for row in items:
+        identity = (row["cli"], row["effort"])
+        assert identity not in result, f"Duplicate run: {identity}"
+        result[identity] = row
+    assert set(result) == RUNS, "Need exactly Claude/Codex × low/high/max"
+    return result
+
+
+def table_lines(output, expected):
+    result = {}
+    for identity in expected:
+        cli, effort = identity
+        matches = [line for line in output.splitlines()
+                   if re.search(rf"\b{cli}\b", line, re.IGNORECASE) and re.search(rf"\b{effort}\b", line, re.IGNORECASE)]
+        assert len(matches) == 1, f"Need one printed row for {identity}:\n{output}"
+        result[identity] = matches[0]
+    return result
+
+
+def has_number(line, value, *, fractional=False):
+    numbers = [float(match[0].replace(",", "")) for match in
+               re.finditer(r"(?<![\w.])[+-]?(?:\d[\d,]*(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?(?![\w.])", line)]
+    if fractional:
+        # Fixed-width printed cost/time may be rounded; at least six cost decimals
+        # aren't mandated, so allow a half-unit in the displayed last place.
+        for match in re.finditer(NUMBER, line.replace(",", "")):
+            text = match[0]
+            decimals = len(text.split(".")[1]) if "." in text and "e" not in text.lower() else 0
+            if decimals and abs(float(text) - value) <= 0.5 * 10 ** -decimals + 1e-12:
+                return True
+        return any(math.isclose(number, value, rel_tol=1e-5, abs_tol=1e-9) for number in numbers)
+    return value in numbers
+
+
+def assert_table(output, expected):
+    lines = table_lines(output, expected)
+    assert re.search(r"token|input|output", output, re.IGNORECASE)
+    assert re.search(r"seconds|wall|time|\bsec\b", output, re.IGNORECASE)
+    assert re.search(r"cost|usd|\$", output, re.IGNORECASE)
+    assert re.search(r"correct|verdict|answer", output, re.IGNORECASE)
+    for identity, row in expected.items():
+        line = lines[identity]
+        for name in ("input", "output"):
+            assert has_number(line, counters(row, identity[0])[name]), f"Missing {name} counter: {line}"
+        for name in ("wall_seconds", "cost_usd"):
+            assert has_number(line, row[name], fractional=True), f"Missing {name}: {line}"
+        verdict = r"true|yes|correct|pass|✓" if row["correct"] else r"false|no|incorrect|wrong|fail|✗|✘"
+        assert re.search(rf"(?<!\w)(?:{verdict})(?!\w)", line, re.IGNORECASE), f"Missing verdict: {line}"
+        if not row["pure_reasoning"]:
+            assert "(used tools)" in line, f"Tool-contaminated run must be marked: {line}"
+    return lines
+
+
+def timestamp(value):
+    assert isinstance(value, str) and "T" in value
+    result = datetime.fromisoformat(value)
+    assert result.tzinfo is not None and result.utcoffset() == timedelta(0), "Use UTC ISO timestamps"
+    return result
+
+
+def option(argv, name):
+    assert isinstance(argv, list) and all(isinstance(arg, str) for arg in argv)
+    for index, arg in enumerate(argv):
+        if arg == name:
+            assert index + 1 < len(argv), f"Missing value for {name}"
+            return argv[index + 1]
+        if arg.startswith(name + "="):
+            return arg[len(name) + 1:]
+    pytest.fail(f"Missing {name} in argv {argv}")
+
+
+def config(argv, name):
+    values = [argv[i + 1] for i, arg in enumerate(argv[:-1]) if arg in ("-c", "--config")]
+    for value in values:
+        if value.startswith(name + "="):
+            return value.split("=", 1)[1].strip("\"'")
+    pytest.fail(f"Missing config {name}: {argv}")
+
+
+def assert_invocation(argv, cli, effort, model):
+    if cli == "claude":
+        assert option(argv, "--effort") == effort
+        assert option(argv, "--model") == model
+        assert option(argv, "--output-format") == "stream-json"
+        assert option(argv, "--tools") == ""
+        assert option(argv, "--permission-mode") == "dontAsk"
+        assert {"-p", "--verbose", "--no-session-persistence", "--strict-mcp-config"} <= set(argv)
+    else:
+        assert "exec" in argv and argv[-1] == "-"
+        assert config(argv, "model_reasoning_effort") == effort
+        assert config(argv, "approval_policy") == "never"
+        assert option(argv, "-m") == model
+        assert option(argv, "--sandbox") == "read-only"
+        assert option(argv, "-C")
+        assert {"--json", "--ephemeral", "--skip-git-repo-check"} <= set(argv)
+
+
+def price_nodes(block):
+    """Find model-keyed dictionaries without dictating vendor nesting."""
+    found = {}
+    def visit(value):
+        if not isinstance(value, dict):
+            return
+        for key, child in value.items():
+            if isinstance(child, dict):
+                names = {normalized(name) for name in child}
+                if names & {normalized(alias) for alias in RATE_ALIASES["input"]} and names & {
+                        normalized(alias) for alias in RATE_ALIASES["output"]}:
+                    assert key not in found, f"Duplicate price for model {key}"
+                    found[key] = (value, child)
+                else:
+                    visit(child)
+    visit(block)
+    assert found, "Prices must contain per-model input/output rates in USD per million tokens"
+    return found
+
+
+def rates(block, model, cli):
+    nodes = price_nodes(block)
+    assert model in nodes, f"No rate for usage model {model}"
+    node = nodes[model][1]
+    required = ("input", "output", "cache_read", "cache_write_5m", "cache_write_1h") if cli == "claude" else (
+        "input", "output", "cached_input")
+    return {name: finite(field(node, RATE_ALIASES[name]), positive=True) for name in required}
+
+
+def puzzle():
+    """Locate the literal parcel table structurally; never import the oracle."""
+    prompt = read(DEMO / "prompt.txt")
+    match = re.search(r"\bcapacity\b[^\n\d]{0,80}(\d+)\b", prompt, re.IGNORECASE)
+    assert match, "Prompt must state its integer capacity"
+    capacity = int(match[1])
+    tree = ast.parse(read(DEMO / "effort.py"))
+    constants = []
+    tables = []
+    for node in tree.body:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        try:
+            value = ast.literal_eval(node.value)
+        except (ValueError, TypeError):
+            continue
+        constants.append(value)
+        entries = list(value.values()) if isinstance(value, dict) else value
+        if not isinstance(entries, (list, tuple)) or len(entries) not in (7, 8):
+            continue
+        parcels = []
+        for entry in entries:
+            if isinstance(entry, dict):
+                weight = field(entry, ("weight", "w", "mass"), None, False)
+                value_ = field(entry, ("value", "v", "profit", "benefit"), None, False)
+                pair = (weight, value_)
+            elif isinstance(entry, (list, tuple)) and len(entry) in (2, 3):
+                pair = tuple(entry[-2:])
+            else:
+                break
+            if any(type(number) is not int for number in pair) or pair[0] <= 0 or pair[1] < 0:
+                break
+            parcels.append(pair)
+        if len(parcels) == len(entries):
+            tables.append(parcels)
+    assert capacity > 0 and capacity in [x for x in constants if type(x) is int], "Capacity must be a script constant"
+    # Numbers may be in Markdown, CSV, or labelled parcel lines. Each line must
+    # contain the ordered weight/value pair (a numeric parcel ID is allowed).
+    prompt_lines = prompt.splitlines()
+    header = next((line.lower() for line in prompt_lines if "weight" in line.lower()
+                   and "value" in line.lower() and not re.search(r"\d", line)
+                   and any(delimiter in line for delimiter in ("|", ",", "\t"))), "weight value")
+    reversed_columns = header.index("value") < header.index("weight")
+    numeric_lines = []
+    for line in prompt_lines:
+        numbers = tuple(map(int, re.findall(r"(?<![\w.])\d+(?![\w.])", line)))
+        lower = line.lower()
+        reversed_line = (lower.index("value") < lower.index("weight")) if (
+            "weight" in lower and "value" in lower) else reversed_columns
+        if len(numbers) >= 2 and reversed_line:
+            numbers = numbers[:-2] + (numbers[-1], numbers[-2])
+        numeric_lines.append(numbers)
+    candidates = [table for table in tables if all(any(tuple(line[-2:]) == pair for line in numeric_lines)
+                                                  for pair in table)]
+    assert len(candidates) == 1, "Shipped prompt must describe the script's one literal parcel table"
+    parcels = candidates[0]
+    optimum = max(sum(value for take, (_, value) in zip(bits, parcels) if take)
+                  for bits in itertools.product((0, 1), repeat=len(parcels))
+                  if sum(weight for take, (weight, _) in zip(bits, parcels) if take) <= capacity)
+    return prompt, parcels, capacity, optimum
+
+
+def answer(text):
+    matches = re.findall(r"^\s*ANSWER\s*:\s*(.*?)\s*$", text, re.MULTILINE)
+    if not matches or not re.fullmatch(r"[+-]?\d+", matches[-1]):
+        return None
+    return int(matches[-1])
+
+
+def cache_hours_by_model(model_usage, aggregate_usage):
+    """Attribute the reported duration split without importing demo helpers.
+
+    A split may cover every write (all at 1h), or one uniquely identifiable
+    model. Other models' writes, and streams without a split, use the 5m rate.
+    An aggregate mixed split cannot establish per-model cost when multiple
+    models with different prices could own those writes.
+    """
+    writes = {model: integer(field(usage, ALIASES["cache_write"]))
+              for model, usage in model_usage.items()}
+    hours = dict.fromkeys(writes, 0)
+    split = aggregate_usage.get("cache_creation")
+    if split is None:
+        return hours
+    assert isinstance(split, dict), "Cache duration split must be an object"
+    hour = integer(split.get("ephemeral_1h_input_tokens", 0))
+    five = integer(split.get("ephemeral_5m_input_tokens", 0))
+    assert hour + five <= sum(writes.values()), "Duration split exceeds cache-write tokens"
+    if not hour:
+        return hours
+    if hour == sum(writes.values()) and five == 0:
+        return writes
+    owners = [model for model, count in writes.items() if count == hour + five]
+    assert len(owners) == 1, "Cannot independently attribute cache-write durations to a model"
+    hours[owners[0]] = hour
+    return hours
+
+
+def decode(events, cli):
+    counts = dict.fromkeys(ALIASES, 0)
+    if cli == "claude":
+        results = [event for event in events if event.get("type") == "result"]
+        assert len(results) == 1, "Need one terminal Claude result"
+        result = results[0]
+        usage = result["modelUsage"]
+        assert isinstance(usage, dict) and usage
+        for model_usage in usage.values():
+            for name in ("input", "output", "cache_read", "cache_write"):
+                counts[name] += integer(field(model_usage, ALIASES[name]))
+        aggregate_usage = result.get("usage") or {}
+        counts["cache_write_1h"] = sum(cache_hours_by_model(usage, aggregate_usage).values())
+        init = [event for event in events if event.get("type") == "system" and event.get("subtype") == "init"]
+        assert len(init) == 1 and isinstance(init[0].get("tools"), list), "Record Claude init tools"
+        tool_calls = sum(block.get("type") == "tool_use" for event in events
+                         if event.get("type") == "assistant"
+                         for block in event.get("message", {}).get("content", []))
+        text = result.get("result")
+        if not isinstance(text, str):
+            text = "\n".join(block.get("text", "") for event in events if event.get("type") == "assistant"
+                             for block in event.get("message", {}).get("content", []) if block.get("type") == "text")
+        return (counts, text, tool_calls, not tool_calls and not init[0]["tools"],
+                usage, result["total_cost_usd"], aggregate_usage)
+    turns = [event["usage"] for event in events if event.get("type") == "turn.completed"]
+    assert turns, "Need Codex turn.completed usage"
+    for usage in turns:
+        for name in ("input", "output", "cached_input", "reasoning_output"):
+            counts[name] += integer(field(usage, ALIASES[name], 0, name != "reasoning_output"))
+        assert usage["cached_input_tokens"] <= usage["input_tokens"]
+        assert usage.get("reasoning_output_tokens", 0) <= usage["output_tokens"]
+    items = [event["item"] for event in events if event.get("type") == "item.completed"]
+    text = "\n".join(item.get("text", "") for item in items if item.get("type") == "agent_message")
+    tools = set()
+    for index, event in enumerate(events):
+        item = event.get("item", {})
+        kind = item.get("type", "")
+        if kind in {"command_execution", "web_search", "file_change"} or "tool" in kind:
+            tools.add(item.get("id", f"event-{index}"))
+    return counts, text, len(tools), not tools, None, None, None
+
+
+def events_at(path):
+    events = [json.loads(line) for line in read(path).splitlines() if line.strip()]
+    assert all(isinstance(event, dict) for event in events)
+    return events
+
+
+def cost_from_raw(block, cli, model, counts, usage, aggregate_usage):
+    if cli == "claude":
+        total = 0
+        hours = cache_hours_by_model(usage, aggregate_usage)
+        for name, counters_ in usage.items():
+            rate = rates(block, name, cli)
+            total += (counters_["inputTokens"] * rate["input"]
+                      + (counters_["cacheCreationInputTokens"] - hours[name]) * rate["cache_write_5m"]
+                      + hours[name] * rate["cache_write_1h"]
+                      + counters_["cacheReadInputTokens"] * rate["cache_read"]
+                      + counters_["outputTokens"] * rate["output"])
+    else:
+        rate = rates(block, model, cli)
+        total = ((counts["input"] - counts["cached_input"]) * rate["input"]
+                 + counts["cached_input"] * rate["cached_input"] + counts["output"] * rate["output"])
+    return total / 1_000_000
+
+
+@pytest.fixture(scope="module")
+def recorded():
+    document = load(DEMO / "recorded/results.json")
+    return document, rows(document)
+
+
+def test_d2_recorded_rows_rederive_from_raw_and_meta(recorded):
+    """Every number replay shows comes from the raw stream, its meta and the shipped prices."""
+    document, recorded_rows = recorded
+    _prompt, _, _, optimum = puzzle()
+    for cli, effort in sorted(RUNS):
+        check_recorded_row(document, recorded_rows[cli, effort], cli, effort, optimum)
+
+
+def check_recorded_row(document, row, cli, effort, optimum):
+    raw = events_at(DEMO / f"recorded/raw/{cli}-{effort}.jsonl")
+    meta = load(DEMO / f"recorded/raw/{cli}-{effort}.meta.json")
+    counts, text, tools, pure, usage, reported, aggregate_usage = decode(raw, cli)
+    assert counters(row, cli) == counts
+    assert row["answer"] == answer(text)
+    assert type(row["correct"]) is bool and row["correct"] == (answer(text) == optimum)
+    assert integer(row["tool_calls"]) == tools
+    assert type(row["pure_reasoning"]) is bool and row["pure_reasoning"] == pure
+    assert row["wall_seconds"] == meta["wall_seconds"]
+    finite(row["wall_seconds"], positive=True)
+    assert row["cli_version"] == meta["cli_version"]
+    expected_cost = cost_from_raw(document["prices"], cli, row["model"], counts, usage, aggregate_usage)
+    assert finite(row["cost_usd"]) == pytest.approx(expected_cost, rel=1e-8, abs=1e-10)
+    if cli == "claude":
+        assert row["reported_cost_usd"] == reported
+        delta = field(row, ("cost_delta_usd", "delta_cost_usd", "cost_difference_usd", "cost_delta", "delta_usd"))
+        assert type(delta) in (int, float) and math.isfinite(delta)
+        # Either sign convention is acceptable when the README explains it.
+        assert abs(delta) == pytest.approx(abs(expected_cost - reported), abs=1e-10)
+
+
+def test_d3_replay_prints_the_recorded_table_offline(recorded, tmp_path):
+    """The documented `uv run --offline effort.py replay`, with network and processes denied."""
+    wrapper = tmp_path / "offline_replay.py"
+    wrapper.write_text('''import runpy, sys
+def deny(event, args):
+    if event.startswith("socket.") or event in {
+        "subprocess.Popen", "os.system", "os.posix_spawn", "os.exec", "os.fork"
+    }:
+        raise RuntimeError("Replay tried network/process access: " + event)
+sys.addaudithook(deny)
+sys.argv = ["effort.py", "replay"]
+runpy.run_path("effort.py", run_name="__main__")
+''', encoding="utf-8")
+    output = success(["uv", "run", "--offline", "python", wrapper], DEMO)
+    assert_table(output, recorded[1])
+
+
+def test_a1_reset_cleans_the_demo_and_nothing_else(tmp_path):
+    section = re.search(r"^## Reset\s*\n(.*?)(?=^## |\Z)", read(DEMO / "README.md"), re.MULTILINE | re.DOTALL)
+    assert section, "Missing ## Reset"
+    blocks = re.findall(r"```(?:sh|bash|shell|console)?\s*\n(.*?)```", section[1], re.DOTALL)
+    assert blocks, "Reset needs a fenced command block"
+    command = "\n".join(blocks)
+    assert str(REPO) not in command, "Reset must be checkout-relative"
+    # A disposable repository holding only this demo, never the worktree.
+    clone = tmp_path / "disposable repo with spaces"
+    destination = clone / RELATIVE
+    shutil.copytree(DEMO, destination, ignore=shutil.ignore_patterns("work", "__pycache__", ".pytest_cache"))
+    (clone / ".gitignore").write_text(".venv/\nnode_modules/\n", encoding="utf-8")
+    success(["git", "init", "-b", "test-effort-reset"], clone)
+    success(["git", "config", "user.email", "acceptance@example.invalid"], clone)
+    success(["git", "config", "user.name", "Disposable acceptance fixture"], clone)
+    success(["git", "add", "."], clone)
+    success(["git", "commit", "-m", "Reset test fixture"], clone)
+    outside = [clone / "sessions/01-fundamentals/.venv/sentinel",
+               clone / "setup/node_modules/sentinel",
+               destination.parent / "effort-reset-sibling/untracked.txt"]
+    for path in outside:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("preserve me", encoding="utf-8")
+    dirty = destination / "work/nested/cache.bin"
+    dirty.parent.mkdir(parents=True)
+    dirty.write_text("dirty run", encoding="utf-8")
+    original = (destination / "prompt.txt").read_bytes()
+    (destination / "prompt.txt").write_text("uncommitted change", encoding="utf-8")
+    success(["bash", "-eu", "-c", command], destination)
+    assert success(["git", "status", "--short", "--ignored", "--untracked-files=all", "--", RELATIVE], clone) == ""
+    assert (destination / "prompt.txt").read_bytes() == original
+    assert not (destination / "work").exists()
+    for path in outside:
+        assert path.read_text(encoding="utf-8") == "preserve me", f"Reset damaged {path}"
+
+
+STUB = '''#!{python}
+import json, os, sys
+from pathlib import Path
+cli = Path(sys.argv[0]).name
+args = sys.argv[1:]
+if args == ["--version"]:
+    print(cli + " 9.8.7-test")
+    raise SystemExit(0)
+def option(flag):
+    return args[args.index(flag) + 1]
+if cli == "claude":
+    effort = option("--effort")
+else:
+    setting = next(value for value in args if value.startswith("model_reasoning_effort="))
+    effort = setting.split("=", 1)[1].strip(chr(34) + chr(39))
+entry = dict(cli=cli, effort=effort, argv=[cli] + args, cwd=os.getcwd(),
+             entries=os.listdir(), prompt=sys.stdin.read())
+with open(os.environ["EFFORT_STUB_LOG"], "a", encoding="utf-8") as handle:
+    handle.write(json.dumps(entry) + "\\n")
+payloads = json.loads(Path(os.environ["EFFORT_STUB_PAYLOADS"]).read_text())
+for event in payloads[cli + "-" + effort]:
+    print(json.dumps(event), flush=True)
+'''
+
+
+def fixture_prices(destination, models):
+    """Preserve the implementer's price layout while substituting test rates."""
+    block = copy.deepcopy(load(DEMO / "prices.json"))
+    nodes = price_nodes(block)
+    claude_key = next((key for key in nodes if key.startswith(DEFAULTS["claude"])), None)
+    assert claude_key, "Prices must cover the requested Claude model (possibly dated)"
+    assert DEFAULTS["codex"] in nodes
+    templates = {"claude": nodes[claude_key], "codex": nodes[DEFAULTS["codex"]]}
+    specs = [("claude", models["claude"], {"input": 4, "output": 18, "cache_write_5m": 5,
+                                        "cache_write_1h": 8, "cache_read": .4}),
+             ("claude", "fixture-auxiliary", {"input": 2, "output": 8, "cache_write_5m": 2.5,
+                                              "cache_write_1h": 4, "cache_read": .2}),
+             ("codex", models["codex"], {"input": 3, "output": 15, "cached_input": .3})]
+    for cli, model, values in specs:
+        parent, template = templates[cli]
+        replacement = copy.deepcopy(template)
+        for name, value in values.items():
+            names = {normalized(alias) for alias in RATE_ALIASES[name]}
+            keys = [key for key in replacement if normalized(key) in names]
+            assert keys, f"Pricing snapshot needs {name} for {cli}"
+            for key in keys:
+                replacement[key] = value
+        parent[model] = replacement
+    (destination / "prices.json").write_text(json.dumps(block), encoding="utf-8")
+    return block
+
+
+def live_payloads(profile, models, optimum):
+    payloads, expected = {}, {}
+    for cli, effort in sorted(RUNS):
+        factor = (profile + 1) * {"low": 1, "high": 3, "max": 5}[effort]
+        if profile == 0:
+            text = {("claude", "low"): f"ANSWER: {optimum + 11}\nANSWER: {optimum}",
+                    ("claude", "high"): f"ANSWER: {optimum}\nANSWER: {optimum + 7}",
+                    ("claude", "max"): f"ANSWER: {optimum - 2}",
+                    ("codex", "low"): "I do not have a final answer.",
+                    ("codex", "high"): f"ANSWER: {optimum}",
+                    ("codex", "max"): f"ANSWER: {optimum}"}[cli, effort]
+        else:
+            text = {("claude", "low"): f"ANSWER: {optimum}\nANSWER: not-an-integer",
+                    ("claude", "high"): f"ANSWER: {optimum}",
+                    ("claude", "max"): f"ANSWER: {optimum}",
+                    ("codex", "low"): f"ANSWER: {optimum - 1}",
+                    ("codex", "high"): f"ANSWER: {optimum}",
+                    ("codex", "max"): f"ANSWER: **{optimum}**"}[cli, effort]
+        if cli == "claude":
+            usage = {
+                models[cli]: {"inputTokens": 100 * factor, "outputTokens": 50 * factor,
+                              "cacheCreationInputTokens": 20 * factor, "cacheReadInputTokens": 30 * factor},
+                "fixture-auxiliary": {"inputTokens": 40 * factor, "outputTokens": 10 * factor,
+                                      "cacheCreationInputTokens": 8 * factor, "cacheReadInputTokens": 12 * factor},
+            }
+            # Hand arithmetic, independent of cost_from_raw and implementation.
+            cost = factor * (100 * 4 + 20 * 5 + 30 * .4 + 50 * 18
+                             + 40 * 2 + 8 * 2.5 + 12 * .2 + 10 * 8) / 1_000_000
+            reported = cost + .000007
+            init_tools = ["Bash"] if profile == 1 and effort == "low" else []
+            tool_calls = int(profile == 1 and effort == "high")
+            content = [{"type": "text", "text": text}]
+            if tool_calls:
+                content.insert(0, {"type": "tool_use", "id": "fixture-tool", "name": "Bash", "input": {"command": "true"}})
+            events = [
+                {"type": "system", "subtype": "init", "tools": init_tools, "model": models[cli]},
+                {"type": "assistant", "message": {"role": "assistant", "content": content}},
+                {"type": "result", "subtype": "success", "is_error": False, "result": text,
+                 "modelUsage": usage, "total_cost_usd": reported,
+                 # Aggregated usage included to catch parsers that price it twice.
+                 "usage": {"input_tokens": 140 * factor, "output_tokens": 60 * factor,
+                           "cache_creation_input_tokens": 28 * factor, "cache_read_input_tokens": 42 * factor}},
+            ]
+            token_counts = {"input": 140 * factor, "output": 60 * factor,
+                            "cache_read": 42 * factor, "cache_write": 28 * factor,
+                            "cache_write_1h": 0,
+                            "cached_input": 0, "reasoning_output": 0}
+            pure = not tool_calls and not init_tools
+        else:
+            cost = factor * ((200 - 30) * 3 + 30 * .3 + 70 * 15) / 1_000_000
+            reported = None
+            tool_calls = int((profile == 0 and effort == "high") or (profile == 1 and effort == "low"))
+            events = [{"type": "thread.started", "thread_id": "fixture-thread"},
+                      {"type": "turn.started"},
+                      {"type": "item.completed", "item": {"id": "reason", "type": "reasoning", "text": "brief reasoning"}},
+                      {"type": "turn.completed", "usage": {
+                          "input_tokens": 120 * factor, "cached_input_tokens": 20 * factor,
+                          "output_tokens": 40 * factor, "reasoning_output_tokens": 15 * factor}},
+                      {"type": "turn.started"}]
+            if tool_calls:
+                # The same command has started/completed events; count one call.
+                for event_type, status in (("item.started", "in_progress"), ("item.completed", "completed")):
+                    events.append({"type": event_type, "item": {"id": "command", "type": "command_execution",
+                                   "command": "true", "status": status, "exit_code": 0, "aggregated_output": ""}})
+            events += [{"type": "item.completed", "item": {"id": "final", "type": "agent_message", "text": text}},
+                       {"type": "turn.completed", "usage": {
+                           "input_tokens": 80 * factor, "cached_input_tokens": 10 * factor,
+                           "output_tokens": 30 * factor, "reasoning_output_tokens": 8 * factor}}]
+            token_counts = {"input": 200 * factor, "output": 70 * factor, "cache_read": 0,
+                            "cache_write": 0, "cache_write_1h": 0,
+                            "cached_input": 30 * factor, "reasoning_output": 23 * factor}
+            pure = not tool_calls
+        payloads[f"{cli}-{effort}"] = events
+        expected[cli, effort] = dict(model=models[cli], tokens=token_counts, cost_usd=cost,
+                                    reported_cost_usd=reported, answer=answer(text), correct=answer(text) == optimum,
+                                    tool_calls=tool_calls, pure_reasoning=pure)
+    return payloads, expected
+
+
+def sandbox_live(tmp_path, profile=0, overrides=False):
+    read(DEMO / "effort.py")
+    destination = tmp_path / "standalone session/cursus/demos/effort"
+    shutil.copytree(DEMO, destination, ignore=shutil.ignore_patterns("work", "__pycache__", ".pytest_cache"))
+    caller = tmp_path / "unrelated caller"
+    caller.mkdir()
+    models = {"claude": "fixture-claude", "codex": "fixture-codex"} if overrides else DEFAULTS.copy()
+    price_block = fixture_prices(destination, models)
+    payloads, expected = live_payloads(profile, models, puzzle()[3])
+    payload_path = tmp_path / "payloads.json"
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    bin_dir = tmp_path / "stub bin"
+    bin_dir.mkdir()
+    for cli in ("claude", "codex"):
+        stub = bin_dir / cli
+        stub.write_text(STUB.format(python=sys.executable), encoding="utf-8")
+        stub.chmod(0o755)
+    log = tmp_path / "calls.jsonl"
+    env = child_env(PATH=str(bin_dir) + os.pathsep + os.environ.get("PATH", ""),
+                    EFFORT_STUB_LOG=str(log), EFFORT_STUB_PAYLOADS=str(payload_path))
+    flags = ["--claude-model", models["claude"], "--codex-model", models["codex"]] if overrides else []
+    return destination, caller, env, log, payload_path, payloads, expected, price_block, flags
+
+
+@pytest.mark.parametrize("profile", (0, 1))
+def test_d2_stub_live_accounting_scoring_isolation_and_overrides(tmp_path, profile):
+    destination, caller, env, log, _, payloads, expected, prices, flags = sandbox_live(
+        tmp_path, profile, overrides=bool(profile))
+    out = tmp_path / "captured output"
+    output = success([sys.executable, destination / "effort.py", "live", "--cli", "both", "--out", out, *flags], caller, env)
+    document = load(out / "results.json")
+    observed = rows(document)
+    assert document["prices"] == prices
+    calls = events_at(log)
+    assert len(calls) == 6 and {(call["cli"], call["effort"]) for call in calls} == RUNS
+    assert len({call["cwd"] for call in calls}) == 6, "Fresh directory for every effort run"
+    prompt = read(DEMO / "prompt.txt")
+    for call in calls:
+        identity = (call["cli"], call["effort"])
+        row, wanted = observed[identity], expected[identity]
+        assert_invocation(call["argv"], identity[0], identity[1], wanted["model"])
+        cwd = Path(call["cwd"])
+        assert not cwd.is_relative_to(REPO) and not cwd.is_relative_to(destination)
+        assert call["entries"] == [], "Models must see a completely empty directory"
+        assert not cwd.exists(), "Delete temporary reasoning directory in finally"
+        if identity[0] == "codex":
+            assert Path(option(call["argv"], "-C")) == cwd
+        assert call["prompt"] == prompt, "Render the same parcel prompt for every CLI and effort"
+        assert counters(row, identity[0]) == wanted["tokens"]
+        assert row["model"] == wanted["model"]
+        assert row["answer"] == wanted["answer"] and type(row["correct"]) is bool
+        assert row["correct"] == wanted["correct"]
+        assert row["tool_calls"] == wanted["tool_calls"] and type(row["pure_reasoning"]) is bool
+        assert row["pure_reasoning"] == wanted["pure_reasoning"]
+        finite(row["wall_seconds"], positive=True)
+        assert finite(row["cost_usd"]) == pytest.approx(wanted["cost_usd"], rel=1e-9, abs=1e-12)
+        if identity[0] == "claude":
+            assert row["reported_cost_usd"] == wanted["reported_cost_usd"]
+            delta = field(row, ("cost_delta_usd", "delta_cost_usd", "cost_difference_usd", "cost_delta", "delta_usd"))
+            assert abs(delta) == pytest.approx(.000007, abs=1e-12)
+        raw_path = out / f"raw/{identity[0]}-{identity[1]}.jsonl"
+        assert events_at(raw_path) == payloads[f"{identity[0]}-{identity[1]}"]
+        expected_raw = "".join(json.dumps(event) + "\n" for event in payloads[f"{identity[0]}-{identity[1]}"])
+        assert raw_path.read_text() == expected_raw, "Keep raw stdout verbatim"
+        meta = load(out / f"raw/{identity[0]}-{identity[1]}.meta.json")
+        assert meta["prompt_sha256"] == hashlib.sha256((DEMO / "prompt.txt").read_bytes()).hexdigest()
+        assert meta["cwd_kind"] == "tempdir-outside-repo" and meta["exit_code"] == 0
+        assert row["cli_version"] == meta["cli_version"] == identity[0] + " 9.8.7-test"
+        assert meta["wall_seconds"] == row["wall_seconds"]
+        duration = (timestamp(meta["ended_at"]) - timestamp(meta["started_at"])).total_seconds()
+        assert abs(duration - meta["wall_seconds"]) <= 1
+        assert_invocation(meta["argv"], *identity, wanted["model"])
+    assert_table(output, observed)
+    assert not (caller / "work").exists()
+
+
+@pytest.mark.parametrize("main_hour,aux_hour,five", [
+    pytest.param(13, 0, 7, id="mixed-main-with-auxiliary-fallback"),
+    pytest.param(20, 8, 0, id="all-models-one-hour"),
+])
+def test_d2_claude_cache_duration_accounting(tmp_path, main_hour, aux_hour, five):
+    destination, caller, env, _, payload_path, payloads, expected, _, _ = sandbox_live(tmp_path)
+    for effort, factor in (("low", 1), ("high", 3), ("max", 5)):
+        terminal = next(event for event in payloads[f"claude-{effort}"] if event["type"] == "result")
+        terminal["usage"]["cache_creation"] = {
+            "ephemeral_1h_input_tokens": (main_hour + aux_hour) * factor,
+            "ephemeral_5m_input_tokens": five * factor,
+        }
+        # Hand arithmetic with different rates per model and cache duration.
+        # Total writes stay 20 + 8; the 1h counter must not add tokens again.
+        cost = factor * (100 * 4 + (20 - main_hour) * 5 + main_hour * 8 + 30 * .4 + 50 * 18
+                         + 40 * 2 + (8 - aux_hour) * 2.5 + aux_hour * 4 + 12 * .2 + 10 * 8) / 1_000_000
+        wanted = expected["claude", effort]
+        wanted["cost_usd"] = cost
+        wanted["tokens"]["cache_write_1h"] = (main_hour + aux_hour) * factor
+        terminal["total_cost_usd"] = cost + .000007
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    out = tmp_path / "duration results"
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "claude", "--out", out], caller, env)
+    assert result.returncode == 0, result.stdout + result.stderr
+    run_list = field(load(out / "results.json"), ("runs", "results", "rows"))
+    observed = {(row["cli"], row["effort"]): row for row in run_list}
+    assert len(run_list) == 3 and set(observed) == {("claude", effort) for effort in EFFORTS}
+    for identity, row in observed.items():
+        wanted = expected[identity]
+        counts = counters(row, "claude")
+        assert counts == wanted["tokens"]
+        assert counts["cache_write_1h"] <= counts["cache_write"]
+        assert finite(row["cost_usd"]) == pytest.approx(wanted["cost_usd"], rel=1e-9, abs=1e-12)
+        assert row["reported_cost_usd"] == pytest.approx(wanted["cost_usd"] + .000007, abs=1e-12)
+        delta = field(row, ("cost_delta_usd", "delta_cost_usd", "cost_difference_usd", "cost_delta", "delta_usd"))
+        assert abs(delta) == pytest.approx(.000007, abs=1e-12)
+    assert_table(result.stdout, observed)
+    if (main_hour, aux_hour) in ((13, 0), (0, 3)):
+        # These splits cover one model; the other model has no duration evidence.
+        assert re.search(r"warning.*cache|cache.*warning", result.stderr, re.IGNORECASE)
+
+
+def test_d2_rejects_unattributable_claude_cache_duration(tmp_path):
+    destination, caller, env, log, payload_path, payloads, *_ = sandbox_live(tmp_path)
+    terminal = next(event for event in payloads["claude-low"] if event["type"] == "result")
+    terminal["usage"]["cache_creation"] = {
+        "ephemeral_1h_input_tokens": 13, "ephemeral_5m_input_tokens": 15,
+    }
+    # Two models wrote 20 and 8 tokens at different prices. This mixed aggregate
+    # gives no way to assign the 13 one-hour tokens to their respective rates.
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "claude"], caller, env)
+    assert result.returncode != 0, "Do not guess a per-model price for ambiguous cache-write durations"
+    calls = events_at(log)
+    assert calls and all(not Path(call["cwd"]).exists() for call in calls)
+    assert re.search(r"cache|duration|attribute", result.stderr + result.stdout, re.IGNORECASE)
+
+
+def test_d2_cli_selection_and_script_relative_default_output(tmp_path):
+    cli = "codex"
+    destination, caller, env, log, *_ = sandbox_live(tmp_path)
+    success([sys.executable, destination / "effort.py", "live", "--cli", cli], caller, env)
+    calls = events_at(log)
+    assert [(call["cli"], call["effort"]) for call in calls] == [(cli, effort) for effort in EFFORTS]
+    document = load(destination / "work/results.json")
+    run_list = field(document, ("runs", "results", "rows"))
+    assert {(row["cli"], row["effort"]) for row in run_list} == {(cli, effort) for effort in EFFORTS}
+    assert not (caller / "work").exists()
+
+
+def test_d2_effort_selection_runs_only_the_named_levels_in_dial_order(tmp_path):
+    destination, caller, env, log, *_ = sandbox_live(tmp_path)
+    out = tmp_path / "selected"
+    output = success([sys.executable, destination / "effort.py", "live", "--cli", "both",
+                      "--effort", "max", "low", "--out", out], caller, env)
+    wanted = [(cli, effort) for cli in ("claude", "codex") for effort in ("low", "max")]
+    assert [(call["cli"], call["effort"]) for call in events_at(log)] == wanted
+    run_list = field(load(out / "results.json"), ("runs", "results", "rows"))
+    assert [(row["cli"], row["effort"]) for row in run_list] == wanted
+    assert "Max effort divided by low effort" in output and "High effort divided by low effort" not in output
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "codex", "--effort", "medium"], caller, env)
+    assert result.returncode != 0 and "invalid choice" in result.stderr
+
+
+def test_d2_rejects_noninclusive_codex_usage(tmp_path):
+    destination, caller, env, log, payload_path, payloads, *_ = sandbox_live(tmp_path)
+    events = payloads["codex-low"]
+    usage = next(event["usage"] for event in events if event["type"] == "turn.completed")
+    usage["cached_input_tokens"] = usage["input_tokens"] + 1
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "codex"], caller, env)
+    assert result.returncode != 0, "Invalid inclusive counters must reject the capture"
+    calls = events_at(log)
+    assert calls, "The parser must actually consume the invalid event"
+    assert all(not Path(call["cwd"]).exists() for call in calls), "Clean temp directories on failure too"
+    assert re.search(r"cache|reason|usage|token", result.stderr + result.stdout, re.IGNORECASE)
+
+
+def test_d2_rejects_unpriced_auxiliary_claude_model(tmp_path):
+    destination, caller, env, log, payload_path, payloads, *_ = sandbox_live(tmp_path)
+    result_event = next(event for event in payloads["claude-low"] if event["type"] == "result")
+    result_event["modelUsage"]["no-price-for-this-model"] = result_event["modelUsage"].pop("fixture-auxiliary")
+    payload_path.write_text(json.dumps(payloads), encoding="utf-8")
+    result = run([sys.executable, destination / "effort.py", "live", "--cli", "claude"], caller, env)
+    assert result.returncode != 0, "Never silently omit an auxiliary model's cost"
+    calls = events_at(log)
+    assert calls and all(not Path(call["cwd"]).exists() for call in calls)
+    assert re.search(r"price|rate|model", result.stderr + result.stdout, re.IGNORECASE)

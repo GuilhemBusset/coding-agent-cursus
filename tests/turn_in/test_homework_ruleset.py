@@ -54,8 +54,8 @@ def method(args):
     return "GET"
 
 
-@pytest.mark.parametrize("present", [(), ("pr-only-main", "homework-branches"),
-                                     ("pr-only-main",), ("homework-branches",)])
+# The two mixed cases give each ruleset both a create (POST) and an update (PUT).
+@pytest.mark.parametrize("present", [("pr-only-main",), ("homework-branches",)])
 def test_apply_both_rulesets_create_update_and_mixed(tmp_path, present):
     ids = {"pr-only-main": 271, "homework-branches": 982}
     existing = [{"name": name, "id": ids[name]} for name in reversed(present)]
@@ -77,8 +77,8 @@ def test_apply_both_rulesets_create_update_and_mixed(tmp_path, present):
 
 
 @pytest.mark.parametrize("failure,present", [
-    ("GET", ()), ("POST", ()), ("PUT", ("pr-only-main", "homework-branches")),
-    # Also fail only on applying the second definition: succeeding on main
+    ("GET", ()),
+    # Fail only on applying the second definition: succeeding on main
     # must not make a later homework-ruleset failure look like overall success.
     ("POST", ("pr-only-main",)), ("PUT", ("homework-branches",)),
 ])

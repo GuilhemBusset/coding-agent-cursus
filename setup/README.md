@@ -59,12 +59,13 @@ node setup/doctor.mjs
 npm --prefix setup test
 ```
 
-`npm --prefix setup test` runs `tools/html-pages/tests/run-all.mjs`, which lists that directory
-and passes every `*.test.mjs` file in it to a single `node --test` (Node 22 or newer, the version
-CI uses). A new suite is collected by adding the file; there is no list to register it in. Extra
-arguments go to `node --test` as options, for example
-`npm --prefix setup test -- --test-reporter=tap`. To run one suite and reject skipped or empty
-results, use `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`.
+`npm --prefix setup test` runs `tools/html-pages/tests/run-all.mjs`, which lists the suite
+folders (`tools/html-pages/tests/`, the page tooling's own suites, and each session's test parts,
+`sessions/<NN>-*/tests/<part>/`, where its lessons' suites live) and passes every `*.test.mjs` file
+in them to a single `node --test` (Node 22 or newer, the version CI uses). A new suite is collected
+by adding the file; there is no list to register it in. Extra arguments go to `node --test` as
+options, for example `npm --prefix setup test -- --test-reporter=tap`. To run one suite and reject
+skipped or empty results, use `node tools/html-pages/tests/run-suite.mjs <path>/<name>.test.mjs`.
 
 The tiny-lm suite also needs a C compiler on `PATH` as `cc` (OS-level; for example
 `sudo apt-get install gcc` on Debian or Ubuntu, which GitHub's Ubuntu runners already have). It
@@ -295,14 +296,19 @@ scripts/check-changed.sh --all      # run everything
 
 | You changed | It runs | Local time, 24 cores |
 | --- | --- | --- |
-| one deck | `check-page.mjs` on the deck, the Node suites that read it, the session's type checks and pytest suite | about 50 s |
-| a session's exercises or tests | that session's type checks, then its pytest suite in parallel | about 25 s |
-| `tools/implementation-loop/` | the engine tests, in parallel, and the repository's type check | about 11 s |
+| one deck or teaching lab | `check-page.mjs` on the page, the browser suites that read it, the session's lesson tests (`tests/lessons`) | 10–15 s |
+| a session's exercises | the session's lab tests (`tests/labs`) in parallel, and its type checks if Python changed | about 5 s |
+| a session's lockfile, pins or README | both parts of the session's suite, and its type checks | about 10 s |
+| `tools/implementation-loop/` | the engine tests, in parallel, and the repository's type check | about 10 s |
 | `ty.toml` | the repository's type check | seconds |
 | any `.py` file or `ruff.toml` | the import-order check, plus what else reads the file | seconds |
 | `setup/pyproject.toml` or `setup/uv.lock` | the repository's type check and the import-order check | seconds |
 | `scripts/turn-in.sh`, the hooks or a skill | the turn-in tests, `test-ship.sh` and the static repo checks, plus what reads them | seconds to a minute |
-| a workflow, the selector, `setup/package*.json`, or a path the map does not know | everything | a few minutes |
+| a workflow, the selector, `setup/package*.json`, or a path the map does not know | everything | about a minute |
+
+A session's suite has two parts, run separately (ADR 0017): `tests/lessons`, for what is taught
+live (`cursus/`, `index.html`), and `tests/labs`, for what students run (`exercises/`). The map
+gives each part the session paths it reads; a session file neither part claims runs both.
 
 The rules err wide:
 - a Node suite with no entry in the map runs on every change;

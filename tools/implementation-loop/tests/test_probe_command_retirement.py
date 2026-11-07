@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 
 import helpers  # noqa: F401 - puts the engine on sys.path
-from implement_loop import VERSION
 from implement_loop.config import Caps
 from implement_loop.engine import Engine
 from implement_loop.model import IssueState, Phase
@@ -77,9 +76,6 @@ class ProbeCommandCase(unittest.TestCase):
         self.engine._apply_request(50, st, self.wt, {"id": "R1", "kind": "test_change",
                                                      "content": {"checks/other.py": "# edited\n"}}, {})
         self.assertIn(probe, st.commands)
-
-    def test_the_engine_version_moves_past_the_one_50_failed_on(self):
-        self.assertGreater(tuple(map(int, VERSION.split("."))), (1, 0, 5))
 
 
 if __name__ == "__main__":

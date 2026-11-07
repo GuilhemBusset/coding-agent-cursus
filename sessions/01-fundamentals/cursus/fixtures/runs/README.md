@@ -169,7 +169,7 @@ python sanitize.py --self-test    # positive and negative controls of the creden
 python record_runs.py coverage    # how much of each log the context-bomb captures hold
 ```
 
-Checks: `sessions/01-fundamentals/tests/test_agent_runs.py`, also run in CI.
+Checks: `sessions/01-fundamentals/tests/lessons/test_agent_runs.py`, also run in CI.
 
 ## Demo catalog · schema 1
 

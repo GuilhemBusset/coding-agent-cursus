@@ -37,19 +37,29 @@ mise install
 uv sync
 ```
 
-Then run the session's tests:
+Then run the session's tests. They come in two parts, which follow the line between `cursus/`
+and `exercises/` (see [Layout](#layout)):
+
+| Part | Tests | Covers |
+| --- | --- | --- |
+| Lessons | `tests/lessons/` | What is taught live: the decks, the teaching labs, demos and fixtures in `cursus/`, and the hub `index.html` |
+| Labs | `tests/labs/` | What students run: the pre-work check, the P00 and L3 labs, the lab ladder, the P01 homework and the turn-in gate in `exercises/`, and the editor setup their installation carries |
 
 ```sh
-uv run pytest
+uv run pytest tests/lessons      # or tests/labs; plain `uv run pytest` runs both
 ```
 
-That runs them one at a time (about 3 minutes, mostly the pre-work tests). To spread them over
-every core, as CI does, use the `parallel` dependency group (pytest-xdist), which `uv sync` does
-not install:
+To spread them over every core, as CI does, use the `parallel` dependency group (pytest-xdist),
+which `uv sync` does not install:
 
 ```sh
-uv run --group parallel pytest -n auto
+uv run --group parallel pytest -n auto tests/lessons tests/labs
 ```
+
+The lessons' browser suites (`tests/lessons/*.test.mjs`) need the repository's HTML tooling, a
+one-time `node setup/html-pages.mjs` (see [`setup/README.md`](../../setup/README.md)). Run them
+from the repo root, one with `node tools/html-pages/tests/run-suite.mjs
+sessions/01-fundamentals/tests/lessons/<name>.test.mjs` or all of them with `npm --prefix setup test`.
 
 CI also type-checks the session's Python with [ty](https://docs.astral.sh/ty/), configured in
 `pyproject.toml`'s `[tool.ty]` and pinned in the default `typecheck` dependency group:
@@ -58,14 +68,15 @@ CI also type-checks the session's Python with [ty](https://docs.astral.sh/ty/), 
 uv run --locked ty check
 ```
 
-The pre-work tests (`tests/test_prework.py`) also run the student-facing `check-setup.ps1` under
-PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell once
-from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that
-directory on `PATH`, or set `CURSUS_PWSH`). The agent-timeout scenarios shorten the check's
-180 s default to 5 s through `CHECK_SETUP_SMOKE_TIMEOUT`. `tests/prework_live_agents.py` is not collected by
-`uv run pytest`: run it by hand with `uv run python tests/prework_live_agents.py` to repeat the
-live proof that the check passes with only Claude Code and with only Codex. It needs both agents
-installed and logged in, and costs one short prompt to each.
+The pre-work tests (`tests/labs/test_prework.py`) also run the student-facing `check-setup.ps1`
+under PowerShell 7, and fail rather than skip without it. On Linux, install the pinned PowerShell
+once from the repo root with `bash setup/pwsh.sh`, which links it as `~/.local/bin/pwsh` (keep that
+directory on `PATH`, or set `CURSUS_PWSH`). The agent-timeout scenario shortens the check's 180 s
+default to 1 s through `CHECK_SETUP_SMOKE_TIMEOUT`; the network timeout and the fork-lookup
+retries are tested in-process, without waiting them out. `tests/labs/prework_live_agents.py` is
+not collected by `uv run pytest`: run it by hand with `uv run python tests/labs/prework_live_agents.py`
+to repeat the live proof that the check passes with only Claude Code and with only Codex. It needs
+both agents installed and logged in, and costs one short prompt to each.
 
 `uv sync` installs the runtime dependencies (`pytest`, `highspy`, `numpy`) and ty into this
 session's `.venv/`, at the versions pinned in `uv.lock`. The editor and CI use that same checker;
@@ -97,19 +108,18 @@ uv run --locked --group fixtures python cursus/fixtures/build_fixtures.py
   CPU or BLAS could in theory flip a value that sits on a rounding boundary.
 - To check that the committed JSON is real output from the pinned models (offline, after one
   build has filled the cache):
-  `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/fixture_replay_checks.py`.
+  `uv run --locked --group fixtures pytest -q -p no:cacheprovider tests/lessons/fixture_replay_checks.py`.
   The plain `uv run pytest` suite checks the schema and the 500 KB size limit without torch.
 - `cursus/labs/attention.html` embeds `attention.json` verbatim in its
   `<script id="attention-data">` block, so it opens over `file://` without a fetch. After a
   rebuild that changes `attention.json`, paste the new file contents into that block and set
-  its `data-sha256` to the new file's `sha256sum`. `tests/test_attention_lab.py` (part of the
-  plain `uv run pytest` suite) fails until both match. Then rerun the lab's browser suite from
-  the repository root, `node tools/html-pages/tests/run-suite.mjs
-  tools/html-pages/tests/attention.test.mjs`.
+  its `data-sha256` to the new file's `sha256sum`. `tests/lessons/test_attention_lab.py` fails
+  until both match. Then rerun the lab's browser suite from the repository root, `node
+  tools/html-pages/tests/run-suite.mjs sessions/01-fundamentals/tests/lessons/attention.test.mjs`.
 - `cursus/labs/next-token.html` embeds `next_token.json` the same way, in its
   `<script id="next-token-data">` block, without the file's trailing newline. After a rebuild
   that changes `next_token.json`, paste the new contents there;
-  `tools/html-pages/tests/next-token.test.mjs` fails until the two match.
+  `tests/lessons/next-token.test.mjs` fails until the two match.
 
 ## Opening pages
 
@@ -136,8 +146,6 @@ To check one page, pass its path:
 node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/<page>.html
 ```
 
-`uv run pytest` in this session also checks, without Node, that every page here carries those
-markers and loads no remote resource. Plain outbound reading links are fine.
 
 ## Layout
 
@@ -163,8 +171,9 @@ markers and loads no remote resource. Plain outbound reading links are fine.
 | `exercises/home.html` | The homework sheet: rerun two demos, three sentences on "sampling, not retrieval", solve P01, turn in with `/turn-in 01` or `$turn-in 01`. Each part says what a good answer looks like, and the grading rule is that checker-proven feasibility counts more than the objective value. Students write their notes in `exercises/home-notes.md` |
 | `exercises/homework-p01/` | P01, the take-home: EV linehaul scheduling and charging. Statement, revised data, an empty `p01_model.py` for the student's agent to build, an independent stdlib checker (`p01_checker.py`), the solve-contract suite (`p01_contract.py`) and instructor notes |
 | `exercises/turn-in-check.sh` | The session's turn-in gate, run by `/turn-in 01`, `$turn-in 01` and `scripts/turn-in.sh 01`; it runs the mini homework's checker, then P01's, each with `--turn-in` |
-| `tests/` | The session's pytest suite |
-| `tests/fixtures/p01_upstream/` | The untouched 2025 P01 files and their MIT licence, pinned by hash, from which `exercises/homework-p01/data/` is derived |
+| `tests/lessons/` | Tests of what is taught live (`cursus/`, `index.html`): pytest and the lessons' browser suites |
+| `tests/labs/` | Tests of what students run (`exercises/`) |
+| `tests/labs/fixtures/p01_upstream/` | The untouched 2025 P01 files and their MIT licence, pinned by hash, from which `exercises/homework-p01/data/` is derived |
 
 The boundary between `cursus/` and `exercises/` is load-bearing: `cursus/` holds only what is
 taught live, and `exercises/` holds only what students do on their own time.

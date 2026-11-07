@@ -12,7 +12,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import implement_loop
 from helpers import SHIP, TempRepo, git, issue_body, present
 from implement_loop import workspace
 from implement_loop.agents import FakeAgents, Script
@@ -22,6 +21,9 @@ from implement_loop.github import FakeGitHub
 from implement_loop.graph import build_plan
 from implement_loop.model import Phase
 from implement_loop.state import RunStore
+
+# The unresolved-conflict tests run to the call ceiling: a low one keeps them short.
+LOW_CEILING = {"M": 10}
 
 
 def git_result(path, *args):
@@ -282,7 +284,10 @@ class LandConflictTests(unittest.TestCase):
         self.assertEqual(len(found), 1)
         self.assertIn("shared/suites.txt", found[0]["files"])
         self.assertFalse(self.events("round_failed"), "a conflict charges no round")
-        self.assertEqual(self.engine.store.issue(3).unproductive, 0)
+        st = self.engine.store.issue(3)
+        self.assertEqual((st.unproductive, st.replans), (0, 0))
+        self.assertFalse([e for e in self.events("waiting") if e["wait"] == "engine"], "never an engine fault")
+        self.assert_no_operation(self.engine.ws.coord_path(), clean=True)
         entries = [e for e in agents.entries if e["issue"] == 3]
         self.assertEqual(len(entries), 2)
         self.assertIn("shared/suites.txt", "\n".join(entries[1]["feedback"]))
@@ -324,23 +329,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertTrue(any(e.get("phase") == "land" for e in updates))
         self.assertGreaterEqual(len(self.events("examined")), 3)
         self.assertFalse(self.events("round_failed"))
-
-    def test_merged_head_is_the_exact_verified_and_certified_head(self):
-        # Both repair and a clean sync after repair must invalidate old evidence.
-        for move_again in (False, True):
-            with self.subTest(move_again=move_again):
-                if move_again:
-                    self.repo.cleanup()
-                    self.new_fixture()
-                self.conflict_scenario(move_again=move_again)
-                self.assert_success()
-                self.assertTrue(self.events("conflict"))
-                if move_again:
-                    self.assertTrue(self.events("updated_from_main"))
-
-    def test_no_operation_left_between_steps(self):
-        self.conflict_scenario(move_again=True)
-        self.assert_success()
+        # No operation is left in any worktree of either run.
         assert self.peer is not None
         for engine in (self.engine, self.peer):
             for n in engine.plan.work:
@@ -388,7 +377,8 @@ class LandConflictTests(unittest.TestCase):
                 (wt / self.shared_paths[0]).write_text(entry["contents"][self.shared_paths[0]])
 
         agents.after_build = leave_markers
-        self.run_engine(agents)
+        with mock.patch.dict(CEILINGS, LOW_CEILING):
+            self.run_engine(agents)
         st = self.engine.store.issue(3)
         self.assertTrue(self.events("conflict_unresolved"))
         # Conflicts spend no round; the issue's call ceiling bounds them (ADR 0012).
@@ -398,18 +388,7 @@ class LandConflictTests(unittest.TestCase):
         self.assertFalse(self.events("merged"))
         assert st.worktree is not None
         self.assert_no_operation(Path(st.worktree), clean=True)
-        self.assertLessEqual(len([e for e in agents.entries if e["issue"] == 3]), CEILINGS["M"])
-
-    def test_a_conflict_charges_no_round_and_is_never_an_engine_fault(self):
-        self.conflict_scenario()
-        st = self.engine.store.issue(3)
-        self.assertEqual(st.phase, Phase.DONE, self.events())
-        self.assertTrue(self.events("conflict"))
-        self.assertFalse(self.events("step_crashed"))
-        self.assertFalse(self.events("round_failed"))
-        self.assertFalse([e for e in self.events("waiting") if e["wait"] == "engine"])
-        self.assertEqual((st.unproductive, st.replans), (0, 0))
-        self.assert_no_operation(self.engine.ws.coord_path(), clean=True)
+        self.assertLessEqual(len([e for e in agents.entries if e["issue"] == 3]), LOW_CEILING["M"])
 
     def test_locked_test_conflict_is_resolved_by_the_other_vendor(self):
         agents = self.conflict_scenario(locked=True)
@@ -498,7 +477,8 @@ class LandConflictTests(unittest.TestCase):
 
         agents.resolve_locked = leave_locked_markers  # ty: ignore[invalid-assignment]  # test double
         agents.before_build = observe_build
-        self.run_engine(agents)
+        with mock.patch.dict(CEILINGS, LOW_CEILING):
+            self.run_engine(agents)
         st = self.engine.store.issue(3)
         self.assertTrue(self.events("check_conflict_unresolved"))
         # Conflicts spend no round; the issue's call ceiling bounds them (ADR 0012).
@@ -566,15 +546,12 @@ class LandConflictTests(unittest.TestCase):
         self.assertTrue(any(path in e["files"] for e in self.events("conflict")))
 
     def test_each_build_round_starts_from_current_main(self):
-        for conflicting in (False, True):
-            with self.subTest(conflicting=conflicting):
-                self.build_round_case(conflicting)
+        self.build_round_case(conflicting=False)
+
+    def test_a_build_round_that_conflicts_with_main_hands_the_conflict_to_the_builder(self):
+        self.build_round_case(conflicting=True)
 
     def build_round_case(self, conflicting):
-        # Separate run stores/branches and repositories for the two cases.
-        if conflicting:
-            self.repo.cleanup()
-            self.new_fixture()
         self.setup_pair()
         self.scripts[3].wrong_attempts = 1
         agents = ObservedAgents(self)
@@ -853,9 +830,6 @@ class LandConflictTests(unittest.TestCase):
         self.assertTrue(self.events("resumed"))
         self.assertEqual(git_result(self.repo.work, "merge-base", "--is-ancestor", before,
                                     self.engine.store.issue(3).certified_sha).returncode, 0)
-
-    def test_engine_version_is_bumped_past_the_faulty_release(self):
-        self.assertGreater(tuple(int(part) for part in implement_loop.VERSION.split(".")), (0, 2, 0))
 
 
 if __name__ == "__main__":
