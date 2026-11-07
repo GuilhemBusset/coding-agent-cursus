@@ -95,7 +95,7 @@ activates the git hooks, then in every session that has a `mise.toml`, a `pyproj
 `uv.lock` (Session 1 included) runs `mise trust mise.toml`, `mise install` (the Python and uv
 pinned in that session's `mise.toml`) and `mise exec -- uv sync --locked` (the runtime
 dependencies and default `typecheck` group from its `uv.lock`). It also syncs the repository's
-tools into `setup/.venv` and installs the pinned Python and ty VS Code extensions when the
+tools into `setup/.venv` and installs the pinned VS Code extensions when the
 `code` CLI is available. It does not install the build-only `fixtures` group, and does
 not run the setup check. Repeating it is safe. The session's own
 [README](../sessions/01-fundamentals/README.md) covers running and validating it.
@@ -200,7 +200,8 @@ request.
 The student setup and session helper configure VS Code as part of installation. They sync the
 locked Python environments, then run [`editor.py`](editor.py). If `code` (or `code-insiders`)
 is on PATH, it installs and verifies the exact extension versions in [`editor.json`](editor.json):
-Python, its Pylance/debugpy/Python Environments pack members, and ty. Pinning the pack members
+Python, its Pylance/debugpy/Python Environments pack members, ty, Live Preview and Rainbow CSV.
+Live Preview 0.4.20 requires VS Code 1.109 or newer. Pinning the pack members
 prevents Python's automatic extension-pack installation from introducing unpinned tools. ty
 provides language features; Pylance remains inactive in this workspace. The supported VS Code CLI
 also routes installation to WSL when
@@ -222,16 +223,23 @@ ty configuration binds its imports to its local environment (`setup/.venv` for t
 `.venv` for a session), independently of a previously selected editor interpreter. The Python
 extension also defaults to that environment for running and debugging code.
 
+Live Preview (`ms-vscode.live-server`) previews the HTML decks and teaching labs: open an HTML
+file and choose **Show Preview** from its context menu. Rainbow CSV (`mechatroner.rainbow-csv`)
+highlights CSV columns and shows their header on hover. Its virtual alignment is enabled in the
+workspace and standalone folder settings, so columns line up without changing the file's bytes.
+These recommendations and settings also travel with P00 exports.
+
 VS Code's normal workspace trust prompt still applies: trust this checkout to use its configured
 executable. An already open window may need **Developer: Reload Window** after setup. To rerun
 only extension installation, run `uv run --no-project python setup/editor.py` from the repository
 root. P00 exports carry their own settings and the same installer, so they work outside the
-course checkout. Remove the extensions with `code --uninstall-extension astral-sh.ty` and
-`code --uninstall-extension ms-python.python`; its pack members can be removed individually with
-the same command and their IDs in `editor.json`. Deleting a project's `.venv` removes its tools.
+course checkout. Remove an extension with `code --uninstall-extension <id>`, using its ID from
+`editor.json`. Deleting a project's `.venv` removes its Python tools.
 
 References: [ty editor integration](https://docs.astral.sh/ty/editors/),
 [ty editor settings](https://docs.astral.sh/ty/reference/editor-settings/),
+[Live Preview](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server),
+[Rainbow CSV](https://marketplace.visualstudio.com/items?itemName=mechatroner.rainbow-csv),
 [VS Code extension CLI](https://code.visualstudio.com/docs/configure/command-line#_working-with-extensions).
 
 ## Lint rules
@@ -498,7 +506,7 @@ checks are in [`turn-in-owner-checks.md`](turn-in-owner-checks.md).
 | Session 1 Act III agent demos | Checked-in `sessions/01-fundamentals/cursus/demos/agent/` (standard-library Python, including the context-bomb MCP server, passed per CLI invocation only); demo folders under `<tempdir>/cursus-s1-agent/`; uses the installed `claude`, `codex` and `tmux` |
 | ty, and pytest for its import resolution, for the repository's own Python | `uv run --project setup --locked` installs the versions and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, using a Python 3.11 or newer that uv finds or downloads; configured by the root `ty.toml` |
 | ty for each session's Python | The session's default `typecheck` dependency group, locked in its `uv.lock`; plain `uv sync --locked` installs it into the session's `.venv/` |
-| VS Code Python and ty extensions | `editor.py`, called by student/session setup, installs and verifies the exact Python, Pylance, debugpy, Python Environments and ty releases in `editor.json` with the detected `code` CLI, into its local or remote extension host; checked-in `.vscode` settings and `cursus.code-workspace` select the locked project tools; no user settings are written |
+| VS Code extensions | `editor.py`, called by student/session setup, installs and verifies the exact Python, Pylance, debugpy, Python Environments, ty, Live Preview and Rainbow CSV releases in `editor.json` with the detected `code` CLI, into its local or remote extension host; checked-in `.vscode` settings and `cursus.code-workspace` select the locked project tools and visual CSV alignment; no user settings are written |
 | Ruff, to lint and sort imports | `uv run --project setup --locked` installs the version and hashes locked in [`uv.lock`](uv.lock) into `setup/.venv/`, beside ty (`uvx ruff@0.17.3` fetches the same version into uv's per-user cache); configured by the root `ruff.toml`, whose `required-version` matches the pin |
 | Change-based check selection | Checked-in `tools/test-impact/` (standard-library Python) and `scripts/check-changed.sh`; installs nothing, runs the checks above with their own tools |
 | MCP servers, third-party agent skills, global agent configuration | None installed or modified |

@@ -4,6 +4,8 @@
     "ms-python.vscode-pylance": "2026.4.1",
     "ms-python.debugpy": "2026.6.0",
     "ms-python.vscode-python-envs": "1.42.0",
-    "astral-sh.ty": "2026.92.0"
+    "astral-sh.ty": "2026.92.0",
+    "ms-vscode.live-server": "0.4.20",
+    "mechatroner.rainbow-csv": "3.24.1"
   }
 }

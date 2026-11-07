@@ -6,5 +6,6 @@
     "${workspaceFolder}/setup/.venv/Scripts/ty.exe"
   ],
   "ty.diagnosticMode": "workspace",
-  "ty.disableLanguageServices": false
+  "ty.disableLanguageServices": false,
+  "rainbow_csv.virtual_alignment_mode": "always"
 }

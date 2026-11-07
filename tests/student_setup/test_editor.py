@@ -59,7 +59,7 @@ def test_installs_exact_pins_once_and_verifies_a_rerun(tmp_path):
     for _ in range(2):
         result = box.run(command(box))
         assert result.returncode == 0, result.stdout + result.stderr
-        assert "verified Python and ty extensions" in result.stdout
+        assert "verified all pinned VS Code extensions" in result.stdout
     actual = json.loads(state.read_text())
     assert actual == {**PINS, "another.extension": "1.0.0"}
     installs = [line for line in box.calls() if "--install-extension" in line]
@@ -82,7 +82,7 @@ def test_editor_failures_are_actionable_and_never_report_success(tmp_path, failu
     result = box.run(command(box), **env)
     assert result.returncode == 1
     assert "FAILED" in result.stdout and "rerun the setup command" in result.stdout
-    assert "verified Python and ty extensions" not in result.stdout
+    assert "verified all pinned VS Code extensions" not in result.stdout
     assert {"list": "cannot connect", "install": "marketplace unavailable",
             "verification": "did not report the required installed versions"}[failure] in result.stdout
 
@@ -101,7 +101,7 @@ def test_code_insiders_is_supported_when_stable_code_is_absent(tmp_path):
     (box.bin / "code").rename(box.bin / "code-insiders")
     result = box.run(command(box))
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "verified Python and ty extensions" in result.stdout
+    assert "verified all pinned VS Code extensions" in result.stdout
 
 
 def test_wsl_rejects_windows_only_pins_when_remote_wsl_is_missing(tmp_path):
@@ -120,7 +120,7 @@ def test_wsl_windows_shim_can_install_after_the_wsl_extension_is_verified(tmp_pa
     result = box.run(command(box), WSL_DISTRO_NAME="Ubuntu", CODE_WSL_EXTENSION="1")
     assert result.returncode == 0, result.stdout + result.stderr
     assert box.calls()[0] == "code --locate-extension ms-vscode-remote.remote-wsl"
-    assert "verified Python and ty extensions" in result.stdout
+    assert "verified all pinned VS Code extensions" in result.stdout
 
 
 def test_wsl_linux_cli_does_not_require_a_windows_extension(tmp_path):

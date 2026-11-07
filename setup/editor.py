@@ -139,7 +139,7 @@ def configure(repo: Path, manifest: Path = MANIFEST, code: str | None = None) ->
     missing = [f"{name}@{version}" for name, version in pins.items() if actual.get(name.lower()) != version]
     if missing:
         return failed(listing, "VS Code did not report the required installed versions: " + ", ".join(missing))
-    say("verified Python and ty extensions; reopen the checked-in workspace if VS Code is already open.")
+    say("verified all pinned VS Code extensions; reopen the checked-in workspace if VS Code is already open.")
     return 0
 
 
