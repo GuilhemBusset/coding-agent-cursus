@@ -98,17 +98,16 @@ All on the WSL2 host described below, 2026-10-10.
 Each wrapper streams the checker's output and passes its exit status through only if the
 `----- END SETUP SUMMARY -----` line appeared. Otherwise it prints its own presence-only report
 and summary block and exits 1. That covers uv missing, uv exiting with another code, and Python
-that fails to start and exits 1 (for example a stale `PYTHONHOME`). The examiner's probe
-`python3 tests/probe_prework_examiner.py Probe.test_D2_bootstrap_exit_one_summary` (from the repo
-root) checks the last case with real uv through both entry points.
+that fails to start and exits 1 (for example a stale `PYTHONHOME`).
 
 ### Fixture runs on WSL2
 
-`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework.py` runs every
-scenario through both `bash check-setup.sh` and `pwsh -File check-setup.ps1` in a disposable
-clone, with real git and uv, stub gh, mise and agents, a local HTTP server for the network, and
-local bare repositories (with pre-receive hooks) standing in for the course repo and the fork.
-This is fixture-tested on WSL2, not a full real run.
+`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/labs/test_prework.py` runs the
+checker's scenarios through `bash check-setup.sh`, and what the wrappers decide themselves (a pass,
+a FAIL verdict, uv missing, uv exiting 1 with no summary) through both `bash check-setup.sh` and
+`pwsh -File check-setup.ps1`, in a disposable clone, with real git and uv, stub gh, mise and
+agents, a local HTTP server for the network, and local bare repositories (with pre-receive hooks)
+standing in for the course repo and the fork. This is fixture-tested on WSL2, not a full real run.
 
 ### Push cleanup
 
@@ -124,19 +123,23 @@ gives the `gh api -X DELETE` command. If the branch cannot be read, the note say
 only if it still points at the probe's first 12 hex digits. Cleanup never turns `push` into
 FAIL. `push` passes only when `ls-remote` shows the probe.
 
-`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework_cleanup.py` proves
-this through both entry points against real local bare repositories. Covered:
-a branch moved before verification, a branch moved between verification and the delete (the
-lease refuses it), same-second runs, a pre-existing empty-tree branch with the old fixed message,
-and unreadable `ls-remote` after the delete or at verification. In every case `main` and
+`PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/labs/test_prework_cleanup.py` proves
+this through `bash check-setup.sh` against real local bare repositories. Covered: a branch moved
+before verification, a branch moved between verification and the delete (the lease refuses it),
+same-second runs, a pre-existing branch, and unreadable `ls-remote` after the delete or at
+verification. In every case `main` and
 `homework/*` stay untouched.
 
 On 2026-10-17, `PATH="$HOME/.local/bin:$PATH" uv run --locked pytest -q tests/test_prework.py
 tests/test_prework_cleanup.py` passed 171 tests in 182.5 s; re-run on 2026-10-18 with the same
 script hashes, 171 passed in 183.8 s. The four agent smoke-timeout
 scenarios set `CHECK_SETUP_SMOKE_TIMEOUT=5`, the documented override of the checker's 180 s
-default, so they no longer wait three minutes each. The session suite runs in CI
-(`.github/workflows/session-tests.yml`), where none of these tests may skip.
+default, so they no longer wait three minutes each. On 2026-11-07 both files were cut to their
+behaviour checks (43 tests, about 3 s): one agent-timeout scenario at
+`CHECK_SETUP_SMOKE_TIMEOUT=1`, and the 10 s network timeout and the fork-lookup retries tested
+in-process instead of waited out. The script hashes above did not change. The labs part of the
+session suite runs in CI (`.github/workflows/session-tests.yml`), where none of these tests may
+skip.
 
 ### A1: each agent alone, live
 

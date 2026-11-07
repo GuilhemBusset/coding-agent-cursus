@@ -10,8 +10,8 @@ The instance is ported from P01 of the 2025 workshop pack:
 [agentic-or-workshop `exercise/problems/P01-ev-linehaul-charging`](https://github.com/GuilhemBusset/agentic-or-workshop/tree/main/exercise/problems/P01-ev-linehaul-charging),
 at commit `28228a90eaacc35f82395a2b8ccef8d5a302c036`, under the MIT licence. The untouched
 upstream files are archived in
-[`tests/fixtures/p01_upstream/`](../../tests/fixtures/p01_upstream/), together with the
-licence. `tests/test_p01_homework.py` pins them by SHA-256 over the raw bytes:
+[`tests/labs/fixtures/p01_upstream/`](../../tests/labs/fixtures/p01_upstream/), together with the
+licence. `tests/labs/test_p01_homework.py` pins them by SHA-256 over the raw bytes:
 
 | Upstream file | SHA-256 |
 | --- | --- |
@@ -161,7 +161,7 @@ the default path, set `P01_REFERENCE_DIR` to its directory):
 
 1. Clone the repository, run `setup/` as for a fresh clone, and `cd sessions/01-fundamentals`.
 2. Plug the laptop in and leave its power profile on the default.
-3. Run `uv run pytest -q -s tests/instructor_p01_reference.py -k laptop_benchmark`. It runs
+3. Run `uv run pytest -q -s tests/labs/instructor_p01_reference.py -k laptop_benchmark`. It runs
    three fresh single-thread solves of the reference. Each must reach `kOptimal` with a closed
    gap, pass `p01_checker.py` with exit 0, and report `solve_seconds` under 60. There is no lower
    bound, unlike the D1 sizing test. On success it prints one JSON evidence line: the host's
@@ -207,7 +207,7 @@ are public. It is a drop-in `p01_model.py` with the student API and a module con
   secret gists are only unlisted. This PR does not create that backup. Make it once, by hand.
 - **Release after the deadline:** open a PR that copies the reference to
   `exercises/homework-p01/reference/p01_model.py`. The same PR must retire the release guard in
-  `tests/test_p01_homework.py`, which asserts that no `p01_model.py` in the pack contains a
+  `tests/labs/test_p01_homework.py`, which asserts that no `p01_model.py` in the pack contains a
   formulation.
 
 ## Instructor checks
@@ -215,11 +215,11 @@ are public. It is a drop-in `p01_model.py` with the student API and a module con
 From `sessions/01-fundamentals/`:
 
 ```sh
-uv run pytest -q tests/test_p01_homework.py          # solver-free: data, checker, starter, turn-in
-uv run pytest -q tests/instructor_p01_reference.py   # needs the private reference; a few minutes
+uv run pytest -q tests/labs/test_p01_homework.py     # solver-free: data, checker, starter, turn-in
+uv run pytest -q tests/labs/instructor_p01_reference.py # needs the private reference; a few minutes
 ```
 
-`tests/instructor_p01_reference.py` is not collected by a plain `uv run pytest`. It fails rather
+`tests/labs/instructor_p01_reference.py` is not collected by a plain `uv run pytest`. It fails rather
 than skips when the reference is missing. It copies the pack to a temporary directory and swaps
 the reference in there, then runs the model, the checker and `p01_contract.py` as subprocesses.
 

@@ -15,11 +15,10 @@ python-platform = "linux"
 python = "setup/.venv"
 # The folders these programs and tests put on sys.path for their imports.
 root = ["tools/implementation-loop", "tools/implementation-loop/tests", "tools/test-impact", "tests/turn_in",
-        "setup", "setup/student", "tests/student_setup"]
+        "setup", "setup/student", "tests/student_setup", "tests/sessions"]
 
 [src]
-# Loose probe and examiner scripts that nothing runs (impact.toml's [none]) are left out.
-include = ["tools/implementation-loop", "tools/test-impact", "tests/turn_in", "setup/browser-libs.py",
+include = ["tools/implementation-loop", "tools/test-impact", "tests/turn_in", "tests/sessions", "setup/browser-libs.py",
            "setup/editor.py", "setup/student", "tests/student_setup"]
 
 [terminal]

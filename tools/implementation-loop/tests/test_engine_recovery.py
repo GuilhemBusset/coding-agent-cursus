@@ -104,7 +104,11 @@ class RoundRegressions(RecoveryCase):
         summary = self.run_engine()
         self.assertEqual(self.phase(4), Phase.DONE, "independent work carries on")
         self.assertEqual((set(summary["failed"]), set(summary["waiting"])), ({2}, {3}))
+        self.assertEqual(present(self.store.issue(2).fail)["cause"], "no_progress")
+        self.assertEqual(len(self.events("replan", 2)), 1, "no progress brings one replan before it fails")
+        self.assertEqual(present(self.store.issue(3).wait)["kind"], "prerequisite")
         self.assertIn("#2", present(self.store.issue(3).wait)["detail"])
+        self.assertIsNone(self.repo.main_file("docs/a.txt"), "nothing partial is merged")
         self.assertIn({"name": "loop:failed"}, self.gh.issues[2]["labels"])
         self.assertIn({"name": "loop:waiting"}, self.gh.issues[3]["labels"])
         self.assertEqual(self.gh.issues[2]["state"], "open")
@@ -141,6 +145,9 @@ class RoundRegressions(RecoveryCase):
         self.epic(2)
         self.run_engine()
         self.assertEqual(self.phase(2), Phase.DONE)
+        blocking = [f for f in self.store.issue(2).findings if f["blocking"]]
+        self.assertEqual([f["status"] for f in blocking], ["closed"], "its probe keeps it open until fixed")
+        self.assertEqual(self.repo.main_file("edge_2.txt"), "handled")
         fix = self.builds()[1][3]
         self.assertTrue(any("an edge case breaks the item" in f and "Reproduce: test -f edge_2.txt" in f
                             for f in fix), fix)
@@ -161,7 +168,9 @@ class RoundRegressions(RecoveryCase):
         self.add_work(2, "docs/a.txt", "alpha", outages=1)
         self.epic(2)
         self.run_engine()
-        self.assertEqual((self.phase(2), present(self.store.issue(2).wait)["resume"]), (Phase.WAITING, "examine"))
+        wait = present(self.store.issue(2).wait)
+        self.assertEqual((self.phase(2), wait["kind"], wait["resume"]), (Phase.WAITING, "outage", "examine"))
+        self.assertEqual(self.store.issue(2).infra, 0, "an outage is charged to no budget")
         self.assertFalse(self.faults(), "an outage is not an engine fault")
         before = len(self.agents.calls)
         self.run_engine(agents=self.agents)   # the outage is over: the same fake now answers
@@ -219,7 +228,11 @@ class RoundRegressions(RecoveryCase):
         self.add_work(3, "docs/b.txt", "beta", blocked_by=(2,))
         self.epic(2, 3)
         self.run_engine()
-        self.assertEqual((self.phase(2), self.phase(3)), (Phase.DELIVERED, Phase.DONE))
+        self.assertEqual((self.phase(2), self.phase(3)), (Phase.DELIVERED, Phase.DONE), "a delivered issue unblocks")
+        st = self.store.issue(2)
+        self.assertEqual(st.obligations[0]["kind"], "capability")
+        self.assertIn("hardware:laptop", st.human_tasks[0])
+        self.assertEqual(self.gh.issues[2]["state"], "open")
         body = self.gh.issues[2]["body"]
         self.assertIn("- [ ] Runs under a second on a 2020 laptop.", body)
         self.assertIn("- [x] `docs/a.txt` contains `alpha`.", body)
@@ -320,16 +333,6 @@ class RequirementRegressions(RecoveryCase):
 
 
 class AgentGitRegressions(RecoveryCase):
-    def test_tags_and_branches_an_agent_creates_are_deleted(self):
-        self.add_work(2, "docs/a.txt", "alpha", tags=True, branches=True)
-        self.epic(2)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DONE)
-        self.assertEqual(git("tag", "--list", "agent-probe-*", cwd=self.repo.work), "")
-        self.assertEqual(git("branch", "--list", "agent-branch-*", cwd=self.repo.work), "")
-        self.assertEqual(self.events("agent_refs_deleted", 2)[0]["refs"],
-                         ["refs/heads/agent-branch-2", "refs/tags/agent-probe-2"])
-
     def test_commits_an_agent_makes_are_absorbed_into_engine_commits(self):
         self.add_work(2, "docs/a.txt", "alpha", commits=True)
         self.epic(2)
@@ -550,6 +553,7 @@ class RecordedRunRegressions(RecoveryCase):
         body = self.gh.issues[filed[0][1]]["body"]
         self.assertIn("implement-loop:fault:", body)
         self.assertNotIn(str(self.repo.work), body, "local paths are redacted")
+        self.assertIn("## Deliverables", body, "a fault issue carries a ledger a repair run can prove")
         self.assertIn({"name": "loop:engine-bug"}, self.gh.issues[filed[0][1]]["labels"])
 
         # a new engine version resumes them; the same fault is a comment on the same issue
@@ -576,31 +580,6 @@ class RecordedRunRegressions(RecoveryCase):
         self.assertFalse([c for c in self.gh.calls if c[0] == "create_issue"])
         self.run_engine(agents=FakeAgents(self.scripts))
         self.assertEqual(self.phase(2), Phase.DONE)
-
-    def test_a_merge_that_breaks_an_earlier_issue_opens_a_fix_forward_round(self):
-        # epic #11: #23 broke #20's standalone-session evidence and nobody saw it
-        self.add_work(2, "docs/a.txt", "alpha")
-        self.add_work(3, "docs/a.txt", "broken", blocked_by=(2,))
-        self.epic(2, 3)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DONE)
-        regressions = [e for e in self.events("regression_check") if e["issue"] == 3]
-        self.assertTrue(regressions and not regressions[0]["ok"])
-        self.assertEqual(regressions[0]["of"], 2)
-        self.assertEqual(len(self.events("fix_forward", 3)), 1, "one fix-forward round")
-        self.assertTrue(any("#2's checks fail on main" in f for f in self.builds(3)[1][3]),
-                        "the fix-forward round is told what broke")
-        # The fix-forward changed nothing, so the breaking PR is reverted and #3 delivered once
-        # more; it breaks main again, is reverted again, and fails. Main is never left red.
-        reverted = self.events("reverted", 3)
-        first_pr = [e["pr"] for e in self.events("merged") if e["issue"] == 3][0]
-        self.assertEqual(len(reverted), 2)
-        self.assertEqual(reverted[0]["of"], [first_pr])
-        self.assertTrue(all(self.gh.prs[e["pr"]]["head"]["ref"].endswith("-revert") for e in reverted))
-        st = self.store.issue(3)
-        assert st.fail is not None
-        self.assertEqual((st.phase, st.fail["cause"], st.reverts), (Phase.FAILED, "main_broken", 2))
-        self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha", "main is green again")
 
     def test_a_pr_merged_by_someone_else_at_another_head_is_accepted_on_main(self):
         # #21: the owner merged PR #61 by hand after a CI-only change; the engine could not resume

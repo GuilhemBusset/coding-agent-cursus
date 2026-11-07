@@ -197,10 +197,11 @@ class LiveAdapterTests(unittest.TestCase):
                 self.assertFalse(any("mcp_servers" in x for x in b), "no MCP servers configured, nothing to disable")
 
     def test_explorers_may_also_search_the_web(self):
+        self.agents.roles["explore"].claude_model = "a-configured-model"
         self.invoke("explore", "claude")
         a = self.calls()[-1]["argv"]
         self.assertEqual(a[a.index("--tools") + 1], "Read,Glob,Grep,WebFetch,WebSearch")
-        self.assertEqual(a[a.index("--model") + 1], "sonnet")
+        self.assertEqual(a[a.index("--model") + 1], "a-configured-model", "the role's model reaches the CLI")
 
     def test_working_roles_get_the_same_access_from_both_vendors(self):
         # Sandbox parity (ADR 0012): a sandbox limit is an engine problem, never an owner obligation.
@@ -271,7 +272,6 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual(record["usage"]["input_tokens"], 12)
         self.assertTrue(list((self.tmp / "run" / "calls").glob("*-plan-codex-28.prompt.md")))
         prompt = self.calls()[-1]["prompt"]
-        self.assertIn("There is no branch yet", prompt)
         self.assertIn("the plan feedback", prompt)
         self.assertIn("hardware:laptop", prompt, "the planner knows what the host lacks")
 
@@ -307,14 +307,12 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual(len(self.agents.ws.disposed), 1)
         call = self.calls()[-1]
         self.assertEqual(Path(call["cwd"]).resolve(), (self.tmp / "scratch").resolve())
-        self.assertIn("This is the first examination", call["prompt"])
         self.assertIn("secret exposure", call["prompt"], "the examiner knows the safety invariants")
 
     def test_a_follow_up_examination_sees_its_memory_and_the_delta(self):
         memory = [{"id": "E28-1-1", "title": "the toggle loses the text", "status": "open"}]
         self.invoke("examine", "claude", since="c" * 40, memory=memory)
         prompt = self.calls()[-1]["prompt"]
-        self.assertIn("follow-up examination", prompt)
         self.assertIn("c" * 12, prompt)
         self.assertIn("E28-1-1", prompt)
 
@@ -357,7 +355,9 @@ class LiveAdapterTests(unittest.TestCase):
         self.assertEqual(caught.exception.kind, "crash")
         calls = self.calls()
         self.assertEqual(len(calls), 3)
-        self.assertIn("Your previous answer was rejected", calls[1]["prompt"])
+        retry = calls[1]["prompt"]
+        self.assertTrue(retry.startswith(calls[0]["prompt"]))
+        self.assertIn("$.tests", retry[len(calls[0]["prompt"]):], "the retry says what the schema rejected")
         self.assertEqual(self.sleeps, [], "schema problems are retried at once")
         self.assertEqual(self.meter.outcomes(), ["answered"] * 3, "an answer is charged even when it is unusable")
 
@@ -412,7 +412,8 @@ class LiveAdapterTests(unittest.TestCase):
         t = threading.Thread(target=run)
         started = time.monotonic()
         t.start()
-        time.sleep(0.5)
+        while not self.log.exists() and time.monotonic() - started < 10:   # the fake logs once it runs
+            time.sleep(0.01)
         self.agents.terminate_all()
         t.join(10)
         self.assertLess(time.monotonic() - started, 10)
@@ -420,11 +421,14 @@ class LiveAdapterTests(unittest.TestCase):
 
     # ---------------------------------------------------------------- settings and schemas
     def test_role_settings_come_from_loop_toml(self):
-        roles = live.load_roles()
-        self.assertEqual(roles["explore"].effort, "low")
-        self.assertEqual(roles["explore"].claude_model, "sonnet")
-        self.assertIsNone(roles["explore"].codex_model)
-        self.assertEqual(roles["build"].timeout_s, 5400)
+        config = self.tmp / "loop.toml"
+        config.write_text('[roles.explore]\neffort = "low"\nclaude_model = "a-model"\ncodex_model = ""\n'
+                          '[roles.build]\ntimeout_s = 7\n[roles.unknown]\neffort = "high"\n')
+        roles = live.load_roles(config)
+        self.assertEqual((roles["explore"].effort, roles["explore"].claude_model), ("low", "a-model"))
+        self.assertIsNone(roles["explore"].codex_model, "an empty model means the CLI's default")
+        self.assertEqual(roles["build"].timeout_s, 7)
+        self.assertEqual(set(roles), set(live.DEFAULT_ROLES), "an unknown role is ignored")
         configured = tomllib.loads(live.CONFIG_FILE.read_text())["roles"]
         self.assertEqual(set(configured), set(live.DEFAULT_ROLES))
         self.assertTrue(set(live.DEFAULT_ROLES) <= set(schemas.BY_ROLE))

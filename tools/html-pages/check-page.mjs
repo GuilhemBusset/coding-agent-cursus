@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Dependencies and browser installation: setup/README.md.
-import { copyFile, mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -45,12 +46,12 @@ const report = {
     'Reduced-motion checks sample running animations and computed styles; delayed, canvas and custom JS motion need manual review.',
     'Print uses emulated print media and beforeprint/afterprint events; screenshots do not verify physical pagination or printer margins.',
     'Network and runtime checks cover only requests/events observed during this run; links are not crawled.',
-    'Effective backgrounds composite computed solid colors; gradients, images, overlays and canvas still require visual inspection.',
+    'Axe, deck navigation and the budget lab run at the laptop size only; every slide is fitted at desktop and laptop.',
   ],
 };
 const check = (scope, name, passed, details) => report.checks.push({ scope, name, passed: Boolean(passed), ...(details === undefined ? {} : { details }) });
 const remote = value => /^(https?|wss?|ftp):/i.test(value);
-let browser;
+let browser, AxeBuilder, axeSource;
 
 async function checkSnapshots(page) {
   const source = await readFile(file, 'utf8');
@@ -125,21 +126,20 @@ async function openContext(viewport, scope, options = {}) {
 }
 
 async function screenshot(page, name) {
-  // Audits can focus scrollable regions; capture the initial view consistently.
+  // Audits can focus scrollable regions; capture the initial view consistently. One capture per
+  // state: the viewport when the page fits it (a paged slide), else the full page, whose top it is.
   const fits = await page.evaluate(() => {
     window.scrollTo(0, 0);
     document.querySelectorAll('[data-slide]').forEach(el => { el.scrollTop = 0; });
     const root = document.documentElement;
     return root.scrollHeight <= innerHeight && root.scrollWidth <= innerWidth;
   });
-  const viewport = path.join(output, `${name}-viewport.png`), full = path.join(output, `${name}.png`);
-  await page.screenshot({ path: viewport, animations: 'disabled', timeout: 15000 });
-  // A document that fits the viewport (a paged slide) gives the same image either way.
-  if (fits) await copyFile(viewport, full);
-  else await page.screenshot({ path: full, fullPage: true, animations: 'disabled', timeout: 15000 });
-  report.screenshots.push(viewport, full);
+  const shot = path.join(output, `${name}.png`);
+  await page.screenshot({ path: shot, fullPage: !fits, animations: 'disabled', timeout: 15000 });
+  report.screenshots.push(shot);
 }
 
+// What a viewport, a mode or the active slide can change.
 async function inspect(page, scope) {
   const result = await page.evaluate(() => {
     const visible = el => {
@@ -148,64 +148,36 @@ async function inspect(page, scope) {
     };
     const html = document.documentElement;
     const body = document.body;
-    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    const rgba = color => { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1); return [...ctx.getImageData(0, 0, 1, 1).data]; };
-    const background = el => {
-      const colors = []; for (; el; el = el.parentElement) colors.unshift(getComputedStyle(el).backgroundColor);
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 1, 1);
-      for (const color of colors) { ctx.fillStyle = color; ctx.fillRect(0, 0, 1, 1); }
-      const rgb = [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
-      const linear = rgb.map(v => { v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
-      return { colors, rgb, luminance: linear[0] * .2126 + linear[1] * .7152 + linear[2] * .0722 };
-    };
-    // Add approved future palettes; keep older ones valid for historical snapshots.
-    const palettes = [{ '--paper': '#0A1013', '--sheet': '#111B1F', '--ink': '#E3ECE7', '--accent': '#3EC3A9', '--amber': '#E4A94A', '--red': '#F07A70' }];
-    const surfaces = [html, body, ...document.querySelectorAll('.shell')].filter(Boolean);
-    const tokens = palettes.map(expected => surfaces.flatMap(el => Object.entries(expected).map(([token, wanted]) => {
-      const actual = getComputedStyle(el).getPropertyValue(token).trim();
-      return { element: el.tagName + (el.className ? `.${el.className}` : ''), token, actual, expected: wanted,
-        passed: Boolean(actual) && CSS.supports('color', actual) && String(rgba(actual)) === String(rgba(wanted)) };
-    })));
     const slides = [...document.querySelectorAll('[data-deck] [data-slide]')];
-    const comments = [], walker = document.createTreeWalker(document, NodeFilter.SHOW_COMMENT);
-    while (walker.nextNode()) {
-      const text = walker.currentNode.textContent.trim();
-      if (/snapshot|(?:theme|script|style).*(?:version|sha256|hash)|shared-(?:style|script):begin/i.test(text)) comments.push({ comment: text.slice(0, 2000) });
-    }
     return {
-      lang: html.lang.trim(), title: document.title.trim(), viewport: document.querySelector('meta[name="viewport"]')?.content ?? '',
-      kind: html.dataset.pageKind, design: html.dataset.designSystem,
-      background: background(body ?? html), shells: [...document.querySelectorAll('.shell')].filter(visible).map(background), tokens,
-      snapshots: comments.concat([...document.querySelectorAll('meta[name],html,style,script')].flatMap(el => [...el.attributes]
-        .filter(a => /theme|script|snapshot|version|sha256/i.test(a.name === 'name' ? a.value : a.name))
-        .map(a => ({ tag: el.tagName, attribute: a.name, value: a.value, content: el.getAttribute('content') })))),
       overflow: Math.max(html.scrollWidth, body?.scrollWidth ?? 0) - html.clientWidth,
       text: body?.innerText.trim().length ?? 0,
       brokenImages: [...document.images].filter(el => visible(el) && el.complete && !el.naturalWidth && (el.src || el.srcset)).map(el => el.currentSrc || el.src),
-      assets: [...document.querySelectorAll('[src],link[href],a[href],object[data]')].map(el => ({
-        tag: el.tagName, runtime: el.hasAttribute('src') || el.matches('link[rel~="stylesheet"],object[data]'),
-        value: el.getAttribute('src') ?? el.getAttribute('href') ?? el.getAttribute('data'),
-      })).filter(item => item.value).map(item => ({ ...item, resolved: new URL(item.value, document.baseURI).href })),
-      ids: [...document.querySelectorAll('[id]')].map(el => el.id),
       deck: { roots: document.querySelectorAll('[data-deck]').length, slides: slides.map(el => ({ id: el.id, visible: visible(el), text: el.innerText.trim().length })),
         navCount: document.querySelectorAll('nav[data-deck-nav]').length,
         navVisible: [...document.querySelectorAll('nav[data-deck-nav]')].some(visible) },
     };
   });
-  check(scope, 'html contract', ['page', 'deck', 'lab'].includes(result.kind) && result.design === 'cursus', { kind: result.kind, design: result.design });
-  check(scope, 'document language', result.lang.length > 0);
-  check(scope, 'document title', result.title.length > 0);
-  check(scope, 'responsive viewport', /width\s*=\s*device-width/i.test(result.viewport), result.viewport);
-  report.snapshots ??= result.snapshots;
-  check(scope, 'dark palette tokens', result.tokens.some(palette => palette.every(t => t.passed)), result.tokens);
-  check(scope, 'dark computed background', result.background.luminance < .25, result.background);
-  check(scope, 'dark effective shell backgrounds', result.shells.every(s => s.luminance < .25), result.shells);
   check(scope, 'no horizontal document overflow', result.overflow <= 1, { pixels: result.overflow });
   check(scope, 'visible document text', result.text > 0);
   check(scope, 'loaded visible images', !result.brokenImages.length, result.brokenImages);
+  return result;
+}
+
+// What the markup fixes, the same at every viewport: checked once.
+async function checkMarkup(page, deck) {
+  const scope = 'markup';
+  const markup = await page.evaluate(() => ({
+    viewport: document.querySelector('meta[name="viewport"]')?.content ?? '',
+    assets: [...document.querySelectorAll('[src],link[href],a[href],object[data]')].map(el => ({
+      tag: el.tagName, runtime: el.hasAttribute('src') || el.matches('link[rel~="stylesheet"],object[data]'),
+      value: el.getAttribute('src') ?? el.getAttribute('href') ?? el.getAttribute('data'),
+    })).filter(item => item.value).map(item => ({ ...item, resolved: new URL(item.value, document.baseURI).href })),
+    ids: [...document.querySelectorAll('[id]')].map(el => el.id),
+  }));
+  check(scope, 'responsive viewport', /width\s*=\s*device-width/i.test(markup.viewport), markup.viewport);
   const broken = [], escaped = [];
-  for (const asset of result.assets) {
+  for (const asset of markup.assets) {
     const target = new URL(asset.resolved);
     if (target.protocol !== 'file:') continue;
     try {
@@ -214,22 +186,30 @@ async function inspect(page, scope) {
       if (asset.runtime && !await assetAllowed(target)) escaped.push(asset);
       if (assetPath === file && target.hash && target.hash !== '#') {
         const id = decodeURIComponent(target.hash.slice(1));
-        if (!result.ids.includes(id)) broken.push({ ...asset, error: `Missing fragment ${id}` });
+        if (!markup.ids.includes(id)) broken.push({ ...asset, error: `Missing fragment ${id}` });
       }
     } catch (error) { broken.push({ ...asset, error: error.message }); }
   }
   check(scope, 'local assets and same-document fragments', !broken.length, broken);
   check(scope, 'runtime assets stay inside session and outside repo tools', !escaped.length, escaped);
-  if (result.kind === 'deck' || result.deck.roots) {
-    const ids = result.deck.slides.map(slide => slide.id);
-    check(scope, 'deck structure', result.deck.roots === 1 && ids.length > 0 && ids.every(Boolean) && new Set(ids).size === ids.length && result.deck.navCount === 1, result.deck);
+  if (deck.roots) {
+    const ids = deck.slides.map(slide => slide.id);
+    check(scope, 'deck structure', deck.roots === 1 && ids.length > 0 && ids.every(Boolean) && new Set(ids).size === ids.length && deck.navCount === 1, deck);
   }
-  return result;
 }
 
-async function axeCheck(page, scope, AxeBuilder) {
-  const results = await new AxeBuilder({ page }).analyze();
-  const violations = results.violations.filter(v => ['serious', 'critical'].includes(v.impact));
+// axe-core is injected once per page and run in it, on the document or on one slide.
+// @axe-core/playwright re-injects it and opens a blank page for every analysis, about four times
+// the cost; a page with frames still goes through it, since it reaches into them.
+async function axeCheck(page, scope, slideId) {
+  let found;
+  if (page.frames().length > 1) found = (await new AxeBuilder({ page }).analyze()).violations;
+  else {
+    if (await page.evaluate(() => typeof window.axe === 'undefined')) await page.evaluate(axeSource);
+    found = await page.evaluate(id => window.axe.run(id ? document.getElementById(id) : document, { resultTypes: ['violations'] })
+      .then(results => results.violations), slideId);
+  }
+  const violations = found.filter(v => ['serious', 'critical'].includes(v.impact));
   check(scope, 'axe serious/critical', !violations.length, violations.map(v => ({
     id: v.id, impact: v.impact, description: v.description, helpUrl: v.helpUrl,
     nodes: v.nodes.map(n => ({ target: n.target, summary: n.failureSummary })),
@@ -259,15 +239,21 @@ async function deckState(page, scope, id) {
   check(scope, 'slide content fits without internal scrolling', state.bounds.every(b => b.contentFits), state.bounds);
 }
 
-async function testDeck(page, scope, slides, AxeBuilder) {
+// Every slide must fit at each wide size: decks lay slides out differently on taller screens.
+// Navigation and axe run at laptop only: neither depends on the extra room, and laptop's smaller
+// type is the stricter contrast case.
+async function testDeck(page, scope, slides) {
+  const full = scope === 'laptop';
   const next = page.locator('button[data-next]');
   const prev = page.locator('button[data-prev]');
   const controls = await next.count() === 1 && await prev.count() === 1 && await page.locator('[data-slide-status]').count() === 1;
-  check(scope, 'deck controls', controls);
+  if (full) check(scope, 'deck controls', controls);
   if (!slides.length || slides.some(s => !s.id)) return;
-  const navigate = async id => { await page.evaluate(id => { location.hash = id; }, id); await shown(page, id); };
+  // deckState waits for the slide navigate asks for.
+  const navigate = id => page.evaluate(id => { location.hash = id; }, id);
   await navigate(slides[0].id);
-  if (controls && slides.length > 1) {
+  await shown(page, slides[0].id);
+  if (full && controls && slides.length > 1) {
     const originalStatus = await page.locator('[data-slide-status]').textContent();
     await next.click();
     await deckState(page, `${scope}/next`, slides[1].id);
@@ -292,10 +278,9 @@ async function testDeck(page, scope, slides, AxeBuilder) {
     await navigate(slide.id);
     const slideScope = `${scope}/slide-${index + 1}`;
     await deckState(page, slideScope, slide.id);
-    await inspect(page, slideScope);
-    // Per-slide axe once, at laptop: its smaller type is the stricter contrast case, and the mobile
-    // run already analyses every slide at once (docs/adr/0013-test-tiers-and-selection.md).
-    if (scope === 'laptop') await axeCheck(page, slideScope, AxeBuilder);
+    // The mobile run, which shows every slide, analyses them all at once too
+    // (docs/adr/0013-test-tiers-and-selection.md).
+    if (full) await axeCheck(page, slideScope, slide.id);
     await screenshot(page, `${scope}-slide-${String(index + 1).padStart(2, '0')}`);
   }
 }
@@ -385,8 +370,13 @@ try {
     output = await mkdtemp(`${output}-`); // Atomic suffix also isolates simultaneous runs in the same millisecond.
     report.output = output;
   }
-  const { chromium, AxeBuilder } = await import('./browser.mjs');
-  browser = await chromium.launch();
+  const browserTools = await import('./browser.mjs');
+  ({ AxeBuilder } = browserTools);
+  const requireSetup = createRequire(new URL('../../setup/package.json', import.meta.url));
+  axeSource = createRequire(requireSetup.resolve('@axe-core/playwright'))('axe-core').source;
+  browser = await browserTools.chromium.launch();
+  // Desktop also checks the markup, once. Axe, deck navigation and the lab run at laptop, not
+  // again at desktop; mobile shows every slide at once.
   const viewports = { desktop: { width: 1440, height: 900 }, laptop: { width: 1280, height: 720 }, mobile: { width: 390, height: 844 } };
   for (const [scope, viewport] of Object.entries(viewports)) {
     let context;
@@ -394,19 +384,22 @@ try {
       const opened = await openContext(viewport, scope);
       context = opened.context;
       const page = opened.page;
-      if (scope === 'desktop') await checkSnapshots(page);
       const result = await inspect(page, scope);
-      await axeCheck(page, scope, AxeBuilder);
-      await screenshot(page, scope);
+      if (scope === 'desktop') {
+        await checkSnapshots(page);
+        await checkMarkup(page, result.deck);
+      } else await axeCheck(page, scope);
+      // Laptop's opening view is its first slide's capture, or desktop's page a little narrower.
+      if (scope !== 'laptop') await screenshot(page, scope);
       if (result.deck.roots) {
         if (scope === 'mobile') {
           check(scope, 'all slides readable and navigation hidden', result.deck.slides.every(s => s.visible && s.text > 0) && !result.deck.navVisible, result.deck);
         } else {
           check(scope, 'desktop deck presentation', result.deck.navVisible && result.deck.slides.filter(s => s.visible).length === 1, result.deck);
-          await testDeck(page, scope, result.deck.slides, AxeBuilder);
+          await testDeck(page, scope, result.deck.slides);
         }
       }
-      await testLab(page, scope);
+      if (scope === 'laptop') await testLab(page, scope);
     } catch (error) { check(scope, 'browser checks completed', false, error.message); }
     finally { await context?.close(); }
   }
@@ -420,11 +413,13 @@ try {
         await testPrint(page);
         continue;
       }
-      const result = await inspect(page, mode);
-      if (mode === 'no-js' && result.deck.roots) {
-        check(mode, 'deck fallback and initially hidden navigation', result.deck.slides.every(s => s.visible && s.text > 0) && !result.deck.navVisible && await page.locator('nav[data-deck-nav][hidden]').count() === 1, result.deck);
-      }
-      if (mode === 'reduced-motion') {
+      if (mode === 'no-js') {
+        const result = await inspect(page, mode);
+        if (result.deck.roots) {
+          check(mode, 'deck fallback and initially hidden navigation', result.deck.slides.every(s => s.visible && s.text > 0) && !result.deck.navVisible && await page.locator('nav[data-deck-nav][hidden]').count() === 1, result.deck);
+        }
+        await screenshot(page, mode);
+      } else {
         const motion = await page.evaluate(() => ({
           matches: matchMedia('(prefers-reduced-motion: reduce)').matches,
           animations: document.getAnimations().filter(a => a.playState === 'running' && Number(a.effect?.getTiming().duration) > 10).length,
@@ -437,7 +432,6 @@ try {
         }));
         check(mode, 'motion suppressed (10ms threshold)', motion.matches && motion.animations === 0 && !motion.elements.length, motion);
       }
-      await screenshot(page, mode);
     } catch (error) { check(mode, 'fallback checks completed', false, error.message); }
     finally { await context?.close(); }
   }

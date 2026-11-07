@@ -17,13 +17,18 @@ RULES = {
     "all": {"paths": [".github/workflows/**", "tools/test-impact/**"]},
     "none": {"paths": ["LICENSE", "docs/*.md"]},
     "units": {"engine": {"paths": ["tools/implementation-loop/**"]}, "turn-in": {"paths": ["scripts/**"]}},
-    "sessions": {"shared": ["scripts/turn-in.sh"]},
+    "sessions": {"types": ["**/*.py", "uv.lock"],
+                 "parts": {"lessons": {"reads": ["cursus/**", "tests/lessons/**"], "shared": []},
+                           "labs": {"reads": ["exercises/**", "tests/labs/**"],
+                                    "shared": ["scripts/turn-in.sh", "sessions/*/pyproject.toml"]}}},
     "pages": {"shared": ["tools/html-pages/check-page.mjs"]},
     "node": {"shared": ["tools/html-pages/browser.mjs"],
              "suites": {"deck": ["sessions/01-x/cursus/00-deck.html"], "lab": ["sessions/01-x/cursus/labs/*.html"]}},
 }
 SUITES = [f"tools/html-pages/tests/{n}.test.mjs" for n in ("deck", "lab", "new")]
 SESSIONS = ["sessions/01-x"]
+PARTS = ["sessions/01-x/tests/labs", "sessions/01-x/tests/lessons"]
+LESSONS, LABS = PARTS[1], PARTS[0]
 PAGES = ["sessions/01-x/cursus/00-deck.html", "sessions/01-x/cursus/labs/lab.html"]
 
 
@@ -32,7 +37,7 @@ REFS = {PAGES[0]: ({"sessions/01-x/cursus/labs/data.json"}, {PAGES[1]}), PAGES[1
 
 
 def plan(*paths, gone=()):
-    return select(Change(set(paths) | set(gone), set(gone)), RULES, SUITES, SESSIONS, PAGES, refs=REFS)
+    return select(Change(set(paths) | set(gone), set(gone)), RULES, SUITES, PARTS, PAGES, refs=REFS)
 
 
 @pytest.mark.parametrize("pattern,path,expected", [
@@ -50,9 +55,9 @@ def test_globs_keep_star_inside_one_directory(pattern, path, expected):
 
 
 def test_a_global_path_or_all_runs_everything():
-    for result in (plan(".github/workflows/ci.yml"), select(Change(), RULES, SUITES, SESSIONS, PAGES, everything=True, refs=REFS)):
+    for result in (plan(".github/workflows/ci.yml"), select(Change(), RULES, SUITES, PARTS, PAGES, everything=True, refs=REFS)):
         assert result.everything
-        assert result.units == {"engine", "turn-in"} and result.sessions == SESSIONS
+        assert result.units == {"engine", "turn-in"} and result.sessions == SESSIONS and result.parts == PARTS
         assert result.suites == SUITES and result.pages == PAGES
 
 
@@ -69,20 +74,38 @@ def test_deleting_a_path_in_no_rule_also_runs_everything():
 def test_prose_in_none_runs_nothing_but_unmapped_suites():
     result = plan("LICENSE", "docs/notes.md")
     assert not result.everything
-    assert (result.units, result.sessions, result.pages) == (set(), [], [])
+    assert (result.units, result.sessions, result.parts, result.pages) == (set(), [], [], [])
     assert result.suites == ["tools/html-pages/tests/new.test.mjs"], "a suite the map does not know always runs"
 
 
 def test_an_engine_change_runs_only_the_engine():
     result = plan("tools/implementation-loop/implement_loop/engine.py")
-    assert result.units == {"engine"} and result.sessions == [] and result.pages == []
+    assert result.units == {"engine"} and result.sessions == result.parts == result.pages == []
 
 
-def test_a_deck_change_runs_its_session_its_suites_and_its_page():
+def test_a_deck_change_runs_the_lesson_tests_its_suites_and_its_page():
     result = plan("sessions/01-x/cursus/00-deck.html")
-    assert result.units == set() and result.sessions == SESSIONS
+    assert result.units == set() and result.parts == [LESSONS] and result.sessions == [], "no Python changed"
     assert result.suites == ["tools/html-pages/tests/deck.test.mjs", "tools/html-pages/tests/new.test.mjs"]
     assert result.pages == [PAGES[0]]
+
+
+def test_an_exercise_change_runs_the_lab_tests_and_the_type_check():
+    result = plan("sessions/01-x/exercises/p00/model.py")
+    assert result.parts == [LABS] and result.sessions == SESSIONS
+
+
+def test_a_session_file_no_part_claims_runs_every_part():
+    result = plan("sessions/01-x/uv.lock")
+    assert result.parts == PARTS and result.sessions == SESSIONS
+    assert plan("sessions/01-x/README.md").parts == PARTS
+    assert plan("sessions/01-x/pyproject.toml").parts == PARTS, "a part's shared path does not claim a session file"
+
+
+def test_a_node_suite_in_a_part_folder_runs_only_itself():
+    suite = "sessions/01-x/tests/lessons/deck2.test.mjs"
+    result = select(Change({suite}), RULES, [*SUITES, suite], PARTS, PAGES, refs=REFS)
+    assert result.parts == [] and suite in result.suites
 
 
 def test_a_loaded_file_rechecks_the_pages_that_load_it():
@@ -97,7 +120,7 @@ def test_a_link_target_rechecks_linking_pages_only_when_it_goes():
 def test_shared_paths_select_their_whole_family():
     assert plan("tools/html-pages/browser.mjs").suites == SUITES
     assert plan("tools/html-pages/check-page.mjs").pages == PAGES
-    assert plan("scripts/turn-in.sh").sessions == SESSIONS
+    assert plan("scripts/turn-in.sh").parts == [LABS], "a part's shared paths select only that part"
 
 
 def test_a_suite_runs_when_its_own_file_changes():
@@ -109,8 +132,8 @@ def test_github_outputs(tmp_path):
     impact.github_output(plan("sessions/01-x/cursus/00-deck.html"), out)
     values = dict(line.split("=", 1) for line in out.read_text().splitlines())
     assert values == {
-        "everything": "false", "engine": "false", "student_setup": "false", "sessions": '["sessions/01-x"]',
-        "session_tests": "true",
+        "everything": "false", "engine": "false", "student_setup": "false", "sessions": "[]",
+        "parts": '["sessions/01-x/tests/lessons"]', "session_tests": "true",
         "suites": "tools/html-pages/tests/deck.test.mjs tools/html-pages/tests/new.test.mjs",
         "shards": "[1, 2]", "pages": PAGES[0], "html": "true",
     }
@@ -119,7 +142,7 @@ def test_github_outputs(tmp_path):
     values = dict(line.split("=", 1) for line in out.read_text().splitlines())
     assert (values["engine"], values["shards"], values["html"], values["pages"]) == ("true", "[1]", "true", "none")
     out.write_text("")
-    impact.github_output(select(Change(), RULES, SUITES, SESSIONS, PAGES, everything=True, refs=REFS), out)
+    impact.github_output(select(Change(), RULES, SUITES, PARTS, PAGES, everything=True, refs=REFS), out)
     values = dict(line.split("=", 1) for line in out.read_text().splitlines())
     assert (values["suites"], values["pages"], values["shards"]) == ("all", "all", "[1, 2]"), "3 suites, 2 shards"
     many = impact.Plan(suites=[f"s{i}.test.mjs" for i in range(6)])
@@ -143,7 +166,7 @@ def test_node_suites_run_as_many_at_once_as_on_a_ci_shard():
 
 
 def test_commands_type_check_the_repository_and_each_session():
-    plan = impact.Plan(units={"typecheck", "imports"}, sessions=["sessions/01-x"])
+    plan = impact.Plan(units={"typecheck", "imports"}, sessions=["sessions/01-x"], parts=[LABS])
     run = {label: (command, cwd) for label, command, cwd in impact.commands(plan)}
     assert run["types"] == (["uv", "run", "--project", "setup", "--locked", "ty", "check"], impact.ROOT)
     assert run["sessions/01-x types"] == (["uv", "run", "--locked", "--group", "typecheck", "ty", "check"],
@@ -151,8 +174,10 @@ def test_commands_type_check_the_repository_and_each_session():
     for platform in ("linux", "darwin", "win32"):
         command, cwd = run[f"sessions/01-x exercise types ({platform})"]
         assert command[-3:] == ["--python-platform", platform, "exercises"] and cwd == impact.ROOT / "sessions/01-x"
+    assert run[LABS] == (["uv", "run", "--locked", "--group", "parallel", "pytest", "-q", "-m", "not live", "-n", "auto",
+                          "tests/labs"], impact.ROOT / "sessions/01-x"), "a part runs from its session, by its folder"
     labels = list(run)
-    assert labels.index("sessions/01-x types") < labels.index("sessions/01-x"), "the seconds-long check first"
+    assert labels.index("sessions/01-x types") < labels.index(LABS), "the seconds-long check first"
     # The same commands CI runs.
     workflows = impact.ROOT / ".github/workflows"
     checks = (workflows / "checks.yml").read_text(encoding="utf-8")
@@ -215,14 +240,20 @@ def test_the_map_names_only_suites_that_exist():
 def test_the_map_has_every_section_the_selector_reads():
     rules = impact.load_map()
     assert rules["all"]["paths"] and rules["none"]["paths"] and rules["units"]
-    assert {"engine", "turn-in", "ship", "repo-config", "typecheck", "imports"} <= set(rules["units"])
-    assert "shared" in rules["sessions"] and "shared" in rules["pages"] and "shared" in rules["node"]
+    assert {"engine", "turn-in", "ship", "repo-config", "typecheck", "imports", "session-layout"} <= set(rules["units"])
+    assert rules["sessions"]["types"] and set(rules["sessions"]["parts"]) == {"lessons", "labs"}
+    assert "shared" in rules["pages"] and "shared" in rules["node"]
 
 
-def test_references_split_loaded_files_from_links():
-    loads, links = impact.references("sessions/01-fundamentals/index.html")
-    assert "sessions/01-fundamentals/cursus/02-thinking.html" in links
-    assert not any(p.startswith(("http", "/")) for p in loads | links)
+def test_every_session_test_lives_in_a_part():
+    """sessions/<NN>-*/tests/ holds only the part folders: lessons/ and labs/."""
+    names = set(impact.load_map()["sessions"]["parts"])
+    for tests in sorted((impact.ROOT / "sessions").glob("*/tests")):
+        loose = sorted(p.name for p in tests.iterdir() if p.is_file() and p.suffix in {".py", ".mjs"})
+        assert not loose, f"{tests.relative_to(impact.ROOT)}: move {loose} into one of {sorted(names)}"
+        folders = {p.name for p in tests.iterdir() if p.is_dir() and not p.name.startswith((".", "__"))}
+        assert folders <= names, f"{tests.relative_to(impact.ROOT)}: {sorted(folders - names)} is not a part"
+    assert {part.rsplit("/", 1)[1] for part in impact.discover_parts()} == names
 
 
 def test_references_are_decoded_like_urls(tmp_path, monkeypatch):
@@ -239,17 +270,26 @@ def test_the_real_map_on_known_changes():
     deck = impact.select(Change({"sessions/01-fundamentals/cursus/02-thinking.html"}))
     assert not deck.everything and "engine" not in deck.units
     assert "sessions/01-fundamentals/cursus/02-thinking.html" in deck.pages
-    assert "tools/html-pages/tests/thinking.test.mjs" in deck.suites
-    assert "tools/html-pages/tests/world-model.test.mjs" not in deck.suites
+    assert deck.parts == ["sessions/01-fundamentals/tests/lessons"]
+    lessons = "sessions/01-fundamentals/tests/lessons"
+    assert f"{lessons}/thinking.test.mjs" in deck.suites and f"{lessons}/world-model.test.mjs" not in deck.suites
     fixture = impact.select(Change({"sessions/01-fundamentals/cursus/fixtures/next_token.json"}))
     for suite in ("next-token", "tokenizer", "sampler"):
-        assert f"tools/html-pages/tests/{suite}.test.mjs" in fixture.suites, suite
+        assert f"{lessons}/{suite}.test.mjs" in fixture.suites, suite
+    exercise = impact.select(Change({"sessions/01-fundamentals/exercises/l3-word-problem/check.py"}))
+    assert exercise.parts == ["sessions/01-fundamentals/tests/labs"] and exercise.sessions == ["sessions/01-fundamentals"]
     engine = impact.select(Change({"tools/implementation-loop/implement_loop/engine.py"}))
-    assert engine.units == {"engine", "typecheck", "imports"} and not engine.sessions and not engine.pages
+    assert engine.units == {"engine", "typecheck", "imports"} and not engine.parts and not engine.pages
     assert impact.select(Change({"ty.toml"})).units == {"typecheck"}
     for path in ("setup/pyproject.toml", "setup/uv.lock"):
         types = impact.select(Change({path}))
-        assert not types.everything and types.units == {"typecheck", "imports"} and not types.sessions, path
+        assert not types.everything and types.units == {"typecheck", "imports"} and not types.parts, path
     session = impact.select(Change({"sessions/01-fundamentals/pyproject.toml"}))
     assert session.sessions == ["sessions/01-fundamentals"] and "typecheck" not in session.units
+    assert session.parts == ["sessions/01-fundamentals/tests/labs", "sessions/01-fundamentals/tests/lessons"]
+    # The editor setup a student's installation carries (ADR 0016) is checked by the lab tests.
+    for path in ("ty.toml", ".vscode/settings.json", ".vscode/extensions.json", "setup/cursus.code-workspace",
+                 "setup/editor.py", "setup/editor.json", "sessions/01-fundamentals/.vscode/settings.json"):
+        editor = impact.select(Change({path}))
+        assert not editor.everything and "sessions/01-fundamentals/tests/labs" in editor.parts, path
     assert impact.select(Change({".github/workflows/ci.yml"})).everything

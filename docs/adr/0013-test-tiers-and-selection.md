@@ -1,6 +1,6 @@
 # ADR 0013 — Run what a change can affect on pull requests, everything on main and nightly
 
-- **Status:** Accepted
+- **Status:** Accepted; a session's suite selected by part (lessons, labs) since [ADR 0017](0017-tests-guard-behaviour-in-three-places.md)
 - **Date:** 2026-10-29
 - **Deciders:** Guilhem Busset (instructor / repo owner)
 - **Context:** [ADR 0007](0007-required-ci-gate-and-merge-forward-shipping.md), [ADR 0010](0010-platform-support.md), [ADR 0012](0012-builder-examiner-loop.md)

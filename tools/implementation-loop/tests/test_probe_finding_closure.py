@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 
 import helpers  # noqa: F401 - puts the engine on sys.path
-from implement_loop import VERSION
 from implement_loop.config import Caps
 from implement_loop.engine import Engine
 from implement_loop.model import IssueState, Phase
@@ -52,9 +51,6 @@ class ProbeFindingCase(unittest.TestCase):
         self.assertEqual(self.engine.store.issue(48).unproductive, 2)
         self.assertEqual(self.phases[0], (Phase.BUILD, [note] + failure), "the note still reaches the builder")
         self.assertEqual(self.phases[-1][0], Phase.PLAN, "two unchanged rounds bring a replan")
-
-    def test_the_engine_version_moves_past_the_one_48_failed_on(self):
-        self.assertGreater(tuple(map(int, VERSION.split("."))), (1, 0, 4))
 
 
 if __name__ == "__main__":

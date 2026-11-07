@@ -1,24 +1,27 @@
 name: Session tests
 
-# Called by ci.yml on every pull request; its result feeds the single required check. Runs
-# each session's pytest suite (every sessions/<NN>-*/ with a tests/ folder) in that session's
-# pinned environment: the Python and uv versions in its mise.toml and the packages in its
-# uv.lock, with the command its README documents. The suite runs on every core through
-# pytest-xdist, from the session's non-default `parallel` dependency group (students' `uv sync`
-# never installs it). Then ty type-checks the session's Python with its pyproject.toml's
-# [tool.ty], from its non-default `typecheck` group (ADR 0014). This is a Linux check of
-# instructor-side work; exercise portability across Linux, macOS and Windows is a separate
-# concern (docs/adr/0010-platform-support.md).
+# Called by ci.yml; its result feeds the single required check. A session's pytest suite has two
+# parts, each its own job: tests/lessons (what is taught live, cursus/) and tests/labs (what
+# students run, exercises/). Each runs in the session's pinned environment: the Python and uv
+# versions in its mise.toml and the packages in its uv.lock, on every core through pytest-xdist,
+# from the session's non-default `parallel` dependency group (students' `uv sync` never installs
+# it). Beside them, ty type-checks each session's Python with its pyproject.toml's [tool.ty], from
+# its non-default `typecheck` group (ADR 0014). This is a Linux check of instructor-side work;
+# exercise portability across Linux, macOS and Windows is a separate concern
+# (docs/adr/0010-platform-support.md).
 #
 # A test that needs what CI lacks (a logged-in claude or codex CLI, network access to a vendor
-# API, credentials, a real laptop, Windows or macOS) carries the `live` marker, registered in
-# its session's [tool.pytest.ini_options] markers; `-m "not live"` deselects it here. It must
-# never skip itself instead: a run with skipped tests fails below.
+# API, credentials, a real laptop, Windows or macOS) carries the `live` marker; `-m "not live"`
+# deselects it here. It must never skip itself instead: a run with skipped tests fails below.
 on:
   workflow_call:
     inputs:
+      parts:
+        description: JSON list of session test parts (sessions/<NN>-*/tests/<part>); empty runs every part
+        type: string
+        default: ''
       sessions:
-        description: JSON list of session folders to test; empty tests every session with a tests/ folder
+        description: JSON list of sessions to type-check; empty checks every session with a tests/ folder
         type: string
         default: ''
   workflow_dispatch:
@@ -35,35 +38,87 @@ jobs:
   discover:
     runs-on: ubuntu-latest
     outputs:
+      parts: ${{ steps.find.outputs.parts }}
       sessions: ${{ steps.find.outputs.sessions }}
     steps:
       - uses: actions/checkout@v4
       - id: find
-        name: Sessions with a pytest suite
+        name: Session test parts
         env:
-          CHOSEN: ${{ inputs.sessions }}
+          PARTS: ${{ inputs.parts }}
+          SESSIONS: ${{ inputs.sessions }}
         run: |
           set -euo pipefail
-          sessions="$(find sessions -mindepth 2 -maxdepth 2 -type d -name tests -printf '%h\n' | sort)"
-          if [ -n "$CHOSEN" ]; then
-            # Only the sessions ci.yml's `changes` selected, each of which must have a suite.
-            chosen="$(jq -r '.[]' <<<"$CHOSEN" | sort)"
-            missing="$(comm -23 <(printf '%s\n' "$chosen") <(printf '%s\n' "$sessions"))"
-            [ -z "$missing" ] || { echo "::error::Selected sessions without a tests/ folder: $missing"; exit 1; }
-            sessions="$chosen"
+          # Every part folder holding a test file; ci.yml's selection must name existing ones.
+          all="$(find sessions -mindepth 4 -maxdepth 4 -path 'sessions/*/tests/*' -name 'test_*.py' -printf '%h\n' | sort -u)"
+          [ -n "$all" ] || { echo "::error::No session has a test part; an empty run is not evidence"; exit 1; }
+          if [ -n "$PARTS$SESSIONS" ]; then
+            parts="$(jq -r '.[]' <<<"${PARTS:-[]}" | sort)"
+            missing="$(comm -23 <(printf '%s\n' "$parts" | sed '/^$/d') <(printf '%s\n' "$all"))"
+            [ -z "$missing" ] || { echo "::error::Selected parts without tests: $missing"; exit 1; }
+            sessions="$(jq -r '.[]' <<<"${SESSIONS:-[]}" | sort)"
+          else
+            parts="$all"
+            sessions="$(printf '%s\n' "$all" | sed 's|/tests/.*||' | sort -u)"
           fi
-          if [ -z "$sessions" ]; then
-            echo "::error::No session has a tests/ folder; an empty run is not evidence"
-            exit 1
-          fi
-          printf '%s\n' "$sessions"
-          echo "sessions=$(jq -Rnc '[inputs]' <<<"$sessions")" >> "$GITHUB_OUTPUT"
+          printf 'parts:\n%s\nsessions:\n%s\n' "$parts" "$sessions"
+          echo "parts=$(printf '%s\n' "$parts" | sed '/^$/d' | jq -Rnc '[inputs]')" >> "$GITHUB_OUTPUT"
+          echo "sessions=$(printf '%s\n' "$sessions" | sed '/^$/d' | jq -Rnc '[inputs]')" >> "$GITHUB_OUTPUT"
 
   pytest:
     needs: discover
-    name: pytest (${{ matrix.session }})
+    if: needs.discover.outputs.parts != '[]'
+    name: pytest (${{ matrix.part }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ${{ fromJSON(needs.discover.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: where
+        name: The part's session and folder
+        env:
+          PART: ${{ matrix.part }}
+        run: |
+          echo "session=${PART%%/tests/*}" >> "$GITHUB_OUTPUT"
+          echo "folder=tests/${PART#*/tests/}" >> "$GITHUB_OUTPUT"
+      - id: pins
+        name: Read the session's pinned Python and uv
+        working-directory: ${{ steps.where.outputs.session }}
+        env:
+          SESSION: ${{ steps.where.outputs.session }}
+        run: python3 ../../.github/scripts/session_pins.py
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ steps.pins.outputs.uv }}
+      - name: pytest
+        working-directory: ${{ steps.where.outputs.session }}
+        env:
+          UV_PYTHON: ${{ steps.pins.outputs.python }}
+          FOLDER: ${{ steps.where.outputs.folder }}
+        run: uv run --locked --group parallel pytest -q -m "not live" -n auto --junitxml="$RUNNER_TEMP/pytest.xml" "$FOLDER"
+      - name: Every collected test ran, none skipped
+        run: |
+          python3 - "$RUNNER_TEMP/pytest.xml" <<'EOF'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          suites = list(ET.parse(sys.argv[1]).getroot().iter("testsuite"))
+          totals = {key: sum(int(s.get(key, 0)) for s in suites) for key in ("tests", "skipped")}
+          print(totals)
+          if totals["tests"] == 0 or totals["skipped"]:
+              sys.exit("Empty or skipped run. Exclude a test CI cannot run with the `live` marker, "
+                       "never by skipping inside the test.")
+          EOF
+
+  types:
+    needs: discover
+    if: needs.discover.outputs.sessions != '[]'
+    name: types (${{ matrix.session }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -77,65 +132,14 @@ jobs:
         name: Read the session's pinned Python and uv
         env:
           SESSION: ${{ matrix.session }}
-        run: |
-          set -euo pipefail
-          for f in pyproject.toml uv.lock mise.toml; do
-            [ -f "$f" ] || { echo "::error file=$SESSION/$f::A session's tests run in its pinned environment; $f is missing"; exit 1; }
-          done
-          python3 - <<'EOF'
-          import os
-          import sys
-          import tomllib
-
-          with open("pyproject.toml", "rb") as f:
-              config = tomllib.load(f)
-          groups = config.get("dependency-groups", {})
-          if not any(str(dep).startswith("pytest-xdist") for dep in groups.get("parallel", [])):
-              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::The session's tests run "
-                       "in parallel; add pytest-xdist to a `parallel` dependency group "
-                       "(uv add --group parallel pytest-xdist)")
-          with open("../../setup/pyproject.toml", "rb") as f:
-              ty = next(dep for dep in tomllib.load(f)["project"]["dependencies"] if dep.startswith("ty=="))
-          if ty not in groups.get("typecheck", []):
-              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::The session's Python is "
-                       f"type-checked with the ty setup/pyproject.toml pins; put {ty} in a `typecheck` "
-                       f"dependency group (uv add --group typecheck {ty})")
-          if "ty" not in config.get("tool", {}):
-              # Without it, ty walks up to the root ty.toml and checks the repository's code instead.
-              sys.exit(f"::error file={os.environ['SESSION']}/pyproject.toml::Configure the session's "
-                       "type check in a [tool.ty] table (see setup/README.md#type-checking)")
-          with open("mise.toml", "rb") as f:
-              tools = tomllib.load(f)["tools"]
-          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
-              out.write(f"python={tools['python']}\nuv={tools['uv']}\n")
-          print(f"python {tools['python']}, uv {tools['uv']}")
-          EOF
+        run: python3 ../../.github/scripts/session_pins.py
       - uses: astral-sh/setup-uv@v6
         with:
           version: ${{ steps.pins.outputs.uv }}
-      - id: pytest
-        name: pytest
-        env:
-          UV_PYTHON: ${{ steps.pins.outputs.python }}
-        run: uv run --locked --group parallel pytest -q -m "not live" -n auto --junitxml="$RUNNER_TEMP/pytest.xml"
-      - name: Every collected test ran, none skipped
-        run: |
-          python3 - "$RUNNER_TEMP/pytest.xml" <<'EOF'
-          import sys
-          import xml.etree.ElementTree as ET
-
-          suites = list(ET.parse(sys.argv[1]).getroot().iter("testsuite"))
-          totals = {key: sum(int(s.get(key, 0)) for s in suites) for key in ("tests", "skipped")}
-          print(totals)
-          if totals["tests"] == 0 or totals["skipped"]:
-              sys.exit("Empty or skipped run. Exclude a test CI cannot run with the registered "
-                       "`live` marker, never by skipping inside the test.")
-          EOF
-      # Also when the tests failed, so one run reports both. Then the exercises once per platform
-      # students use (ADR 0010): `python-platform = "all"` checks every branch, but an API only one
-      # platform has is caught only by checking as each of the others.
+      # The whole session, then the exercises once per platform students use (ADR 0010):
+      # `python-platform = "all"` checks every branch, but an API only one platform has is caught
+      # only by checking as each of the others.
       - name: Type check
-        if: ${{ !cancelled() && steps.pytest.outcome != 'skipped' }}
         env:
           UV_PYTHON: ${{ steps.pins.outputs.python }}
         run: |

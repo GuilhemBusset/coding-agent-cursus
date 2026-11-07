@@ -133,9 +133,9 @@ From `sessions/01-fundamentals/`:
 
 ```sh
 uv run pytest exercises/p00-lab/test_p00_contract.py   # reference passes in place
-uv run pytest tests/test_p00_lab.py                    # exports every variant and checks it
+uv run pytest tests/labs/test_p00_lab.py               # exports every variant and checks it
 ```
 
-`tests/test_p00_lab.py` exports all five variants to a temporary directory. It checks that the
+`tests/labs/test_p00_lab.py` exports all five variants to a temporary directory. It checks that the
 reference passes, that each bug fails its named contract in under 10 seconds, and that no
 exported file or commit gives the bug away.

@@ -10,7 +10,6 @@ from types import SimpleNamespace
 from unittest import mock
 
 import helpers  # noqa: F401  (puts the engine on sys.path)
-from implement_loop import VERSION
 from implement_loop.agents import BuildResult, ItemPlan, PlanResult
 from implement_loop.config import Caps
 from implement_loop.engine import Engine
@@ -77,9 +76,6 @@ class ReclassifiedCommandCase(unittest.TestCase):
         self.engine._maybe_revive(st)
         self.assertEqual(st.phase, Phase.BUILD)
         self.assertEqual(st.commands, [A1, PROBE])
-
-    def test_the_engine_version_moves_past_the_one_148_failed_on(self):
-        self.assertGreater(tuple(map(int, VERSION.split("."))), (1, 0, 6))
 
 
 if __name__ == "__main__":

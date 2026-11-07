@@ -36,8 +36,9 @@ While iterating, run the narrowest check directly, and do not rerun the full sui
 edit:
 
 - a page or deck: `node tools/html-pages/check-page.mjs <file>`;
-- one Node suite: `node tools/html-pages/tests/run-suite.mjs tools/html-pages/tests/<name>.test.mjs`;
-- a session's tests: `uv run --group parallel pytest -n auto [tests/<file>]` in its folder;
+- one Node suite: `node tools/html-pages/tests/run-suite.mjs <path>/<name>.test.mjs`;
+- a session's tests: `uv run --group parallel pytest -n auto tests/lessons` (or `tests/labs`, or
+  one file) in its folder;
 - the engine tests: the command in `tools/implementation-loop/README.md`;
 - types (ty): `uv run --project setup --locked ty check` from the root for the repository's own
   Python, or `uv run --locked --group typecheck ty check` in a session's folder;
@@ -54,6 +55,25 @@ and ADR 0013.
 Type errors fail CI like test failures. Fix them in the code. A `# ty: ignore[<rule>]` names its
 rule and says why, and is only for code that steps outside its annotations on purpose (a test
 double) or that ty misreads. See ADR 0014.
+
+## Where tests live
+
+Tests come in three kinds, each in its own place, never mixed in one folder:
+
+- **Project**: the repository's own tooling. A tool's tests live with it (`tools/<tool>/tests/`,
+  `tools/test-impact/`); the repository scripts' and rules' tests live in the root `tests/`
+  (turn-in, student setup, the rules every session follows).
+- **Lessons**: what a session teaches live, its `cursus/` and `index.html` (decks, teaching labs,
+  demos, fixtures). In `sessions/<NN>-*/tests/lessons/`: pytest files and the browser suites
+  (`*.test.mjs`).
+- **Labs**: what students run on their own, the session's `exercises/` (pre-work, labs, homework,
+  turn-in gate). In `sessions/<NN>-*/tests/labs/`.
+
+A test guards behaviour someone relies on: an exercise is solvable and its checker catches the
+bugs it should, a script does its job, a page's controls work and show the real data. It does not
+pin presentation, wording or process: emphasis, copy, slide counts, layout at several viewports,
+print, sentences in a README or ADR. `tools/html-pages/check-page.mjs` is the one generic check of
+every page's layout, accessibility and loading. See ADR 0017.
 
 ## Branching & merging
 

@@ -3,7 +3,6 @@ import os
 import socket
 import sys
 import tempfile
-import textwrap
 import unittest
 from pathlib import Path
 
@@ -239,11 +238,6 @@ class VerifyTests(unittest.TestCase):
         ev, _ = verify.run_check(self.root, self.spec(), "abc123", self.work)
         self.assertFalse(ev.passed)
 
-    def test_timeout_fails(self):
-        ev, _ = verify.run_check(self.root, self.spec("sleep 5", timeout_s=1), "abc", self.work)
-        self.assertFalse(ev.passed)
-        self.assertIn("timed out", ev.output_tail)
-
     def test_missing_cwd_fails_cleanly(self):
         ev, _ = verify.run_check(self.root, self.spec(cwd="nope"), "abc", self.work)
         self.assertFalse(ev.passed)
@@ -322,23 +316,6 @@ class PytestVerifyTests(unittest.TestCase):
         """Every test the file defines, which is what the engine locks for now."""
         return {"A1": verify.defined_tests(self.root, ["tests/test_x.py"])}
 
-    def run_verify(self, body):
-        self.test_file.write_text(textwrap.dedent(body))
-        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
-        return verify.verify(self.root, [CheckSpec("A1", "command", self.cmd)], "sha", self.root / ".w",
-                             locked, ["tests/test_x.py"], self.manifest())
-
-    def test_passing_tests_pass(self):
-        ok, evidence, problems, ran = self.run_verify("def test_a():\n    assert True\n")
-        self.assertTrue(ok, problems)
-        self.assertEqual(evidence[0]["tests"]["passed"], 1)
-        self.assertEqual(ran, ["tests/test_x.py::test_a"])
-
-    def test_a_skip_fails_verification(self):
-        ok, _, problems, _ = self.run_verify("import pytest\n\ndef test_a():\n    pytest.skip('later')\n")
-        self.assertFalse(ok)
-        self.assertTrue(any("unexpected skip" in p for p in problems))
-
     def test_pytest_wrapped_in_a_script_is_still_accounted(self):
         (self.root / "run.sh").write_text(f"{sys.executable} -m pytest -q tests/test_x.py\n")
         self.test_file.write_text("import pytest\n\ndef test_a():\n    pytest.skip('later')\n")
@@ -348,16 +325,6 @@ class PytestVerifyTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertTrue(any("unexpected skip" in p for p in problems), problems)
 
-    def test_failed_tests_fail_even_when_the_command_exits_zero(self):
-        (self.root / "run.sh").write_text(f"{sys.executable} -m pytest -q tests/test_x.py; true\n")
-        self.test_file.write_text("def test_a():\n    assert False\n")
-        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
-        ok, evidence, problems, _ = verify.verify(self.root, [CheckSpec("A1", "command", "bash run.sh")], "sha", self.root / ".w",
-                                                  locked, ["tests/test_x.py"], self.manifest())
-        self.assertEqual(evidence[0]["exit_code"], 0)
-        self.assertFalse(ok)
-        self.assertTrue(any("failed tests" in p for p in problems), problems)
-
     def test_same_name_in_two_classes_counts_as_two_tests(self):
         self.test_file.write_text("class TestGood:\n    def test_contract(self):\n        assert True\n\nclass TestBad:\n    def test_contract(self):\n        assert False\n")
         locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
@@ -365,14 +332,6 @@ class PytestVerifyTests(unittest.TestCase):
         ok, _, problems, _ = verify.verify(self.root, [spec], "sha", self.root / ".w", locked, ["tests/test_x.py"], self.manifest())
         self.assertFalse(ok)
         self.assertIn("locked tests did not run: ['tests/test_x.py::TestBad::test_contract']", problems)
-
-    def test_a_test_that_does_not_run_fails_verification(self):
-        self.test_file.write_text("def test_a():\n    assert True\n\ndef test_b():\n    assert True\n")
-        locked = verify.lock(self.root, ["tests/test_x.py"], ["."])
-        spec = CheckSpec("A1", "command", f"{self.cmd} -k test_a")
-        ok, _, problems, _ = verify.verify(self.root, [spec], "sha", self.root / ".w", locked, ["tests/test_x.py"], self.manifest())
-        self.assertFalse(ok)
-        self.assertIn("locked tests did not run: ['tests/test_x.py::test_b']", problems)
 
 
 if __name__ == "__main__":

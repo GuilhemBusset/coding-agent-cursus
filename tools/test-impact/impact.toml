@@ -7,12 +7,13 @@
 # The map can only err by being too narrow, so it errs wide: a changed path that no pattern
 # below matches runs everything, a Node suite with no entry runs on every change, and a
 # deleted or renamed file counts under its old path too. When a test starts reading a new
-# file, add that file here (tools/test-impact/test_select.py checks the map's shape).
+# file, add that file here (tools/test-impact/test_impact.py checks the map against the repository).
 
 [all]
 # A change here runs every check.
 paths = [
   ".github/workflows/**",
+  ".github/scripts/**",
   ".gitignore",
   "tools/test-impact/**",
   "scripts/check-changed.sh",
@@ -22,23 +23,19 @@ paths = [
 ]
 
 [none]
-# Read by no check: prose, editor configuration, and loose probe or examiner scripts nothing runs.
+# Read by no check: prose and editor configuration.
 paths = [
+  "AGENTS.md",
+  "README.md",
   "CLAUDE.md",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "LICENSE",
   "SECURITY.md",
   "docs/*.md",
-  "docs/tests/**",
-  "setup/turn-in-owner-checks.md",
-  "checks/**",
-  "tests/probe_*.py",
-  "tests/test_examiner_103*.py",
-  "tests/loop_probes/**",
+  "docs/adr/**",
+  "setup/*.md",
   "tools/html-pages/research.md",
-  "tools/html-pages/examiner-*.mjs",
-  "tools/html-pages/probe-*.mjs",
 ]
 
 # The skill copies, shell syntax and JSON steps of checks.yml: seconds, and always run in CI.
@@ -48,22 +45,25 @@ paths = [".agents/skills/**", ".claude/skills/**", "scripts/*.sh", "setup/*.sh",
 [units.ship]
 paths = ["scripts/ship.sh", "scripts/test-ship.sh", ".githooks/**"]
 
-# tests/turn_in reads the turn-in script, hooks, rulesets, skills, ADR numbers and the
-# homework sections of README.md and AGENTS.md, and re-runs the checks.yml steps above.
+# tests/turn_in runs the turn-in script and hooks against temporary repositories, and reads the
+# rulesets, their apply script and the turn-in skill's invocation settings.
 [units.turn-in]
 paths = [
   "tests/turn_in/**",
-  "scripts/**",
-  "setup/*.sh",
-  "setup/*.json",
+  "scripts/turn-in.sh",
   ".githooks/**",
-  ".agents/skills/**",
-  ".claude/skills/**",
-  "docs/adr/**",
-  "AGENTS.md",
-  "README.md",
+  "setup/apply-ruleset.sh",
+  "setup/homework-branches.json",
+  "setup/pr-only-main.json",
+  ".agents/skills/turn-in/**",
+  ".claude/skills/turn-in/**",
   "sessions/*/exercises/turn-in-check.sh",
 ]
+
+# tests/sessions: the repository's rules for every session (ADR 0001): its Python imports nothing
+# from outside the session, and its default install stays light.
+[units.session-layout]
+paths = ["tests/sessions/**", "sessions/**/*.py", "sessions/*/pyproject.toml", "sessions/**/*.pth"]
 
 # The implement loop engine tests run ship.sh, the loop guard and the hooks for real, check
 # setup/browser-libs.py against Playwright's package list, and plan against a few repo files.
@@ -109,6 +109,7 @@ paths = [
   "setup/editor.py",
   "tools/implementation-loop/**",
   "tests/turn_in/**",
+  "tests/sessions/**",
   "setup/student/*.py",
   "tests/student_setup/**",
 ]
@@ -118,10 +119,28 @@ paths = [
 [units.imports]
 paths = ["**/*.py", "ruff.toml", "setup/pyproject.toml", "setup/uv.lock"]
 
-# Each session's pytest suite (sessions/<NN>-*/tests) runs when anything in its session folder
-# changes, or one of these: test_home_turn_in.py runs the real turn-in script and hooks. Its type
-# check (ty, from the session's `typecheck` group) runs with it.
+# Each session's pytest suite has two parts, each in its own folder and run on its own:
+#   lessons  tests/lessons: what is taught live (cursus/: decks, teaching labs, demos, fixtures,
+#            and the hub index.html);
+#   labs     tests/labs: what students do on their own (exercises/: pre-work, labs, homework,
+#            turn-in).
+# A part runs when a session file matching its `reads` (relative to the session folder) or a repo
+# path matching its `shared` changes. A session file neither part claims (its pyproject.toml,
+# uv.lock, README.md...) runs both. A Node suite in tests/<part>/ is selected by [node] only.
+# The session's type check (ty, from its `typecheck` group) runs when one of `types` changes.
 [sessions]
+types = ["**/*.py", "pyproject.toml", "uv.lock", "mise.toml"]
+
+[sessions.parts.lessons]
+# The evidence deck re-runs the P00 lab it quotes.
+reads = ["cursus/**", "index.html", "tests/lessons/**", "exercises/p00-lab/**"]
+shared = []
+
+[sessions.parts.labs]
+# The home sheet's demo prompts are the model demos'; test_home_turn_in.py runs the real turn-in
+# script and hooks; test_editor_setup.py and test_p00_lab.py check the editor setup a student's
+# installation and the exported lab carry (ADR 0016).
+reads = ["exercises/**", "tests/labs/**", "cursus/demos/model/**", ".vscode/**"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
   "ty.toml", ".vscode/**", "setup/cursus.code-workspace", "setup/editor.py", "setup/editor.json",
@@ -137,8 +156,9 @@ shared = [
   "tools/html-pages/browser.mjs",
 ]
 
-# Node suites (tools/html-pages/tests/<name>.test.mjs). A suite runs when its own file, one of
-# its paths, or a shared path changes. A suite with no entry runs on every change.
+# Node suites: tools/html-pages/tests/<name>.test.mjs (the page tooling's own) and
+# sessions/<NN>-*/tests/<part>/<name>.test.mjs (a session's lessons). A suite runs when its own file,
+# one of its paths, or a shared path changes. A suite with no entry runs on every change.
 [node]
 shared = [
   "tools/html-pages/browser.mjs",
@@ -151,27 +171,25 @@ shared = [
 ]
 
 [node.suites]
-# Decks: the deck, and the labs, demos and fixtures it links to or quotes.
-sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
-thinking = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
-opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**"]
-evidence = ["sessions/01-fundamentals/cursus/04-evidence.html", "setup/pr-only-main.json", ".githooks/**", "sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/exercises/lab-ladder.html", "sessions/01-fundamentals/exercises/p00-lab/**", "sessions/01-fundamentals/exercises/l3-word-problem/**", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
-agent = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/labs/*.html", "sessions/01-fundamentals/cursus/demos/**", "sessions/01-fundamentals/cursus/fixtures/**"]
-# Labs: the lab and the files it is built from.
+# Session 1 decks: the deck, and the recordings, fixtures and lab files it quotes.
+opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html"]
+sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/tokenizer.html", "sessions/01-fundamentals/cursus/fixtures/*.json"]
+thinking = ["sessions/01-fundamentals/cursus/02-thinking.html", "sessions/01-fundamentals/cursus/demos/effort/**"]
+agent = ["sessions/01-fundamentals/cursus/03-agent.html", "sessions/01-fundamentals/cursus/demos/agent/**", "sessions/01-fundamentals/cursus/fixtures/runs/**"]
+evidence = ["sessions/01-fundamentals/cursus/04-evidence.html", "sessions/01-fundamentals/cursus/fixtures/runs/**", "sessions/01-fundamentals/exercises/lab-ladder.html", "sessions/01-fundamentals/exercises/p00-lab/**", "setup/pr-only-main.json"]
+# Session 1 teaching labs: the lab and the files it is built from.
 agent-loop = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**", "sessions/01-fundamentals/cursus/demos/agent/**"]
-examiner-agent-loop-d3 = ["sessions/01-fundamentals/cursus/labs/agent-loop.html", "sessions/01-fundamentals/cursus/fixtures/runs/**"]
-attention = ["sessions/01-fundamentals/cursus/labs/attention.html", "sessions/01-fundamentals/cursus/fixtures/attention.json", "sessions/01-fundamentals/README.md"]
+attention = ["sessions/01-fundamentals/cursus/labs/attention.html", "sessions/01-fundamentals/cursus/fixtures/attention.json"]
 context = ["sessions/01-fundamentals/cursus/labs/context.html", "sessions/01-fundamentals/cursus/demos/effort/**"]
 next-token = ["sessions/01-fundamentals/cursus/labs/next-token.html", "sessions/01-fundamentals/cursus/fixtures/next_token.json"]
 test-time-compute = ["sessions/01-fundamentals/cursus/labs/test-time-compute.html"]
-tiny-lm = ["sessions/01-fundamentals/cursus/labs/tiny-lm.html", "sessions/01-fundamentals/cursus/labs/tiny-lm/**", "setup/README.md"]
-tokenizer = ["sessions/01-fundamentals/cursus/labs/tokenizer.html", "sessions/01-fundamentals/cursus/labs/tokenizer/**", "sessions/01-fundamentals/cursus/fixtures/next_token.json"]
+tiny-lm = ["sessions/01-fundamentals/cursus/labs/tiny-lm.html", "sessions/01-fundamentals/cursus/labs/tiny-lm/**"]
+tokenizer = ["sessions/01-fundamentals/cursus/labs/tokenizer.html", "sessions/01-fundamentals/cursus/fixtures/next_token.json"]
 verifier-gaming = ["sessions/01-fundamentals/cursus/labs/verifier-gaming.html"]
-world-model = ["sessions/01-fundamentals/cursus/labs/world-model.html", "tools/html-pages/tests/world-model-helpers.mjs"]
-world-model-replay = ["sessions/01-fundamentals/cursus/labs/world-model.html", "tools/html-pages/tests/world-model-helpers.mjs"]
-# The shared components page, and the page tooling itself.
+world-model = ["sessions/01-fundamentals/cursus/labs/world-model.html"]
+# The page tooling: the shared components page, the templates and assets, the checker.
 components-a11y = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/assets/**"]
-components-tooling = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/tests/**", "tools/html-pages/templates/**", "tools/html-pages/assets/**", "tools/html-pages/GUIDE.md"]
+components-tooling = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
 formula-slider = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]
 predict = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/assets/**"]
 probability-chart = ["sessions/01-fundamentals/cursus/demos/components.html", "tools/html-pages/templates/**", "tools/html-pages/assets/**"]

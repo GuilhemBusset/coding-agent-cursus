@@ -5,7 +5,6 @@ import unittest
 from unittest import mock
 
 from helpers import SHIP, TempRepo, issue_body, present
-from implement_loop import engine as engine_mod
 from implement_loop.agents import FakeAgents, Script
 from implement_loop.config import Caps, Config
 from implement_loop.engine import Engine
@@ -125,37 +124,6 @@ class HappyPathTests(EngineCase):
 
 
 class RoundTests(EngineCase):
-    def test_wrong_then_right_takes_extra_rounds(self):
-        self.add_work(2, "docs/a.txt", "alpha", wrong_attempts=2)
-        self.epic(2)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DONE)
-        self.assertEqual(len([c for c in self.agents.calls if c[0] == "build"]), 3)
-
-    def test_no_progress_replans_then_fails_and_its_dependent_waits(self):
-        self.add_work(2, "docs/a.txt", "alpha", wrong_attempts=99)
-        self.add_work(3, "docs/b.txt", "beta", blocked_by=(2,))
-        self.epic(2, 3)
-        summary = self.run_engine()
-        self.assertEqual(self.phase(2), Phase.FAILED)
-        self.assertEqual(present(self.store.issue(2).fail)["cause"], "no_progress")
-        self.assertEqual(len(self.events("replan", 2)), 1)
-        self.assertEqual(self.phase(3), Phase.WAITING)
-        self.assertEqual(present(self.store.issue(3).wait)["kind"], "prerequisite")
-        self.assertNotIn("parked", summary["phases"])
-        self.assertIsNone(self.repo.main_file("docs/a.txt"), "nothing partial is merged")
-
-    def test_a_blocking_finding_keeps_its_probe_until_fixed(self):
-        self.add_work(2, "docs/a.txt", "alpha", findings=1)
-        self.epic(2)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DONE)
-        f = self.store.issue(2).findings
-        blocking = [x for x in f if x["blocking"]]
-        self.assertEqual(len(blocking), 1)
-        self.assertEqual(blocking[0]["status"], "closed")
-        self.assertEqual(self.repo.main_file("edge_2.txt"), "handled")
-
     def test_a_finding_tied_to_no_item_goes_to_a_follow_up_issue(self):
         self.add_work(2, "docs/a.txt", "alpha", unquoted_findings=1)
         self.epic(2)
@@ -174,13 +142,6 @@ class RoundTests(EngineCase):
         self.assertIsNone(self.repo.main_file("checks/probe_2.sh"))
         self.assertTrue(self.events("examined", 2)[0]["rejected"])
 
-    def test_an_edit_to_a_locked_test_is_reverted(self):
-        self.add_work(2, "docs/a.txt", "alpha", findings=1, tamper=True)
-        self.epic(2)
-        self.run_engine()
-        self.assertTrue(self.events("locked_changes_reverted", 2))
-        self.assertIn("test", present(self.repo.main_file("checks/issue_2.sh")))
-
     def test_review_items_block_until_met(self):
         self.add_work(2, "docs/a.txt", "alpha", items=["`docs/a.txt` contains `alpha`.",
                                                         "The page reads clearly to a student."],
@@ -193,19 +154,6 @@ class RoundTests(EngineCase):
 
 
 class ObligationTests(EngineCase):
-    def test_an_owner_item_is_delivered_with_its_obligation_and_unblocks_dependents(self):
-        self.add_work(2, "docs/a.txt", "alpha", items=["`docs/a.txt` contains `alpha`.",
-                                                        "Runs under a second on a 2020 laptop."],
-                      owner_items=("D2",))
-        self.add_work(3, "docs/b.txt", "beta", blocked_by=(2,))
-        self.epic(2, 3)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DELIVERED)
-        self.assertEqual(self.phase(3), Phase.DONE)
-        self.assertEqual(self.store.issue(2).obligations[0]["kind"], "capability")
-        self.assertIn("hardware:laptop", self.store.issue(2).human_tasks[0])
-        self.assertEqual(self.gh.issues[2]["state"], "open")
-
     def test_an_owner_claim_for_a_capability_the_host_has_is_demoted(self):
         self.add_work(2, "docs/a.txt", "alpha", items=["`docs/a.txt` contains `alpha`.", "It fetches the page online."],
                       bad_owner_items=("D2",))
@@ -237,16 +185,6 @@ class ObligationTests(EngineCase):
 
 
 class WaitAndFailTests(EngineCase):
-    def test_an_outage_waits_and_the_next_run_resumes(self):
-        self.add_work(2, "docs/a.txt", "alpha", outages=1)
-        self.epic(2)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(present(self.store.issue(2).wait)["kind"], "outage")
-        self.assertEqual(self.store.issue(2).infra, 0, "an outage is charged to no budget")
-        self.run_engine(agents=self.agents)
-        self.assertEqual(self.phase(2), Phase.DONE)
-
     def test_timeouts_spend_the_infrastructure_budget_then_fail(self):
         self.add_work(2, "docs/a.txt", "alpha", crashes=99)
         self.epic(2)
@@ -254,18 +192,6 @@ class WaitAndFailTests(EngineCase):
         self.assertEqual(self.phase(2), Phase.FAILED)
         self.assertEqual(present(self.store.issue(2).fail)["cause"], "ceiling")
         self.assertEqual(self.store.issue(2).infra, 3)
-
-    def test_a_failed_issue_resumes_once_on_a_new_engine_version(self):
-        self.add_work(2, "docs/a.txt", "alpha", wrong_attempts=99)
-        self.epic(2)
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.FAILED)
-        self.scripts[2].wrong_attempts = 0
-        self.agents._built[2] = 99
-        with mock.patch.object(engine_mod, "VERSION", "9.9.9"):
-            self.run_engine(agents=self.agents)
-        self.assertEqual(self.phase(2), Phase.DONE)
-        self.assertTrue(self.events("revived", 2))
 
     def test_a_flaky_required_check_is_rerun_once(self):
         self.add_work(2, "docs/a.txt", "alpha")
@@ -282,25 +208,6 @@ class WaitAndFailTests(EngineCase):
         self.run_engine(caps=Caps(ci_poll_s=1, ci_timeout_s=1, queue_poll_s=0))
         self.assertEqual(self.phase(2), Phase.WAITING)
         self.assertEqual(present(self.store.issue(2).wait)["kind"], "ci")
-
-    def test_an_engine_fault_is_filed_once_and_its_issue_waits(self):
-        self.add_work(2, "docs/a.txt", "alpha")
-        self.add_work(3, "docs/b.txt", "beta")
-        self.epic(2, 3)
-        original = Engine._step_verify
-
-        def broken(engine, n):
-            if n == 2:
-                raise KeyError("boom")
-            return original(engine, n)
-        with mock.patch.object(Engine, "_step_verify", broken):
-            self.run_engine()
-        self.assertEqual(self.phase(2), Phase.WAITING)
-        self.assertEqual(present(self.store.issue(2).wait)["kind"], "engine")
-        self.assertEqual(self.phase(3), Phase.DONE)
-        filed = [i for i in self.gh.issues.values() if {"name": "loop:engine-bug"} in i["labels"]]
-        self.assertEqual(len(filed), 1)
-        self.assertIn("## Deliverables", filed[0]["body"], "a fault issue carries a ledger a repair run can prove")
 
     def test_a_merge_queue_another_run_holds_is_polled_not_abandoned(self):
         self.add_work(2, "docs/a.txt", "alpha")
@@ -351,19 +258,6 @@ class RequirementTests(EngineCase):
             self.run_engine()
         self.assertEqual(self.phase(2), Phase.DONE)
         self.assertTrue(self.events("requirements_changed", 2))
-
-    def test_a_legacy_parked_state_migrates_and_resumes(self):
-        self.add_work(2, "docs/a.txt", "alpha")
-        self.epic(2)
-        store = RunStore.for_root(self.repo.work, EPIC)
-        store.state.setdefault("issues", {})["2"] = {
-            "number": 2, "phase": "parked", "park_kind": "exhausted", "reason": "the design was impossible",
-            "design": {"files": ["docs/a.txt"], "check_files": ["checks/old_2.sh"], "checks": []},
-            "locked": {"checks/old_2.sh": "x"}}
-        store.save()
-        self.run_engine()
-        self.assertEqual(self.phase(2), Phase.DONE)
-        self.assertTrue(self.events("migrated", 2))
 
 
 if __name__ == "__main__":

@@ -145,12 +145,27 @@ class Finding01PublishedEvidence(FixCase):
 
 
 class Finding02RevertGates(FixCase):
-    def test_2_a_revert_is_verified_and_certified_on_its_exact_head_then_passes_the_required_check(self):
+    def test_2_a_breaking_merge_gets_a_fix_forward_then_a_verified_and_certified_revert(self):
         self.breaking_pair()
         agents = Agents(self.scripts)
         self.run_engine(agents=agents)
+        self.assertEqual(self.phase(2), Phase.DONE)
+        regressions = [e for e in self.events("regression_check") if e["issue"] == 3]
+        self.assertTrue(regressions and not regressions[0]["ok"])
+        self.assertEqual(regressions[0]["of"], 2)
+        self.assertEqual(len(self.events("fix_forward", 3)), 1, "one fix-forward round")
+        self.assertTrue(any("#2's checks fail on main" in f for f in self.builds(3)[1][3]),
+                        "the fix-forward round is told what broke")
+        # The fix-forward changed nothing, so the breaking PR is reverted and #3 delivered once
+        # more; it breaks main again, is reverted again, and fails. Main is never left red.
         reverted = self.events("reverted", 3)
-        self.assertTrue(reverted)
+        first_pr = [e["pr"] for e in self.events("merged") if e["issue"] == 3][0]
+        self.assertEqual(len(reverted), 2)
+        self.assertEqual(reverted[0]["of"], [first_pr])
+        st = self.store.issue(3)
+        assert st.fail is not None
+        self.assertEqual((st.phase, st.fail["cause"], st.reverts), (Phase.FAILED, "main_broken", 2))
+        self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha", "main is green again")
         pr = self.gh.prs[reverted[0]["pr"]]
         head = pr["head"]["sha"]
         self.assertTrue(pr["merged"])
@@ -874,9 +889,6 @@ class Fault90SeveralCommandsPerItem(FixCase):
         self.assertEqual(len(self.a1()), 2)
         self.assertTrue(self.a1()[1].endswith(" && true"))
 
-    def test_fault_90_the_engine_version_moved_past_the_faulted_one(self):
-        self.assertNotEqual(VERSION, "1.0.0")
-
 
 @unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
 class Fault94CriterionNamesTheItem(FixCase):
@@ -918,9 +930,6 @@ class Fault94CriterionNamesTheItem(FixCase):
         feedback = [f for c in agents.calls if c[0] == "build" and c[2] == 2 for f in c[3]]
         self.assertTrue([f for f in feedback if "were not kept" in f and "Regression: the whole suite" in f], feedback)
 
-    def test_fault_94_the_engine_version_moved_past_the_faulted_one(self):
-        self.assertNotEqual(VERSION, "1.0.1")
-
 
 @unittest.skipUnless(HAS_PYTEST, "pytest is needed for the verifier's per-test accounting")
 class Fault95TypedCommandChangeAdds(FixCase):
@@ -959,9 +968,6 @@ class Fault95TypedCommandChangeAdds(FixCase):
         self.assertEqual(len(typed), 2)
         for r in typed:
             self.assertIn({"command": f"{pytest} {self.path}", "cwd": "."}, r["replaces"])
-
-    def test_fault_95_the_engine_version_moved_past_the_faulted_one(self):
-        self.assertNotIn(VERSION, ("1.0.0", "1.0.1", "1.0.2"))
 
 
 class FindingNew1OwnerFindings(unittest.TestCase):
