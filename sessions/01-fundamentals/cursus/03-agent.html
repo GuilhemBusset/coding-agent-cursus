@@ -1096,7 +1096,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: Act II ended on a question: “The model only writes text. So who ran the solver in the cold open?” Not the model. This slide builds the answer, one part at a time; press each step as you say it.</p>
+            <p>Talk track: Act II ended on a question: “The model only writes text. So what runs the command?” Not the model. This slide builds the answer, one part at a time; press each step as you say it.</p>
             <p>Step 1, the model: Acts I and II in one box. It reads its context, here only your goal, and writes text. Alone, it cannot open a file or run a test; a chatbot is this box.</p>
             <p>Step 2, tools. The harness lists the tools in the context: Read, Edit, Bash, Search. Now the model can write a tool call: a structured request, a tool name and its input, as text the harness can parse. The harness runs it on your repo. The model still only wrote text.</p>
             <p>Step 3, a loop. The result is appended to the context and the harness calls the model again, with everything so far. Round and round, until a reply holds no tool call: that reply goes to you, and the run stops. This is the agent loop. Do not confuse it with Act II’s token loop, which writes one reply inside the Model box.</p>

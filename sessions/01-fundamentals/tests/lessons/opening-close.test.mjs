@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { chromium } from '../../../../tools/html-pages/browser.mjs';
 import { openPage, repoRoot, enabled, focused, textOf, eventually } from '../../../../tools/html-pages/tests/component-helpers.mjs';
 
-// The opening and close decks: their polls (the cold-open return and the exit ticket) work in the room.
-// The predict component itself is predict.test.mjs's; here, each deck's authored questions are well
-// formed, and a keyboard round scores each question on its own without turning the slide.
+// The opening and close decks: the close's exit ticket works in the room, and the opening's #frontier builds
+// step by step. The predict component itself is predict.test.mjs's; here, the exit ticket's authored questions
+// are well formed, and a keyboard round scores each question on its own without turning the slide.
 // check-page covers the rest of every deck: layout, accessibility, navigation, links, no-JS and print.
 const decks = {
   opening: path.join(repoRoot, 'sessions/01-fundamentals/cursus/00-opening.html'),
@@ -55,39 +54,36 @@ async function keyboardRound(page, root) {
   await enabled(lock, false);
 }
 
-test('opening and close decks', async t => {
-  const page = await openPage(t, chromium, { file: decks.opening });
-  for (const [name, file] of Object.entries(decks)) {
-    if (name !== 'opening') await page.goto(pathToFileURL(file).href);
+test('close: the exit ticket', async t => {
+  const page = await openPage(t, chromium, { file: decks.close });
 
-    await t.test(`${name}: each poll question has its own radio group and exactly one right answer`, async () => {
-      const questions = await page.locator('[data-predict] fieldset[data-predict-question]').evaluateAll(els => els.map(el => ({
-        names: [...new Set([...el.querySelectorAll('input[type="radio"]')].map(radio => radio.name))],
-        choices: el.querySelectorAll('input[type="radio"]').length,
-        correct: el.querySelectorAll('input[type="radio"][data-correct]').length,
-      })));
-      assert.ok(questions.length > 0, 'the deck has a poll');
-      for (const question of questions) {
-        assert.equal(question.names.length, 1, 'one radio group per question');
-        assert.ok(question.names[0] && question.choices >= 2, 'a named choice');
-        assert.equal(question.correct, 1, 'exactly one right answer');
-      }
-      const names = questions.map(question => question.names[0]);
-      assert.equal(new Set(names).size, names.length, 'no two questions share a radio group');
-    });
+  await t.test('each poll question has its own radio group and exactly one right answer', async () => {
+    const questions = await page.locator('[data-predict] fieldset[data-predict-question]').evaluateAll(els => els.map(el => ({
+      names: [...new Set([...el.querySelectorAll('input[type="radio"]')].map(radio => radio.name))],
+      choices: el.querySelectorAll('input[type="radio"]').length,
+      correct: el.querySelectorAll('input[type="radio"][data-correct]').length,
+    })));
+    assert.ok(questions.length > 0, 'the deck has a poll');
+    for (const question of questions) {
+      assert.equal(question.names.length, 1, 'one radio group per question');
+      assert.ok(question.names[0] && question.choices >= 2, 'a named choice');
+      assert.equal(question.correct, 1, 'exactly one right answer');
+    }
+    const names = questions.map(question => question.names[0]);
+    assert.equal(new Set(names).size, names.length, 'no two questions share a radio group');
+  });
 
-    await t.test(`${name}: each poll scores by keyboard, and its arrow keys never turn the slide`, async () => {
-      const polls = await page.locator('section[data-slide]:has([data-predict])').evaluateAll(els => els.map(el => el.id));
-      assert.ok(polls.length > 0, 'the deck has a poll slide');
-      for (const id of polls) {
-        await page.evaluate(id => { location.hash = id; }, id);
-        const visible = () => page.locator('section[data-slide]').evaluateAll(els => els.filter(el => el.checkVisibility()).map(el => el.id));
-        await eventually(async () => assert.deepEqual(await visible(), [id]), `on #${id}`);
-        for (const root of await page.locator(`section[data-slide]#${id} [data-predict]`).all()) await keyboardRound(page, root);
-        assert.deepEqual(await visible(), [id], 'the radios’ arrow keys left the deck on its slide');
-      }
-    });
-  }
+  await t.test('each poll scores by keyboard, and its arrow keys never turn the slide', async () => {
+    const polls = await page.locator('section[data-slide]:has([data-predict])').evaluateAll(els => els.map(el => el.id));
+    assert.ok(polls.length > 0, 'the deck has a poll slide');
+    for (const id of polls) {
+      await page.evaluate(id => { location.hash = id; }, id);
+      const visible = () => page.locator('section[data-slide]').evaluateAll(els => els.filter(el => el.checkVisibility()).map(el => el.id));
+      await eventually(async () => assert.deepEqual(await visible(), [id]), `on #${id}`);
+      for (const root of await page.locator(`section[data-slide]#${id} [data-predict]`).all()) await keyboardRound(page, root);
+      assert.deepEqual(await visible(), [id], 'the radios’ arrow keys left the deck on its slide');
+    }
+  });
 });
 
 // The opening's #frontier builds OpenAI's run one step per chip, and a clicked chip leaves the deck turning slides.
@@ -108,5 +104,5 @@ test('opening: #frontier builds one step per chip', async t => {
     await eventually(async () => assert.deepEqual(await seen(), { at: String(step), pressed: [step], says: [step] }), `step ${step}`);
   }
   await page.keyboard.press('ArrowRight');
-  await eventually(async () => assert.equal(await page.evaluate(() => location.hash), '#cold-open'), 'the arrow key still turns the slide');
+  await eventually(async () => assert.equal(await page.evaluate(() => location.hash), '#cursus-arc'), 'the arrow key still turns the slide');
 });

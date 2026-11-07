@@ -87,7 +87,7 @@ for Opus 5.5):
   are `low`, `medium`, `high`, `xhigh` and `max`. Opus 5.5 defaults to `medium`.
 - Codex `model_reasoning_effort`: https://developers.openai.com/codex/config-reference. The levels
   available depend on the model; `gpt-6-astra` accepted `max` in the recording. Always pass it
-  explicitly. The instructor account's default was `xhigh` in the cold-open rehearsal.
+  explicitly. The instructor account's default was `xhigh` in rehearsal.
 
 ## Timing (six minutes)
 
@@ -159,7 +159,7 @@ What to draw from it:
   (the full van) or 181 (greedy) while high or max gets 229 is the case where thinking bought
   correctness. A max run that is slower and still wrong is the overthinking case from the
   deck. Either way, **one sample is an anecdote, not a rate**. Two runs at the same effort can
-  differ, as the cold open showed. Claims about effort need many samples and a verifier, which is
+  differ. Claims about effort need many samples and a verifier, which is
   exactly what the test-time-compute lab simulates.
 
 How the cost is computed (USD list-price equivalent: a subscription login is not billed per token):

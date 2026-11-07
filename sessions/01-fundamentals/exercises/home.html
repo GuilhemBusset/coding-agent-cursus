@@ -288,8 +288,8 @@ Model (as your agent reports it):
       </section>
 
       <section id="part-1" aria-labelledby="part-1-title">
-        <h2 id="part-1-title">Part 1 · Rerun two demos and note what changed</h2>
-        <p>Choose <strong>two</strong> of the three demos below and run each one as in class. The prompt is the one used in class, so any difference comes from the draw, the model or the agent. For each demo, write in <code>home-notes.md</code> what the class saw, what you saw, and what changed. Compare your runs with the class, and with each other.</p>
+        <h2 id="part-1-title">Part 1 · Rerun both demos and note what changed</h2>
+        <p>Run both demos below as in class. The prompt is the one used in class, so any difference comes from the draw, the model or the agent. For each demo, write in <code>home-notes.md</code> what the class saw, what you saw, and what changed. Compare your runs with the class, and with each other.</p>
         <p>To match the class model, add <code>--model claude-haiku-5-5</code> (Claude Code) or <code>-m gpt-6-luna</code> (Codex) after <code>-p</code> or <code>exec</code>, if your account offers that model. Your default model is also a fine choice. Just write down which model you used.</p>
 
         <div class="demo" id="demo-sampling">
@@ -327,21 +327,13 @@ Model (as your agent reports it):
           <p><strong>In class</strong> (recorded 2026-10-11, <a href="../cursus/demos/model/strawberry.md">runbook</a>): Claude Code with <code>claude-haiku-5-5</code> answered 118, 146, 146, 146 and 142, so 2 of 5 were wrong. Codex with <code>gpt-6-luna</code> answered 138, 146, 128, 114 and 133, so 4 of 5 were wrong.</p>
         </div>
 
-        <div class="demo" id="demo-cold-open">
-          <h3>C · Cold open: a word problem to a certified LP</h3>
-          <p>Run it twice, and start each run clean. In a terminal, go to <code>sessions/01-fundamentals/cursus/demos/cold-open/</code> and start a fresh session there with <code>claude</code> or <code>codex</code>. Open <a href="../cursus/demos/cold-open/prompt.txt"><code>prompt.txt</code></a>, then paste its whole text as your first message. Approve the agent’s <code>uv run python work/model.py</code> when it asks. Before you exit, copy the seven printed lines into your notes, and the agent’s <code>work/model.py</code> as well. Then clear the run from that folder with:</p>
-          <pre tabindex="0" aria-label="Reset the cold open"><code>git clean -fdx -- .</code></pre>
-          <p>This deletes the agent’s <code>work/</code> folder and nothing that git tracks.</p>
-          <p><strong>In class</strong> (recorded 2026-10-10): two runs with Claude Code 2.1.296 (<code>claude-opus-5-5</code>) and two with Codex 0.160.0 (<code>gpt-6-astra</code>). Every run printed the same certificate: <code>status: Optimal</code>, tables=20, chairs=20, duals 20, 10 and 0, primal and dual objective 1400, a duality gap of about 2.3e-13 and binding constraints assembly and carpentry. The programs differed. Claude Code checked HiGHS’s dual signs before trusting them. Codex flipped them on a condition in one run and took <code>abs()</code> in the other.</p>
-        </div>
-
         <div class="callout good">
           <h3>What a good answer looks like</h3>
           <ul>
             <li>It names the two demos, your agent and its version, and the model that answered.</li>
-            <li>It writes down the class result and your own runs as they came out: the names, the counts, or the seven certificate lines. It does not summarize them.</li>
-            <li>It says what changed, both from the class and between your runs, and what stayed the same. For example: “3 of 5 distinct, against 5 of 5 in class”, “the count ranged from 121 to 150”, or “a different program, the same certificate”.</li>
-            <li>It gives a reason for each change. Each answer is a fresh draw from a distribution. A different model or version changes that distribution. The model reads tokens, not letters. Two programs can both be checked against one certificate.</li>
+            <li>It writes down the class result and your own runs as they came out: the names and the counts. It does not summarize them.</li>
+            <li>It says what changed, both from the class and between your runs, and what stayed the same. For example: “3 of 5 distinct, against 5 of 5 in class” or “the count ranged from 121 to 150”.</li>
+            <li>It gives a reason for each change. Each answer is a fresh draw from a distribution. A different model or version changes that distribution. The model reads tokens, not letters.</li>
           </ul>
           <p>A weak answer says “the results were a bit different” without numbers or a reason.</p>
         </div>

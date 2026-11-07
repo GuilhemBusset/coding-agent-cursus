@@ -215,8 +215,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 .discipline p { margin: 0; }
 .byline { margin: 0; color: var(--secondary); font: 600 1.0625rem/1.5 var(--mono); }
 .byline strong { color: var(--ink); }
-.aside { color: var(--secondary); }
-.process.arc > li > span.today, [data-deck-paged] [data-slide] .arc > li > span.today { align-self: flex-start; padding: 0 .4rem; border: 1px solid var(--accent); color: var(--accent); font: 600 .75rem/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.process:is(.arc, .plan) > li > span.today, [data-deck-paged] [data-slide] .process > li > span.today { align-self: flex-start; padding: 0 .4rem; border: 1px solid var(--accent); color: var(--accent); font: 600 .75rem/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 /* The arc: five, then three and two, then one column. Arc and loop labels share a top line. */
 .process.arc { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .process.arc > li, .process.loop > li { justify-content: flex-start; }
@@ -227,27 +226,22 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 @media (max-width: 599px) { .loop > li:last-child { padding-right: .5rem; } .process.loop > li > span.loop-mark { position: static; transform: none; } }
 /* How we work: one band under the whole loop, because questions are welcome at every step. */
 .band { margin: 0; padding: .75rem 1.25rem; border: 1px solid var(--accent); border-left-width: 6px; color: var(--accent); font-size: clamp(1.25rem, 2.2vw, 1.75rem); font-weight: 700; line-height: 1.3; }
-.choice-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem 1rem; }
-.choice-row .choice + .choice { margin-top: 0; }
-@media (max-width: 799px) { .choice-row { grid-template-columns: minmax(0, 1fr); } }
-.poll { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 1.25rem; align-items: start; margin-block: .5rem; }
-.poll [data-predict-question] { grid-row: 1 / span 2; margin: 0; }
-.poll legend { font-size: 1.25rem; }
-.poll .predict-actions { flex-direction: column; align-items: stretch; }
-.poll [data-predict-status] { max-width: 14rem; }
-@media (max-width: 799px) { .poll { grid-template-columns: minmax(0, 1fr); } .poll [data-predict-question] { grid-row: auto; } .poll .predict-actions { flex-direction: row; } }
-/* Speaker notes, as in the Act II and Act III decks. */
-.notes { margin: .5rem 0 0; padding: 0; border: 0; }
-.notes summary { color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
-.notes > :not(summary) { color: var(--secondary); font-size: .9375rem; line-height: 1.5; }
-.notes > p { margin-bottom: .5rem; }
-.notes > ol { padding-left: 1.25rem; margin-bottom: .5rem; }
-.notes li + li { margin-top: .25rem; }
+/* Today: the four parts of the session; the first, next on, carries a tag. */
+.process.plan { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.process.plan > li { justify-content: flex-start; }
+@media (max-width: 1099px) { .process.plan { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 599px) { .process.plan { grid-template-columns: minmax(0, 1fr); } }
+/* Speaker notes, as in the Act I to Act IV decks: at the bottom of the slide, collapsed. */
+.speaker-notes { margin: .75rem 0 0; padding: 0; border-top: 1px dashed var(--rule); border-bottom: 0; font-size: .9375rem; line-height: 1.55; }
+.speaker-notes > summary { min-height: 44px; padding-block: .6rem 0; color: var(--muted); font: 600 .8125rem/1.5 var(--mono); letter-spacing: .06em; }
+.speaker-notes[open] > summary { margin-bottom: .5rem; }
+.notes-body { max-height: min(40vh, 22rem); overflow-y: auto; overflow-wrap: anywhere; padding: .25rem .75rem .25rem 0; color: var(--secondary); }
+.notes-body p, .notes-body ul, .notes-body dl { margin-bottom: .6rem; }
+.notes-body > :last-child { margin-bottom: 0; }
+.notes-body li + li { margin-top: .2rem; }
+.notes-body strong { color: var(--ink); }
 @media screen and (min-width: 800px) and (min-height: 600px) and (max-height: 820px) {
   [data-deck-paged] [data-slide] { font-size: 1rem; line-height: 1.5; }
-  [data-deck-paged] [data-predict-question] { padding: .5rem 1rem; }
-  [data-deck-paged] [data-predict-answer] { margin-top: .5rem; padding: .5rem .75rem; }
-  [data-deck-paged] [data-predict-result] { margin: .5rem 0 0; }
 }
 @media screen and (min-width: 800px) and (min-height: 600px) {
   [data-deck-paged] .masthead .lede { display: none; }
@@ -256,18 +250,15 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   [data-deck-paged] [data-slide] p, [data-deck-paged] [data-slide] ul, [data-deck-paged] [data-slide] ol { margin-bottom: .75rem; }
   [data-deck-paged] [data-slide] .process-figure { margin-block: .75rem 1rem; }
   [data-deck-paged] [data-slide] .process > li { padding-block: .75rem; }
-  [data-deck-paged] [data-slide] .arc { gap: .5rem; }
-  [data-deck-paged] [data-slide] .arc > li { padding-inline: 1.75rem .25rem; }
+  [data-deck-paged] [data-slide] :is(.arc, .plan) { gap: .5rem; }
+  [data-deck-paged] [data-slide] :is(.arc, .plan) > li { padding-inline: 1.75rem .25rem; }
   [data-deck-paged] [data-slide] .arc strong { font-size: clamp(1.05rem, 1.5vw, 1.3rem); }
+  [data-deck-paged] [data-slide] .plan strong { font-size: clamp(1.2rem, 2vw, 1.6rem); }
   [data-deck-paged] [data-slide] > .discipline { margin-block: .5rem 1.25rem; }
-  [data-deck-paged] [data-slide] .legs { margin-bottom: 1.5rem; }
-  [data-deck-paged] [data-slide] .signals > *, [data-deck-paged] [data-slide] .signals ul { margin: 0; }
-  /* Presenting: the collapsed notes sit in the top corner; opened, they overlay the slide. */
-  [data-deck-paged] [data-slide] > .notes { position: absolute; top: .5rem; right: 1rem; z-index: 2; margin: 0; max-width: min(40rem, calc(100% - 2rem)); }
-  [data-deck-paged] [data-slide] > .notes[open] { max-height: calc(100% - 1rem); overflow: auto; padding: 0 1rem .75rem; background: var(--sheet); border: 1px solid var(--rule); }
+  [data-deck-paged] [data-slide] > .speaker-notes { margin-top: auto; }
 }
 @media print {
-  .notes { border-top: 1px solid var(--rule); padding-top: .5rem; }
+  .notes-body { max-height: none; overflow: visible; color: inherit; }
 }
 </style>
   <style>/* == frontier: how an OpenAI model proved local smoothing, built in five steps == */
@@ -332,7 +323,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
     <header class="masthead">
       <p class="eyebrow">Fundamentals · Opening</p>
       <h1 id="deck-title">What agents make possible</h1>
-      <p class="lede">The cursus, an agent run we check at the end, and how we work.</p>
+      <p class="lede">Where agents are now, the cursus, how we work, and what you will learn today.</p>
     </header>
     <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
       <section id="title" data-slide tabindex="-1" aria-labelledby="title-title">
@@ -342,10 +333,13 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <p>Our goal: give you all the tools and knowledge to become an effective research or applied scientist.</p>
         </blockquote>
         <p class="byline"><strong>Guilhem Busset</strong> · Sr SDM, Amazon · Science and Engineering lead, Transportation Network Design</p>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p>I’m Guilhem Busset; I lead science and engineering for Transportation Network Design at Amazon. This is a cursus of five sessions, and today is the first.</p>
-          <p>The goal on the slide is the promise: by the end you have the tools, and the knowledge to use them, whether you are a research scientist writing papers or an applied scientist shipping models. You already formulate and solve; this cursus is about what becomes possible when an agent does much of the reading, writing and running.</p>
-          <p><strong>Transition:</strong> “Before I say more, here is where agents are in research today.”</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p>I’m Guilhem Busset; I lead science and engineering for Transportation Network Design at Amazon. This is a cursus of five sessions, and today is the first.</p>
+            <p>The goal on the slide is the promise: by the end you have the tools, and the knowledge to use them, whether you are a research scientist writing papers or an applied scientist shipping models. You already formulate and solve; this cursus is about what becomes possible when an agent does much of the reading, writing and running.</p>
+            <p><strong>Transition:</strong> “Before I say more, here is where agents are in research today.”</p>
+          </div>
         </details>
       </section>
 
@@ -443,35 +437,17 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <p class="visually-hidden" role="status" data-fr-status></p>
         </div>
         <p class="cite">Source: OpenAI, <cite>Local smoothing for the Euclidean wave equation</cite>, 2026, and its release notes in <a href="https://github.com/openai/math">github.com/openai/math</a>.</p>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p><strong>Talk track:</strong> we start at the frontier. In 1991 Christopher Sogge asked how much a wave can grow when it comes to a focus, averaged over a short time. Several famous problems follow from it, among them Kakeya: a set holding a needle in every direction, however thin, has full dimension. Press each step as you say it.</p>
-          <p><strong>1, Pose.</strong> People settled two dimensions in 2019. OpenAI gave the question to an unreleased model, one of about 4,000 open problems, most posed the same way.</p>
-          <p><strong>2, Prove.</strong> About three hours of thinking per result, on average. In September the model settled three dimensions and part of four, in four papers; on 18 October, every dimension, building on those papers and on people’s.</p>
-          <p><strong>3, Check.</strong> The next day Lean, a program that checks every step of a proof, accepted it. It checks the proof, not that the statement is the right one: people still read that.</p>
-          <p><strong>4, Release.</strong> Published on 26 October as raw data. Experts are reading the 59-page paper (no verdict yet on 7 November 2026). In an earlier batch, three papers were withdrawn after a sign error.</p>
-          <p><strong>5.</strong> You don’t need any of this math. Watch the steps: pose, prove, check, release. By session 5, you run research that way.</p>
-          <p><strong>Transition:</strong> “Let’s start small. I’m giving an agent a problem now; it works while I talk.”</p>
-        </details>
-      </section>
-
-      <section id="cold-open" data-slide tabindex="-1" aria-labelledby="cold-open-title">
-        <p class="eyebrow">Cold open · Launched now</p>
-        <h2 id="cold-open-title">Today we start small: an agent solves a word problem, and we check its answer.</h2>
-        <figure class="process-figure">
-          <ol class="process" aria-label="What the agent does">
-            <li><span class="label">The problem</span><strong>A short production word problem</strong></li>
-            <li><span class="label">The agent</span><strong>Writes the LP, solves it on HiGHS</strong></li>
-            <li><span class="label">The check</span><strong class="accent">Primal feasible, dual feasible, zero gap</strong></li>
-          </ol>
-        </figure>
-        <p class="aside">Running while we talk. We check it at the end.</p>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p>The same steps as OpenAI’s run, at a size we can check by hand: we pose a problem, an agent works on it, and a certificate checks the answer.</p>
-          <p><strong>Before class:</strong> reset the demo, check that <code>git status</code> is empty, sync the session venv, log in to the CLI, open a terminal in <code>cursus/demos/cold-open/</code> and type the launch command there, without pressing Enter.</p>
-          <p><strong>Claude Code:</strong> <code>claude -p "$(cat prompt.txt)" --permission-mode acceptEdits --allowedTools "Bash(uv run:*)" --output-format stream-json --verbose</code></p>
-          <p><strong>Codex:</strong> <code>UV_CACHE_DIR="$PWD/work/.uv-cache" codex exec --sandbox workspace-write "$(cat prompt.txt)"</code></p>
-          <p>Show <code>problem.md</code> and read the question. Ask: “All tables, all chairs, or a mix? Gut call, don’t solve it. Keep it: you lock it in when we come back.”</p>
-          <p>Press Enter. It runs headless, so nobody approves anything. Wait for the first tool call and glance for a login or quota prompt, then go back to the slides. If anything looks wrong, stop it and use the recorded run on the return slide.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Talk track:</strong> we start at the frontier. In 1991 Christopher Sogge asked how much a wave can grow when it comes to a focus, averaged over a short time. Several famous problems follow from it, among them Kakeya: a set holding a needle in every direction, however thin, has full dimension. Press each step as you say it.</p>
+            <p><strong>1, Pose.</strong> People settled two dimensions in 2019. OpenAI gave the question to an unreleased model, one of about 4,000 open problems, most posed the same way.</p>
+            <p><strong>2, Prove.</strong> About three hours of thinking per result, on average. In September the model settled three dimensions and part of four, in four papers; on 18 October, every dimension, building on those papers and on people’s.</p>
+            <p><strong>3, Check.</strong> The next day Lean, a program that checks every step of a proof, accepted it. It checks the proof, not that the statement is the right one: people still read that.</p>
+            <p><strong>4, Release.</strong> Published on 26 October as raw data. Experts are reading the 59-page paper (no verdict yet on 7 November 2026). In an earlier batch, three papers were withdrawn after a sign error.</p>
+            <p><strong>5.</strong> You don’t need any of this math. Watch the steps: pose, prove, check, release. By session 5, you run research that way.</p>
+            <p><strong>Transition:</strong> “Here is how we get there, one session at a time.”</p>
+          </div>
         </details>
       </section>
 
@@ -487,15 +463,19 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <li><span class="label">The Arena</span><strong class="accent">Improve a policy by directing agents</strong></li>
           </ol>
         </figure>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p>While it works, here is what this technology opens for a scientist: one new thing per session.</p>
-          <p><strong>Today, Fundamentals:</strong> what a model and an agent really are, then you drive one, up to a word problem turned into a model a checker certifies. That is what is running behind me.</p>
-          <p><strong>Research agents:</strong> a team of agents drafts a literature review, and a write-up from your own experiment logs, with every citation traceable.</p>
-          <p><strong>Remote agents:</strong> the same agent runs headless in a cloud sandbox; you file an issue and get back a pull request with its evidence, laptop closed.</p>
-          <p><strong>Deploying:</strong> every merge re-solves the canonical instance on a pinned open solver and regenerates the study.</p>
-          <p><strong>The Arena:</strong> a cohort tournament on a rolling-horizon problem; you improve your policy by filing issues to agents, and it is ranked on instances nobody has seen.</p>
-          <p>One problem family runs through all five. Tonight’s take-home is an electric-truck middle-mile network, the world I work in.</p>
-          <p>Together they cover the steps of the OpenAI run you just saw: pose a problem, let agents work on it, check the result, release it so others can check it too.</p>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p>Here is what this technology opens for a scientist: one new thing per session.</p>
+            <p><strong>Today, Fundamentals:</strong> what a model and an agent really are, then you drive one, up to a word problem turned into a model a checker certifies.</p>
+            <p><strong>Research agents:</strong> a team of agents drafts a literature review, and a write-up from your own experiment logs, with every citation traceable.</p>
+            <p><strong>Remote agents:</strong> the same agent runs headless in a cloud sandbox; you file an issue and get back a pull request with its evidence, laptop closed.</p>
+            <p><strong>Deploying:</strong> every merge re-solves the canonical instance on a pinned open solver and regenerates the study.</p>
+            <p><strong>The Arena:</strong> a cohort tournament on a rolling-horizon problem; you improve your policy by filing issues to agents, and it is ranked on instances nobody has seen.</p>
+            <p>One problem family runs through all five. Tonight’s take-home is an electric-truck middle-mile network, the world I work in.</p>
+            <p>Together they cover the steps of the OpenAI run you just saw: pose a problem, let agents work on it, check the result, release it so others can check it too.</p>
+            <p><strong>Transition:</strong> “Before we start, how we will work together.”</p>
+          </div>
         </details>
       </section>
 
@@ -510,69 +490,46 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </ol>
         </figure>
         <p class="band">Interrupt any time.</p>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p>We have two hours today. The rhythm: I explain an idea briefly, show it on a real agent, live, then we discuss what it did and why.</p>
-          <p>Interrupt any time. If something is unclear to you, it is unclear to someone else too, and a question in the middle beats one at the end.</p>
-          <p>You drive your own agent in the homework.</p>
-          <p>Say when the break is. This slide is also slack time for the agent.</p>
-        </details>
-      </section>
-
-      <section id="cold-open-result" data-slide tabindex="-1" aria-labelledby="cold-open-result-title">
-        <p class="eyebrow">Cold open · Back to the agent</p>
-        <h2 id="cold-open-result-title">It ran while we talked. Lock in before we look.</h2>
-        <section class="poll" data-predict aria-labelledby="cold-open-result-title">
-          <fieldset data-predict-question>
-            <legend>The workshop’s best weekly plan makes:</legend>
-            <div class="choice-row">
-              <div class="choice"><input type="radio" id="plan-tables" name="cold-open-plan" value="tables"><label for="plan-tables">Only tables</label></div>
-              <div class="choice"><input type="radio" id="plan-chairs" name="cold-open-plan" value="chairs"><label for="plan-chairs">Only chairs</label></div>
-              <div class="choice"><input type="radio" id="plan-mix" name="cold-open-plan" value="mix" data-correct><label for="plan-mix">A mix of both</label></div>
-            </div>
-            <p data-predict-result></p>
-            <div data-predict-answer>
-              <p><strong>A mix: 20 tables and 20 chairs, profit 1400 euros.</strong> Primal and dual feasible, zero gap: optimal.</p>
-            </div>
-          </fieldset>
-          <div class="predict-actions">
-            <button type="button" data-predict-lock disabled>Lock in</button>
-            <button type="button" data-predict-reveal disabled>Reveal</button>
-            <button type="button" data-predict-reset disabled>Reset</button>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p>We have two hours today. The rhythm: I explain an idea briefly, show it on a real agent, live, then we discuss what it did and why.</p>
+            <p>Interrupt any time. If something is unclear to you, it is unclear to someone else too, and a question in the middle beats one at the end.</p>
+            <p>You drive your own agent at the end of today, and again in the homework.</p>
+            <p>Say when the break is.</p>
+            <p><strong>Transition:</strong> “Here is what you will learn today.”</p>
           </div>
-          <p data-predict-status role="status"></p>
-        </section>
-        <details class="notes"><summary>Speaker notes</summary>
-          <ol>
-            <li>Glance at the terminal: did the run finish? Claude Code: the last line is the JSON <code>result</code> event with <code>"subtype":"success"</code>. Codex: after the file diff, a <code>tokens used</code> line and its count, then the final answer printed once more. Still running, an error, or neither: use the fallback below.</li>
-            <li>Hands up for each choice; press Lock in with the majority. Do not reveal yet.</li>
-            <li>Terminal: <code>cat work/model.py</code>. Compare it with <code>problem.md</code>: two variables, the three hour constraints and their coefficients, maximise profit, non-negative quantities. The answer is nowhere in the prompt.</li>
-            <li><code>uv run python work/model.py</code>: the same command the agent ran, about a second, seven clean lines.</li>
-            <li>Check the certificate by hand with the room. Primal feasible: assembly 20 + 20 = 40 ≤ 40, carpentry 40 + 20 = 60 ≤ 60, finishing 20 + 60 = 80 ≤ 90 (10 h slack). Dual feasible: the duals 20, 10, 0 are non-negative; tables 20 + 2×10 = 40 ≥ 40, chairs 20 + 10 = 30 ≥ 30. Objectives: primal 40×20 + 30×20 = 1400, dual 40×20 + 60×10 + 90×0 = 1400, so the gap is zero (floating-point residuals near zero are fine). No plan can beat it, and we did not have to trust the agent or the solver.</li>
-            <li>Back to the slide, press Reveal.</li>
-            <li>Read the duals as prices: an assembly hour is worth 20 euros, a carpentry hour 10, a finishing hour nothing, because finishing has slack.</li>
-            <li>If the run printed a wrong sign or a non-zero gap, show it: nothing is proven, and the check is what caught it.</li>
-          </ol>
-          <p><strong>Fallback</strong> (no network, quota, login prompt, stalled or failed run), in place of steps 3 and 4: scroll <code>recorded/claude-run2.txt</code>, then <code>uv run --offline python recorded/claude_run2_model.py</code>. Codex room: <code>recorded/codex-run2.txt</code>, then <code>uv run --offline python recorded/codex_run2_model.py</code>. Both print the same certificate in seven lines; continue from step 5.</p>
         </details>
       </section>
 
-      <section id="discipline" data-slide tabindex="-1" aria-labelledby="discipline-title">
-        <p class="eyebrow">The one discipline</p>
-        <h2 id="discipline-title">The more you can check, the more you can hand over.</h2>
-        <blockquote class="discipline">
-          <p>Never raise an agent’s autonomy past your ability to verify the <em>solution</em>, not just the code.</p>
-        </blockquote>
-        <details class="notes"><summary>Speaker notes</summary>
-          <p><strong>Do:</strong> write the sentence on the board.</p>
-          <p>What made the cold open trustworthy was the certificate, not the agent’s word. The OpenAI proof is the same at a larger scale: Lean checked it, and people still check that it proves the right statement.</p>
-          <p>Read the sentence as a licence, not a brake: each session hands agents more, and each adds the checks that make that safe. Autonomy rises as fast as verification does. It goes on the board today and stays the rule for the whole cursus.</p>
-          <p><strong>Handoff:</strong> “Let’s look inside an agent.”</p>
+      <section id="today" data-slide tabindex="-1" aria-labelledby="today-title">
+        <p class="eyebrow">Fundamentals · Today</p>
+        <h2 id="today-title">What you will learn today.</h2>
+        <figure class="process-figure">
+          <ol class="process plan" aria-label="The four parts of today, in order">
+            <li><span class="label">Act I · The sampler</span><strong>How an LLM writes, one token at a time</strong><span class="today">First</span></li>
+            <li><span class="label">Act II · Thinking</span><strong>How it reasons, and when to trust its answer</strong></li>
+            <li><span class="label">Act III · The agent</span><strong>A model that runs tools in a loop</strong></li>
+            <li><span class="label">Act IV · Your turn</span><strong>You drive an agent on a small problem</strong></li>
+          </ol>
+        </figure>
+        <details class="speaker-notes">
+          <summary>Speaker notes</summary>
+          <div class="notes-body" tabindex="0">
+            <p><strong>Talk track:</strong> here is today, in four acts; point at each box as you name it.</p>
+            <p><strong>Act I, the sampler:</strong> how a large language model writes: one pass through the network, then one draw, one token at a time. Everything else today builds on it.</p>
+            <p><strong>Act II, thinking:</strong> how it reasons by writing out steps, how much thinking to ask for, and when to trust its answer: only a check can say it is right.</p>
+            <p><strong>Act III, the agent:</strong> the model only writes text. Something else runs the tools it asks for and hands it the results, in a loop, toward a goal; that, plus the model, is an agent.</p>
+            <p><strong>Act IV, your turn:</strong> you drive an agent on one small problem, from reading it to turning it in. The homework repeats those steps on a bigger problem.</p>
+            <p>The OpenAI run you saw had the same pieces at a far larger scale: a model that writes and thinks, and a check at the end.</p>
+            <p><strong>Transition:</strong> “First and foremost, let’s clarify how an LLM works.”</p>
+          </div>
         </details>
       </section>
 
       <nav data-deck-nav hidden aria-label="Slide navigation">
         <button type="button" data-prev>Previous</button>
-        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 7</span>
+        <span data-slide-status role="status" aria-live="polite" aria-atomic="true">Slide 1 of 5</span>
         <button type="button" data-next>Next</button>
         <span class="muted">← / → · PageUp / PageDown · Space · Home / End</span>
       </nav>

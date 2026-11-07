@@ -157,7 +157,6 @@ node tools/html-pages/check-page.mjs sessions/01-fundamentals/cursus/labs/<page>
 | `cursus/instructor-notes.html` | Instructor page: misconceptions and expected questions per act (starting from the 2025 primer's list), and every peer-instruction question with its answer |
 | `cursus/labs/` | Hands-on labs run during the session |
 | `cursus/demos/` | Live demos shown by the instructor |
-| `cursus/demos/cold-open/` | The cold open: an agent turns a word problem into an LP, solves it on HiGHS and prints a duality certificate. Runbook, problem, prompt, recorded fallback and a one-line reset |
 | `cursus/demos/model/` | Two Act I demos about the model itself: the strawberry pivot (miscounting letters, then counting with code) and sampling divergence (one prompt five times through the installed CLI at its default sampling). Runbooks, stdlib `uv run` scripts and dated recordings for offline replay |
 | `cursus/fixtures/` | Prebuilt data the labs and demos load |
 | `cursus/sources.html` | The session bibliography, grouped by act, with the date each source was last read |
@@ -189,7 +188,7 @@ instructor's minute-by-minute plan, with demo commands and fallbacks, is
 | Time | Block | Material |
 | --- | --- | --- |
 | Before | Pre-work | [`exercises/00-prework.html`](exercises/00-prework.html) |
-| 0:00–0:15 | Opening | Deck [`cursus/00-opening.html`](cursus/00-opening.html); the cold open demo, [`cursus/demos/cold-open/`](cursus/demos/cold-open/README.md) |
+| 0:00–0:15 | Opening | Deck [`cursus/00-opening.html`](cursus/00-opening.html) |
 | 0:15–1:00 | Act I · The sampler | Deck [`cursus/01-sampler.html`](cursus/01-sampler.html); labs [`tokenizer`](cursus/labs/tokenizer.html), [`attention`](cursus/labs/attention.html), [`next-token`](cursus/labs/next-token.html), [`tiny-lm`](cursus/labs/tiny-lm.html); demos [`cursus/demos/model/`](cursus/demos/model/README.md) |
 | 1:00–1:10 | Break | |
 | 1:10–1:50 | Act II · Thinking | Deck [`cursus/02-thinking.html`](cursus/02-thinking.html); labs [`test-time-compute`](cursus/labs/test-time-compute.html), [`world-model`](cursus/labs/world-model.html); demo [`cursus/demos/effort/`](cursus/demos/effort/README.md) |
