@@ -137,10 +137,10 @@ reads = ["cursus/**", "index.html", "tests/lessons/**", "exercises/p00-lab/**"]
 shared = []
 
 [sessions.parts.labs]
-# The home sheet's demo prompts are the model demos'; test_home_turn_in.py runs the real turn-in
-# script and hooks; test_editor_setup.py and test_p00_lab.py check the editor setup a student's
-# installation and the exported lab carry (ADR 0016).
-reads = ["exercises/**", "tests/labs/**", "cursus/demos/model/**", ".vscode/**"]
+# test_home_turn_in.py runs the real turn-in script and hooks; test_editor_setup.py and
+# test_p00_lab.py check the editor setup a student's installation and the exported lab carry
+# (ADR 0016).
+reads = ["exercises/**", "tests/labs/**", ".vscode/**"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
   "ty.toml", ".vscode/**", "setup/cursus.code-workspace", "setup/editor.py", "setup/editor.json",

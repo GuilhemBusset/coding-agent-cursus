@@ -20,7 +20,7 @@ These are the five steps of the mini homework you did in class: read, plan, buil
 
 1. **Read [`PROBLEM.md`](PROBLEM.md)** and the CSVs in `data/`, yourself, before your agent does.
 2. **Plan.** Start your agent in plan mode (`claude --permission-mode plan`, or `codex` then
-   `/plan`) and give it the prompt in [`../home.html`](../home.html), part 3. Review the plan
+   `/plan`) and give it the prompt in [`../home.html`](../home.html), part 1. Review the plan
    before any code exists: the decision variables and their types, the constraints for each rule
    of PROBLEM.md, the objective's three terms, and the checker as the judge. If something is
    missing, say so and let the agent revise it.

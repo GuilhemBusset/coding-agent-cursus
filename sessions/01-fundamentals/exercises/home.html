@@ -210,13 +210,11 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   <!-- shared-style:end -->
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
   <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
-  <style>/* Page-specific: good-answer blocks, wrapped prompts and the parts list. */
+  <style>/* Page-specific: good-answer blocks and wrapped prompts. */
 .good { border-left-color: var(--accent); }
 .good h3 { margin-top: 0; }
 .rule { border-left-color: var(--amber); }
 pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
-.nobr { white-space: nowrap; }
-.demo { margin-top: 2.5rem; }
 </style>
 </head>
 <body>
@@ -224,8 +222,8 @@ pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
   <div class="shell">
     <header class="masthead">
       <p class="eyebrow">Session 1 · Homework · after the session</p>
-      <h1>Session 1 homework: rerun, explain, solve, turn in</h1>
-      <p class="lede">Four parts. Rerun two of today’s demos with your own agent and note what changed. Explain “sampling, not retrieval” in three sentences. Have your agent solve P01 and prove the plan with the checker. Then turn it all in with the command you will use every week.</p>
+      <h1>Session 1 homework: solve P01, turn it in</h1>
+      <p class="lede">One exercise, in two parts. Have your agent solve P01 and prove the plan with the checker. Then turn it in with the command you will use every week.</p>
     </header>
     <main id="content" class="prose" tabindex="-1">
       <section id="start" aria-labelledby="start-title">
@@ -234,29 +232,13 @@ pre.wrap, pre.wrap code { white-space: pre-wrap; overflow-wrap: anywhere; }
         <ol>
           <li>Open a terminal in <code>sessions/01-fundamentals/</code> in your course clone. Unless a step says otherwise, run every command from there.</li>
           <li>Start your agent there: <code>claude</code> for Claude Code, or <code>codex</code> for Codex.</li>
-          <li>Create <code>exercises/home-notes.md</code> from the template below. Parts 1 to 3 write into it. Only files under <code>exercises/</code> are turned in, so the notes must live there.</li>
-          <li>Do not commit anything yourself. The turn-in in part 4 makes the commit.</li>
+          <li>Create <code>exercises/home-notes.md</code> from the template below. Part 1 writes into it. Only files under <code>exercises/</code> are turned in, so the notes must live there.</li>
+          <li>Do not commit anything yourself. The turn-in in part 2 makes the commit.</li>
         </ol>
         <pre tabindex="0" aria-label="Template for exercises/home-notes.md"><code># Session 1 homework · &lt;your GitHub handle&gt;
 
-## Part 1 · Two demos, rerun
+## P01
 Agent and version (`claude --version` or `codex --version`):
-Model (as your agent reports it):
-
-### Demo: &lt;name&gt;
-- In class:
-- My runs:
-- What changed, and why:
-
-### Demo: &lt;name&gt;
-- In class:
-- My runs:
-- What changed, and why:
-
-## Part 2 · Sampling, not retrieval
-&lt;three sentences&gt;
-
-## Part 3 · P01
 - Checker verdict (the first line and the summary):
 - Contracts that failed on the way, and what the agent changed:</code></pre>
         <div class="table-wrap" role="region" aria-label="What you turn in" tabindex="0">
@@ -264,9 +246,8 @@ Model (as your agent reports it):
             <caption>What you turn in, all under <code>sessions/01-fundamentals/exercises/</code></caption>
             <thead><tr><th scope="col">Part</th><th scope="col">File</th></tr></thead>
             <tbody>
-              <tr><td>1 and 2</td><td><code>home-notes.md</code></td></tr>
-              <tr><td>3</td><td><code>homework-p01/p01_model.py</code>, <code>homework-p01/solution.json</code>, and the P01 lines of <code>home-notes.md</code></td></tr>
-              <tr><td>4</td><td>The commit on your branch <code>homework/s01/&lt;handle&gt;</code></td></tr>
+              <tr><td>1</td><td><code>homework-p01/p01_model.py</code>, <code>homework-p01/solution.json</code> and <code>home-notes.md</code></td></tr>
+              <tr><td>2</td><td>The commit on your branch <code>homework/s01/&lt;handle&gt;</code></td></tr>
             </tbody>
           </table>
         </div>
@@ -284,77 +265,11 @@ Model (as your agent reports it):
           </ol>
           <p>A correct model stopped at a feasible incumbent beats a wrong model with a lower number. A plan that claims a lower cost but fails a feasibility contract is not a better answer. It is not an answer at all.</p>
         </div>
-        <p>Parts 1 and 2 are read against their “What a good answer looks like” blocks below. Only what is on your homework branch is graded. Copies of the checker, the data or the contract suite on your branch are not trusted.</p>
+        <p>Only what is on your homework branch is graded. Copies of the checker, the data or the contract suite on your branch are not trusted.</p>
       </section>
 
       <section id="part-1" aria-labelledby="part-1-title">
-        <h2 id="part-1-title">Part 1 · Rerun both demos and note what changed</h2>
-        <p>Run both demos below as in class. The prompt is the one used in class, so any difference comes from the draw, the model or the agent. For each demo, write in <code>home-notes.md</code> what the class saw, what you saw, and what changed. Compare your runs with the class, and with each other.</p>
-        <p>To match the class model, add <code>--model claude-haiku-5-5</code> (Claude Code) or <code>-m gpt-6-luna</code> (Codex) after <code>-p</code> or <code>exec</code>, if your account offers that model. Your default model is also a fine choice. Just write down which model you used.</p>
-
-        <div class="demo" id="demo-sampling">
-          <h3>A · Sampling divergence: one prompt, five answers</h3>
-          <p>Send the same prompt five times, each in its own headless call. A call starts fresh and remembers nothing from the last one. Count how many different names come back.</p>
-          <div class="grid">
-            <div>
-              <p class="label">Claude Code</p>
-              <pre class="wrap" tabindex="0" aria-label="Sampling demo in Claude Code"><code>claude -p "Invent a name for a new optimization solver. Reply with the name only."</code></pre>
-            </div>
-            <div>
-              <p class="label">Codex</p>
-              <pre class="wrap" tabindex="0" aria-label="Sampling demo in Codex"><code>codex exec <span class="nobr">--sandbox read-only</span> "Invent a name for a new optimization solver. Reply with the name only."</code></pre>
-            </div>
-          </div>
-          <p><strong>In class</strong> (recorded 2026-10-11, <a href="../cursus/demos/model/sampling.md">runbook</a>): Claude Code with <code>claude-haiku-5-5</code> answered Vantablend, Quorvex, Quillstep, Quillfathom and Gradientwhisk, so 5 of 5 were distinct. Codex with <code>gpt-6-luna</code> answered Fluxforge, Fluxora, OptiForge, Parallax Solver and OptiForge, so 4 of 5 were distinct.</p>
-        </div>
-
-        <div class="demo" id="demo-strawberry">
-          <h3>B · Strawberry: count the r’s without tools</h3>
-          <p>The word is invented: 300 letters, of which 146 are r. Ask five times, each in its own headless call, and mark each answer right or wrong. The prompt forbids tools. If an answer shows that the agent ran code anyway, note it, because it does not count.</p>
-          <p class="label">The prompt</p>
-          <pre class="wrap" tabindex="0" aria-label="Strawberry prompt"><code>How many times does the letter r appear in strawberrtorrrabbvarrstrarvarrnorturrorrberrkrerkrernorferrrorrsarrstrarerrprirstrarrorrmarrvarrerrkrernorwirrtorrrorrkrerstrarprirbrurrriorrurrbrurquirrriorrnortorrquirvarrlirrrabbferrrabbrabborrerrrorrferrprirzarrdorrquirstrarurrglererrrabbmarrerrnormarrlirrnordorrerrsarrrridorrerrdorrrorrstrarnor? Answer from memory, by reading the word: do not write code and do not use any tools. Reply with the number only.</code></pre>
-          <div class="grid">
-            <div>
-              <p class="label">Claude Code</p>
-              <pre class="wrap" tabindex="0" aria-label="Strawberry demo in Claude Code"><code>claude -p "&lt;the prompt&gt;"</code></pre>
-            </div>
-            <div>
-              <p class="label">Codex</p>
-              <pre class="wrap" tabindex="0" aria-label="Strawberry demo in Codex"><code>codex exec <span class="nobr">--sandbox read-only</span> <span class="nobr">--disable shell_tool</span> <span class="nobr">--disable unified_exec</span> "&lt;the prompt&gt;"</code></pre>
-            </div>
-          </div>
-          <p>Paste the whole prompt in place of <code>&lt;the prompt&gt;</code> and keep the double quotes around it.</p>
-          <p><strong>In class</strong> (recorded 2026-10-11, <a href="../cursus/demos/model/strawberry.md">runbook</a>): Claude Code with <code>claude-haiku-5-5</code> answered 118, 146, 146, 146 and 142, so 2 of 5 were wrong. Codex with <code>gpt-6-luna</code> answered 138, 146, 128, 114 and 133, so 4 of 5 were wrong.</p>
-        </div>
-
-        <div class="callout good">
-          <h3>What a good answer looks like</h3>
-          <ul>
-            <li>It names the two demos, your agent and its version, and the model that answered.</li>
-            <li>It writes down the class result and your own runs as they came out: the names and the counts. It does not summarize them.</li>
-            <li>It says what changed, both from the class and between your runs, and what stayed the same. For example: “3 of 5 distinct, against 5 of 5 in class” or “the count ranged from 121 to 150”.</li>
-            <li>It gives a reason for each change. Each answer is a fresh draw from a distribution. A different model or version changes that distribution. The model reads tokens, not letters.</li>
-          </ul>
-          <p>A weak answer says “the results were a bit different” without numbers or a reason.</p>
-        </div>
-      </section>
-
-      <section id="part-2" aria-labelledby="part-2-title">
-        <h2 id="part-2-title">Part 2 · Three sentences on “sampling, not retrieval”</h2>
-        <p>In <code>home-notes.md</code>, explain in exactly three sentences of your own what “sampling, not retrieval” means for an LLM, and why it matters when you work with an agent. Write them yourself, not with your agent: the point is to check your own understanding. Use your part 1 runs as evidence. The <a href="../cursus/labs/next-token.html">next-token lab</a> lets you see the distribution again.</p>
-        <div class="callout good">
-          <h3>What a good answer looks like</h3>
-          <ul>
-            <li><strong>Mechanism.</strong> One forward pass gives a probability distribution over the next token, and the reply is drawn from it one token at a time.</li>
-            <li><strong>Not a lookup.</strong> No stored document or database row is fetched. A fluent, confident reply is generated, so being plausible is not being true, and a citation or number can be invented.</li>
-            <li><strong>Consequence.</strong> The same prompt can give different answers, as your part 1 runs showed, so you check the output with something deterministic: run the code, or call the checker or the solver. Re-asking does not count as checking.</li>
-          </ul>
-          <p>A weak answer says the model “searches its training data”, or repeats the phrase without saying what is drawn from what.</p>
-        </div>
-      </section>
-
-      <section id="part-3" aria-labelledby="part-3-title">
-        <h2 id="part-3-title">Part 3 · Solve P01 with your own agent</h2>
+        <h2 id="part-1-title">Part 1 · Solve P01 with your own agent</h2>
         <p>P01 is the take-home that the course comes back to: EV linehaul scheduling and charging, with 40 legs, 10 electric trucks and eight depots. The statement is in <a href="homework-p01/PROBLEM.md"><code>homework-p01/PROBLEM.md</code></a>, and the task, the solution format and how to read the checker are in <a href="homework-p01/README.md"><code>homework-p01/README.md</code></a>. It is the mini homework’s loop from class, bigger: read, plan, build, check, ship. Your agent writes the model. Your job is to set the contract and to believe only what the checker certifies.</p>
         <ol>
           <li>Read <code>PROBLEM.md</code> yourself first.</li>
@@ -383,8 +298,8 @@ uv run pytest exercises/homework-p01/p01_contract.py</code></pre>
         </div>
       </section>
 
-      <section id="part-4" aria-labelledby="part-4-title">
-        <h2 id="part-4-title">Part 4 · Turn it in</h2>
+      <section id="part-2" aria-labelledby="part-2-title">
+        <h2 id="part-2-title">Part 2 · Turn it in</h2>
         <p>One command, the same for every session this term. In your agent:</p>
         <div class="grid">
           <div>
@@ -410,7 +325,7 @@ uv run pytest exercises/homework-p01/p01_contract.py</code></pre>
         </div>
       </section>
     </main>
-    <footer>Session 1 homework · Demo results are dated recordings from the class runbooks, not illustrations. Your own runs will differ, and that difference is what part 1 asks you to explain.</footer>
+    <footer>Session 1 homework · Every step works in Claude Code or Codex.</footer>
   </div>
   <!-- shared-script:begin -->
   <script>/* Classic script; each enhancement is optional and scoped to its own root. */

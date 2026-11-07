@@ -96,20 +96,18 @@ def test_sheet_end_to_end_turns_in_from_a_fork(tmp_path):
     git("config", "core.hooksPath", ".githooks", cwd=clone, env=env)
     work = clone / EXERCISES
 
-    # Part 3: a plan the checker proves feasible (only optimality may fail), then its verdict.
+    # Part 1: a plan the checker proves feasible (only optimality may fail), then its verdict.
     plan = single_leg_candidate(read_instance(PACK), True)
     (work / "homework-p01/solution.json").write_text(json.dumps(plan), encoding="utf-8")
     verdict = checker(work / "homework-p01").stdout.splitlines()
     failures = [line for line in verdict if line.split(":", 1)[0] in CONTRACTS]
     assert [line.split(":", 1)[0] for line in failures] == ["optimality"], verdict
-    # Parts 1 to 3 go into the notes, in the sheet's template.
+    # The verdict goes into the notes, in the sheet's template.
     (work / "home-notes.md").write_text(
-        f"# Session 1 homework · {HANDLE}\n\n## Part 1 · Two demos, rerun\n- Sampling: 3 of 5 distinct, against 5 of 5 in class.\n"
-        "- Strawberry: 1 of 5 right; tokens, not letters.\n\n## Part 2 · Sampling, not retrieval\n"
-        "The reply is drawn token by token. Nothing is looked up. So I check it with the checker.\n\n"
-        "## Part 3 · P01\n- Checker verdict: " + "\n".join(verdict[:1] + failures) + "\n", encoding="utf-8")
+        f"# Session 1 homework · {HANDLE}\n\n## P01\nAgent and version: claude 2.1.296\n"
+        "- Checker verdict: " + "\n".join(verdict[:1] + failures) + "\n", encoding="utf-8")
 
-    # Part 4: the turn-in, run from the repository root as the sheet says.
+    # Part 2: the turn-in, run from the repository root as the sheet says.
     result = subprocess.run(["bash", "scripts/turn-in.sh", "01"], cwd=clone, env=env, text=True,
                             capture_output=True, timeout=300, check=False)
     log = result.stdout + result.stderr
