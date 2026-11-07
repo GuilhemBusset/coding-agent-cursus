@@ -1,16 +1,18 @@
-"""Independent L3 checker: recompute feasibility and headcount from a solution file.
+"""Independent checker for the mini homework: recompute feasibility and headcount from a solution file.
 
 Standard library only, no solver. It trusts nothing in the solution file: coverage and
 headcount are recomputed from the weekly starts, and the reported objective is only compared.
 
-Usage, from this folder:
+Usage, from sessions/01-fundamentals:
 
-    uv run python check.py [solution.json]
-    python check.py [solution.json]
+    uv run python exercises/mini-homework/check.py [solution.json] [--turn-in]
+    python exercises/mini-homework/check.py [solution.json] [--turn-in]
 
 The first output line is PASS or FAIL. Each problem line starts with the contract it breaks
 (data, format, feasibility, integrality, objective, optimality). The exit code is 0 on PASS
-and 1 on FAIL.
+and 1 on FAIL. With --turn-in (what exercises/turn-in-check.sh runs) a missing solution only
+warns, a data or format problem blocks (exit 1), and any other verdict is printed and turned in
+(exit 0), as with P01.
 """
 
 import csv
@@ -220,30 +222,40 @@ def summary(headcount):
 
 
 def check(path):
-    """Return (passed, output lines)."""
+    """Return (passed, output lines, checkable): checkable is False on a data or format problem."""
     problems = data_problems()
     solution, unreadable = load_solution(path)
     problems += unreadable or format_problems(solution)
     if problems:
-        return False, ["FAIL", *problems]
+        return False, ["FAIL", *problems], False
     starts = {day: number(solution["start"][day]) for day in DAYS}
     reported = number(solution["objective"])
     headcount = sum(starts.values())
     problems = solution_problems(starts, reported, headcount)
-    return not problems, ["FAIL" if problems else "PASS", *problems, "", *summary(headcount)]
+    return not problems, ["FAIL" if problems else "PASS", *problems, "", *summary(headcount)], True
 
 
 def main(argv):
     if any(arg in ("-h", "--help") for arg in argv):
         print(__doc__.strip())
         return 0
+    turn_in = "--turn-in" in argv
+    argv = [arg for arg in argv if arg != "--turn-in"]
     if len(argv) > 1:
         print("FAIL")
         print("format: give at most one solution file, for example: python check.py solution.json")
         return 1
     path = Path(argv[0]) if argv else DEFAULT_SOLUTION
-    passed, lines = check(path)
+    if turn_in and not path.is_file():
+        where = str(path).encode("ascii", "backslashreplace").decode("ascii")
+        print(f"WARNING: no mini homework solution.json at {where}. Turning in without a checked roster;")
+        print("run your model, then `uv run python exercises/mini-homework/check.py`.")
+        return 0
+    passed, lines, checkable = check(path)
     print("\n".join(lines))
+    if turn_in and checkable:
+        print("Turn-in check: the roster above is submitted as is.")
+        return 0
     return 0 if passed else 1
 
 

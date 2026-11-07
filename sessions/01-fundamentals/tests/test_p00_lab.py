@@ -256,6 +256,27 @@ def test_bug_variant_fails_named_contract(selector, suite_results):
     assert result["elapsed"] < 10, f"runtime contract: student suite took {result['elapsed']:.3f}s"
 
 
+def test_tests_dir_layout_moves_only_the_suite(exports, tmp_path):
+    # The recorded agent runs (cursus/fixtures/runs) export with --tests-dir: the suite moves to tests/, nothing else.
+    target = tmp_path / "tests-dir"
+    success([sys.executable, PACK / "export.py", "--tests-dir", "--bug", "none", "--out", target], tmp_path)
+
+    def files(directory):
+        skip = {".git", "__pycache__", ".pytest_cache"}
+        return {path.relative_to(directory).as_posix(): path.read_bytes() for path in directory.rglob("*")
+                if path.is_file() and not skip.intersection(path.relative_to(directory).parts)}
+
+    default, moved = files(exports["none"]), files(target)
+    assert set(moved) == (set(default) - {"test_p00_contract.py"}) | {"tests/test_p00_contract.py", "tests/__init__.py"}
+    assert moved["tests/test_p00_contract.py"] == default["test_p00_contract.py"] and moved["tests/__init__.py"] == b""
+    assert moved[".gitignore"] == default[".gitignore"] + b".claude/settings.local.json\n"
+    assert all(moved[name] == default[name] for name in set(default) - {"test_p00_contract.py", "AGENTS.md", ".gitignore"})
+    assert "tests/" in moved["AGENTS.md"].decode("utf-8")
+    assert success(["git", "status", "--short"], target) == ""
+    suite = run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"], target)
+    assert suite.returncode == 0, suite.stdout + suite.stderr
+
+
 def test_dropped_demand_is_strictly_better(exports):
     reference = json.loads(success([sys.executable, "p00_model.py"], exports["none"]))
     other = json.loads(success([sys.executable, "p00_model.py"], exports["dropped-demand"]))

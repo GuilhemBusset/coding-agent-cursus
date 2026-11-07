@@ -363,7 +363,7 @@ Model (as your agent reports it):
 
       <section id="part-3" aria-labelledby="part-3-title">
         <h2 id="part-3-title">Part 3 · Solve P01 with your own agent</h2>
-        <p>P01 is the take-home that the course comes back to: EV linehaul scheduling and charging, with 40 legs, 10 electric trucks and eight depots. The statement is in <a href="homework-p01/PROBLEM.md"><code>homework-p01/PROBLEM.md</code></a>, and the task, the solution format and how to read the checker are in <a href="homework-p01/README.md"><code>homework-p01/README.md</code></a>. Your agent writes the model. Your job is to set the contract and to believe only what the checker certifies.</p>
+        <p>P01 is the take-home that the course comes back to: EV linehaul scheduling and charging, with 40 legs, 10 electric trucks and eight depots. The statement is in <a href="homework-p01/PROBLEM.md"><code>homework-p01/PROBLEM.md</code></a>, and the task, the solution format and how to read the checker are in <a href="homework-p01/README.md"><code>homework-p01/README.md</code></a>. It is the mini homework’s loop from class, bigger: read, plan, build, check, ship. Your agent writes the model. Your job is to set the contract and to believe only what the checker certifies.</p>
         <ol>
           <li>Read <code>PROBLEM.md</code> yourself first.</li>
           <li>In your agent, started in <code>sessions/01-fundamentals/</code>, give it this prompt. It is the same for both agents.
@@ -404,13 +404,13 @@ uv run pytest exercises/homework-p01/p01_contract.py</code></pre>
         </div>
         <p>Without an agent, run it from the repository root in a terminal (Git Bash on Windows):</p>
         <pre tabindex="0" aria-label="Turn in from a terminal"><code>bash scripts/turn-in.sh 01</code></pre>
-        <p>The turn-in first runs <code>exercises/turn-in-check.sh</code>, which runs the P01 checker on your <code>solution.json</code>. A malformed <code>solution.json</code> or an edited <code>data/</code> stops it, so you can fix the problem and run it again. An infeasible or suboptimal plan is reported and still turned in. It then commits only <code>sessions/01-fundamentals/exercises/</code> to your own branch, <code>homework/s01/&lt;handle&gt;</code>, where <code>&lt;handle&gt;</code> is your GitHub login, and pushes it. It never pushes to <code>main</code>. If you have no push access to the course repo, it pushes to your fork and also prints a compare URL.</p>
+        <p>The turn-in first runs <code>exercises/turn-in-check.sh</code>, which runs the mini homework’s checker, then the P01 checker, each on its own <code>solution.json</code>. A malformed <code>solution.json</code> or an edited <code>data/</code> stops it, so you can fix the problem and run it again. An infeasible or suboptimal plan is reported and still turned in. It then commits only <code>sessions/01-fundamentals/exercises/</code> to your own branch, <code>homework/s01/&lt;handle&gt;</code>, where <code>&lt;handle&gt;</code> is your GitHub login, and pushes it. It never pushes to <code>main</code>. If you have no push access to the course repo, it pushes to your fork and also prints a compare URL.</p>
         <p>You can run it as often as you like. Every run adds a commit, and the history keeps every submission. <strong>Homework branches are public</strong>, because the course repo is public, so keep secrets and personal data out of your notes. If the turn-in refuses, read its message and fix the cause. Never work around it with <code>--force</code> or <code>--no-verify</code>.</p>
         <div class="callout good">
           <h3>What a good answer looks like</h3>
           <ul>
             <li>The run ends with your branch URL, <code>https://github.com/&lt;course or your fork&gt;/tree/homework/s01/&lt;handle&gt;</code>. From a fork, it also prints a line starting <code>Compare with the course:</code>.</li>
-            <li>On that page, the latest commit is <code>Turn in session 01 homework (&lt;handle&gt;)</code>. It holds <code>exercises/home-notes.md</code>, <code>exercises/homework-p01/p01_model.py</code> and <code>exercises/homework-p01/solution.json</code>.</li>
+            <li>On that page, the latest commit is <code>Turn in session 01 homework (&lt;handle&gt;)</code>. It holds <code>exercises/home-notes.md</code>, <code>exercises/homework-p01/p01_model.py</code> and <code>exercises/homework-p01/solution.json</code>, beside the mini homework you turned in during class.</li>
             <li>The checker verdict printed during the turn-in matches the one in your notes.</li>
           </ul>
         </div>

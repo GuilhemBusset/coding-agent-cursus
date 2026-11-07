@@ -1,7 +1,7 @@
-"""Locked instructor acceptance checks for the L3 cyclic staffing exercise.
+"""Locked instructor acceptance checks for the mini homework, the cyclic staffing exercise of Act IV.
 
-The reference model and witness rosters live here, outside the student pack.
-Run from the session with ``uv run pytest -q tests/test_l3_word_problem.py``.
+The reference model, witness rosters and seeded wrong rosters live here, outside the student pack.
+Run from the session with ``uv run pytest -q tests/test_mini_homework.py``.
 The checker is always a subprocess; no implementation module is imported.
 """
 
@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 SESSION = Path(__file__).resolve().parents[1]
-PACK = SESSION / "exercises" / "l3-word-problem"
+PACK = SESSION / "exercises" / "mini-homework"
 DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 DEMAND = dict(zip(DAYS, (8, 7, 8, 9, 8, 5, 6)))
 OPTIMAL = (4, 1, 2, 1, 1, 1, 1)
@@ -177,14 +177,14 @@ def test_layout_and_statement():
     assert re.search(r"minimi[sz]|minimum|fewest|as few", problem, re.IGNORECASE)
     assert re.search(r"headcount|staff|people|employees|workers", problem, re.IGNORECASE)
     assert "data/demand.csv" in readme and "solution.json" in readme
-    assert re.search(r"uv\s+run\s+python\s+check\.py", readme)
-    assert re.search(r"(?m)(?:^|`)\s*python\s+check\.py", readme), "D1: document plain Python too"
+    assert re.search(r"uv\s+run\s+python\s+exercises/mini-homework/check\.py", readme)
+    assert re.search(r"(?m)(?:^|`)\s*python\s+exercises/mini-homework/check\.py", readme), "D1: document plain Python too"
     assert '"objective"' in readme and '"start"' in readme
     assert all(f'"{day}"' in readme for day in DAYS), "D1: example must show all seven day keys"
     assert "PASS" in readme and re.search(r"gap", readme, re.IGNORECASE), "D1: document the done criterion"
     assert has_number(readme, 10.2) and has_number(readme, 11), "D1: publish bound and optimum"
     layout = section((SESSION / "README.md").read_text(encoding="utf-8"), "Layout")
-    assert any("exercises/l3-word-problem/" in line and "|" in line for line in layout.splitlines())
+    assert any("exercises/mini-homework/" in line and "|" in line for line in layout.splitlines())
     assert {p.name for p in PACK.glob("*.py")} == {"check.py"}, "D1: the student pack ships no reference model"
     assert not (PACK / "solution.json").exists(), "D1: students must build their own solution"
 
@@ -345,7 +345,7 @@ def test_checker_nonnegativity_and_coverage_tolerance(tmp_path):
 
 @pytest.fixture
 def copied_pack(tmp_path):
-    assert PACK.is_dir(), "D1: missing L3 exercise directory"
+    assert PACK.is_dir(), "D1: missing the mini homework directory"
     return Path(shutil.copytree(PACK, tmp_path / "copied exercise"))
 
 
@@ -463,15 +463,18 @@ def test_check_command_default_and_override(copied_pack, tmp_path):
     verdict(run_check(alternate, pack=copied_pack, cwd=tmp_path), False, {"objective"})
 
 
-@pytest.mark.parametrize("name,starts,reported,contracts", [
-    ("understaffed", (4, 1, 2, 1, 1, 1, 0), 10, {"feasibility", "optimality"}),
-    ("fractional", LP_POINT, 10.2, {"integrality", "optimality"}),
-    ("misreported", (4, 1, 2, 2, 1, 1, 1), 11, {"objective", "optimality"}),
-])
-def test_seeded_wrong_solution(name, starts, reported, contracts):
-    path = PACK / "wrong" / f"{name}.json"
-    assert path.is_file(), f"A1: missing seeded wrong solution {name}"
-    assert json.loads(path.read_text(encoding="utf-8")) == payload(starts, reported)
+# The three rosters Act IV's #check slide shows, each a claim check.py rejects for a different contract.
+SEEDED = {
+    "understaffed": ((4, 1, 2, 1, 1, 1, 0), 10, {"feasibility", "optimality"}),
+    "fractional": (LP_POINT, 10.2, {"integrality", "optimality"}),
+    "misreported": ((4, 1, 2, 2, 1, 1, 1), 11, {"objective", "optimality"}),
+}
+
+
+@pytest.mark.parametrize("name", SEEDED)
+def test_seeded_wrong_solution(name, tmp_path):
+    starts, reported, contracts = SEEDED[name]
+    path = write_solution(tmp_path, payload(starts, reported), f"{name}.json")
     result = run_check(path)
     messages = verdict(result, False, contracts)
     if name == "understaffed":
@@ -484,3 +487,31 @@ def test_seeded_wrong_solution(name, starts, reported, contracts):
     else:
         assert any(has_number(line, 11) and has_number(line, 12) for line in messages["objective"])
     assert_summary(result, sum(starts))
+
+
+@pytest.mark.parametrize("case,code,first", [
+    ("missing", 0, "WARNING"),
+    ("optimal", 0, "PASS"),
+    ("understaffed", 0, "FAIL"),
+    ("malformed", 1, "FAIL"),
+    ("edited data", 1, "FAIL"),
+])
+def test_turn_in_gate_blocks_only_data_and_format(case, code, first, copied_pack):
+    # Same policy as P01's --turn-in: a missing file warns, data or format blocks, a verdict is submitted.
+    solution = copied_pack / "solution.json"
+    if case == "optimal":
+        solution.write_text(json.dumps(payload()), encoding="utf-8")
+    elif case == "understaffed":
+        starts, reported, _ = SEEDED["understaffed"]
+        solution.write_text(json.dumps(payload(starts, reported)), encoding="utf-8")
+    elif case == "malformed":
+        solution.write_text("{", encoding="utf-8")
+    elif case == "edited data":
+        solution.write_text(json.dumps(payload()), encoding="utf-8")
+        csv_path = copied_pack / "data" / "demand.csv"
+        csv_path.write_text(csv_path.read_text(encoding="utf-8").replace("Mon,8", "Mon,7"), encoding="utf-8")
+    result = subprocess.run([sys.executable, str(copied_pack / "check.py"), "--turn-in"], cwd=copied_pack,
+                            env=child_env(), capture_output=True, text=True, encoding="utf-8", timeout=10, check=False)
+    assert result.returncode == code and result.stdout.splitlines()[0].startswith(first), result.stdout
+    assert result.stdout.isascii() and "Traceback" not in result.stderr, result.stdout + result.stderr
+    assert ("submitted as is" in result.stdout) == (case in ("optimal", "understaffed")), result.stdout

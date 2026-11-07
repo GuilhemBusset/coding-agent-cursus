@@ -316,15 +316,15 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
               </div>
             </fieldset>
             <fieldset data-predict-question>
-              <legend>Act IV · The agent says “fixed”. What makes L2 done?</legend>
+              <legend>Act IV · The agent says “done: 11 people”. What makes it done?</legend>
               <div class="choice-grid">
                 <div class="choice"><input type="radio" id="q4-summary" name="exit-act-4" value="summary"><label for="q4-summary">Its summary says so</label></div>
-                <div class="choice"><input type="radio" id="q4-diff" name="exit-act-4" value="diff" data-correct><label for="q4-diff">Green, and only a real fix to <code>p00_model.py</code></label></div>
-                <div class="choice"><input type="radio" id="q4-green" name="exit-act-4" value="green"><label for="q4-green">A green suite</label></div>
+                <div class="choice"><input type="radio" id="q4-check" name="exit-act-4" value="check" data-correct><label for="q4-check"><code>check.py</code>, run by you, prints PASS</label></div>
+                <div class="choice"><input type="radio" id="q4-optimal" name="exit-act-4" value="optimal"><label for="q4-optimal">HiGHS said Optimal</label></div>
               </div>
               <p data-predict-result></p>
               <div data-predict-answer>
-                <p><code>git status --short</code> lists only <code>p00_model.py</code>; its diff shows a repair, not a typed-in plan.</p>
+                <p>A check you run is the evidence: <code>check.py</code> recomputes the roster from the file, with no solver. HiGHS also called the LP relaxation optimal, at 10.2 people.</p>
               </div>
             </fieldset>
           </div>
@@ -335,7 +335,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <p data-predict-status role="status"></p>
           </div>
         </section>
-        <p class="cite">Source: <cite>Session 1 plan</cite>, Acts III and IV, <code>docs/cursus-narrative.md</code>, as of 2026-10-18; L2 done commands and the model diff, <code>exercises/lab-ladder.html</code>; Act IV, #catch.</p>
+        <p class="cite">Source: <cite>Session 1 plan</cite>, Acts III and IV, <code>docs/cursus-narrative.md</code>, as of 2026-10-18; the mini homework’s checker, <code>exercises/mini-homework/</code>; Act IV, #check.</p>
       </section>
 
       <section id="exit-ticket-3" data-slide tabindex="-1" aria-labelledby="exit-ticket-3-title">
@@ -372,7 +372,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <ol class="parts">
             <li><strong>Rerun two of today’s demos</strong> with your own agent, and note what differs from the run in class.</li>
             <li><strong>Write three sentences</strong> on “sampling, not retrieval”.</li>
-            <li><strong>Solve P01, EV linehaul charging,</strong> with your own agent. Checker-proven feasibility counts more than the objective value.</li>
+            <li><strong>Solve P01, EV linehaul charging,</strong> in the mini homework’s five steps. Checker-proven feasibility counts more than the objective value.</li>
             <li><strong>Turn it in:</strong> <code>/turn-in 01</code> in Claude Code, <code>$turn-in 01</code> in Codex, or <code>scripts/turn-in.sh 01</code> from a terminal.</li>
           </ol>
           <div class="callout">

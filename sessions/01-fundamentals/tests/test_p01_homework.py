@@ -807,7 +807,10 @@ def test_turn_in_hook_from_session_directory():
     source = required(hook)
     syntax = run(["bash", "-n", hook], SESSION)
     assert syntax.returncode == 0, output(syntax)
+    assert "uv run --no-project --python 3.12 python exercises/mini-homework/check.py --turn-in || exit 1" in source
     assert "exec uv run --no-project --python 3.12 python exercises/homework-p01/p01_checker.py --turn-in" in source
     assert not (PACK / "solution.json").exists(), "starter: real plans must remain outside tree"
+    assert not (SESSION / "exercises/mini-homework/solution.json").exists(), "starter: no roster in the tree"
     result = run(["bash", hook], SESSION, timeout=60)
-    assert result.returncode == 0 and "warn" in result.stdout.lower() and "solution.json" in result.stdout.lower(), output(result)
+    assert result.returncode == 0 and result.stdout.lower().count("warning: no") == 2, output(result)
+    assert "mini homework solution.json" in result.stdout and "homework-p01/solution.json" in result.stdout, output(result)
