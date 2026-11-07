@@ -480,7 +480,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
     <header class="masthead">
       <p class="eyebrow">Fundamentals · Act IV</p>
       <h1 id="deck-title">Claim versus evidence</h1>
-      <p class="lede">Your turn: the mini homework, end to end, in the five steps of tonight’s P01: read, plan, build, check, ship.</p>
+      <p class="lede">A practice run before a real task: one small problem, from reading it to turning it in.</p>
     </header>
     <main id="content" data-deck tabindex="-1" aria-labelledby="deck-title">
       <!-- The spine, the mini homework's five steps, is repeated on every slide; only the classes on its parts
@@ -488,13 +488,13 @@ figure.spine-wrap { margin: 0 0 .5rem; }
            copy together. -->
       <section id="goals" data-slide tabindex="-1" aria-labelledby="goals-title">
         <p class="eyebrow">Act IV · Your turn</p>
-        <h2 id="goals-title">One small problem, end to end: three things to learn.</h2>
+        <h2 id="goals-title">A practice run, to get ready for a real task.</h2>
         <ol class="goals" aria-label="What you will learn">
           <li><span class="goal-step">Plan</span><span class="goal-t">Review the agent’s plan before any code exists.</span></li>
           <li><span class="goal-step">Check</span><span class="goal-t">Done means a check you ran prints PASS.</span></li>
-          <li><span class="goal-step">Ship</span><span class="goal-t">Ship with one command; the check runs again.</span></li>
+          <li><span class="goal-step">Ship</span><span class="goal-t">Turn in with one command; the check runs again first.</span></li>
         </ol>
-        <p class="how">How: five steps, the same as P01 tonight</p>
+        <p class="how">The five steps you will follow, here and in the homework</p>
         <figure class="spine-wrap" role="group" aria-labelledby="goals-spine-caption">
           <svg class="spine loop5" viewBox="-2 0 1144 100">
           <path class="edge all" d="M200 48 H224"/><path class="head all" d="M234 48 l-10 -5 v10 z"/>
@@ -508,12 +508,12 @@ figure.spine-wrap { margin: 0 0 .5rem; }
           <a href="#check" aria-label="Step 4 · Check: check.py → PASS"><g class="step all"><rect class="hit" x="708" y="0" width="196" height="78"/><text class="who all" x="710" y="14">you</text><g class="node all"><rect class="box" x="708" y="22" width="196" height="52" rx="4"/><text class="t" x="756" y="44">Check</text><text class="s" x="756" y="65">check.py → PASS</text></g><g class="badge all"><circle cx="733" cy="48" r="13"/><text class="n" x="733" y="53" text-anchor="middle">4</text></g></g></a>
           <a href="#ship" aria-label="Step 5 · Ship: /turn-in 01"><g class="step all"><rect class="hit" x="944" y="0" width="196" height="78"/><text class="who all" x="946" y="14">you</text><g class="node all"><rect class="box" x="944" y="22" width="196" height="52" rx="4"/><text class="t" x="992" y="44">Ship</text><text class="s" x="992" y="65">/turn-in 01</text></g><g class="badge all"><circle cx="969" cy="48" r="13"/><text class="n" x="969" y="53" text-anchor="middle">5</text></g></g></a>
           </svg>
-          <figcaption id="goals-spine-caption" class="visually-hidden">The loop, Act IV’s map; each step links its slide. The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01.</figcaption>
+          <figcaption id="goals-spine-caption" class="visually-hidden">The loop, Act IV’s map; each step links its slide. The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01.</figcaption>
         </figure>
         <details class="speaker-notes">
           <summary>Speaker notes</summary>
           <div class="notes-body" tabindex="0">
-            <p>Talk track: Act III ended on “Your turn: one small problem, end to end, graded by the evidence, not the message.” Read the three lines: that is what you take home today. Point at the steps underneath: read, plan, build, check, ship. They are tonight’s P01 homework at a size you can check by hand: seven numbers instead of forty legs. Above each box, who does it: you read, the agent drafts the plan and you review it, the agent builds, you check, you ship.</p>
+            <p>Talk track: Act III ended on “Your turn: a practice run before a real task.” Read the three lines: that is what you take home today. Point at the steps underneath: read, plan, build, check, ship. They are tonight’s P01 homework at a size you can check by hand: seven numbers instead of forty legs. Above each box, who does it: you read, the agent drafts the plan and you review it, the agent builds, you check, you ship.</p>
             <p>Activity: pairs, side by side, each on your own laptop; one on Claude Code and one on Codex when you can. Each of you ships your own. In a terminal in <code>sessions/01-fundamentals</code>, open <code>exercises/mini-homework/README.md</code>: every prompt and command is there, numbered like these steps. Sticky notes on your lid: green when your own check prints PASS, yellow when you are stuck, pink when the agent said done and a command disagrees.</p>
             <p>Transition: “Step one is yours: read the problem before your agent does.”</p>
             <p>Background for you, not for the slides: the mini homework is the staffing problem that was the lab ladder’s level 3, trimmed to its README, <code>data/demand.csv</code> and <code>check.py</code>; the turn-in gate reruns its checker. P00 stays the running example of Acts II and III.</p>
@@ -522,9 +522,9 @@ figure.spine-wrap { margin: 0 0 .5rem; }
       </section>
       <section id="read" data-slide tabindex="-1" aria-labelledby="read-title">
         <p class="eyebrow">Step 1 · Read</p>
-        <h2 id="read-title">Five on, two off: how few people cover the week?</h2>
+        <h2 id="read-title">Cover each day’s demand with as few staff as possible.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 1, Read, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 1, Read. This slide: the problem: daily demand and one person’s block.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 1, Read. This slide: the problem: daily demand and one person’s block.">
           <path class="edge next" d="M200 48 H224"/><path class="head next" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge next" d="M436 48 H460"/><path class="head next" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge next" d="M672 48 H696"/><path class="head next" d="M706 48 l-10 -5 v10 z"/>
@@ -578,7 +578,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
         <p class="eyebrow">Step 2 · Plan</p>
         <h2 id="plan-title">Review the model before any code exists.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 2, Plan, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 2, Plan. This slide: the plan to review, and Monday’s cover.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 2, Plan. This slide: the plan to review, and Monday’s cover.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge next" d="M436 48 H460"/><path class="head next" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge next" d="M672 48 H696"/><path class="head next" d="M706 48 l-10 -5 v10 z"/>
@@ -712,9 +712,9 @@ figure.spine-wrap { margin: 0 0 .5rem; }
       </section>
       <section id="build" data-slide tabindex="-1" aria-labelledby="build-title">
         <p class="eyebrow">Step 3 · Build</p>
-        <h2 id="build-title">The agent writes the model; given files stay locked.</h2>
+        <h2 id="build-title">The agent writes the model; given files stay unchanged.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 3, Build, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 3, Build. This slide: what the agent writes, and what it leaves alone.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 3, Build. This slide: what the agent writes, and what it leaves alone.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M436 48 H460"/><path class="head done" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge next" d="M672 48 H696"/><path class="head next" d="M706 48 l-10 -5 v10 z"/>
@@ -767,7 +767,7 @@ figure.spine-wrap { margin: 0 0 .5rem; }
         <p class="eyebrow">Step 4 · Check</p>
         <h2 id="check-title">Three claims: how many does check.py pass?</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 4, Check, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 4, Check. This slide: three claimed rosters and what check.py prints for each.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 4, Check. This slide: three claimed rosters and what check.py prints for each.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M436 48 H460"/><path class="head done" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M672 48 H696"/><path class="head done" d="M706 48 l-10 -5 v10 z"/>
@@ -840,10 +840,10 @@ git status --short exercises/mini-homework</pre>
         </details>
       </section>
       <section id="gap" data-slide tabindex="-1" aria-labelledby="gap-title">
-        <p class="eyebrow">Step 4 · Why checking is cheap</p>
-        <h2 id="gap-title">A solver found the roster; one sum proves it best.</h2>
+        <p class="eyebrow">Step 4 · Check</p>
+        <h2 id="gap-title">Why no roster can use fewer than 11 people.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 4, Check, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 4, Check. This slide: the bound behind PASS.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 4, Check. This slide: the bound behind PASS.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M436 48 H460"/><path class="head done" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M672 48 H696"/><path class="head done" d="M706 48 l-10 -5 v10 z"/>
@@ -889,9 +889,9 @@ git status --short exercises/mini-homework</pre>
       </section>
       <section id="ship" data-slide tabindex="-1" aria-labelledby="ship-title">
         <p class="eyebrow">Step 5 · Ship</p>
-        <h2 id="ship-title">One command ships it, and the check runs again first.</h2>
+        <h2 id="ship-title">Turn it in with one command; the check runs first.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, step 5, Ship, current" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 5, Ship. This slide: the turn-in, from the command to your branch.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: step 5, Ship. This slide: the turn-in, from the command to your branch.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M436 48 H460"/><path class="head done" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M672 48 H696"/><path class="head done" d="M706 48 l-10 -5 v10 z"/>
@@ -942,10 +942,10 @@ git status --short exercises/mini-homework</pre>
         </details>
       </section>
       <section id="wrap" data-slide tabindex="-1" aria-labelledby="wrap-title">
-        <p class="eyebrow">Close · Tonight</p>
-        <h2 id="wrap-title">Tonight, the same five steps on P01.</h2>
+        <p class="eyebrow">Close · Homework</p>
+        <h2 id="wrap-title">Homework: the same five steps on a bigger problem.</h2>
         <div class="spine-wrap" role="region" aria-label="The loop, every step done" tabindex="0">
-          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the same five steps as P01 tonight. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: every step done. This slide: the loop done, and the same five steps on P01 tonight.">
+          <svg class="spine loop5" viewBox="-2 0 1144 100" role="img" aria-label="The loop, left to right, the five steps you follow here and in the homework. 1, Read: you read the README and the data. 2, Plan: the agent drafts a plan in plan mode and you review it. 3, Build: the agent writes work/model.py, which writes solution.json. 4, Check: you run check.py, which must print PASS; a FAIL line goes back to the agent, to build again. 5, Ship: you run /turn-in 01. Current: every step done. This slide: the loop done, and the same five steps on P01 tonight.">
           <path class="edge done" d="M200 48 H224"/><path class="head done" d="M234 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M436 48 H460"/><path class="head done" d="M470 48 l-10 -5 v10 z"/>
           <path class="edge done" d="M672 48 H696"/><path class="head done" d="M706 48 l-10 -5 v10 z"/>
@@ -961,7 +961,7 @@ git status --short exercises/mini-homework</pre>
         <div class="wr-scroll" role="region" aria-label="The five steps, today and tonight" tabindex="0">
             <table class="wr-table">
               <caption class="visually-hidden">The same five steps on the mini homework, today, and on P01, tonight.</caption>
-              <thead><tr><td></td><th scope="col">Today · mini homework</th><th scope="col">Tonight · P01</th></tr></thead>
+              <thead><tr><td></td><th scope="col">In class · practice</th><th scope="col">Homework · P01</th></tr></thead>
               <tbody>
                 <tr><th scope="row"><span class="wr-n">1</span>Read</th><td><code>README.md</code>, 7 demands</td><td><code>PROBLEM.md</code>, 40 legs, 10 trucks</td></tr>
                 <tr><th scope="row"><span class="wr-n">2</span>Plan</th><td>7 integer starts</td><td>assignments, charging, state of charge</td></tr>
