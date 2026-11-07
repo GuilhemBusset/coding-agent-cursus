@@ -79,7 +79,7 @@ The tests check four contracts, and every failure message starts with the one it
    ```
 
    The sync installs the pinned ty checker as well as the solver and tests. The editor setup
-   installs the pinned Python and ty VS Code extensions when the `code` CLI is available; it
+   installs the pinned VS Code extensions when the `code` CLI is available; it
    reports a skip for other editors. Open this folder in VS Code: the included `.vscode` settings
    select the local environment and ty on Linux, macOS and Windows. Trust the folder when VS Code
    asks, and reload an already open window after installation.

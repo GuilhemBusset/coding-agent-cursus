@@ -87,7 +87,8 @@ the same place. After the clone, it runs [`prepare.py`](prepare.py) from the clo
 8. **Prepare the clone.** It activates the git hooks, then in every session runs `mise trust`,
    `mise install` and `mise exec -- uv sync --locked`, including the default ty checker. It syncs
    repository tools into `setup/.venv` and, when VS Code's `code` CLI is available, installs and
-   verifies the Python and ty extensions pinned in [`../editor.json`](../editor.json). Checked-in
+   verifies the Python, ty, Live Preview and Rainbow CSV extensions pinned in
+   [`../editor.json`](../editor.json). Checked-in
    settings select the right Python environment and checker; no user settings are rewritten.
    Open `setup/cursus.code-workspace` for the whole course, or a session folder on its own.
    Without VS Code, editor installation is explicitly skipped. See [editor setup](../README.md#vs-code).

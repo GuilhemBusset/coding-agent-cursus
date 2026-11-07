@@ -10,9 +10,15 @@
       "${workspaceFolder:Repository}/setup/.venv/Scripts/ty.exe"
     ],
     "ty.diagnosticMode": "workspace",
-    "ty.disableLanguageServices": false
+    "ty.disableLanguageServices": false,
+    "rainbow_csv.virtual_alignment_mode": "always"
   },
   "extensions": {
-    "recommendations": ["ms-python.python", "astral-sh.ty"]
+    "recommendations": [
+      "ms-python.python",
+      "astral-sh.ty",
+      "ms-vscode.live-server",
+      "mechatroner.rainbow-csv"
+    ]
   }
 }
