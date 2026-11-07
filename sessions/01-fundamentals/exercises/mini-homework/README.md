@@ -1,11 +1,5 @@
 # Mini homework · Weekly staffing
 
-**The P01 loop, end to end, on a problem small enough to check by hand.**
-
-You do this one in class, in the five steps you will repeat on P01 tonight: read, plan, build,
-check, ship. The model is your agent's to write. Your job is the evidence: believe only what
-the checker prints. It works the same in Claude Code and in Codex.
-
 ## Problem
 
 A shop is open seven days a week and needs a minimum number of staff on duty each day, given in
