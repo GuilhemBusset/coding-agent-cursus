@@ -89,3 +89,24 @@ test('opening and close decks', async t => {
     });
   }
 });
+
+// The opening's #frontier builds OpenAI's run one step per chip, and a clicked chip leaves the deck turning slides.
+test('opening: #frontier builds one step per chip', async t => {
+  const page = await openPage(t, chromium, { file: decks.opening });
+  await page.evaluate(() => { location.hash = 'frontier'; });
+  const slide = page.locator('section[data-slide]#frontier');
+  await eventually(async () => assert.equal(await slide.evaluate(el => el.checkVisibility()), true), 'on #frontier');
+  const chips = slide.locator('[data-fr-chip]');
+  const seen = () => slide.evaluate(el => ({
+    at: el.querySelector('[data-fr]').getAttribute('data-fr-at'),
+    pressed: [...el.querySelectorAll('[data-fr-chip]')].flatMap((chip, i) => chip.getAttribute('aria-pressed') === 'true' ? [i + 1] : []),
+    says: [...el.querySelectorAll('[data-fr-say]')].flatMap((say, i) => say.checkVisibility() ? [i + 1] : []),
+  }));
+  await eventually(async () => assert.deepEqual(await seen(), { at: '1', pressed: [1], says: [1] }), 'it opens on step 1, pose');
+  for (const step of [2, 3, 4, 5, 1]) {
+    await chips.nth(step - 1).click();
+    await eventually(async () => assert.deepEqual(await seen(), { at: String(step), pressed: [step], says: [step] }), `step ${step}`);
+  }
+  await page.keyboard.press('ArrowRight');
+  await eventually(async () => assert.equal(await page.evaluate(() => location.hash), '#cold-open'), 'the arrow key still turns the slide');
+});

@@ -1,10 +1,11 @@
 # Cold open · a word problem to a certified LP
 
-**Instructor runbook.** These are the first six minutes of Session 1, before any theory. Students
-watch an agent read a short production-planning word problem, write a linear program, solve it on
-HiGHS (open source, through `highspy`) and print a certificate: primal and dual objective, a
-duality gap of 0, and the binding constraints. The point is not that the agent found an answer.
-It is that the answer arrives with a proof anyone can check in one minute.
+**Instructor runbook.** These are six minutes at the start of Session 1, right after the slide on
+where agents are now, before any theory. Students watch an agent read a short production-planning
+word problem, write a linear program, solve it on HiGHS (open source, through `highspy`) and print a
+certificate: primal and dual objective, a duality gap of 0, and the binding constraints. The point
+is not that the agent found an answer. It is that the answer arrives with a proof anyone can check
+in one minute.
 
 Like every demo, this runs on the instructor's Linux machine only (ADR 0010). Students do not run it.
 

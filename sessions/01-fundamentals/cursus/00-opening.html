@@ -270,6 +270,59 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
   .notes { border-top: 1px solid var(--rule); padding-top: .5rem; }
 }
 </style>
+  <style>/* == frontier: how an OpenAI model proved local smoothing, built in five steps == */
+/* One swimlane timeline: who acted (people, OpenAI, the model, Lean) against when. Each part carries data-l, the
+   step (1 to 4) that adds it: pose, prove, check, release; step 5 shows the whole run. With no script and on paper
+   every part shows. With the script, .fr[data-fr-at] lights the current step's parts teal, keeps the earlier ones
+   and dims the later ones; each part reads its colours from the custom properties below, as Act III's agent does. */
+.fr { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; }
+.fr-fig { margin: 0; }
+.fr-svg { display: block; width: 100%; height: auto; max-height: max(15rem, calc(100vh - 27rem)); }
+.fr-svg [data-l] { --fr-line: var(--muted); --fr-fill: var(--paper); --fr-t: var(--ink); --fr-s: var(--secondary); --fr-w: 1.5px; }
+.fr[data-fr-at="1"] .fr-svg [data-l="1"], .fr[data-fr-at="2"] .fr-svg [data-l="2"],
+.fr[data-fr-at="3"] .fr-svg [data-l="3"], .fr[data-fr-at="4"] .fr-svg [data-l="4"] {
+  --fr-line: var(--accent); --fr-fill: var(--accent-soft); --fr-t: var(--ink); --fr-s: var(--ink); --fr-w: 3px;
+}
+.fr[data-fr-at="1"] .fr-svg :is([data-l="2"], [data-l="3"], [data-l="4"]), .fr[data-fr-at="2"] .fr-svg :is([data-l="3"], [data-l="4"]),
+.fr[data-fr-at="3"] .fr-svg [data-l="4"] {
+  --fr-line: var(--rule); --fr-fill: var(--paper); --fr-t: var(--muted); --fr-s: var(--muted); --fr-w: 1.5px;
+}
+.fr-lane { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 5; }
+.fr-gap { font: 600 15px var(--mono); fill: var(--muted); }
+.fr-who { font: 600 13px var(--mono); fill: var(--secondary); letter-spacing: .08em; text-transform: uppercase; }
+.fr-whosub { font: 500 13px var(--sans); fill: var(--muted); }
+.fr-date { font: 600 14px var(--mono); fill: var(--fr-s); }
+.fr-box { fill: var(--fr-fill); stroke: var(--fr-line); stroke-width: var(--fr-w); }
+.fr-t { font: 650 14.5px var(--sans); fill: var(--fr-t); }
+.fr-s { font: 500 13.5px var(--sans); fill: var(--fr-s); }
+.fr-edge { fill: none; stroke: var(--fr-line); stroke-width: 2; }
+.fr-edge.fr-dash { stroke-dasharray: 5 4; }
+.fr-head { fill: var(--fr-line); }
+.fr-tag { font: 600 13px var(--mono); fill: var(--fr-s); }
+/* The five steps: chips to build it, and the current step's sentence beside them. */
+.fr-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.25rem; }
+.fr-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.fr-chip { display: inline-flex; align-items: center; gap: .45rem; min-width: 44px; min-height: 44px; padding: .3rem .8rem; border: 1.5px solid var(--muted); border-radius: .2rem; background: var(--paper); color: var(--ink); font: 650 1rem/1.2 var(--sans); }
+.fr-chip:hover:not(:disabled) { border-color: var(--ink); }
+.fr-chip[aria-pressed="true"] { border: 2.5px solid var(--accent); background: var(--accent-soft); }
+.fr-n { display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; border: 1.5px solid currentColor; border-radius: 50%; font: 700 .75rem/1 var(--mono); }
+.fr-chip[aria-pressed="true"] .fr-n { border-color: var(--accent); background: var(--accent); color: var(--on); }
+[data-slide] .fr-says { list-style: none; margin: 0; padding: 0; display: grid; gap: .2rem; color: var(--ink); font: 500 1.0625rem/1.4 var(--sans); }
+[data-slide] .fr-says li { margin: 0; }
+.fr-says b { font-weight: 700; }
+.fr[data-fr-at] .fr-says { flex: 1 1 22rem; min-height: 2.8em; align-content: center; }
+[data-slide] .fr-says .fr-you { padding-left: .75rem; border-left: 5px solid var(--accent); color: var(--accent); font-weight: 700; }
+@media screen and (max-width: 799px), screen and (max-height: 599px) {
+  .fr-scroll { overflow-x: auto; }
+  .fr-svg { min-width: 62rem; max-height: none; }
+}
+@media print {
+  .fr-chips { display: none !important; }
+  .fr .fr-says li[hidden] { display: block !important; }
+  .fr[data-fr-at] .fr-svg [data-l] { --fr-line: var(--muted); --fr-fill: var(--paper); --fr-t: var(--ink); --fr-s: var(--secondary); --fr-w: 1.5px; }
+}
+/* == end frontier == */
+</style>
   <meta name="cursus-theme-sha256" content="e7c68aab92bb43799e27bdb9f98e0a0bd2992a7a2d983d889c0b6b306f1511f5">
   <meta name="cursus-script-sha256" content="7ff3abc6b625adc1137abf124a18271a847d2f3a139724f99eeb8e6ae6a74986">
 </head>
@@ -289,25 +342,131 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <p>Our goal: give you all the tools and knowledge to become an effective research or applied scientist.</p>
         </blockquote>
         <p class="byline"><strong>Guilhem Busset</strong> · Sr SDM, Amazon · Science and Engineering lead, Transportation Network Design</p>
-        <details class="notes" data-minutes="1"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
           <p>I’m Guilhem Busset; I lead science and engineering for Transportation Network Design at Amazon. This is a cursus of five sessions, and today is the first.</p>
           <p>The goal on the slide is the promise: by the end you have the tools, and the knowledge to use them, whether you are a research scientist writing papers or an applied scientist shipping models. You already formulate and solve; this cursus is about what becomes possible when an agent does much of the reading, writing and running.</p>
-          <p><strong>Transition:</strong> “Before I say more, I’m giving an agent a problem. It works while I talk, and we check it at the end.”</p>
+          <p><strong>Transition:</strong> “Before I say more, here is where agents are in research today.”</p>
+        </details>
+      </section>
+
+      <section id="frontier" data-slide tabindex="-1" aria-labelledby="frontier-title">
+        <p class="eyebrow">Where agents are now · Mathematics</p>
+        <h2 id="frontier-title">How an OpenAI model proved a conjecture open since 1991.</h2>
+        <div class="fr" data-fr>
+          <figure class="fr-fig">
+            <div class="fr-scroll" role="region" tabindex="0" aria-label="Who did what, and when: people, OpenAI, the model and Lean, from 1991 to October 2026">
+            <svg class="fr-svg" viewBox="0 0 1100 232" role="img" aria-labelledby="fr-desc">
+              <!-- Lanes: who acts. Columns: when, with a break between 2019 and 2026. Each part names the step that adds it
+                   (data-l, 1 to 4); the script lights the current step. -->
+              <path class="fr-lane" d="M108 58 H366 M382 58 H1096 M108 108 H366 M382 108 H1096 M108 158 H366 M382 158 H1096 M108 208 H366 M382 208 H1096"/>
+              <text class="fr-gap" x="374" y="20" text-anchor="middle">…</text>
+              <text class="fr-who" x="0" y="62">People</text>
+              <text class="fr-who" x="0" y="112">OpenAI</text>
+              <text class="fr-who" x="0" y="154">Model</text><text class="fr-whosub" x="0" y="171">unreleased</text>
+              <text class="fr-who" x="0" y="204">Lean</text><text class="fr-whosub" x="0" y="221">proof checker</text>
+              <g data-l="1"><text class="fr-date" x="172" y="20" text-anchor="middle">1991</text></g>
+              <g data-l="1"><text class="fr-date" x="306" y="20" text-anchor="middle">2019</text></g>
+              <g data-l="1"><text class="fr-date" x="448" y="20" text-anchor="middle">2026</text></g>
+              <g data-l="2"><text class="fr-date" x="584" y="20" text-anchor="middle">23–24 Sept</text></g>
+              <g data-l="2"><text class="fr-date" x="722" y="20" text-anchor="middle">18 Oct</text></g>
+              <g data-l="3"><text class="fr-date" x="860" y="20" text-anchor="middle">19 Oct</text></g>
+              <g data-l="4"><text class="fr-date" x="998" y="20" text-anchor="middle">26 Oct</text></g>
+              <g data-l="1">
+                <rect class="fr-box" x="108" y="38" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="172" y="55" text-anchor="middle">Sogge asks</text>
+                <text class="fr-s" x="172" y="72" text-anchor="middle">the question</text>
+              </g>
+              <g data-l="1">
+                <rect class="fr-box" x="242" y="38" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="306" y="55" text-anchor="middle">2-D case</text>
+                <text class="fr-s" x="306" y="72" text-anchor="middle">settled</text>
+              </g>
+              <g data-l="1">
+                <rect class="fr-box" x="384" y="88" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="448" y="105" text-anchor="middle">Poses ≈4,000</text>
+                <text class="fr-s" x="448" y="122" text-anchor="middle">open problems</text>
+              </g>
+              <g data-l="2">
+                <path class="fr-edge" d="M512 108 H584 V129"/><path class="fr-head" d="M584 138 l-5 -9 h10 z"/>
+                <path class="fr-edge fr-dash" d="M306 78 V158 H511"/><path class="fr-head" d="M520 158 l-9 -5 v10 z"/>
+                <text class="fr-tag" x="316" y="150">builds on their work</text>
+              </g>
+              <g data-l="2">
+                <rect class="fr-box" x="520" y="138" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="584" y="155" text-anchor="middle">3-D, 4-D cases</text>
+                <text class="fr-s" x="584" y="172" text-anchor="middle">4 papers</text>
+              </g>
+              <g data-l="2"><path class="fr-edge" d="M648 158 H650"/><path class="fr-head" d="M658 158 l-8 -5 v10 z"/></g>
+              <g data-l="2">
+                <rect class="fr-box" x="658" y="138" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="722" y="155" text-anchor="middle">All dimensions</text>
+                <text class="fr-s" x="722" y="172" text-anchor="middle">builds on them</text>
+              </g>
+              <g data-l="3">
+                <path class="fr-edge" d="M722 178 V208 H787"/><path class="fr-head" d="M796 208 l-9 -5 v10 z"/>
+                <rect class="fr-box" x="796" y="188" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="860" y="205" text-anchor="middle">Checks every</text>
+                <text class="fr-s" x="860" y="222" text-anchor="middle">step of the proof</text>
+              </g>
+              <g data-l="4">
+                <path class="fr-edge" d="M924 208 H998 V137"/><path class="fr-head" d="M998 128 l-5 9 h10 z"/>
+                <rect class="fr-box" x="934" y="88" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="998" y="105" text-anchor="middle">Releases it</text>
+                <text class="fr-s" x="998" y="122" text-anchor="middle">as raw data</text>
+              </g>
+              <g data-l="4">
+                <path class="fr-head" d="M998 79 l-5 9 h10 z"/>
+                <rect class="fr-box" x="934" y="38" width="128" height="40" rx="4"/>
+                <text class="fr-t" x="998" y="55" text-anchor="middle">Experts read</text>
+                <text class="fr-s" x="998" y="72" text-anchor="middle">and judge it</text>
+              </g>
+            </svg>
+            </div>
+            <figcaption class="visually-hidden" id="fr-desc">How an OpenAI model proved Sogge’s local smoothing conjecture, in four lanes: people, OpenAI, the model, and Lean, a proof checker. Step 1, pose: in 1991 Christopher Sogge asks the question; in 2019 people settle it in two dimensions; in 2026 OpenAI poses it to an unreleased model, among about 4,000 open problems. Step 2, prove: on 23 and 24 September the model settles the three-dimensional case and part of the four-dimensional one, in four papers, building on people’s work; on 18 October it proves every dimension, building on those papers. Step 3, check: on 19 October Lean checks every step of the proof. Step 4, release: on 26 October OpenAI releases it as raw data, and experts read and judge it. Step 5: you do not need to follow the math; by session 5 you will run research this way.</figcaption>
+          </figure>
+          <div class="fr-row">
+            <div class="fr-chips" role="group" aria-label="Build the run one step at a time" hidden>
+              <button type="button" class="fr-chip" data-fr-chip aria-pressed="false" disabled><span class="fr-n" aria-hidden="true">1</span>Pose</button>
+              <button type="button" class="fr-chip" data-fr-chip aria-pressed="false" disabled><span class="fr-n" aria-hidden="true">2</span>Prove</button>
+              <button type="button" class="fr-chip" data-fr-chip aria-pressed="false" disabled><span class="fr-n" aria-hidden="true">3</span>Check</button>
+              <button type="button" class="fr-chip" data-fr-chip aria-pressed="false" disabled><span class="fr-n" aria-hidden="true">4</span>Release</button>
+              <button type="button" class="fr-chip" data-fr-chip aria-pressed="false" disabled><span class="fr-n" aria-hidden="true">5</span>You</button>
+            </div>
+            <ol class="fr-says">
+              <li data-fr-say><b>1 · Pose.</b> One of about 4,000 open problems given to the same model.</li>
+              <li data-fr-say><b>2 · Prove.</b> About 3 hours of thinking per result, on average; some build on earlier ones.</li>
+              <li data-fr-say><b>3 · Check.</b> A program, not a person, verifies every step.</li>
+              <li data-fr-say><b>4 · Release.</b> Published as raw data; people judge what it means.</li>
+              <li data-fr-say class="fr-you">You don’t need to follow the math. By session 5, you will run research this way.</li>
+            </ol>
+          </div>
+          <p class="visually-hidden" role="status" data-fr-status></p>
+        </div>
+        <p class="cite">Source: OpenAI, <cite>Local smoothing for the Euclidean wave equation</cite>, 2026, and its release notes in <a href="https://github.com/openai/math">github.com/openai/math</a>.</p>
+        <details class="notes"><summary>Speaker notes</summary>
+          <p><strong>Talk track:</strong> we start at the frontier. In 1991 Christopher Sogge asked how much a wave can grow when it comes to a focus, averaged over a short time. Several famous problems follow from it, among them Kakeya: a set holding a needle in every direction, however thin, has full dimension. Press each step as you say it.</p>
+          <p><strong>1, Pose.</strong> People settled two dimensions in 2019. OpenAI gave the question to an unreleased model, one of about 4,000 open problems, most posed the same way.</p>
+          <p><strong>2, Prove.</strong> About three hours of thinking per result, on average. In September the model settled three dimensions and part of four, in four papers; on 18 October, every dimension, building on those papers and on people’s.</p>
+          <p><strong>3, Check.</strong> The next day Lean, a program that checks every step of a proof, accepted it. It checks the proof, not that the statement is the right one: people still read that.</p>
+          <p><strong>4, Release.</strong> Published on 26 October as raw data. Experts are reading the 59-page paper (no verdict yet on 7 November 2026). In an earlier batch, three papers were withdrawn after a sign error.</p>
+          <p><strong>5.</strong> You don’t need any of this math. Watch the steps: pose, prove, check, release. By session 5, you run research that way.</p>
+          <p><strong>Transition:</strong> “Let’s start small. I’m giving an agent a problem now; it works while I talk.”</p>
         </details>
       </section>
 
       <section id="cold-open" data-slide tabindex="-1" aria-labelledby="cold-open-title">
         <p class="eyebrow">Cold open · Launched now</p>
-        <h2 id="cold-open-title">An agent writes the LP, and proves its answer.</h2>
+        <h2 id="cold-open-title">Today we start small: an agent solves a word problem, and we check its answer.</h2>
         <figure class="process-figure">
           <ol class="process" aria-label="What the agent does">
-            <li><span class="label">Input</span><strong>A short production word problem</strong></li>
+            <li><span class="label">The problem</span><strong>A short production word problem</strong></li>
             <li><span class="label">The agent</span><strong>Writes the LP, solves it on HiGHS</strong></li>
-            <li><span class="label">The certificate</span><strong class="accent">Primal feasible, dual feasible, zero gap</strong></li>
+            <li><span class="label">The check</span><strong class="accent">Primal feasible, dual feasible, zero gap</strong></li>
           </ol>
         </figure>
         <p class="aside">Running while we talk. We check it at the end.</p>
-        <details class="notes" data-minutes="1.5"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
+          <p>The same steps as OpenAI’s run, at a size we can check by hand: we pose a problem, an agent works on it, and a certificate checks the answer.</p>
           <p><strong>Before class:</strong> reset the demo, check that <code>git status</code> is empty, sync the session venv, log in to the CLI, open a terminal in <code>cursus/demos/cold-open/</code> and type the launch command there, without pressing Enter.</p>
           <p><strong>Claude Code:</strong> <code>claude -p "$(cat prompt.txt)" --permission-mode acceptEdits --allowedTools "Bash(uv run:*)" --output-format stream-json --verbose</code></p>
           <p><strong>Codex:</strong> <code>UV_CACHE_DIR="$PWD/work/.uv-cache" codex exec --sandbox workspace-write "$(cat prompt.txt)"</code></p>
@@ -328,7 +487,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
             <li><span class="label">The Arena</span><strong class="accent">Improve a policy by directing agents</strong></li>
           </ol>
         </figure>
-        <details class="notes" data-minutes="2"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
           <p>While it works, here is what this technology opens for a scientist: one new thing per session.</p>
           <p><strong>Today, Fundamentals:</strong> what a model and an agent really are, then you drive one, up to a word problem turned into a model a checker certifies. That is what is running behind me.</p>
           <p><strong>Research agents:</strong> a team of agents drafts a literature review, and a write-up from your own experiment logs, with every citation traceable.</p>
@@ -336,24 +495,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           <p><strong>Deploying:</strong> every merge re-solves the canonical instance on a pinned open solver and regenerates the study.</p>
           <p><strong>The Arena:</strong> a cohort tournament on a rolling-horizon problem; you improve your policy by filing issues to agents, and it is ranked on instances nobody has seen.</p>
           <p>One problem family runs through all five. Tonight’s take-home is an electric-truck middle-mile network, the world I work in.</p>
-        </details>
-      </section>
-
-      <section id="discovery" data-slide tabindex="-1" aria-labelledby="discovery-title">
-        <p class="eyebrow">Already in research · Mathematics</p>
-        <h2 id="discovery-title">AlphaEvolve rediscovered most best-known solutions on 67 problems, and improved several.</h2>
-        <figure class="process-figure">
-          <ol class="process loop" aria-label="The AlphaEvolve loop, repeated each round">
-            <li><span class="label">Propose</span><strong>A model writes a program</strong></li>
-            <li><span class="label">Score</span><strong>Evaluated automatically</strong></li>
-            <li><span class="label">Evolve</span><strong class="accent">The best programs seed the next round</strong><span class="loop-mark" aria-hidden="true">↺</span></li>
-          </ol>
-        </figure>
-        <p class="cite">Source: Georgiev, Gómez-Serrano, Tao, Wagner, <cite>Mathematical exploration and discovery at scale</cite>, <a href="https://arxiv.org/abs/2511.02864">arXiv 2511.02864</a>, v3 2025-12-22.</p>
-        <details class="notes" data-minutes="1.5"><summary>Speaker notes</summary>
-          <p>Not only software: research mathematics, across analysis, combinatorics, geometry and number theory. AlphaEvolve is a Google DeepMind coding agent, and Terence Tao is among the authors of this paper.</p>
-          <p>The mechanism: a model proposes programs, an automatic evaluator scores them, and the best programs seed the next round, at a scale no person could try by hand.</p>
-          <p>That loop, a generator plus something that scores it, is a pattern you can build for your own problems.</p>
+          <p>Together they cover the steps of the OpenAI run you just saw: pose a problem, let agents work on it, check the result, release it so others can check it too.</p>
         </details>
       </section>
 
@@ -368,7 +510,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </ol>
         </figure>
         <p class="band">Interrupt any time.</p>
-        <details class="notes" data-minutes="1.5"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
           <p>We have two hours today. The rhythm: I explain an idea briefly, show it on a real agent, live, then we discuss what it did and why.</p>
           <p>Interrupt any time. If something is unclear to you, it is unclear to someone else too, and a question in the middle beats one at the end.</p>
           <p>You drive your own agent in the homework.</p>
@@ -399,7 +541,7 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
           </div>
           <p data-predict-status role="status"></p>
         </section>
-        <details class="notes" data-minutes="6"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
           <ol>
             <li>Glance at the terminal: did the run finish? Claude Code: the last line is the JSON <code>result</code> event with <code>"subtype":"success"</code>. Codex: after the file diff, a <code>tokens used</code> line and its count, then the final answer printed once more. Still running, an error, or neither: use the fallback below.</li>
             <li>Hands up for each choice; press Lock in with the majority. Do not reveal yet.</li>
@@ -420,9 +562,9 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
         <blockquote class="discipline">
           <p>Never raise an agent’s autonomy past your ability to verify the <em>solution</em>, not just the code.</p>
         </blockquote>
-        <details class="notes" data-minutes="1.5"><summary>Speaker notes</summary>
+        <details class="notes"><summary>Speaker notes</summary>
           <p><strong>Do:</strong> write the sentence on the board.</p>
-          <p>What made the cold open trustworthy was the certificate, not the agent’s word.</p>
+          <p>What made the cold open trustworthy was the certificate, not the agent’s word. The OpenAI proof is the same at a larger scale: Lean checked it, and people still check that it proves the right statement.</p>
           <p>Read the sentence as a licence, not a brake: each session hands agents more, and each adds the checks that make that safe. Autonomy rises as fast as verification does. It goes on the board today and stays the rule for the whole cursus.</p>
           <p><strong>Handoff:</strong> “Let’s look inside an agent.”</p>
         </details>
@@ -807,5 +949,60 @@ figure:has(> [data-prob-chart]) > figcaption { color: var(--secondary); margin-b
 })();
 </script>
   <!-- shared-script:end -->
+  <script>/* Page-specific: a diagram region is a tab stop only while it scrolls. Clicking a diagram that does not
+   scroll then leaves focus on its slide, so the clicker and the arrow keys still turn slides. */
+(function () {
+  'use strict';
+  function sync(region) {
+    var scrolls = region.scrollWidth > region.clientWidth + 1 || region.scrollHeight > region.clientHeight + 1;
+    if (scrolls) region.setAttribute('tabindex', '0');
+    else region.removeAttribute('tabindex');
+  }
+  function init() {
+    var regions = Array.from(document.querySelectorAll('[data-slide] [role="region"][tabindex="0"]'));
+    if (!('ResizeObserver' in window)) return regions.forEach(sync);
+    // A size change covers first layout, resizing, rotation and a hidden slide being shown.
+    var observer = new ResizeObserver(function (entries) { entries.forEach(function (entry) { sync(entry.target); }); });
+    regions.forEach(function (region) { observer.observe(region); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+  <script>/* Page-specific: frontier, build the run one step at a time: pose, prove, check, release, then you.
+   It opens on step 1; a chip lights its step's parts and shows its sentence. Without the script, and in print,
+   the whole run and all five sentences show. */
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-fr]');
+  if (!root) return;
+  var chips = Array.from(root.querySelectorAll('[data-fr-chip]'));
+  var says = Array.from(root.querySelectorAll('[data-fr-say]'));
+  var row = root.querySelector('.fr-chips');
+  var status = root.querySelector('[data-fr-status]');
+  var slide = root.closest('[data-slide]');
+  if (!chips.length || chips.length !== says.length || !row || !status) return;
+
+  // A pointer press hands focus back to the slide, so the clicker keeps turning slides; a keyboard press keeps it.
+  function settle(event) {
+    if (event.detail > 0 && slide) slide.focus({ preventScroll: true });
+  }
+  function show(step, announce) {
+    root.setAttribute('data-fr-at', String(step));
+    chips.forEach(function (chip, i) { chip.setAttribute('aria-pressed', String(i + 1 === step)); });
+    says.forEach(function (say, i) { say.hidden = i + 1 !== step; });
+    if (announce) status.textContent = 'Step ' + step + ' of ' + says.length + '. ' + says[step - 1].textContent.trim();
+  }
+  chips.forEach(function (chip, i) {
+    chip.disabled = false;
+    chip.addEventListener('click', function (event) {
+      show(i + 1, true);
+      settle(event);
+    });
+  });
+  row.hidden = false;
+  show(1, false);
+})();
+</script>
 </body>
 </html>
