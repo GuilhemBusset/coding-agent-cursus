@@ -61,7 +61,7 @@ jobs:
       # The turn-in script, skill, rulesets and docs (ADR 0009). Offline: temp repos,
       # local bare remotes and a fake gh. uv is pinned to the version Session 1 uses.
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           version: '0.11.28'
       - name: Turn-in tests

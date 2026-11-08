@@ -20,6 +20,10 @@
 #   -DryRun       $env:CURSUS_DRY_RUN = '1'    print the plan and change nothing
 #   -Dir DIR      $env:CURSUS_DIR = 'DIR'      where to clone (default ~\coding-agent-cursus)
 #
+# A download can fail for a moment (a 504 from GitHub, a dropped connection): each official
+# installer, and each sync step of prepare.py, is tried again after 10, 30 and 60 seconds before
+# the step fails. The tests shorten that with CURSUS_RETRY_DELAYS (whole seconds, space-separated).
+#
 # Written for Windows PowerShell 5.1, the version Windows ships: keep it ASCII and avoid
 # 7-only syntax (pipeline chains, ternaries, null-coalescing operators, $IsWindows). Run
 # through iex it never calls `exit`, which would close the window; it sets $LASTEXITCODE.
@@ -114,6 +118,17 @@ function Invoke-CursusSetup([hashtable]$State) {
     if (-not $dir) { $dir = [string]$env:CURSUS_DIR }
     if (@('', 'claude', 'codex', 'both') -notcontains $agent) {
         Stop-Setup 'options' "-Agent must be claude, codex or both, not '$agent'" 'rerun with CURSUS_AGENT set to claude, codex or both'
+    }
+    # Seconds to wait before each new attempt of a failed installer (prepare.py reads the same).
+    $delays = @(10, 30, 60)
+    if ($env:CURSUS_RETRY_DELAYS) {
+        $delays = @()
+        foreach ($d in @($env:CURSUS_RETRY_DELAYS -split '\s+' | Where-Object { $_ })) {
+            if ($d -notmatch '^\d+$') {
+                Stop-Setup 'options' "CURSUS_RETRY_DELAYS must be whole seconds separated by spaces, not '$($env:CURSUS_RETRY_DELAYS)'" 'Remove-Item Env:CURSUS_RETRY_DELAYS'
+            }
+            $delays += [int]$d
+        }
     }
     $repoSlug = 'GuilhemBusset/coding-agent-cursus'
     if ($env:CURSUS_REPO) { $repoSlug = $env:CURSUS_REPO }
@@ -313,18 +328,29 @@ function Invoke-CursusSetup([hashtable]$State) {
             }
             Say "${tool}: installing $($how[$tool].Split(',')[0])"
             $before = Get-UserPath
-            $code = Invoke-Installer $tool $installers[$tool]
-            Update-SessionPath
-            $have[$tool] = Get-ToolVersion $tool
-            if ($tool -eq 'claude' -and -not $have[$tool]) {
-                # Claude Code's launcher is ~\.local\bin\claude.exe; put that folder on the user Path if needed.
-                $bin = Join-Path $userHome '.local\bin'
-                if (Test-Path (Join-Path $bin 'claude.exe')) {
+            $attempt = 1
+            while ($true) {
+                $code = Invoke-Installer $tool $installers[$tool]
+                Update-SessionPath
+                $have[$tool] = Get-ToolVersion $tool
+                if ($tool -eq 'claude' -and -not $have[$tool]) {
+                    # Claude Code's launcher is ~\.local\bin\claude.exe; put that folder on the user Path if needed.
+                    $bin = Join-Path $userHome '.local\bin'
                     $user = Get-UserPath
-                    [Environment]::SetEnvironmentVariable('Path', ((@($user, $bin) | Where-Object { $_ }) -join ';'), 'User')
-                    Update-SessionPath
-                    $have[$tool] = Get-ToolVersion $tool
+                    if ((Test-Path (Join-Path $bin 'claude.exe')) -and (@(([string]$user).Split(';')) -notcontains $bin)) {
+                        [Environment]::SetEnvironmentVariable('Path', ((@($user, $bin) | Where-Object { $_ }) -join ';'), 'User')
+                        Update-SessionPath
+                        $have[$tool] = Get-ToolVersion $tool
+                    }
                 }
+                # A download can fail for a moment, so a failed attempt is tried again. Failed means a
+                # nonzero exit, or no tool at the floor afterwards: iex can hide a native command's
+                # exit code. Rerunning an installer is safe.
+                if (($code -eq 0 -and (Test-Floor $have[$tool] $floor[$tool])) -or $attempt -gt $delays.Count) { break }
+                $wait = $delays[$attempt - 1]
+                Say "${tool}: the installer did not finish (exit $code; attempt $attempt of $($delays.Count + 1)); trying again in $wait s"
+                Start-Sleep -Seconds $wait
+                $attempt++
             }
             if ($code -ne 0 -or -not $have[$tool]) {
                 Stop-Setup $steps[$tool] "the $tool installer did not finish (exit $code; log above)" $installers[$tool]

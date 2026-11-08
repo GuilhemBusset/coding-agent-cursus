@@ -116,6 +116,83 @@ def stubbed_tools(box: Box) -> None:
     box.os_release(DEBIAN)
 
 
+def flaky_uv_installer(box: Box, curl_fails: int, installer_fails: int) -> None:
+    """uv missing, and a curl whose download of uv's installer fails `curl_fails` times (as a 504),
+    then serves an installer that fails `installer_fails` times, then puts a uv in ~/.local/bin."""
+    for name in ("uv", "mise"):
+        box.stub(name)
+    (box.root / "uv-stub").write_bytes((box.bin / "uv").read_bytes())
+    (box.bin / "uv").unlink()
+    count = box.root / "count"
+    (box.root / "uv-install.sh").write_text(
+        f'n=$(cat "{count}.runs" 2>/dev/null); n=$((${{n:-0}} + 1)); echo "$n" > "{count}.runs"\n'
+        f'if [ "$n" -le {installer_fails} ]; then echo "uv installer: download failed (504)" >&2; exit 1; fi\n'
+        f'mkdir -p "$HOME/.local/bin" && cat "{box.root}/uv-stub" > "$HOME/.local/bin/uv" && chmod +x "$HOME/.local/bin/uv"\n')
+    box.stub("curl", '#!/bin/sh\necho "curl $*" >> "$STUB_LOG"\n'
+                     'if [ "$1" = --version ]; then echo "curl 8.5.0"; exit 0; fi\n'
+                     'case "$*" in *astral.sh/uv/*) ;; *) exit 0 ;; esac\n'
+                     f'n=$(cat "{count}.downloads" 2>/dev/null); n=$((${{n:-0}} + 1)); echo "$n" > "{count}.downloads"\n'
+                     f'if [ "$n" -le {curl_fails} ]; then echo "curl: (22) The requested URL returned error: 504" >&2; exit 22; fi\n'
+                     f'cat "{box.root}/uv-install.sh"\n')
+
+
+@pytest.mark.parametrize(("curl_fails", "installer_fails"), [(1, 0), (0, 1)], ids=["download", "installer"])
+def test_an_installer_that_fails_once_is_tried_again(tmp_path, curl_fails, installer_fails):
+    box = Box(tmp_path)
+    stubbed_tools(box)
+    flaky_uv_installer(box, curl_fails, installer_fails)
+    repo = course(tmp_path, {"01-alpha": ("mise.toml", "pyproject.toml", "uv.lock")})
+    result = box.run(["bash", str(repo / "setup/student/install.sh"), "--yes", "--agent", "claude", "--no-login"])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert len([c for c in box.calls() if c.startswith("curl ") and "astral.sh/uv/" in c]) == 2
+    assert "[setup] uv: installed 0.11.28" in result.stdout
+    assert "[setup] sessions/01-alpha: synced" in result.stdout
+
+
+def test_an_installer_that_keeps_failing_stops_after_its_retries(tmp_path):
+    box = Box(tmp_path)
+    stubbed_tools(box)
+    flaky_uv_installer(box, curl_fails=99, installer_fails=0)
+    repo = course(tmp_path, {"01-alpha": ("mise.toml", "pyproject.toml", "uv.lock")})
+    result = box.run(["bash", str(repo / "setup/student/install.sh"), "--yes", "--agent", "claude", "--no-login"])
+    assert result.returncode == 1
+    # Tried once, then once after each of the sandbox's three retry delays, and no more.
+    assert len([c for c in box.calls() if c.startswith("curl ") and "astral.sh/uv/" in c]) == 4
+    assert "FAILED at user tools: the uv installer failed" in result.stdout
+    assert "installed but is not found" not in result.stdout
+    assert not [c for c in box.calls() if c.startswith("mise ") and "--version" not in c]
+
+
+@pytest.mark.parametrize("delays", ["1 soon", "[0-9]*"])
+def test_retry_delays_that_are_not_whole_seconds_stop_before_any_install(tmp_path, delays):
+    box = Box(tmp_path)
+    stubbed_tools(box)
+    flaky_uv_installer(box, curl_fails=0, installer_fails=0)
+    repo = course(tmp_path, {"01-alpha": ("mise.toml", "pyproject.toml", "uv.lock")})
+    result = box.run(["bash", str(repo / "setup/student/install.sh"), "--yes", "--agent", "claude", "--no-login"],
+                     CURSUS_RETRY_DELAYS=delays)
+    assert result.returncode == 1 and "FAILED at options" in result.stdout
+    assert not [c for c in box.calls() if c.startswith("curl ") and "--version" not in c]
+
+
+def test_windows_installer_that_keeps_failing_stops_after_its_retries(tmp_path):
+    box = Box(tmp_path)
+    stubbed_tools(box)
+    (box.bin / "uv").unlink()
+    box.stub("winget")
+    repo = course(tmp_path, {"01-alpha": ("mise.toml", "pyproject.toml", "uv.lock")})
+    # uv's installer cannot be downloaded: every request goes to a proxy on a closed port.
+    proxy = "http://127.0.0.1:9"
+    result = box.run([powershell(), "-NoProfile", "-File", str(repo / "setup/student/install.ps1"), "-Yes", "-NoLogin",
+                      "-Agent", "claude"], OS="Windows_NT", USERPROFILE=str(box.home),
+                     XDG_CACHE_HOME=str(box.root / "host-cache"), HTTPS_PROXY=proxy, https_proxy=proxy,
+                     HTTP_PROXY=proxy, http_proxy=proxy)
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert len(re.findall(r"^\[setup\] uv: .*attempt \d of 4", result.stdout, re.MULTILINE)) == 3, result.stdout
+    assert "FAILED at user tools: the uv installer did not finish" in result.stdout
+    assert not [c for c in box.calls() if c.startswith("mise ") and "--version" not in c]
+
+
 def test_existing_clone_on_a_feature_branch_is_left_as_it_is(tmp_path):
     box = Box(tmp_path)
     stubbed_tools(box)

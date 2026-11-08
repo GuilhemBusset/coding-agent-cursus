@@ -20,6 +20,10 @@
 #   --dry-run      CURSUS_DRY_RUN=1    print the plan and change nothing
 #   --dir DIR      CURSUS_DIR=DIR      where to clone (default ~/coding-agent-cursus)
 #
+# A download can fail for a moment (a 504 from GitHub, a dropped connection): each official
+# installer, and each sync step of prepare.py, is tried again after 10, 30 and 60 seconds before
+# the step fails. The tests shorten that with CURSUS_RETRY_DELAYS (whole seconds, space-separated).
+#
 # Written for Bash 3.2, the /bin/bash macOS ships: no associative arrays, ${var,,} or mapfile.
 # Everything runs inside main(), so bash has read the whole script before anything runs and
 # no command can swallow the rest of it from a piped stdin.
@@ -92,7 +96,7 @@ EOF
   printf '%s' "${changed# }"
 }
 
-usage() { sed -n '2,24p' "${BASH_SOURCE[0]:-/dev/null}" 2>/dev/null | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,25p' "${BASH_SOURCE[0]:-/dev/null}" 2>/dev/null | sed 's/^# \{0,1\}//'; }
 
 main() {
   local yes agent no_login dry_run dir
@@ -119,6 +123,11 @@ main() {
   truthy "$no_login" && no_login=1 || no_login=""
   truthy "$dry_run" && dry_run=1 || dry_run=""
   case $agent in "" | claude | codex | both) ;; *) fail "options" "--agent must be claude, codex or both, not '$agent'" "rerun with --agent claude, --agent codex or --agent both" ;; esac
+  # Seconds to wait before each new attempt of a failed installer (prepare.py reads the same).
+  # Only digits and spaces, checked before it is ever split: then no word of it can be a glob.
+  local delays
+  delays=${CURSUS_RETRY_DELAYS:-10 30 60}
+  case $delays in *[!0-9\ ]*) fail "options" "CURSUS_RETRY_DELAYS must be whole seconds separated by spaces, not '$delays'" "unset CURSUS_RETRY_DELAYS" ;; esac
 
   local repo raw_base clone_url sysroot self_dir self_repo src
   repo=${CURSUS_REPO:-GuilhemBusset/coding-agent-cursus}
@@ -428,6 +437,22 @@ $sudo dnf install -y gh"
     tail -n 15 "$log" | sed 's/^/  | /'
     return 1
   }
+  # quiet, tried again after each of $delays while it fails: an official installer downloads, and
+  # a download can fail for a moment. Rerunning an installer is safe. The last attempt shows its log.
+  retried() { # name command...
+    local name=$1 attempt=1 total=1 d
+    shift
+    for d in $delays; do total=$((total + 1)); done
+    for d in $delays; do
+      log="$work/$name.log"
+      if "$@" >"$log" 2>&1 </dev/null; then return 0; fi
+      tail -n 1 "$log" | sed 's/^/  | /'
+      say "$name: the installer failed (attempt $attempt of $total); trying again in $d s"
+      sleep "$d"
+      attempt=$((attempt + 1))
+    done
+    quiet "$name" "$@"
+  }
   sudo_ok() {
     [ -z "$sudo" ] || have sudo || fail "system tools" "sudo is not available, and installing $1 needs it" "install $1 as an administrator: see 'Install the tools' on the pre-work page, sessions/01-fundamentals/exercises/00-prework.html"
   }
@@ -483,8 +508,11 @@ $sudo dnf install -y gh"
             fail "system tools" "apt-get install failed (log above)" "sudo apt-get install -y$need_pkgs"
         fi
         if [ -n "$need_gh" ]; then
+          # The key goes to a file first, so that a failed download stops here instead of
+          # writing an empty keyring.
           { as_root mkdir -p -m 755 /etc/apt/keyrings /etc/apt/sources.list.d &&
-            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | as_root tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null &&
+            curl -fsSL --retry 3 -o "$work/githubcli-archive-keyring.gpg" https://cli.github.com/packages/githubcli-archive-keyring.gpg &&
+            as_root tee /etc/apt/keyrings/githubcli-archive-keyring.gpg <"$work/githubcli-archive-keyring.gpg" >/dev/null &&
             as_root chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg &&
             echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | as_root tee /etc/apt/sources.list.d/github-cli.list >/dev/null; } </dev/null ||
             fail "system tools" "could not add GitHub CLI's apt repository" "follow https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian"
@@ -536,12 +564,14 @@ $sudo dnf install -y gh"
   fi
 
   # --- 3. User tools: uv and mise, official installers at the pinned versions --------------
+  # Each installer runs as `curl <url> | sh` under pipefail: a failed download fails the attempt
+  # (and is tried again) instead of feeding an empty script to sh, which would exit 0.
   before=$(rc_state)
   if ok uv "$UV_FLOOR"; then
     say "uv: present $have_uv (>= $UV_FLOOR), left alone"
   else
     say "uv: installing $UV_VERSION from https://astral.sh/uv/$UV_VERSION/install.sh"
-    quiet uv env PATH="$orig_path" sh -c "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh" ||
+    retried uv env PATH="$orig_path" bash -c "set -o pipefail; curl -LsSf --retry 3 https://astral.sh/uv/$UV_VERSION/install.sh | sh" ||
       fail "user tools" "the uv installer failed (log above)" "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh"
     settle uv "$UV_FLOOR" "user tools" "curl -LsSf https://astral.sh/uv/$UV_VERSION/install.sh | sh"
     say "uv: installed $have_uv"
@@ -550,7 +580,7 @@ $sudo dnf install -y gh"
     say "mise: present $have_mise (>= $MISE_FLOOR), left alone"
   else
     say "mise: installing $MISE_VERSION from https://mise.run"
-    quiet mise env PATH="$orig_path" sh -c "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh" ||
+    retried mise env PATH="$orig_path" bash -c "set -o pipefail; curl -fsSL --retry 3 https://mise.run | MISE_VERSION=$MISE_VERSION sh" ||
       fail "user tools" "the mise installer failed (log above)" "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh"
     settle mise "$MISE_FLOOR" "user tools" "curl -fsSL https://mise.run | MISE_VERSION=$MISE_VERSION sh"
     say "mise: installed $have_mise"
@@ -565,12 +595,12 @@ $sudo dnf install -y gh"
     case $t in
       claude)
         say "claude: installing the current Claude Code from https://claude.ai/install.sh"
-        quiet claude env PATH="$orig_path" bash -c "curl -fsSL https://claude.ai/install.sh | bash" ||
+        retried claude env PATH="$orig_path" bash -c "set -o pipefail; curl -fsSL --retry 3 https://claude.ai/install.sh | bash" ||
           fail "agent" "the Claude Code installer failed (log above)" "curl -fsSL https://claude.ai/install.sh | bash"
         ;;
       codex)
         say "codex: installing the current Codex from https://chatgpt.com/codex/install.sh"
-        quiet codex env PATH="$orig_path" sh -c "curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh" ||
+        retried codex env PATH="$orig_path" bash -c "set -o pipefail; curl -fsSL --retry 3 https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh" ||
           fail "agent" "the Codex installer failed (log above)" "curl -fsSL https://chatgpt.com/codex/install.sh | sh"
         ;;
     esac

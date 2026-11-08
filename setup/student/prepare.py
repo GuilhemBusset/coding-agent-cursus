@@ -17,6 +17,10 @@ install.sh and install.ps1 run this after the clone and uv exist, the same way o
 4. Unless --no-check: run the latest session's setup check (exercises/check_setup.py), which
    proves the logins, the push and the agent, and shows its summary block; then the next steps.
 
+A step that downloads (`mise install`, `uv sync`) is tried again after 10, 30 and 60 seconds when
+it fails, since a download can fail for a moment (a 504 from GitHub). The tests shorten that with
+CURSUS_RETRY_DELAYS (whole seconds, space-separated), as install.sh and install.ps1 do.
+
 It never pulls, resets, switches or commits anything: a clone's branches, HEAD, index and files
 are left as they are. Standard library only, so it needs nothing but the Python uv provides.
 """
@@ -28,10 +32,12 @@ import os
 import stat
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 CONTRACT = ("mise.toml", "pyproject.toml", "uv.lock")
 HOOKS = ".githooks"
+RETRY_DELAYS_S = (10, 30, 60)
 
 
 def say(text: str) -> None:
@@ -83,11 +89,39 @@ def run_quiet(argv: list[str], cwd: Path) -> tuple[int, str]:
     return result.returncode, result.stdout
 
 
-def sync(repo: Path, session: Path) -> int:
+def retry_delays() -> tuple[int, ...] | None:
+    """The waits before each new attempt of a step that downloads: CURSUS_RETRY_DELAYS when set
+    and not empty, else RETRY_DELAYS_S. None when it is not whole seconds."""
+    raw = os.environ.get("CURSUS_RETRY_DELAYS", "")
+    if not raw:
+        return RETRY_DELAYS_S
+    words = raw.split()
+    if not all(w.isascii() and w.isdigit() for w in words):
+        return None
+    return tuple(int(w) for w in words)
+
+
+def run_retried(argv: list[str], cwd: Path, delays: tuple[int, ...], name: str) -> tuple[int, str]:
+    """run_quiet, tried again after each of `delays` while it fails. Returns the last attempt."""
+    for attempt, delay in enumerate(delays, start=1):
+        code, output = run_quiet(argv, cwd)
+        if code == 0:
+            return code, output
+        lines = output.strip().splitlines()
+        if lines:
+            print(f"  | {lines[-1]}", flush=True)
+        say(f"{name}: `{' '.join(argv)}` failed (exit {code}; attempt {attempt} of {len(delays) + 1}); "
+            f"trying again in {delay} s")
+        time.sleep(delay)
+    return run_quiet(argv, cwd)
+
+
+def sync(repo: Path, session: Path, delays: tuple[int, ...] = RETRY_DELAYS_S) -> int:
     name = session.relative_to(repo).as_posix()
     say(f"{name}: syncing (the first run downloads its Python and packages)")
     for argv in (["mise", "trust", "mise.toml"], ["mise", "install"], ["mise", "exec", "--", "uv", "sync", "--locked"]):
-        code, output = run_quiet(argv, session)
+        # mise trust only writes a local file; the other two download.
+        code, output = run_quiet(argv, session) if argv[1] == "trust" else run_retried(argv, session, delays, name)
         if code != 0:
             tail = "\n".join(output.strip().splitlines()[-15:])
             if tail:
@@ -105,12 +139,12 @@ def check_command(check: Path, repo: Path) -> str:
     return f"bash {rel.as_posix()}/check-setup.sh"
 
 
-def prepare_editor(repo: Path) -> int:
+def prepare_editor(repo: Path, delays: tuple[int, ...] = RETRY_DELAYS_S) -> int:
     """Install the pinned checker for the repository workspace, then its editor integration."""
     if (repo / "setup" / "pyproject.toml").is_file():
         command = ["uv", "sync", "--project", str(repo / "setup"), "--locked"]
         say("repository tooling: syncing setup/.venv from setup/uv.lock")
-        code, output = run_quiet(command, repo)
+        code, output = run_retried(command, repo, delays, "repository tooling")
         if code:
             tail = "\n".join(output.strip().splitlines()[-15:])
             if tail:
@@ -134,6 +168,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-check", action="store_true", help="do not run the setup check")
     args = parser.parse_args(argv)
     repo = args.repo.resolve()
+    delays = retry_delays()
+    if delays is None:
+        return fail("prepare", "CURSUS_RETRY_DELAYS must be whole seconds separated by spaces, "
+                    f"not {os.environ.get('CURSUS_RETRY_DELAYS')!r}", "unset CURSUS_RETRY_DELAYS")
 
     if not (repo / HOOKS).is_dir():
         return fail("prepare", f"{repo} is not a course clone (no {HOOKS}/ folder)", "pass --repo <your course clone>")
@@ -143,9 +181,9 @@ def main(argv: list[str] | None = None) -> int:
         return fail("session sync", f"no session under {repo / 'sessions'} has " + ", ".join(CONTRACT),
                     "check that the clone is complete (git status)")
     for session in found:
-        if sync(repo, session):
+        if sync(repo, session, delays):
             return 1
-    if prepare_editor(repo):
+    if prepare_editor(repo, delays):
         return 1
     check = latest_check(found)
     if check is None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 
+import pytest
 from student_sandbox import STUDENT, Box, course, git
 
 CONTRACT = ("mise.toml", "pyproject.toml", "uv.lock")
@@ -50,6 +51,37 @@ def test_a_failed_sync_names_the_step_and_the_command(tmp_path):
     assert result.returncode == 1
     assert "FAILED at session sync (sessions/02-beta): `mise install` exited 3" in result.stdout
     assert "Next: cd sessions/02-beta && mise install" in result.stdout
+    # Tried once, then once after each of the sandbox's three retry delays, and no more.
+    assert syncs(box)[str(repo / "sessions/02-beta")] == ["mise trust mise.toml", *["mise install"] * 4]
+
+
+@pytest.mark.parametrize("step", ["install", "exec -- uv sync --locked"])
+def test_a_download_that_fails_once_is_tried_again(tmp_path, step):
+    box, repo = fixture(tmp_path)
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"],
+                     MISE_FAIL=f"{step} @{repo / 'sessions/02-beta'}", MISE_FAIL_ONCE="1")
+    assert result.returncode == 0, result.stdout + result.stderr
+    calls = syncs(box)[str(repo / "sessions/02-beta")]
+    assert calls.count(f"mise {step}") == 2 and calls[-1] == SYNC[-1]
+    assert "[setup] sessions/02-beta: synced" in result.stdout
+
+
+def test_a_repository_tool_sync_that_fails_once_is_tried_again(tmp_path):
+    box, repo = fixture(tmp_path)
+    (repo / "setup/pyproject.toml").write_text("# repository tooling\n")
+    box.stub("uv", f'#!/bin/sh\necho "uv $*" >> "$STUB_LOG"\n'
+                   f'if [ ! -e "{tmp_path}/failed" ]; then : > "{tmp_path}/failed"; echo "504 Gateway Timeout"; exit 2; fi\n')
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert box.calls().count(f"uv sync --project {repo / 'setup'} --locked") == 2
+
+
+def test_retry_delays_that_are_not_whole_seconds_stop_before_any_sync(tmp_path):
+    box, repo = fixture(tmp_path)
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"],
+                     CURSUS_RETRY_DELAYS="1 soon")
+    assert result.returncode == 1 and "CURSUS_RETRY_DELAYS" in result.stdout
+    assert syncs(box) == {}
 
 
 def test_runs_the_latest_sessions_check_and_prints_the_next_steps(tmp_path):

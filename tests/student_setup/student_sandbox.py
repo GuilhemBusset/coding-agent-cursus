@@ -3,6 +3,7 @@
 Stubs log every call to $STUB_LOG as `<name> <args>` (mise adds `@<cwd>`), print a version for
 --version, and do nothing else. `uv run ... python ARGS` runs this interpreter on ARGS, so
 prepare.py runs for real. A few real programs (bash, coreutils, git when asked) are linked in.
+A failed download is tried again with no wait (CURSUS_RETRY_DELAYS), so three retries cost nothing.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ REPO = Path(__file__).resolve().parents[2]
 STUDENT = REPO / "setup/student"
 # What install.sh itself calls besides the tools it looks for.
 REAL = ["bash", "sh", "cat", "dirname", "sed", "cksum", "mktemp", "rm", "tail", "ls", "mkdir", "mv", "ln",
-        "chmod", "cut", "tr", "env", "head", "id", "tar", "gzip", "awk", "grep", "tee"]
+        "chmod", "cut", "tr", "env", "head", "id", "tar", "gzip", "awk", "grep", "tee", "sleep"]
 
 LOGGING = """#!/bin/sh
 echo "{name} $*" >> "$STUB_LOG"
@@ -27,8 +28,13 @@ exit 0
 MISE = """#!/bin/sh
 echo "mise $* @$(pwd)" >> "$STUB_LOG"
 if [ "$1" = --version ]; then echo "{version}"; exit 0; fi
+# MISE_FAIL: the call (and folder) that fails; with MISE_FAIL_ONCE set, only its first time.
 if [ -n "$MISE_FAIL" ]; then
-  case "$* @$(pwd)" in *"$MISE_FAIL"*) echo "stub mise failed"; exit 3 ;; esac
+  case "$* @$(pwd)" in *"$MISE_FAIL"*)
+    if [ -z "$MISE_FAIL_ONCE" ] || [ ! -e "$STUB_LOG.failed" ]; then
+      : > "$STUB_LOG.failed"; echo "stub mise failed"; exit 3
+    fi ;;
+  esac
 fi
 exit 0
 """
@@ -77,7 +83,7 @@ class Box:
         self.stub("uname", UNAME)
         self.env = {"PATH": str(self.bin), "HOME": str(self.home), "TMPDIR": str(self.tmp), "LANG": "C.UTF-8",
                     "STUB_LOG": str(self.log), "STUB_PYTHON": sys.executable, "CURSUS_SYSROOT": str(self.sysroot),
-                    "FAKE_OS": "Linux", "FAKE_ARCH": "x86_64", "MISE_FAIL": ""}
+                    "FAKE_OS": "Linux", "FAKE_ARCH": "x86_64", "MISE_FAIL": "", "CURSUS_RETRY_DELAYS": "0 0 0"}
 
     def stub(self, name: str, body: str | None = None, version: str | None = None) -> None:
         path = self.bin / name

@@ -90,7 +90,7 @@ jobs:
         env:
           SESSION: ${{ steps.where.outputs.session }}
         run: python3 ../../.github/scripts/session_pins.py
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ steps.pins.outputs.uv }}
       - name: pytest
@@ -133,7 +133,7 @@ jobs:
         env:
           SESSION: ${{ matrix.session }}
         run: python3 ../../.github/scripts/session_pins.py
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ steps.pins.outputs.uv }}
       # The whole session, then the exercises once per platform students use (ADR 0010):

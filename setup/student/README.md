@@ -97,6 +97,10 @@ the same place. After the clone, it runs [`prepare.py`](prepare.py) from the clo
 9. **Check.** It runs the latest session's setup check, which tests the logins, a push and your
    agent, and shows its summary block.
 
+A download can fail for a moment (GitHub answering 504, a dropped connection). So each official
+installer in steps 3 and 4, and `mise install` and `uv sync` in step 8, is tried again after 10,
+30 and 60 seconds before the step fails. Those waits come on top of the tools' own retries.
+
 Every tool already at or above the version the setup check requires (git 2.23, gh 2.0, uv 0.5,
 mise 2024.1.0; any version of the agents) is left alone: no upgrade and no second copy. After an
 install, the setup checks the version it now finds. If an older copy earlier on your `PATH`
