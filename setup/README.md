@@ -281,8 +281,9 @@ exempt (`per-file-ignores` in `ruff.toml`).
 
 `ruff.toml` sets `required-version` to the pinned version, so a Ruff of any other version, such as
 the one an editor's Ruff extension bundles, refuses the configuration instead of reporting
-differently. Point the extension at `setup/.venv/bin/ruff` (in VS Code, `ruff.path`, or
-`ruff.importStrategy` set to `fromEnvironment` with `setup/.venv` selected). To bump Ruff, change
+differently. The checked-in VS Code settings (`.vscode/settings.json` and `cursus.code-workspace`)
+set `ruff.path` to the Ruff in `setup/.venv`, so the Ruff extension runs the pinned version rather
+than its bundled one; point any other editor's Ruff at the same executable. To bump Ruff, change
 the pin in `setup/pyproject.toml` and `required-version` in `ruff.toml` together (a selector test
 fails when they differ), relock with `uv lock --project setup` (uv 0.11.28, as CI), and fix what
 the new version reports in the same pull request, leaving the exempt P00 files alone.

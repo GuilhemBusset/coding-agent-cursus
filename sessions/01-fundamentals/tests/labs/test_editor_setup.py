@@ -122,6 +122,16 @@ class LanguageServer:
             self.stdout.close()
 
 
+def test_the_editor_runs_the_pinned_ruff():
+    # ruff.toml's required-version refuses any other Ruff, such as the one the Ruff extension bundles.
+    pinned = executable(REPO / "setup/.venv", "ruff")
+    workspace = json.loads((REPO / "setup/cursus.code-workspace").read_text(encoding="utf-8"))["settings"]
+    folder = json.loads((REPO / ".vscode/settings.json").read_text(encoding="utf-8"))
+    for settings, variable in ((workspace, "${workspaceFolder:Repository}"), (folder, "${workspaceFolder}")):
+        candidates = [Path(path.replace(variable, str(REPO))) for path in settings.get("ruff.path", [])]
+        assert pinned in candidates, f"ruff.path must name {pinned.relative_to(REPO)}, the Ruff ruff.toml requires"
+
+
 def test_editor_reports_errors_in_each_project_and_resolves_session_packages(installed_workspace):
     repo, session, env, _ = installed_workspace
     workspace_path = REPO / "setup/cursus.code-workspace"

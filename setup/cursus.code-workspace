@@ -11,6 +11,10 @@
     ],
     "ty.diagnosticMode": "workspace",
     "ty.disableLanguageServices": false,
+    "ruff.path": [
+      "${workspaceFolder:Repository}/setup/.venv/bin/ruff",
+      "${workspaceFolder:Repository}/setup/.venv/Scripts/ruff.exe"
+    ],
     "rainbow_csv.virtual_alignment_mode": "always"
   },
   "extensions": {
