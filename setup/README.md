@@ -89,6 +89,66 @@ configuration on the second run. Record OS/runtime versions, both installation l
 `git status --short`; until actual execution is recorded these are owner obligations, not passes.
 No paid/live adapter evidence is claimed by this setup.
 
+### Session 2: API credentials and adapter diagnostic
+
+The supplied connection selects `gpt-5.4-mini-2026-03-17` through the OpenAI
+Responses API. Use an authorized project **API key**, with separately configured
+API billing and model access. [ChatGPT and API billing are separate](https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform);
+a coding-agent subscription or login does not prove API compatibility. Do not put
+credentials in source, a checked-in `.env`, command arguments, saved config or Pi's
+global auth store. Set them only in the process environment. For example, in Bash
+on Linux/macOS (private terminal; input is hidden):
+
+```bash
+read -rsp 'OpenAI API key: ' OPENAI_API_KEY
+export OPENAI_API_KEY
+```
+
+In Windows PowerShell 5.1:
+
+```powershell
+$apiSecret = Read-Host 'OpenAI API key' -AsSecureString
+$env:OPENAI_API_KEY = [System.Net.NetworkCredential]::new('', $apiSecret).Password
+```
+
+After setup, this command is free and deterministic on every student platform:
+
+```sh
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py --adapter-smoke --offline
+```
+
+It starts and cleans up a local fake compatible Responses endpoint, selects it
+through configuration/environment, and prints synthetic accounting for a tool
+call, result continuation and deadline failure. No API key is required. To opt in
+to **paid** API access, using the official OpenAI endpoint and selected snapshot:
+
+```sh
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py --adapter-smoke --live
+```
+
+The smoke has no retries, at most three attempts, two 256-output-token turns and
+a 5 ms timeout probe. It prints sanitized date/versions/settings, auth outcome,
+tool/continuation outcome, trace, usage and estimated token cost. An incomplete
+check exits nonzero. A timeout may still incur a charge with unknown usage.
+Neither CI nor default checks invoke `--live`. Clear the key afterwards with
+`unset OPENAI_API_KEY` in Bash or `Remove-Item Env:OPENAI_API_KEY` in PowerShell.
+
+For application routing, `createAdapter(config)` accepts providers `openai` and
+`openai-compatible`. An alias such as `workshop` resolves
+`COURSE_ENDPOINT_WORKSHOP` from the environment (HTTPS, or loopback HTTP; no URL
+userinfo/query/fragment). OpenAI's default alias `openai` uses its official `/v1`
+base URL without an override. Compatible providers use `COURSE_API_KEY`; OpenAI
+uses `OPENAI_API_KEY`. Keep URLs runtime-only and save aliases. Unsupported
+protocols/settings fail before a request. The dedicated `--live` smoke always
+uses the official OpenAI endpoint; `--offline` exercises the replaceable boundary.
+
+[Adapter verification](../sessions/02-research-agents/adapter-verification.md)
+records dated official sources, supported settings, prices and cost formula,
+per-run/classroom spending controls, provider-limit caveats and the migration
+checklist. It names **Guilhem Busset** as owner of the missing authorized live
+evidence and exact rerun. Live compatibility remains **unverified** until that
+evidence is recorded; the offline endpoint is not a live pass.
+
 ## Every clone: activate git hooks
 
 Prerequisites: Git and Bash (Git Bash on Windows).
