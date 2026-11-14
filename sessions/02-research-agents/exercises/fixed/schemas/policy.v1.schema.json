@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "policy.v1.schema.json",
+  "title": "policy v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "provisional": {
+      "const": true
+    },
+    "calibration": {
+      "const": "pending_live_pilot"
+    },
+    "gates": {
+      "type": "object",
+      "properties": {
+        "all_decisive": {
+          "const": true
+        },
+        "required_fact_fraction": {
+          "const": 0.8
+        },
+        "every_factual_span_valid": {
+          "const": true
+        },
+        "no_unsupported_decision": {
+          "const": true
+        },
+        "no_intervention": {
+          "const": true
+        }
+      },
+      "required": [
+        "all_decisive",
+        "required_fact_fraction",
+        "every_factual_span_valid",
+        "no_unsupported_decision",
+        "no_intervention"
+      ],
+      "additionalProperties": false
+    },
+    "budgets": {
+      "$ref": "common.v1.schema.json#/$defs/budgets"
+    },
+    "rating_bundle": {
+      "$ref": "common.v1.schema.json#/$defs/bundle"
+    },
+    "schedule": {
+      "type": "object",
+      "properties": {
+        "class": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              },
+              "variant_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+              },
+              "trial": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "case_id",
+              "variant_id",
+              "trial",
+              "seed"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "submission": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "case_id": {
+                "enum": [
+                  "A",
+                  "B",
+                  "C"
+                ]
+              },
+              "variant_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+              },
+              "trial": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "case_id",
+              "variant_id",
+              "trial",
+              "seed"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "class",
+        "submission"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "provisional",
+    "calibration",
+    "gates",
+    "budgets",
+    "rating_bundle",
+    "schedule"
+  ],
+  "additionalProperties": false
+}

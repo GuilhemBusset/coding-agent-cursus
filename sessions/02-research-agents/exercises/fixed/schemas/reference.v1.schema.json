@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reference.v1.schema.json",
+  "title": "reference v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "variant_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "assertion": {
+            "$ref": "common.v1.schema.json#/$defs/assertion"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "decisive": {
+            "type": "boolean"
+          },
+          "accepted_evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "common.v1.schema.json#/$defs/span"
+            },
+            "minItems": 0
+          },
+          "evidence_policy": {
+            "enum": [
+              "required",
+              "absence"
+            ]
+          },
+          "experiment_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "supersedes_fact_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 0,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "fact_id",
+          "assertion",
+          "required",
+          "decisive",
+          "accepted_evidence",
+          "evidence_policy",
+          "experiment_ids",
+          "supersedes_fact_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "required_uncertainty": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "subject": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "predicate": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "reason": {
+            "enum": [
+              "missing_evidence",
+              "conflicting_evidence",
+              "limited_scope"
+            ]
+          }
+        },
+        "required": [
+          "requirement_id",
+          "subject",
+          "predicate",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "corrections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "supersedes_source_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "affected_fact_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "source_id",
+          "supersedes_source_id",
+          "affected_fact_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "experiments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "experiment_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "experiment_id",
+          "source_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "variant_id",
+    "facts",
+    "required_uncertainty",
+    "corrections",
+    "experiments"
+  ],
+  "additionalProperties": false
+}

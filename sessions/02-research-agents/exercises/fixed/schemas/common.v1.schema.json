@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.v1.schema.json",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "assertion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "predicate": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "type": {
+              "const": "number"
+            },
+            "value": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tolerance": {
+              "type": "object",
+              "properties": {
+                "absolute": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "relative": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "absolute",
+                "relative"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "subject",
+            "predicate",
+            "type",
+            "value",
+            "unit",
+            "tolerance"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "predicate": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "type": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1
+            },
+            "unit": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "subject",
+            "predicate",
+            "type",
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "predicate": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "type": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            },
+            "unit": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "subject",
+            "predicate",
+            "type",
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "predicate": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "type": {
+              "const": "string_set"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "unit": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "subject",
+            "predicate",
+            "type",
+            "value",
+            "unit"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "span": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "source_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "kind": {
+              "const": "passage"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "source_id",
+            "kind",
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "kind": {
+              "const": "rows"
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "source_id",
+            "kind",
+            "start",
+            "end",
+            "columns"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ]
+        },
+        "input_tokens": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_tokens": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cache_read_tokens": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cache_write_tokens": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasoning_tokens": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "input_tokens",
+        "output_tokens",
+        "cache_read_tokens",
+        "cache_write_tokens",
+        "reasoning_tokens"
+      ],
+      "additionalProperties": false
+    },
+    "budgets": {
+      "type": "object",
+      "properties": {
+        "model_attempts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tool_invocations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total_tokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "model_attempts",
+        "tool_invocations",
+        "total_tokens"
+      ],
+      "additionalProperties": false
+    },
+    "bundle": {
+      "type": "object",
+      "properties": {
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "illustrative": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "revision",
+        "sha256",
+        "illustrative"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "not_found",
+            "invalid_input",
+            "timeout",
+            "service_error",
+            "cancelled",
+            "budget_exhausted"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "retryable"
+      ],
+      "additionalProperties": false
+    },
+    "stop": {
+      "enum": [
+        "completed",
+        "no_progress",
+        "model_budget",
+        "tool_budget",
+        "token_budget",
+        "invalid_output",
+        "service_error"
+      ]
+    },
+    "hashes": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "settings": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "evaluator": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "harness": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "prompt": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "rating_bundle": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "model",
+        "settings",
+        "corpus",
+        "evaluator",
+        "harness",
+        "prompt",
+        "rating_bundle"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "provisional": true,
+  "calibration": "pending_live_pilot",
+  "gates": {
+    "all_decisive": true,
+    "required_fact_fraction": 0.8,
+    "every_factual_span_valid": true,
+    "no_unsupported_decision": true,
+    "no_intervention": true
+  },
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "rating_bundle": {
+    "revision": "illustrative-contract-v1",
+    "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "illustrative": true
+  },
+  "schedule": {
+    "class": [
+      {
+        "case_id": "A",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261115
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261125
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261135
+      }
+    ],
+    "submission": [
+      {
+        "case_id": "A",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261115
+      },
+      {
+        "case_id": "A",
+        "variant_id": "public-1",
+        "trial": 2,
+        "seed": 20261115
+      },
+      {
+        "case_id": "A",
+        "variant_id": "public-1",
+        "trial": 3,
+        "seed": 20261115
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261125
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-1",
+        "trial": 2,
+        "seed": 20261125
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-1",
+        "trial": 3,
+        "seed": 20261125
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-1",
+        "trial": 1,
+        "seed": 20261135
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-1",
+        "trial": 2,
+        "seed": 20261135
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-1",
+        "trial": 3,
+        "seed": 20261135
+      }
+    ]
+  }
+}

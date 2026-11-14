@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-config.v1.schema.json",
+  "title": "run-config v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "variant_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "trial": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "mode": {
+      "enum": [
+        "class",
+        "submission"
+      ]
+    },
+    "evidence_kind": {
+      "enum": [
+        "synthetic",
+        "captured_live",
+        "replay"
+      ]
+    },
+    "replay_of": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "endpoint_alias": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "temperature": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sampling_seed": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "temperature",
+        "sampling_seed",
+        "max_output_tokens"
+      ],
+      "additionalProperties": false
+    },
+    "budgets": {
+      "$ref": "common.v1.schema.json#/$defs/budgets"
+    },
+    "policy_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "hashes": {
+      "$ref": "common.v1.schema.json#/$defs/hashes"
+    },
+    "rating_bundle": {
+      "$ref": "common.v1.schema.json#/$defs/bundle"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "workspace_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "fresh": {
+          "const": true
+        },
+        "supplied_inputs": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "question",
+              "context",
+              "prompt",
+              "tool_definitions",
+              "corpus_via_tools",
+              "output_contract"
+            ]
+          },
+          "minItems": 6,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "workspace_id",
+        "fresh",
+        "supplied_inputs"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "case_id",
+    "variant_id",
+    "trial",
+    "seed",
+    "mode",
+    "evidence_kind",
+    "replay_of",
+    "provider",
+    "model",
+    "endpoint_alias",
+    "settings",
+    "budgets",
+    "policy_sha256",
+    "hashes",
+    "rating_bundle",
+    "snapshot_id",
+    "workspace"
+  ],
+  "additionalProperties": false
+}
