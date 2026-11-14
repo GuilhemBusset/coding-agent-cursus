@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trace-event.v1.schema.json",
+  "title": "trace-event v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "model_attempt"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "attempt_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "retry_of": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "error",
+            "cancelled"
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "usage": {
+          "$ref": "common.v1.schema.json#/$defs/usage"
+        },
+        "error": {
+          "oneOf": [
+            {
+              "$ref": "common.v1.schema.json#/$defs/error"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "sequence",
+        "elapsed_ms",
+        "type",
+        "request_id",
+        "attempt_id",
+        "retry_of",
+        "status",
+        "duration_ms",
+        "usage",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "tool_invocation"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "attempt_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "retry_of": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tool_call_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "input": {
+          "$ref": "tool-input.v1.schema.json"
+        },
+        "result": {
+          "$ref": "tool-result.v1.schema.json"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "sequence",
+        "elapsed_ms",
+        "type",
+        "request_id",
+        "attempt_id",
+        "retry_of",
+        "tool_call_id",
+        "duration_ms",
+        "input",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "intervention"
+        },
+        "actor": {
+          "const": "human"
+        },
+        "action": {
+          "enum": [
+            "edit",
+            "steer",
+            "resume"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "sequence",
+        "elapsed_ms",
+        "type",
+        "actor",
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "run_end"
+        },
+        "stop_reason": {
+          "$ref": "common.v1.schema.json#/$defs/stop"
+        },
+        "intervention": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "sequence",
+        "elapsed_ms",
+        "type",
+        "stop_reason",
+        "intervention"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

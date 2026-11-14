@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scorecard.v1.schema.json",
+  "title": "scorecard v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "variant_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "hashes": {
+      "$ref": "common.v1.schema.json#/$defs/hashes"
+    },
+    "policy_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "grading_assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "assertion_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "category": {
+            "enum": [
+              "decisive",
+              "required_fact",
+              "citation",
+              "decision",
+              "uncertainty",
+              "output"
+            ]
+          },
+          "target_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assertion_id",
+          "category",
+          "target_ids",
+          "passed"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "failed_assertion_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+      },
+      "minItems": 0,
+      "uniqueItems": true
+    },
+    "required_facts_total": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "required_facts_met": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_fact_coverage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "decisive_pass": {
+      "type": "boolean"
+    },
+    "all_factual_spans_valid": {
+      "type": "boolean"
+    },
+    "no_unsupported_decision": {
+      "type": "boolean"
+    },
+    "uncertainty_pass": {
+      "type": "boolean"
+    },
+    "output_valid": {
+      "type": "boolean"
+    },
+    "intervention": {
+      "type": "boolean"
+    },
+    "quality_pass": {
+      "type": "boolean"
+    },
+    "peer_review": {
+      "enum": [
+        "pending",
+        "supported",
+        "needs_revision"
+      ]
+    },
+    "model_attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "logical_requests": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tool_invocations": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "service_errors": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "usage": {
+      "$ref": "common.v1.schema.json#/$defs/usage"
+    },
+    "total_tokens": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "elapsed_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stop_reason": {
+      "$ref": "common.v1.schema.json#/$defs/stop"
+    },
+    "evidence_kind": {
+      "enum": [
+        "synthetic",
+        "captured_live",
+        "replay"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "case_id",
+    "variant_id",
+    "hashes",
+    "policy_sha256",
+    "grading_assertions",
+    "failed_assertion_ids",
+    "required_facts_total",
+    "required_facts_met",
+    "required_fact_coverage",
+    "decisive_pass",
+    "all_factual_spans_valid",
+    "no_unsupported_decision",
+    "uncertainty_pass",
+    "output_valid",
+    "intervention",
+    "quality_pass",
+    "peer_review",
+    "model_attempts",
+    "logical_requests",
+    "tool_invocations",
+    "service_errors",
+    "usage",
+    "total_tokens",
+    "elapsed_ms",
+    "stop_reason",
+    "evidence_kind"
+  ],
+  "additionalProperties": false
+}

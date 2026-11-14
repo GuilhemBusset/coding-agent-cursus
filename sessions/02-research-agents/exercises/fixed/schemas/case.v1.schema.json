@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "case.v1.schema.json",
+  "title": "case v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "variant_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "corpus_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "context": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reference_path": {
+      "type": "string",
+      "pattern": "^cases/[A-Za-z0-9_.-]+/reference[.]json$"
+    },
+    "registered_tools": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "read",
+          "search",
+          "check_table"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "output_contract": {
+      "const": "claims.v1+report.v1"
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "variant_id",
+    "corpus_id",
+    "question",
+    "context",
+    "reference_path",
+    "registered_tools",
+    "output_contract"
+  ],
+  "additionalProperties": false
+}

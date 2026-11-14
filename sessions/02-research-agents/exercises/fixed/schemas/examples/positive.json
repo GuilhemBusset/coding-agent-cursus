@@ -1,0 +1,2672 @@
+[
+  {
+    "name": "reference-A",
+    "schema": "reference",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "facts": [
+        {
+          "fact_id": "methods",
+          "assertion": {
+            "subject": "dossier",
+            "predicate": "capacity_methods",
+            "type": "string_set",
+            "value": [
+              "GridMILP",
+              "SlotSearch"
+            ],
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "note-method",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "grid-assumptions",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "half-hour-slots"
+            ],
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "note-grid",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "slot-assumptions",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "fixed-charger-count"
+            ],
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "note-slot",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [],
+          "supersedes_fact_ids": []
+        }
+      ],
+      "required_uncertainty": [],
+      "corrections": [],
+      "experiments": []
+    }
+  },
+  {
+    "name": "case-A",
+    "schema": "case",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "corpus_id": "fictional-ev-v1",
+      "question": "Which methods model limited charger capacity, under what assumptions?",
+      "context": "Illustrative interface fixture; all names and numbers are fictional, not the supplied corpus.",
+      "reference_path": "cases/A/reference.json",
+      "registered_tools": [
+        "read",
+        "search",
+        "check_table"
+      ],
+      "output_contract": "claims.v1+report.v1"
+    }
+  },
+  {
+    "name": "claims-A",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-A",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "methods",
+          "kind": "factual",
+          "assertion": {
+            "subject": "dossier",
+            "predicate": "capacity_methods",
+            "type": "string_set",
+            "value": [
+              "GridMILP",
+              "SlotSearch"
+            ],
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "note-method",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "methods"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "grid-assumptions",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "half-hour-slots"
+            ],
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "note-grid",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "grid-assumptions"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "slot-assumptions",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "fixed-charger-count"
+            ],
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "note-slot",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "slot-assumptions"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "report-A",
+    "schema": "report",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-A",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "claims_path": "claims.json",
+      "report_path": "report.md",
+      "claim_anchors": [
+        {
+          "claim_id": "methods",
+          "anchor": "claim-methods"
+        },
+        {
+          "claim_id": "grid-assumptions",
+          "anchor": "claim-grid-assumptions"
+        },
+        {
+          "claim_id": "slot-assumptions",
+          "anchor": "claim-slot-assumptions"
+        }
+      ]
+    }
+  },
+  {
+    "name": "config-A",
+    "schema": "run-config",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-A",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "trial": 1,
+      "seed": 20261115,
+      "mode": "class",
+      "evidence_kind": "synthetic",
+      "replay_of": null,
+      "provider": "openai",
+      "model": "illustrative-model-pin",
+      "endpoint_alias": "course-openai",
+      "settings": {
+        "temperature": 0,
+        "sampling_seed": null,
+        "max_output_tokens": 1024
+      },
+      "budgets": {
+        "model_attempts": 12,
+        "tool_invocations": 20,
+        "total_tokens": 30000
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "rating_bundle": {
+        "revision": "illustrative-contract-v1",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "illustrative": true
+      },
+      "snapshot_id": "candidate-v1",
+      "workspace": {
+        "workspace_id": "workspace-A",
+        "fresh": true,
+        "supplied_inputs": [
+          "question",
+          "context",
+          "prompt",
+          "tool_definitions",
+          "corpus_via_tools",
+          "output_contract"
+        ]
+      }
+    }
+  },
+  {
+    "name": "reference-B",
+    "schema": "reference",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "facts": [
+        {
+          "fact_id": "shared-chargers",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "shared_chargers",
+            "type": "boolean",
+            "value": true,
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "time-limit",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "solve_seconds",
+            "type": "number",
+            "value": 42,
+            "unit": "s",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "corrected-eligibility",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "eligible",
+            "type": "boolean",
+            "value": false,
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "independent-experiments",
+          "assertion": {
+            "subject": "recommendation",
+            "predicate": "independent_experiments",
+            "type": "number",
+            "value": 1,
+            "unit": "count",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "summary",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_fact_ids": []
+        }
+      ],
+      "required_uncertainty": [],
+      "corrections": [
+        {
+          "source_id": "correction",
+          "supersedes_source_id": "original-note",
+          "affected_fact_ids": [
+            "corrected-eligibility"
+          ]
+        }
+      ],
+      "experiments": [
+        {
+          "experiment_id": "exp-1",
+          "source_ids": [
+            "corrected-results",
+            "summary",
+            "correction"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "case-B",
+    "schema": "case",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "corpus_id": "fictional-ev-v1",
+      "question": "Which method meets shared-charger and 60-second constraints after reconciliation?",
+      "context": "Illustrative interface fixture; all names and numbers are fictional, not the supplied corpus.",
+      "reference_path": "cases/B/reference.json",
+      "registered_tools": [
+        "read",
+        "search",
+        "check_table"
+      ],
+      "output_contract": "claims.v1+report.v1"
+    }
+  },
+  {
+    "name": "claims-B",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "shared-chargers",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "shared_chargers",
+            "type": "boolean",
+            "value": true,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "shared-chargers"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "time-limit",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "solve_seconds",
+            "type": "number",
+            "value": 42,
+            "unit": "s",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "time-limit"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "corrected-eligibility",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "eligible",
+            "type": "boolean",
+            "value": false,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "independent-experiments",
+          "kind": "factual",
+          "assertion": {
+            "subject": "recommendation",
+            "predicate": "independent_experiments",
+            "type": "number",
+            "value": 1,
+            "unit": "count",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "summary",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "independent-experiments"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "recommendation",
+          "kind": "decision",
+          "assertion": {
+            "subject": "fleet",
+            "predicate": "recommended_method",
+            "type": "string",
+            "value": "SlotSearch",
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "shared-chargers",
+            "time-limit",
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "report-B",
+    "schema": "report",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "claims_path": "claims.json",
+      "report_path": "report.md",
+      "claim_anchors": [
+        {
+          "claim_id": "shared-chargers",
+          "anchor": "claim-shared-chargers"
+        },
+        {
+          "claim_id": "time-limit",
+          "anchor": "claim-time-limit"
+        },
+        {
+          "claim_id": "corrected-eligibility",
+          "anchor": "claim-corrected-eligibility"
+        },
+        {
+          "claim_id": "independent-experiments",
+          "anchor": "claim-independent-experiments"
+        },
+        {
+          "claim_id": "recommendation",
+          "anchor": "claim-recommendation"
+        }
+      ]
+    }
+  },
+  {
+    "name": "config-B",
+    "schema": "run-config",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "trial": 1,
+      "seed": 20261125,
+      "mode": "class",
+      "evidence_kind": "synthetic",
+      "replay_of": null,
+      "provider": "openai",
+      "model": "illustrative-model-pin",
+      "endpoint_alias": "course-openai",
+      "settings": {
+        "temperature": 0,
+        "sampling_seed": null,
+        "max_output_tokens": 1024
+      },
+      "budgets": {
+        "model_attempts": 12,
+        "tool_invocations": 20,
+        "total_tokens": 30000
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "rating_bundle": {
+        "revision": "illustrative-contract-v1",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "illustrative": true
+      },
+      "snapshot_id": "candidate-v1",
+      "workspace": {
+        "workspace_id": "workspace-B",
+        "fresh": true,
+        "supplied_inputs": [
+          "question",
+          "context",
+          "prompt",
+          "tool_definitions",
+          "corpus_via_tools",
+          "output_contract"
+        ]
+      }
+    }
+  },
+  {
+    "name": "reference-C",
+    "schema": "reference",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "facts": [
+        {
+          "fact_id": "paired-reduction",
+          "assertion": {
+            "subject": "method-B",
+            "predicate": "feasible_paired_cost_reduction",
+            "type": "number",
+            "value": 0.2,
+            "unit": "fraction",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [
+            {
+              "source_id": "results",
+              "kind": "rows",
+              "start": 1,
+              "end": 5,
+              "columns": [
+                "cost",
+                "feasible",
+                "pair_id",
+                "method"
+              ]
+            }
+          ],
+          "evidence_policy": "required",
+          "experiment_ids": [
+            "exp-p1",
+            "exp-p2"
+          ],
+          "supersedes_fact_ids": []
+        },
+        {
+          "fact_id": "uncertain-demand-absent",
+          "assertion": {
+            "subject": "dossier",
+            "predicate": "uncertain_demand_evidence",
+            "type": "boolean",
+            "value": false,
+            "unit": null
+          },
+          "required": true,
+          "decisive": true,
+          "accepted_evidence": [],
+          "evidence_policy": "absence",
+          "experiment_ids": [],
+          "supersedes_fact_ids": []
+        }
+      ],
+      "required_uncertainty": [
+        {
+          "requirement_id": "uncertain-demand",
+          "subject": "method-B",
+          "predicate": "uncertain_demand_superiority",
+          "reason": "missing_evidence"
+        }
+      ],
+      "corrections": [],
+      "experiments": [
+        {
+          "experiment_id": "exp-p1",
+          "source_ids": [
+            "results"
+          ]
+        },
+        {
+          "experiment_id": "exp-p2",
+          "source_ids": [
+            "results"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "case-C",
+    "schema": "case",
+    "value": {
+      "schema_version": "1.0",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "corpus_id": "fictional-ev-v1",
+      "question": "What do feasible paired costs establish, and what remains unknown under uncertain demand?",
+      "context": "Illustrative interface fixture; all names and numbers are fictional, not the supplied corpus.",
+      "reference_path": "cases/C/reference.json",
+      "registered_tools": [
+        "read",
+        "search",
+        "check_table"
+      ],
+      "output_contract": "claims.v1+report.v1"
+    }
+  },
+  {
+    "name": "claims-C",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "paired-reduction",
+          "kind": "factual",
+          "assertion": {
+            "subject": "method-B",
+            "predicate": "feasible_paired_cost_reduction",
+            "type": "number",
+            "value": 0.2,
+            "unit": "fraction",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "results",
+              "kind": "rows",
+              "start": 1,
+              "end": 5,
+              "columns": [
+                "cost",
+                "feasible",
+                "pair_id",
+                "method"
+              ]
+            }
+          ],
+          "reference_fact_ids": [
+            "paired-reduction"
+          ],
+          "experiment_ids": [
+            "exp-p1",
+            "exp-p2"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "uncertain-demand",
+          "kind": "uncertainty",
+          "assertion": {
+            "subject": "method-B",
+            "predicate": "uncertain_demand_superiority",
+            "type": "string",
+            "value": "unknown",
+            "unit": null
+          },
+          "support_status": "unknown",
+          "evidence": [],
+          "reference_fact_ids": [
+            "uncertain-demand-absent"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "report-C",
+    "schema": "report",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "claims_path": "claims.json",
+      "report_path": "report.md",
+      "claim_anchors": [
+        {
+          "claim_id": "paired-reduction",
+          "anchor": "claim-paired-reduction"
+        },
+        {
+          "claim_id": "uncertain-demand",
+          "anchor": "claim-uncertain-demand"
+        }
+      ]
+    }
+  },
+  {
+    "name": "config-C",
+    "schema": "run-config",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "trial": 1,
+      "seed": 20261135,
+      "mode": "class",
+      "evidence_kind": "synthetic",
+      "replay_of": null,
+      "provider": "openai",
+      "model": "illustrative-model-pin",
+      "endpoint_alias": "course-openai",
+      "settings": {
+        "temperature": 0,
+        "sampling_seed": null,
+        "max_output_tokens": 1024
+      },
+      "budgets": {
+        "model_attempts": 12,
+        "tool_invocations": 20,
+        "total_tokens": 30000
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "rating_bundle": {
+        "revision": "illustrative-contract-v1",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "illustrative": true
+      },
+      "snapshot_id": "candidate-v1",
+      "workspace": {
+        "workspace_id": "workspace-C",
+        "fresh": true,
+        "supplied_inputs": [
+          "question",
+          "context",
+          "prompt",
+          "tool_definitions",
+          "corpus_via_tools",
+          "output_contract"
+        ]
+      }
+    }
+  },
+  {
+    "name": "read-input",
+    "schema": "tool-input",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "tool_call_id": "tool-1",
+      "tool": "read",
+      "arguments": {
+        "source_id": "correction",
+        "start": 0,
+        "end": 80
+      }
+    }
+  },
+  {
+    "name": "read-result",
+    "schema": "tool-result",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "tool_call_id": "tool-1",
+      "tool": "read",
+      "status": "ok",
+      "data": {
+        "span": {
+          "source_id": "correction",
+          "kind": "passage",
+          "start": 0,
+          "end": 80
+        },
+        "text": "Illustrative correction: GridMILP is ineligible; SlotSearch models shared chargers."
+      },
+      "error": null
+    }
+  },
+  {
+    "name": "search-input",
+    "schema": "tool-input",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "tool_call_id": "tool-2",
+      "tool": "search",
+      "arguments": {
+        "query": "shared chargers",
+        "limit": 3
+      }
+    }
+  },
+  {
+    "name": "search-result",
+    "schema": "tool-result",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "tool_call_id": "tool-2",
+      "tool": "search",
+      "status": "ok",
+      "data": [
+        {
+          "span": {
+            "source_id": "correction",
+            "kind": "passage",
+            "start": 0,
+            "end": 80
+          },
+          "text": "Illustrative correction: GridMILP is ineligible; SlotSearch models shared chargers."
+        }
+      ],
+      "error": null
+    }
+  },
+  {
+    "name": "tool-error",
+    "schema": "tool-result",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "tool_call_id": "tool-failed",
+      "tool": "read",
+      "status": "error",
+      "data": null,
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      }
+    }
+  },
+  {
+    "name": "check-input",
+    "schema": "tool-input",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "tool_call_id": "check-1",
+      "tool": "check_table",
+      "arguments": {
+        "source_id": "results",
+        "method_left": "method-A",
+        "method_right": "method-B",
+        "metric": "cost",
+        "unit": "cost-unit",
+        "feasible_only": true,
+        "pair_key": "pair_id",
+        "pair_ids": [
+          "p1",
+          "p2"
+        ]
+      }
+    }
+  },
+  {
+    "name": "check-result",
+    "schema": "tool-result",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "tool_call_id": "check-1",
+      "tool": "check_table",
+      "status": "ok",
+      "error": null,
+      "data": {
+        "source_id": "results",
+        "method_left": "method-A",
+        "method_right": "method-B",
+        "metric": "cost",
+        "unit": "cost-unit",
+        "pairs": [
+          {
+            "pair_id": "p1",
+            "left_row": 1,
+            "right_row": 2,
+            "left_value": 100,
+            "right_value": 80,
+            "feasible": true,
+            "experiment_id": "exp-p1"
+          },
+          {
+            "pair_id": "p2",
+            "left_row": 3,
+            "right_row": 4,
+            "left_value": 100,
+            "right_value": 80,
+            "feasible": true,
+            "experiment_id": "exp-p2"
+          }
+        ],
+        "excluded_rows": [
+          5,
+          6
+        ],
+        "left_mean": 100,
+        "right_mean": 80,
+        "relative_reduction": 0.2,
+        "evidence": [
+          {
+            "source_id": "results",
+            "kind": "rows",
+            "start": 1,
+            "end": 5,
+            "columns": [
+              "cost",
+              "feasible",
+              "pair_id",
+              "method"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "A-event-0",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "A-event-0",
+      "run_id": "run-A",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "ok",
+      "duration_ms": 80,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "error": null
+    }
+  },
+  {
+    "name": "A-event-1",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "A-event-1",
+      "run_id": "run-A",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "run_end",
+      "stop_reason": "completed",
+      "intervention": false
+    }
+  },
+  {
+    "name": "scorecard-A",
+    "schema": "scorecard",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-A",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "grading_assertions": [
+        {
+          "assertion_id": "grade-methods",
+          "category": "required_fact",
+          "target_ids": [
+            "methods"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-grid-assumptions",
+          "category": "required_fact",
+          "target_ids": [
+            "grid-assumptions"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-slot-assumptions",
+          "category": "required_fact",
+          "target_ids": [
+            "slot-assumptions"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisive",
+          "category": "decisive",
+          "target_ids": [
+            "methods",
+            "grid-assumptions",
+            "slot-assumptions"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "citations",
+          "category": "citation",
+          "target_ids": [
+            "methods",
+            "grid-assumptions",
+            "slot-assumptions"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisions",
+          "category": "decision",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "uncertainty",
+          "category": "uncertainty",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "output",
+          "category": "output",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        }
+      ],
+      "failed_assertion_ids": [],
+      "required_facts_total": 3,
+      "required_facts_met": 3,
+      "required_fact_coverage": 1,
+      "decisive_pass": true,
+      "all_factual_spans_valid": true,
+      "no_unsupported_decision": true,
+      "uncertainty_pass": true,
+      "output_valid": true,
+      "intervention": false,
+      "quality_pass": true,
+      "peer_review": "pending",
+      "model_attempts": 1,
+      "logical_requests": 1,
+      "tool_invocations": 0,
+      "service_errors": 0,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "total_tokens": 120,
+      "elapsed_ms": 100,
+      "stop_reason": "completed",
+      "evidence_kind": "synthetic"
+    }
+  },
+  {
+    "name": "B-event-0",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "B-event-0",
+      "run_id": "run-B",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "error",
+      "duration_ms": 80,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "error": {
+        "code": "service_error",
+        "retryable": true
+      }
+    }
+  },
+  {
+    "name": "B-event-1",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "B-event-1",
+      "run_id": "run-B",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-2",
+      "retry_of": "attempt-1",
+      "status": "ok",
+      "duration_ms": 90,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 200,
+        "output_tokens": 40,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "error": null
+    }
+  },
+  {
+    "name": "B-event-2",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "B-event-2",
+      "run_id": "run-B",
+      "sequence": 2,
+      "elapsed_ms": 200,
+      "type": "tool_invocation",
+      "request_id": "request-1",
+      "attempt_id": "attempt-2",
+      "retry_of": null,
+      "tool_call_id": "tool-failed",
+      "duration_ms": 30,
+      "input": {
+        "schema_version": "1.0",
+        "run_id": "run-B",
+        "tool_call_id": "tool-failed",
+        "tool": "read",
+        "arguments": {
+          "source_id": "correction",
+          "start": 0,
+          "end": 80
+        }
+      },
+      "result": {
+        "schema_version": "1.0",
+        "run_id": "run-B",
+        "tool_call_id": "tool-failed",
+        "tool": "read",
+        "status": "error",
+        "data": null,
+        "error": {
+          "code": "timeout",
+          "retryable": true
+        }
+      }
+    }
+  },
+  {
+    "name": "B-event-3",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "B-event-3",
+      "run_id": "run-B",
+      "sequence": 3,
+      "elapsed_ms": 300,
+      "type": "tool_invocation",
+      "request_id": "request-1",
+      "attempt_id": "attempt-2",
+      "retry_of": "tool-failed",
+      "tool_call_id": "tool-1",
+      "duration_ms": 40,
+      "input": {
+        "schema_version": "1.0",
+        "run_id": "run-B",
+        "tool_call_id": "tool-1",
+        "tool": "read",
+        "arguments": {
+          "source_id": "correction",
+          "start": 0,
+          "end": 80
+        }
+      },
+      "result": {
+        "schema_version": "1.0",
+        "run_id": "run-B",
+        "tool_call_id": "tool-1",
+        "tool": "read",
+        "status": "ok",
+        "data": {
+          "span": {
+            "source_id": "correction",
+            "kind": "passage",
+            "start": 0,
+            "end": 80
+          },
+          "text": "Illustrative correction: GridMILP is ineligible; SlotSearch models shared chargers."
+        },
+        "error": null
+      }
+    }
+  },
+  {
+    "name": "B-event-4",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "B-event-4",
+      "run_id": "run-B",
+      "sequence": 4,
+      "elapsed_ms": 400,
+      "type": "run_end",
+      "stop_reason": "completed",
+      "intervention": false
+    }
+  },
+  {
+    "name": "scorecard-B",
+    "schema": "scorecard",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "grading_assertions": [
+        {
+          "assertion_id": "grade-shared-chargers",
+          "category": "required_fact",
+          "target_ids": [
+            "shared-chargers"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-time-limit",
+          "category": "required_fact",
+          "target_ids": [
+            "time-limit"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-corrected-eligibility",
+          "category": "required_fact",
+          "target_ids": [
+            "corrected-eligibility"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-independent-experiments",
+          "category": "required_fact",
+          "target_ids": [
+            "independent-experiments"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisive",
+          "category": "decisive",
+          "target_ids": [
+            "shared-chargers",
+            "time-limit",
+            "corrected-eligibility",
+            "independent-experiments"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "citations",
+          "category": "citation",
+          "target_ids": [
+            "shared-chargers",
+            "time-limit",
+            "corrected-eligibility",
+            "independent-experiments"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisions",
+          "category": "decision",
+          "target_ids": [
+            "recommendation"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "uncertainty",
+          "category": "uncertainty",
+          "target_ids": [
+            "B"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "output",
+          "category": "output",
+          "target_ids": [
+            "B"
+          ],
+          "passed": true
+        }
+      ],
+      "failed_assertion_ids": [],
+      "required_facts_total": 4,
+      "required_facts_met": 4,
+      "required_fact_coverage": 1,
+      "decisive_pass": true,
+      "all_factual_spans_valid": true,
+      "no_unsupported_decision": true,
+      "uncertainty_pass": true,
+      "output_valid": true,
+      "intervention": false,
+      "quality_pass": true,
+      "peer_review": "pending",
+      "model_attempts": 2,
+      "logical_requests": 1,
+      "tool_invocations": 2,
+      "service_errors": 2,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 300,
+        "output_tokens": 60,
+        "cache_read_tokens": 20,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 10
+      },
+      "total_tokens": 360,
+      "elapsed_ms": 400,
+      "stop_reason": "completed",
+      "evidence_kind": "synthetic"
+    }
+  },
+  {
+    "name": "C-event-0",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "C-event-0",
+      "run_id": "run-C",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "ok",
+      "duration_ms": 80,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "error": null
+    }
+  },
+  {
+    "name": "C-event-1",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "C-event-1",
+      "run_id": "run-C",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "tool_invocation",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "tool_call_id": "check-1",
+      "duration_ms": 20,
+      "input": {
+        "schema_version": "1.0",
+        "run_id": "run-C",
+        "tool_call_id": "check-1",
+        "tool": "check_table",
+        "arguments": {
+          "source_id": "results",
+          "method_left": "method-A",
+          "method_right": "method-B",
+          "metric": "cost",
+          "unit": "cost-unit",
+          "feasible_only": true,
+          "pair_key": "pair_id",
+          "pair_ids": [
+            "p1",
+            "p2"
+          ]
+        }
+      },
+      "result": {
+        "schema_version": "1.0",
+        "run_id": "run-C",
+        "tool_call_id": "check-1",
+        "tool": "check_table",
+        "status": "ok",
+        "error": null,
+        "data": {
+          "source_id": "results",
+          "method_left": "method-A",
+          "method_right": "method-B",
+          "metric": "cost",
+          "unit": "cost-unit",
+          "pairs": [
+            {
+              "pair_id": "p1",
+              "left_row": 1,
+              "right_row": 2,
+              "left_value": 100,
+              "right_value": 80,
+              "feasible": true,
+              "experiment_id": "exp-p1"
+            },
+            {
+              "pair_id": "p2",
+              "left_row": 3,
+              "right_row": 4,
+              "left_value": 100,
+              "right_value": 80,
+              "feasible": true,
+              "experiment_id": "exp-p2"
+            }
+          ],
+          "excluded_rows": [
+            5,
+            6
+          ],
+          "left_mean": 100,
+          "right_mean": 80,
+          "relative_reduction": 0.2,
+          "evidence": [
+            {
+              "source_id": "results",
+              "kind": "rows",
+              "start": 1,
+              "end": 5,
+              "columns": [
+                "cost",
+                "feasible",
+                "pair_id",
+                "method"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "C-event-2",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "C-event-2",
+      "run_id": "run-C",
+      "sequence": 2,
+      "elapsed_ms": 200,
+      "type": "run_end",
+      "stop_reason": "completed",
+      "intervention": false
+    }
+  },
+  {
+    "name": "scorecard-C",
+    "schema": "scorecard",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-C",
+      "case_id": "C",
+      "variant_id": "public-1",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "grading_assertions": [
+        {
+          "assertion_id": "grade-paired-reduction",
+          "category": "required_fact",
+          "target_ids": [
+            "paired-reduction"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "grade-uncertain-demand-absent",
+          "category": "required_fact",
+          "target_ids": [
+            "uncertain-demand-absent"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisive",
+          "category": "decisive",
+          "target_ids": [
+            "paired-reduction",
+            "uncertain-demand-absent"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "citations",
+          "category": "citation",
+          "target_ids": [
+            "paired-reduction"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "decisions",
+          "category": "decision",
+          "target_ids": [
+            "C"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "uncertainty",
+          "category": "uncertainty",
+          "target_ids": [
+            "uncertain-demand"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "output",
+          "category": "output",
+          "target_ids": [
+            "C"
+          ],
+          "passed": true
+        }
+      ],
+      "failed_assertion_ids": [],
+      "required_facts_total": 2,
+      "required_facts_met": 2,
+      "required_fact_coverage": 1,
+      "decisive_pass": true,
+      "all_factual_spans_valid": true,
+      "no_unsupported_decision": true,
+      "uncertainty_pass": true,
+      "output_valid": true,
+      "intervention": false,
+      "quality_pass": true,
+      "peer_review": "pending",
+      "model_attempts": 1,
+      "logical_requests": 1,
+      "tool_invocations": 1,
+      "service_errors": 0,
+      "usage": {
+        "status": "complete",
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 5
+      },
+      "total_tokens": 120,
+      "elapsed_ms": 200,
+      "stop_reason": "completed",
+      "evidence_kind": "synthetic"
+    }
+  },
+  {
+    "name": "unknown-usage-attempt",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "unknown-event",
+      "run_id": "run-unknown",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "error",
+      "duration_ms": 80,
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      }
+    }
+  },
+  {
+    "name": "partial-usage-attempt",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "partial-event",
+      "run_id": "run-unknown",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "error",
+      "duration_ms": 80,
+      "usage": {
+        "status": "partial",
+        "input_tokens": 40,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      }
+    }
+  },
+  {
+    "name": "unsupported-decision",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "shared-chargers",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "shared_chargers",
+            "type": "boolean",
+            "value": true,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "shared-chargers"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "time-limit",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "solve_seconds",
+            "type": "number",
+            "value": 42,
+            "unit": "s",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "time-limit"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "corrected-eligibility",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "eligible",
+            "type": "boolean",
+            "value": false,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "independent-experiments",
+          "kind": "factual",
+          "assertion": {
+            "subject": "recommendation",
+            "predicate": "independent_experiments",
+            "type": "number",
+            "value": 1,
+            "unit": "count",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "summary",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "independent-experiments"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "recommendation",
+          "kind": "decision",
+          "assertion": {
+            "subject": "fleet",
+            "predicate": "recommended_method",
+            "type": "string",
+            "value": "SlotSearch",
+            "unit": null
+          },
+          "support_status": "unsupported",
+          "evidence": [],
+          "reference_fact_ids": [
+            "shared-chargers",
+            "time-limit",
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "intervention",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "A-intervention",
+      "run_id": "run-A",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "intervention",
+      "actor": "human",
+      "action": "steer"
+    }
+  },
+  {
+    "name": "policy",
+    "schema": "policy",
+    "value": {
+      "schema_version": "1.0",
+      "provisional": true,
+      "calibration": "pending_live_pilot",
+      "gates": {
+        "all_decisive": true,
+        "required_fact_fraction": 0.8,
+        "every_factual_span_valid": true,
+        "no_unsupported_decision": true,
+        "no_intervention": true
+      },
+      "budgets": {
+        "model_attempts": 12,
+        "tool_invocations": 20,
+        "total_tokens": 30000
+      },
+      "rating_bundle": {
+        "revision": "illustrative-contract-v1",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "illustrative": true
+      },
+      "schedule": {
+        "class": [
+          {
+            "case_id": "A",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261115
+          },
+          {
+            "case_id": "B",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261125
+          },
+          {
+            "case_id": "C",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261135
+          }
+        ],
+        "submission": [
+          {
+            "case_id": "A",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261115
+          },
+          {
+            "case_id": "A",
+            "variant_id": "public-1",
+            "trial": 2,
+            "seed": 20261115
+          },
+          {
+            "case_id": "A",
+            "variant_id": "public-1",
+            "trial": 3,
+            "seed": 20261115
+          },
+          {
+            "case_id": "B",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261125
+          },
+          {
+            "case_id": "B",
+            "variant_id": "public-1",
+            "trial": 2,
+            "seed": 20261125
+          },
+          {
+            "case_id": "B",
+            "variant_id": "public-1",
+            "trial": 3,
+            "seed": 20261125
+          },
+          {
+            "case_id": "C",
+            "variant_id": "public-1",
+            "trial": 1,
+            "seed": 20261135
+          },
+          {
+            "case_id": "C",
+            "variant_id": "public-1",
+            "trial": 2,
+            "seed": 20261135
+          },
+          {
+            "case_id": "C",
+            "variant_id": "public-1",
+            "trial": 3,
+            "seed": 20261135
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "baseline",
+    "schema": "snapshot",
+    "value": {
+      "schema_version": "1.0",
+      "snapshot_id": "baseline-v1",
+      "role": "baseline",
+      "immutable": true,
+      "harness_files": [
+        {
+          "path": "harness/main.ts",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "prompt_files": [
+        {
+          "path": "prompts/research.md",
+          "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ],
+      "harness_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "prompt_sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  },
+  {
+    "name": "candidate",
+    "schema": "snapshot",
+    "value": {
+      "schema_version": "1.0",
+      "snapshot_id": "candidate-v1",
+      "role": "candidate",
+      "immutable": true,
+      "harness_files": [
+        {
+          "path": "harness/main.ts",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "prompt_files": [
+        {
+          "path": "prompts/research.md",
+          "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      ],
+      "harness_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "prompt_sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  },
+  {
+    "name": "failed-config",
+    "schema": "run-config",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-unknown",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "trial": 1,
+      "seed": 20261115,
+      "mode": "class",
+      "evidence_kind": "synthetic",
+      "replay_of": null,
+      "provider": "openai",
+      "model": "illustrative-model-pin",
+      "endpoint_alias": "course-openai",
+      "settings": {
+        "temperature": 0,
+        "sampling_seed": null,
+        "max_output_tokens": 1024
+      },
+      "budgets": {
+        "model_attempts": 12,
+        "tool_invocations": 20,
+        "total_tokens": 30000
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "rating_bundle": {
+        "revision": "illustrative-contract-v1",
+        "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+        "illustrative": true
+      },
+      "snapshot_id": "candidate-v1",
+      "workspace": {
+        "workspace_id": "workspace-unknown",
+        "fresh": true,
+        "supplied_inputs": [
+          "question",
+          "context",
+          "prompt",
+          "tool_definitions",
+          "corpus_via_tools",
+          "output_contract"
+        ]
+      }
+    }
+  },
+  {
+    "name": "failed-claims",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-unknown",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "methods",
+          "kind": "factual",
+          "assertion": {
+            "subject": "dossier",
+            "predicate": "capacity_methods",
+            "type": "string_set",
+            "value": [
+              "GridMILP",
+              "SlotSearch"
+            ],
+            "unit": null
+          },
+          "support_status": "unsupported",
+          "evidence": [],
+          "reference_fact_ids": [
+            "methods"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "grid-assumptions",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "half-hour-slots"
+            ],
+            "unit": null
+          },
+          "support_status": "unsupported",
+          "evidence": [],
+          "reference_fact_ids": [
+            "grid-assumptions"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "slot-assumptions",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "assumptions",
+            "type": "string_set",
+            "value": [
+              "known-demand",
+              "fixed-charger-count"
+            ],
+            "unit": null
+          },
+          "support_status": "unsupported",
+          "evidence": [],
+          "reference_fact_ids": [
+            "slot-assumptions"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "failed-report",
+    "schema": "report",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-unknown",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "claims_path": "claims.json",
+      "report_path": "report.md",
+      "claim_anchors": [
+        {
+          "claim_id": "methods",
+          "anchor": "claim-methods"
+        },
+        {
+          "claim_id": "grid-assumptions",
+          "anchor": "claim-grid-assumptions"
+        },
+        {
+          "claim_id": "slot-assumptions",
+          "anchor": "claim-slot-assumptions"
+        }
+      ]
+    }
+  },
+  {
+    "name": "failed-scorecard",
+    "schema": "scorecard",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-unknown",
+      "case_id": "A",
+      "variant_id": "public-1",
+      "hashes": {
+        "model": "1111111111111111111111111111111111111111111111111111111111111111",
+        "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+        "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+        "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+        "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+        "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+        "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "grading_assertions": [
+        {
+          "assertion_id": "grade-methods",
+          "category": "required_fact",
+          "target_ids": [
+            "methods"
+          ],
+          "passed": false
+        },
+        {
+          "assertion_id": "grade-grid-assumptions",
+          "category": "required_fact",
+          "target_ids": [
+            "grid-assumptions"
+          ],
+          "passed": false
+        },
+        {
+          "assertion_id": "grade-slot-assumptions",
+          "category": "required_fact",
+          "target_ids": [
+            "slot-assumptions"
+          ],
+          "passed": false
+        },
+        {
+          "assertion_id": "decisive",
+          "category": "decisive",
+          "target_ids": [
+            "methods",
+            "grid-assumptions",
+            "slot-assumptions"
+          ],
+          "passed": false
+        },
+        {
+          "assertion_id": "citations",
+          "category": "citation",
+          "target_ids": [
+            "methods",
+            "grid-assumptions",
+            "slot-assumptions"
+          ],
+          "passed": false
+        },
+        {
+          "assertion_id": "decisions",
+          "category": "decision",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "uncertainty",
+          "category": "uncertainty",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        },
+        {
+          "assertion_id": "output",
+          "category": "output",
+          "target_ids": [
+            "A"
+          ],
+          "passed": true
+        }
+      ],
+      "failed_assertion_ids": [
+        "grade-methods",
+        "grade-grid-assumptions",
+        "grade-slot-assumptions",
+        "decisive",
+        "citations"
+      ],
+      "required_facts_total": 3,
+      "required_facts_met": 0,
+      "required_fact_coverage": 0,
+      "decisive_pass": false,
+      "all_factual_spans_valid": false,
+      "no_unsupported_decision": true,
+      "uncertainty_pass": true,
+      "output_valid": true,
+      "intervention": false,
+      "quality_pass": false,
+      "peer_review": "pending",
+      "model_attempts": 1,
+      "logical_requests": 1,
+      "tool_invocations": 0,
+      "service_errors": 1,
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "total_tokens": null,
+      "elapsed_ms": 100,
+      "stop_reason": "service_error",
+      "evidence_kind": "synthetic"
+    }
+  },
+  {
+    "name": "unknown-end",
+    "schema": "trace-event",
+    "value": {
+      "schema_version": "1.0",
+      "event_id": "unknown-end",
+      "run_id": "run-unknown",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "run_end",
+      "stop_reason": "service_error",
+      "intervention": false
+    }
+  },
+  {
+    "name": "superseded-claims",
+    "schema": "claims",
+    "value": {
+      "schema_version": "1.0",
+      "run_id": "run-B",
+      "case_id": "B",
+      "variant_id": "public-1",
+      "claims": [
+        {
+          "claim_id": "old-eligibility",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "eligible",
+            "type": "boolean",
+            "value": true,
+            "unit": null
+          },
+          "support_status": "unsupported",
+          "evidence": [],
+          "reference_fact_ids": [
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "shared-chargers",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "shared_chargers",
+            "type": "boolean",
+            "value": true,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "shared-chargers"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "time-limit",
+          "kind": "factual",
+          "assertion": {
+            "subject": "SlotSearch",
+            "predicate": "solve_seconds",
+            "type": "number",
+            "value": 42,
+            "unit": "s",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "time-limit"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "corrected-eligibility",
+          "kind": "factual",
+          "assertion": {
+            "subject": "GridMILP",
+            "predicate": "eligible",
+            "type": "boolean",
+            "value": false,
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [],
+          "supersedes_claim_ids": [
+            "old-eligibility"
+          ]
+        },
+        {
+          "claim_id": "independent-experiments",
+          "kind": "factual",
+          "assertion": {
+            "subject": "recommendation",
+            "predicate": "independent_experiments",
+            "type": "number",
+            "value": 1,
+            "unit": "count",
+            "tolerance": {
+              "absolute": 0.001,
+              "relative": 0
+            }
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "summary",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "independent-experiments"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        },
+        {
+          "claim_id": "recommendation",
+          "kind": "decision",
+          "assertion": {
+            "subject": "fleet",
+            "predicate": "recommended_method",
+            "type": "string",
+            "value": "SlotSearch",
+            "unit": null
+          },
+          "support_status": "supported",
+          "evidence": [
+            {
+              "source_id": "correction",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            },
+            {
+              "source_id": "corrected-results",
+              "kind": "passage",
+              "start": 0,
+              "end": 80
+            }
+          ],
+          "reference_fact_ids": [
+            "shared-chargers",
+            "time-limit",
+            "corrected-eligibility"
+          ],
+          "experiment_ids": [
+            "exp-1"
+          ],
+          "supersedes_claim_ids": []
+        }
+      ]
+    }
+  }
+]

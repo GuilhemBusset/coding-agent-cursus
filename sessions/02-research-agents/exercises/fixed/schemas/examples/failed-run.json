@@ -1,0 +1,408 @@
+{
+  "case": {
+    "schema_version": "1.0",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "corpus_id": "fictional-ev-v1",
+    "question": "Which methods model limited charger capacity, under what assumptions?",
+    "context": "Illustrative interface fixture; all names and numbers are fictional, not the supplied corpus.",
+    "reference_path": "cases/A/reference.json",
+    "registered_tools": [
+      "read",
+      "search",
+      "check_table"
+    ],
+    "output_contract": "claims.v1+report.v1"
+  },
+  "reference": {
+    "schema_version": "1.0",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "facts": [
+      {
+        "fact_id": "methods",
+        "assertion": {
+          "subject": "dossier",
+          "predicate": "capacity_methods",
+          "type": "string_set",
+          "value": [
+            "GridMILP",
+            "SlotSearch"
+          ],
+          "unit": null
+        },
+        "required": true,
+        "decisive": true,
+        "accepted_evidence": [
+          {
+            "source_id": "note-method",
+            "kind": "passage",
+            "start": 0,
+            "end": 80
+          }
+        ],
+        "evidence_policy": "required",
+        "experiment_ids": [],
+        "supersedes_fact_ids": []
+      },
+      {
+        "fact_id": "grid-assumptions",
+        "assertion": {
+          "subject": "GridMILP",
+          "predicate": "assumptions",
+          "type": "string_set",
+          "value": [
+            "known-demand",
+            "half-hour-slots"
+          ],
+          "unit": null
+        },
+        "required": true,
+        "decisive": true,
+        "accepted_evidence": [
+          {
+            "source_id": "note-grid",
+            "kind": "passage",
+            "start": 0,
+            "end": 80
+          }
+        ],
+        "evidence_policy": "required",
+        "experiment_ids": [],
+        "supersedes_fact_ids": []
+      },
+      {
+        "fact_id": "slot-assumptions",
+        "assertion": {
+          "subject": "SlotSearch",
+          "predicate": "assumptions",
+          "type": "string_set",
+          "value": [
+            "known-demand",
+            "fixed-charger-count"
+          ],
+          "unit": null
+        },
+        "required": true,
+        "decisive": true,
+        "accepted_evidence": [
+          {
+            "source_id": "note-slot",
+            "kind": "passage",
+            "start": 0,
+            "end": 80
+          }
+        ],
+        "evidence_policy": "required",
+        "experiment_ids": [],
+        "supersedes_fact_ids": []
+      }
+    ],
+    "required_uncertainty": [],
+    "corrections": [],
+    "experiments": []
+  },
+  "config": {
+    "schema_version": "1.0",
+    "run_id": "run-unknown",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "trial": 1,
+    "seed": 20261115,
+    "mode": "class",
+    "evidence_kind": "synthetic",
+    "replay_of": null,
+    "provider": "openai",
+    "model": "illustrative-model-pin",
+    "endpoint_alias": "course-openai",
+    "settings": {
+      "temperature": 0,
+      "sampling_seed": null,
+      "max_output_tokens": 1024
+    },
+    "budgets": {
+      "model_attempts": 12,
+      "tool_invocations": 20,
+      "total_tokens": 30000
+    },
+    "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "hashes": {
+      "model": "1111111111111111111111111111111111111111111111111111111111111111",
+      "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+      "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+      "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+      "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+      "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+      "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "rating_bundle": {
+      "revision": "illustrative-contract-v1",
+      "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "illustrative": true
+    },
+    "snapshot_id": "candidate-v1",
+    "workspace": {
+      "workspace_id": "workspace-unknown",
+      "fresh": true,
+      "supplied_inputs": [
+        "question",
+        "context",
+        "prompt",
+        "tool_definitions",
+        "corpus_via_tools",
+        "output_contract"
+      ]
+    }
+  },
+  "claims": {
+    "schema_version": "1.0",
+    "run_id": "run-unknown",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "claims": [
+      {
+        "claim_id": "methods",
+        "kind": "factual",
+        "assertion": {
+          "subject": "dossier",
+          "predicate": "capacity_methods",
+          "type": "string_set",
+          "value": [
+            "GridMILP",
+            "SlotSearch"
+          ],
+          "unit": null
+        },
+        "support_status": "unsupported",
+        "evidence": [],
+        "reference_fact_ids": [
+          "methods"
+        ],
+        "experiment_ids": [],
+        "supersedes_claim_ids": []
+      },
+      {
+        "claim_id": "grid-assumptions",
+        "kind": "factual",
+        "assertion": {
+          "subject": "GridMILP",
+          "predicate": "assumptions",
+          "type": "string_set",
+          "value": [
+            "known-demand",
+            "half-hour-slots"
+          ],
+          "unit": null
+        },
+        "support_status": "unsupported",
+        "evidence": [],
+        "reference_fact_ids": [
+          "grid-assumptions"
+        ],
+        "experiment_ids": [],
+        "supersedes_claim_ids": []
+      },
+      {
+        "claim_id": "slot-assumptions",
+        "kind": "factual",
+        "assertion": {
+          "subject": "SlotSearch",
+          "predicate": "assumptions",
+          "type": "string_set",
+          "value": [
+            "known-demand",
+            "fixed-charger-count"
+          ],
+          "unit": null
+        },
+        "support_status": "unsupported",
+        "evidence": [],
+        "reference_fact_ids": [
+          "slot-assumptions"
+        ],
+        "experiment_ids": [],
+        "supersedes_claim_ids": []
+      }
+    ]
+  },
+  "report": {
+    "schema_version": "1.0",
+    "run_id": "run-unknown",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "claims_path": "claims.json",
+    "report_path": "report.md",
+    "claim_anchors": [
+      {
+        "claim_id": "methods",
+        "anchor": "claim-methods"
+      },
+      {
+        "claim_id": "grid-assumptions",
+        "anchor": "claim-grid-assumptions"
+      },
+      {
+        "claim_id": "slot-assumptions",
+        "anchor": "claim-slot-assumptions"
+      }
+    ]
+  },
+  "scorecard": {
+    "schema_version": "1.0",
+    "run_id": "run-unknown",
+    "case_id": "A",
+    "variant_id": "public-1",
+    "hashes": {
+      "model": "1111111111111111111111111111111111111111111111111111111111111111",
+      "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+      "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+      "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+      "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+      "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+      "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+    },
+    "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "grading_assertions": [
+      {
+        "assertion_id": "grade-methods",
+        "category": "required_fact",
+        "target_ids": [
+          "methods"
+        ],
+        "passed": false
+      },
+      {
+        "assertion_id": "grade-grid-assumptions",
+        "category": "required_fact",
+        "target_ids": [
+          "grid-assumptions"
+        ],
+        "passed": false
+      },
+      {
+        "assertion_id": "grade-slot-assumptions",
+        "category": "required_fact",
+        "target_ids": [
+          "slot-assumptions"
+        ],
+        "passed": false
+      },
+      {
+        "assertion_id": "decisive",
+        "category": "decisive",
+        "target_ids": [
+          "methods",
+          "grid-assumptions",
+          "slot-assumptions"
+        ],
+        "passed": false
+      },
+      {
+        "assertion_id": "citations",
+        "category": "citation",
+        "target_ids": [
+          "methods",
+          "grid-assumptions",
+          "slot-assumptions"
+        ],
+        "passed": false
+      },
+      {
+        "assertion_id": "decisions",
+        "category": "decision",
+        "target_ids": [
+          "A"
+        ],
+        "passed": true
+      },
+      {
+        "assertion_id": "uncertainty",
+        "category": "uncertainty",
+        "target_ids": [
+          "A"
+        ],
+        "passed": true
+      },
+      {
+        "assertion_id": "output",
+        "category": "output",
+        "target_ids": [
+          "A"
+        ],
+        "passed": true
+      }
+    ],
+    "failed_assertion_ids": [
+      "grade-methods",
+      "grade-grid-assumptions",
+      "grade-slot-assumptions",
+      "decisive",
+      "citations"
+    ],
+    "required_facts_total": 3,
+    "required_facts_met": 0,
+    "required_fact_coverage": 0,
+    "decisive_pass": false,
+    "all_factual_spans_valid": false,
+    "no_unsupported_decision": true,
+    "uncertainty_pass": true,
+    "output_valid": true,
+    "intervention": false,
+    "quality_pass": false,
+    "peer_review": "pending",
+    "model_attempts": 1,
+    "logical_requests": 1,
+    "tool_invocations": 0,
+    "service_errors": 1,
+    "usage": {
+      "status": "unknown",
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_read_tokens": null,
+      "cache_write_tokens": null,
+      "reasoning_tokens": null
+    },
+    "total_tokens": null,
+    "elapsed_ms": 100,
+    "stop_reason": "service_error",
+    "evidence_kind": "synthetic"
+  },
+  "events": [
+    {
+      "schema_version": "1.0",
+      "event_id": "unknown-event",
+      "run_id": "run-unknown",
+      "sequence": 0,
+      "elapsed_ms": 0,
+      "type": "model_attempt",
+      "request_id": "request-1",
+      "attempt_id": "attempt-1",
+      "retry_of": null,
+      "status": "error",
+      "duration_ms": 80,
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "event_id": "unknown-end",
+      "run_id": "run-unknown",
+      "sequence": 1,
+      "elapsed_ms": 100,
+      "type": "run_end",
+      "stop_reason": "service_error",
+      "intervention": false
+    }
+  ],
+  "markdown": "# Illustrative contract report\n\n<a id=\"claim-methods\"></a>\nGridMILP and SlotSearch model limited charger capacity.\n\n<a id=\"claim-grid-assumptions\"></a>\nGridMILP assumes known demand and half-hour slots.\n\n<a id=\"claim-slot-assumptions\"></a>\nSlotSearch assumes known demand and a fixed charger count.\n"
+}
