@@ -1,0 +1,318 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-no-uncertainty",
+  "case_id": "C",
+  "variant_id": "base",
+  "claims": [
+    {
+      "claim_id": "claim-C-rows",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "included_rows",
+        "type": "string_set",
+        "value": [
+          "EV-T01:R0001",
+          "EV-T01:R0002",
+          "EV-T01:R0003",
+          "EV-T01:R0004"
+        ],
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-rows"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-pairs",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "pair_count",
+        "type": "number",
+        "value": 2,
+        "unit": "pairs",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-pairs"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-baseline",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "baseline_method",
+        "type": "string",
+        "value": "audit-a",
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S13",
+          "kind": "passage",
+          "start": 96,
+          "end": 513
+        }
+      ],
+      "reference_fact_ids": [
+        "C-baseline"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-filter",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "pair_filter",
+        "type": "string",
+        "value": "same-instance-run-exactly-one-per-method-both-feasible",
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S13",
+          "kind": "passage",
+          "start": 530,
+          "end": 979
+        }
+      ],
+      "reference_fact_ids": [
+        "C-filter"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-a-total",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "baseline_total",
+        "type": "number",
+        "value": 300,
+        "unit": "fictional-cost-units",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-a-total"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-b-total",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "candidate_total",
+        "type": "number",
+        "value": 240,
+        "unit": "fictional-cost-units",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-b-total"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-ratio",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "reduction_ratio",
+        "type": "number",
+        "value": 0.2,
+        "unit": "ratio",
+        "tolerance": {
+          "absolute": 0.0001,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-ratio"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-percent",
+      "kind": "factual",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "reduction_percent",
+        "type": "number",
+        "value": 20,
+        "unit": "percent",
+        "tolerance": {
+          "absolute": 0.01,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "reference_fact_ids": [
+        "C-percent"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-C-scope",
+      "kind": "factual",
+      "assertion": {
+        "subject": "audit-b",
+        "predicate": "uncertain_demand_superiority_established",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S14",
+          "kind": "passage",
+          "start": 97,
+          "end": 525
+        }
+      ],
+      "reference_fact_ids": [
+        "C-scope"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    }
+  ]
+}

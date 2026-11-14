@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-right-source-wrong-span",
+  "case_id": "A",
+  "variant_id": "base",
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "claim_anchors": [
+    {
+      "claim_id": "claim-A-method-set",
+      "anchor": "claim-claim-A-method-set"
+    },
+    {
+      "claim_id": "claim-A-known-inputs",
+      "anchor": "claim-claim-A-known-inputs"
+    },
+    {
+      "claim_id": "claim-A-slot-minutes",
+      "anchor": "claim-claim-A-slot-minutes"
+    },
+    {
+      "claim_id": "claim-A-charging-assumptions",
+      "anchor": "claim-claim-A-charging-assumptions"
+    },
+    {
+      "claim_id": "claim-A-ledger-capacity",
+      "anchor": "claim-claim-A-ledger-capacity"
+    },
+    {
+      "claim_id": "claim-A-ledger-assignment",
+      "anchor": "claim-claim-A-ledger-assignment"
+    },
+    {
+      "claim_id": "claim-A-ledger-assumptions",
+      "anchor": "claim-claim-A-ledger-assumptions"
+    },
+    {
+      "claim_id": "claim-A-repair-capacity",
+      "anchor": "claim-claim-A-repair-capacity"
+    },
+    {
+      "claim_id": "claim-A-repair-assumptions",
+      "anchor": "claim-claim-A-repair-assumptions"
+    },
+    {
+      "claim_id": "claim-A-private-exclusion",
+      "anchor": "claim-claim-A-private-exclusion"
+    },
+    {
+      "claim_id": "claim-A-uncertainty",
+      "anchor": "claim-claim-A-uncertainty"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+[
+  {
+    "name": "pass-A",
+    "case": "a-find",
+    "failed_assertion_ids": [],
+    "exit_code": 0
+  },
+  {
+    "name": "pass-B",
+    "case": "b-compare",
+    "failed_assertion_ids": [],
+    "exit_code": 0
+  },
+  {
+    "name": "pass-C",
+    "case": "c-audit",
+    "failed_assertion_ids": [],
+    "exit_code": 0
+  },
+  {
+    "name": "right-id-wrong-value",
+    "case": "a-find",
+    "failed_assertion_ids": [
+      "required_fact.A-slot-minutes",
+      "decisive.A-slot-minutes",
+      "citation.claim-A-slot-minutes"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "right-source-wrong-span",
+    "case": "a-find",
+    "failed_assertion_ids": [
+      "citation.claim-A-method-set"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "unsupported-extra-claim",
+    "case": "a-find",
+    "failed_assertion_ids": [
+      "citation.extra"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "obsolete-correction",
+    "case": "b-compare",
+    "failed_assertion_ids": [
+      "required_fact.B-ledger-seconds",
+      "decisive.B-ledger-seconds",
+      "citation.claim-B-ledger-seconds",
+      "decision.claim-B-recommendation"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "duplicate-evidence",
+    "case": "b-compare",
+    "failed_assertion_ids": [
+      "required_fact.B-independent-count",
+      "decisive.B-independent-count",
+      "citation.claim-B-independent-count",
+      "decision.claim-B-recommendation"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "numeric-boundary-error",
+    "case": "c-audit",
+    "failed_assertion_ids": [
+      "required_fact.C-percent",
+      "decisive.C-percent",
+      "citation.claim-C-percent"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "no-uncertainty",
+    "case": "c-audit",
+    "failed_assertion_ids": [
+      "uncertainty.C-uncertain-demand"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "malformed-claims",
+    "case": "c-audit",
+    "failed_assertion_ids": [
+      "output.C"
+    ],
+    "exit_code": 1
+  },
+  {
+    "name": "malformed-report",
+    "case": "c-audit",
+    "failed_assertion_ids": [
+      "output.C"
+    ],
+    "exit_code": 1
+  }
+]

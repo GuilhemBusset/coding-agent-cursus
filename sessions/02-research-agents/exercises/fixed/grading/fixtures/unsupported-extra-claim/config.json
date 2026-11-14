@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-unsupported-extra-claim",
+  "case_id": "A",
+  "variant_id": "base",
+  "trial": 1,
+  "seed": 20261115,
+  "mode": "class",
+  "evidence_kind": "synthetic",
+  "replay_of": null,
+  "provider": "openai",
+  "model": "illustrative-model-pin",
+  "endpoint_alias": "course-openai",
+  "settings": {
+    "temperature": 0,
+    "sampling_seed": null,
+    "max_output_tokens": 1024
+  },
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "policy_sha256": "3e0195217e655692ee9bfa154886177a94be633ec39550e44143defd3e3c6a5c",
+  "hashes": {
+    "model": "1111111111111111111111111111111111111111111111111111111111111111",
+    "settings": "2222222222222222222222222222222222222222222222222222222222222222",
+    "corpus": "3333333333333333333333333333333333333333333333333333333333333333",
+    "evaluator": "4444444444444444444444444444444444444444444444444444444444444444",
+    "harness": "5555555555555555555555555555555555555555555555555555555555555555",
+    "prompt": "6666666666666666666666666666666666666666666666666666666666666666",
+    "rating_bundle": "7777777777777777777777777777777777777777777777777777777777777777"
+  },
+  "rating_bundle": {
+    "revision": "illustrative-contract-v1",
+    "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "illustrative": true
+  },
+  "snapshot_id": "candidate-v1",
+  "workspace": {
+    "workspace_id": "workspace-A",
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ]
+  }
+}
