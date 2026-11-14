@@ -86,6 +86,13 @@ again. Aggregation must propagate null, as the existing contract validator does.
 
 ## Offline command evidence
 
+Verification in a fresh checkout must install the session's Node dependencies first:
+from `sessions/02-research-agents`, run `mise exec -- npm ci` before the Node suite,
+`npm run typecheck`, the adapter pytest suite or the smoke diagnostic. `uv run`
+installs Python dependencies only. The automated evidence commands include this
+lockfile installation so they also work in disposable checkouts without an existing
+`node_modules` directory. The normal session setup below already performs it.
+
 From the repository root after the session setup:
 
 ```sh
