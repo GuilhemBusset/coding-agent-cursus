@@ -14,6 +14,10 @@ You are the builder. Build this issue in your working directory, following your 
   - HTML pages: use the `html-page` skill (tools/html-pages/GUIDE.md) and its checker.
   - Tests in proportion: for small issues aim for fewer test lines than deliverable lines; no
     byte-pinning of text the issue does not change; prose is reviewed, not keyword-matched.
+  - Commands run repeatedly, including after later issues merge. Use TemporaryDirectory or
+    try/finally to remove temporary clones, installations and caches on success and failure;
+    respect TMPDIR/TMP/TEMP. Print diagnostic logs to command output before cleanup so the
+    verifier retains them as evidence; do not rely on files inside temporary roots surviving.
 - `tests`: the test files you own. Every test function in them must be selected by one of your
   commands, or listed in `dispositions` as `owner-run` (only the owner can run it) or
   `excluded: <reason>`.

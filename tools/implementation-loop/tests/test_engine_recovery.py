@@ -3,6 +3,8 @@ suite of the earlier engines (ADR 0008, ADR 0011) to the builder/examiner workfl
 Real git, the real ship.sh, the real verifier and real squash merges into a local bare remote;
 only the agents and GitHub are fakes."""
 
+import os
+import shlex
 import signal
 import stat
 import subprocess
@@ -83,6 +85,99 @@ class HappyPathRegressions(RecoveryCase):
         self.run_engine()
         briefing = [c for c in self.agents.calls if c[0] == "explore"][0][3]
         self.assertIn("`docs/a.txt` contains `alpha`.", briefing)
+
+
+class TemporaryCheckRegressions(RecoveryCase):
+    # Deliberately reproduce #178's mkdtemp-without-cleanup command, using tiny data.
+    leak = f"{shlex.quote(sys.executable)} - <<'PY'\n" + """\
+import os
+import tempfile
+from pathlib import Path
+work = Path(tempfile.mkdtemp(prefix="installation-"))
+(work / "cache").write_bytes(b"temporary installation")
+assert work.parent == Path(os.environ["TMPDIR"])
+assert os.environ["TMP"] == os.environ["TEMP"] == str(work.parent)
+print("installation diagnostic", flush=True)
+PY
+"""
+
+    def test_repeated_checks_and_earlier_issue_regressions_release_temporary_data(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.add_work(3, "docs/b.txt", "beta", blocked_by=(2,))
+        self.epic(2, 3)
+        agents = FakeAgents(self.scripts)
+        build = agents.build
+        roots = []
+        run_check = engine_mod.verify.run_check
+        original_env = dict(os.environ)
+        self.environment = {"check_env": {"CHECK_MARKER": "retained", "TMPDIR": "/unused"}}
+
+        def leaking_build(vendor, req, plan, worktree, feedback):
+            result = build(vendor, req, plan, worktree, feedback)
+            check = worktree / agents.test_file(req.issue.number)
+            check.write_text(check.read_text() + self.leak)
+            return result
+
+        def observe(*args, **kwargs):
+            ev, cases = run_check(*args, **kwargs)
+            env = kwargs.get("extra_env") or args[5]
+            root = Path(env["TMPDIR"])
+            self.assertEqual(env["CHECK_MARKER"], "retained")
+            self.assertTrue(root.is_dir())
+            roots.append(root)
+            return ev, cases
+
+        agents.build = leaking_build  # ty: ignore[invalid-assignment]  # test double
+        with mock.patch.object(engine_mod.verify, "run_check", side_effect=observe):
+            self.run_engine(agents=agents)
+            coord = self.engine.ws.coord()
+            for _ in range(3):
+                self.assertEqual(self.engine._regressions(3, coord, self.engine.ws.head(coord)), [])
+        self.assertEqual((self.phase(2), self.phase(3)), (Phase.DONE, Phase.DONE))
+        self.assertGreaterEqual(len(self.events("regression_check")), 4)
+        self.assertTrue(roots)
+        self.assertTrue(all(p.parent == self.store.dir / "check-tmp" and not p.exists() for p in roots))
+        self.assertEqual(list((self.store.dir / "check-tmp").iterdir()), [])
+        self.assertEqual(dict(os.environ), original_env)
+        self.assertEqual(self.engine.check_env, self.environment["check_env"])
+        self.assertTrue(any("installation diagnostic" in e["output_tail"] for e in self.store.issue(2).evidence))
+        self.assertTrue(list(self.store.issue_dir(2).glob("pytest-*")), "verifier records survive cleanup")
+
+    def test_failure_and_timeout_clean_up_and_remain_failures(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine(caps=Caps(ci_poll_s=0, queue_poll_s=0, check_timeout_s=1))
+        coord = self.engine.ws.coord()
+        for ending in ("exit 7", "sleep 30"):
+            with self.subTest(ending=ending):
+                self.assertTrue(self.engine._reproduces(coord, self.leak + ending, ".", None))
+                self.assertEqual(list((self.store.dir / "check-tmp").iterdir()), [])
+        entry = self.store.state["accepted_checks"]["2"]
+        entry["checks"] = [{"criterion": "D1", "command": self.leak + "exit 7"}]
+        self.assertTrue(self.engine._regressions(3, coord, self.engine.ws.head(coord)))
+        self.assertFalse(self.events("regression_check")[-1]["ok"])
+        self.assertEqual(list((self.store.dir / "check-tmp").iterdir()), [])
+
+    def test_verifier_interruption_cleans_only_its_temporary_root(self):
+        self.add_work(2, "docs/a.txt", "alpha")
+        self.epic(2)
+        self.run_engine()
+        evidence = self.store.issue_dir(2) / "retained.log"
+        roots = []
+
+        def interrupt(*args, **kwargs):
+            root = Path(kwargs["extra_env"]["TMPDIR"])
+            (root / "cache").write_text("temporary")
+            roots.append(root)
+            evidence.write_text("diagnostic")
+            raise KeyboardInterrupt
+
+        with mock.patch.object(engine_mod.verify, "verify", side_effect=interrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                self.engine._verify(self.repo.work, self.store.issue(2), self.engine.ws.head(self.repo.work),
+                                    self.store.issue_dir(2))
+        self.assertTrue(roots and all(not p.exists() for p in roots))
+        self.assertEqual(evidence.read_text(), "diagnostic")
 
 
 class RoundRegressions(RecoveryCase):
