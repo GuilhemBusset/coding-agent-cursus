@@ -93,6 +93,21 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.2
         with:
           version: ${{ steps.pins.outputs.uv }}
+      - id: node
+        name: Read optional session Node pin
+        working-directory: ${{ steps.where.outputs.session }}
+        run: |
+          if [ -f package.json ]; then
+            echo "version=$(python3 -c 'import json; print(json.load(open("package.json"))["engines"]["node"])')" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.node.outputs.version != ''
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+      - name: Locked session npm dependencies
+        if: steps.node.outputs.version != ''
+        working-directory: ${{ steps.where.outputs.session }}
+        run: npm ci
       - name: pytest
         working-directory: ${{ steps.where.outputs.session }}
         env:

@@ -286,10 +286,20 @@ def test_the_real_map_on_known_changes():
         assert not types.everything and types.units == {"typecheck", "imports"} and not types.parts, path
     session = impact.select(Change({"sessions/01-fundamentals/pyproject.toml"}))
     assert session.sessions == ["sessions/01-fundamentals"] and "typecheck" not in session.units
-    assert session.parts == ["sessions/01-fundamentals/tests/labs", "sessions/01-fundamentals/tests/lessons"]
+    # Session manifests are shared inputs of the editor/lab checks across sessions.
+    assert session.parts == sorted([lessons, *[part for part in impact.discover_parts() if part.endswith("/labs")]])
     # The editor setup a student's installation carries (ADR 0016) is checked by the lab tests.
     for path in ("ty.toml", ".vscode/settings.json", ".vscode/extensions.json", "setup/cursus.code-workspace",
                  "setup/editor.py", "setup/editor.json", "sessions/01-fundamentals/.vscode/settings.json"):
         editor = impact.select(Change({path}))
         assert not editor.everything and "sessions/01-fundamentals/tests/labs" in editor.parts, path
     assert impact.select(Change({".github/workflows/ci.yml"})).everything
+
+
+def test_session_2_typescript_is_selected_through_its_python_lab_entry():
+    prefix = "sessions/02-research-agents/"
+    for path in ("package.json", "package-lock.json", "tsconfig.json", "mise.toml",
+                 "exercises/fixed/check_setup.ts", "tests/labs/pi-setup.test.ts"):
+        selected = impact.select(Change({prefix + path}))
+        assert prefix + "tests/labs" in selected.parts, path
+        assert "student-setup" in selected.units, path

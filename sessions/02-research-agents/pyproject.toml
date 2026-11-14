@@ -1,0 +1,21 @@
+[project]
+name = "cursus-session-02-research-agents"
+version = "0.1.0"
+description = "Session 2: one Pi research agent, then harness and prompt experiments."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pytest==8.3.5"]
+
+[dependency-groups]
+parallel = ["pytest-xdist==3.8.0"]
+typecheck = ["ty==0.0.95"]
+
+[tool.uv]
+default-groups = ["typecheck"]
+
+[tool.ty.environment]
+python = ".venv"
+python-platform = "all"
+
+[tool.ty.terminal]
+error-on-warning = true

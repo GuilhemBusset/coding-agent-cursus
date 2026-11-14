@@ -135,3 +135,41 @@ def test_a_detected_editor_failure_stops_prepare_even_with_no_check(tmp_path):
     assert result.returncode == 1
     assert "editor: FAILED" in result.stdout and "editor unavailable" in result.stdout
     assert "setup check: not run" not in result.stdout
+
+
+def test_node_session_uses_locked_npm_and_survives_spaced_path_rerun(tmp_path):
+    from student_sandbox import tree
+
+    box, repo = fixture(tmp_path / "student work with spaces")
+    session = repo / "sessions/02-beta"
+    (session / "package.json").write_text('{}\n')
+    (session / "package-lock.json").write_text('{}\n')
+    (session / "exercises/student.txt").write_text('my work\n')
+    git(repo, "config", "user.keepThis", "unrelated")
+    before = tree(repo, skip=(".git",))
+    for _ in range(2):
+        result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert syncs(box)[str(session)] == [*SYNC, "mise exec -- npm ci"] * 2
+    assert tree(repo, skip=(".git",)) == before
+    assert git(repo, "config", "--get", "user.keepThis").strip() == "unrelated"
+
+
+def test_npm_failure_stops_prepare_with_recovery_command(tmp_path):
+    box, repo = fixture(tmp_path)
+    session = repo / "sessions/02-beta"
+    for name in ("package.json", "package-lock.json"):
+        (session / name).write_text('{}\n')
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"],
+                     MISE_FAIL="exec -- npm ci @" + str(session))
+    assert result.returncode == 1
+    assert syncs(box)[str(session)].count("mise exec -- npm ci") == 4
+    assert "Next: cd sessions/02-beta && mise exec -- npm ci" in result.stdout
+
+
+def test_node_session_without_lock_stops_before_install(tmp_path):
+    box, repo = fixture(tmp_path)
+    (repo / "sessions/02-beta/package.json").write_text('{}\n')
+    result = box.run([sys.executable, str(STUDENT / "prepare.py"), "--repo", str(repo), "--no-check"])
+    assert result.returncode == 1 and "package-lock.json is missing" in result.stdout
+    assert str(repo / "sessions/02-beta") not in syncs(box)

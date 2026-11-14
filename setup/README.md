@@ -14,6 +14,81 @@ This directory is the home for repository-wide installation scripts, dependency 
 diagnostics, and setup documentation. Run the commands below from the repository root.
 Installation needs internet access; viewing generated HTML needs only a browser.
 
+## Session 2: Python and Pi toolchain
+
+Start with the existing [platform student installer](student/README.md). It supplies Git, mise
+and uv; Session 2 adds no replacement installer. Linux prerequisites are the distribution's
+Git and archive/download tools, macOS needs the Xcode Command Line Tools (the student installer
+prompts), and native Windows uses Windows PowerShell 5.1 and the installer’s winget/Git steps.
+Any OS package or administrator prompts belong to that documented installer; the Session 2
+helper needs no administrator access. Download access to mise's Node/Python releases, PyPI and
+the npm registry is required. No agent login or API key is required for Session 2 offline checks.
+
+From a fresh clone, on Linux, macOS or native Windows:
+
+```sh
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py
+```
+
+The helper uses shared `student/prepare.py` installation code: `mise trust mise.toml`,
+`mise install`, `mise exec -- uv sync --locked`, `mise exec -- npm ci`, then the session's
+Python offline check. The full student installer discovers this session automatically and also
+runs locked npm installation. Download failures stop with a rerun command; shared preparation
+retries transient download failures. Rerun the helper after lockfile changes. It replaces only
+the generated environments, preserves student sources, branches and unrelated configuration,
+and does not install global npm packages, write shell profiles or modify global Pi settings.
+
+The session pins Node **24.15.0**, its bundled npm **11.12.1**, TypeScript **5.9.3**, and
+`@earendil-works/pi-ai` / `@earendil-works/pi-agent-core` **1.5.2**. Package names and the
+Node >=22.19.0 requirement were verified against the upstream
+[pi-ai manifest](https://raw.githubusercontent.com/earendil-works/pi/main/packages/ai/package.json),
+[agent-core manifest](https://raw.githubusercontent.com/earendil-works/pi/main/packages/agent/package.json)
+and published npm metadata on 2026-11-14; imports and typing are tested against the locked release.
+Python 3.12 and uv 0.11.28 follow the existing course tooling.
+
+Mise installs runtimes in its per-user data directory (normally `~/.local/share/mise/installs/`
+on Unix and `%LOCALAPPDATA%/mise/installs/` on Windows; `mise where node` prints the actual path).
+Session locks/manifests stay in `sessions/02-research-agents/`; uv installs `.venv/` there and npm
+installs `node_modules/` there. Downloads also populate their normal per-user caches; neither
+cache is needed in an exported session. The reusable helper/editor workspace are repository
+assets under `setup/`, and are not runtime dependencies of the copied session.
+
+For a standalone session, copy the complete `sessions/02-research-agents/` folder and follow
+its [README](../sessions/02-research-agents/README.md#standalone-session). The locked commands,
+from that copied folder, are:
+
+```sh
+mise trust mise.toml
+mise install
+mise exec -- uv sync --locked
+mise exec -- npm ci
+mise exec -- npm run typecheck
+mise exec -- npm test
+mise exec -- uv run --locked python exercises/check_setup.py
+```
+
+To remove session packages, delete that session's `.venv/` and `node_modules/` in your file
+manager; rerunning setup restores them. To remove the Node runtime too, run
+`mise uninstall node@24.15.0` only after checking no other project uses it. Remove Python/uv
+through mise only if unused elsewhere; see the student installer's removal instructions for
+mise itself and OS packages. Student edits and runs are left alone.
+
+### Session 2 platform evidence
+
+The actual platform installer jobs in `.github/workflows/student-setup.yml` install twice;
+`tests/student_setup/ci_verify.py` now additionally runs the Session 2 helper, offline check,
+TypeScript typecheck and import test. A Linux typecheck of Windows branches is not a Windows run.
+Local WSL2 Linux clean-install logs are produced during issue #178 validation. At implementation
+handoff native Linux, macOS and native Windows execution are **unverified**, pending those CI jobs.
+
+Owner: **Guilhem Busset**. For each unavailable platform (`platform:native-linux`, `platform:macos`, `platform:windows`),
+retain a passing student-setup CI job log on the landing commit, or from a fresh clone on that
+native OS run the helper above twice and all seven standalone commands above. Expect zero exits,
+`Offline readiness: PASS`, a passing TypeScript import test and no changes to sources or unrelated
+configuration on the second run. Record OS/runtime versions, both installation logs and the final
+`git status --short`; until actual execution is recorded these are owner obligations, not passes.
+No paid/live adapter evidence is claimed by this setup.
+
 ## Every clone: activate git hooks
 
 Prerequisites: Git and Bash (Git Bash on Windows).
