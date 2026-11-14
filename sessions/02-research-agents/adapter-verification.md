@@ -92,6 +92,9 @@ from `sessions/02-research-agents`, run `mise exec -- npm ci` before the Node su
 installs Python dependencies only. The automated evidence commands include this
 lockfile installation so they also work in disposable checkouts without an existing
 `node_modules` directory. The normal session setup below already performs it.
+The HTML-suite CI job also installs the session lock when selecting the adapter
+suite (including all-suite main/nightly runs). The smoke helper uses mise when
+available, or Node on PATH in CI environments that already select the runtime.
 
 From the repository root after the session setup:
 

@@ -7,6 +7,7 @@ Requires mise and uv from the existing student installer. No logins or API key r
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
 
@@ -146,7 +147,10 @@ def main() -> int:
     if args.adapter_smoke:
         if not (args.offline or args.live or args.invalid):
             parser.error("--adapter-smoke requires --offline or explicit paid --live opt-in")
-        code, output = run_quiet(["mise", "exec", "--", "node", "--input-type=module", "--eval", ADAPTER_SMOKE,
+        # Student setup uses mise's session pin; CI already puts its selected Node
+        # on PATH and need not install a second runtime manager for diagnostics.
+        node = ["mise", "exec", "--", "node"] if shutil.which("mise") else ["node"]
+        code, output = run_quiet([*node, "--input-type=module", "--eval", ADAPTER_SMOKE,
                                   "--", "--invalid" if args.invalid else "--live" if args.live else "--offline"], session)
         print(output, end="")
         return code
