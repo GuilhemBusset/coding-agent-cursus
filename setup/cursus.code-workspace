@@ -1,7 +1,17 @@
 {
   "folders": [
-    { "name": "Repository", "path": ".." },
-    { "name": "Session 01", "path": "../sessions/01-fundamentals" }
+    {
+      "name": "Repository",
+      "path": ".."
+    },
+    {
+      "name": "Session 01",
+      "path": "../sessions/01-fundamentals"
+    },
+    {
+      "name": "Session 02",
+      "path": "../sessions/02-research-agents"
+    }
   ],
   "settings": {
     "python.languageServer": "None",

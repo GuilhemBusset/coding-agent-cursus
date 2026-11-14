@@ -7,7 +7,6 @@ import ast
 import re
 import subprocess
 
-import prepare
 from student_sandbox import REPO, STUDENT, powershell
 
 SHELL = [STUDENT / "install.sh", REPO / "setup/session-01-fundamentals.sh",
@@ -54,7 +53,7 @@ def test_powershell_scripts_parse_as_windows_powershell_5_1():
 
 
 def test_installer_floors_equal_the_setup_checks_floors():
-    check = prepare.latest_check(prepare.sessions(REPO))
+    check = REPO / "sessions/01-fundamentals/exercises/check_setup.py"
     assert check is not None
     tree = ast.parse(check.read_text(encoding="utf-8"))
     floors = next(ast.literal_eval(node.value) for node in ast.walk(tree) if isinstance(node, ast.Assign)

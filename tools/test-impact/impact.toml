@@ -64,7 +64,8 @@ paths = [
 # tests/sessions: the repository's rules for every session (ADR 0001): its Python imports nothing
 # from outside the session, and its default install stays light.
 [units.session-layout]
-paths = ["tests/sessions/**", "sessions/**/*.py", "sessions/*/pyproject.toml", "sessions/**/*.pth"]
+paths = ["tests/sessions/**", "sessions/**/*.py", "sessions/*/pyproject.toml", "sessions/**/*.pth",
+         "sessions/02-research-agents/package*.json", "sessions/02-research-agents/mise.toml", "setup/cursus.code-workspace"]
 
 # The implement loop engine tests run ship.sh, the loop guard and the hooks for real, check
 # setup/browser-libs.py against Playwright's package list, and plan against a few repo files.
@@ -91,6 +92,11 @@ paths = [
   "setup/editor.json",
   "tests/student_setup/**",
   "setup/session-01-fundamentals.sh",
+  "setup/session-02-research-agents.py",
+  "sessions/02-research-agents/package*.json",
+  "sessions/02-research-agents/exercises/fixed/check_setup.ts",
+  "sessions/02-research-agents/tsconfig.json",
+  "sessions/02-research-agents/tests/labs/*.ts",
   "setup/git-hooks.sh",
   ".githooks/**",
   "sessions/*/mise.toml",
@@ -112,6 +118,7 @@ paths = [
   "tests/turn_in/**",
   "tests/sessions/**",
   "setup/student/*.py",
+  "setup/session-02-research-agents.py",
   "tests/student_setup/**",
 ]
 
@@ -141,7 +148,7 @@ shared = []
 # test_home_turn_in.py runs the real turn-in script and hooks; test_editor_setup.py and
 # test_p00_lab.py check the editor setup a student's installation and the exported lab carry
 # (ADR 0016).
-reads = ["exercises/**", "tests/labs/**", ".vscode/**"]
+reads = ["exercises/**", "tests/labs/**", ".vscode/**", "package*.json", "tsconfig.json", "mise.toml"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
   "ty.toml", ".vscode/**", "setup/cursus.code-workspace", "setup/editor.py", "setup/editor.json",

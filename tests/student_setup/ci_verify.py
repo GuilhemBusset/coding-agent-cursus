@@ -120,6 +120,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{name}: mise exec -- uv sync --locked exited {code}")
         if code:
             failed.append(f"mise exec -- uv sync --locked failed in {name}")
+        if (session / "package.json").is_file():
+            helper = args.clone.resolve() / "setup/session-02-research-agents.py"
+            code = subprocess.run([sys.executable, str(helper), "--session", str(session)],
+                                  stdin=subprocess.DEVNULL, check=False).returncode
+            if code:
+                failed.append(f"Session 2 helper/offline check failed in {name}")
+            for command in (["npm", "run", "typecheck"], ["npm", "test"]):
+                code = subprocess.run(["mise", "exec", "--", *command], cwd=session,
+                                      stdin=subprocess.DEVNULL, check=False).returncode
+                if code:
+                    failed.append(f"{command} failed in {name}")
     if "setup check: skipped (--no-login)" not in first and "setup check: skipped (-NoLogin)" not in first:
         failed.append("the first run did not say it skipped the setup check")
     if re.search(r"result: PASS", first + second):

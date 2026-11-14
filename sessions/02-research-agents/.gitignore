@@ -1,0 +1,4 @@
+node_modules/
+.venv/
+exercises/runs/*
+!exercises/runs/.gitkeep

@@ -1,0 +1,12 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.languageServer": "None",
+  "ty.path": [
+    "${workspaceFolder}/.venv/bin/ty",
+    "${workspaceFolder}/.venv/Scripts/ty.exe"
+  ],
+  "ty.diagnosticMode": "workspace",
+  "ty.disableLanguageServices": false,
+  "rainbow_csv.virtual_alignment_mode": "always",
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

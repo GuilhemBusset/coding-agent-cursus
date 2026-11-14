@@ -9,13 +9,14 @@ install.sh and install.ps1 run this after the clone and uv exist, the same way o
 2. Sync every session that follows the session contract .github/workflows/session-tests.yml
    enforces: each sessions/*/ folder with a mise.toml, a pyproject.toml and a uv.lock. In each one:
    `mise trust`, `mise install` (the Python and uv the session pins), then
-   `mise exec -- uv sync --locked` (its packages from uv.lock). A new session that follows the
+   `mise exec -- uv sync --locked` (its packages from uv.lock). Sessions with package.json
+   also run `mise exec -- npm ci` (package-lock.json is required). A new session that follows the
    contract needs no change here.
 3. Sync the repository's setup/ tooling when present, then install/verify the pinned VS Code
    extensions through setup/editor.py when the editor's CLI is available. No editor is required
    for command-line students; workspace settings are already checked in, not generated here.
-4. Unless --no-check: run the latest session's setup check (exercises/check_setup.py), which
-   proves the logins, the push and the agent, and shows its summary block; then the next steps.
+4. Unless --no-check: run the latest session's setup check (exercises/check_setup.py),
+   in its pinned environment, then show that session's next steps. Checks may be offline.
 
 A step that downloads (`mise install`, `uv sync`) is tried again after 10, 30 and 60 seconds when
 it fails, since a download can fail for a moment (a 504 from GitHub). The tests shorten that with
@@ -119,7 +120,12 @@ def run_retried(argv: list[str], cwd: Path, delays: tuple[int, ...], name: str) 
 def sync(repo: Path, session: Path, delays: tuple[int, ...] = RETRY_DELAYS_S) -> int:
     name = session.relative_to(repo).as_posix()
     say(f"{name}: syncing (the first run downloads its Python and packages)")
-    for argv in (["mise", "trust", "mise.toml"], ["mise", "install"], ["mise", "exec", "--", "uv", "sync", "--locked"]):
+    commands = [["mise", "trust", "mise.toml"], ["mise", "install"], ["mise", "exec", "--", "uv", "sync", "--locked"]]
+    if (session / "package.json").is_file():
+        if not (session / "package-lock.json").is_file():
+            return fail(f"session sync ({name})", "package-lock.json is missing", "restore the session lockfile")
+        commands.append(["mise", "exec", "--", "npm", "ci"])
+    for argv in commands:
         # mise trust only writes a local file; the other two download.
         code, output = run_quiet(argv, session) if argv[1] == "trust" else run_retried(argv, session, delays, name)
         if code != 0:
@@ -128,12 +134,15 @@ def sync(repo: Path, session: Path, delays: tuple[int, ...] = RETRY_DELAYS_S) ->
                 print(tail, flush=True)
             return fail(f"session sync ({name})", f"`{' '.join(argv)}` exited {code}",
                         f"cd {name} && {' '.join(argv)}")
-    say(f"{name}: synced (mise trust, mise install, mise exec -- uv sync --locked)")
+    say(f"{name}: synced (" + ", ".join(" ".join(argv) for argv in commands) + ")")
     return 0
 
 
 def check_command(check: Path, repo: Path) -> str:
     rel = check.parent.relative_to(repo)
+    if not (check.parent / "check-setup.sh").is_file():
+        session = check.parents[1].relative_to(repo).as_posix()
+        return f'cd "{session}" && mise exec -- uv run --locked python exercises/check_setup.py'
     if os.name == "nt":
         return "powershell -NoProfile -ExecutionPolicy Bypass -File .\\" + "\\".join([*rel.parts, "check-setup.ps1"])
     return f"bash {rel.as_posix()}/check-setup.sh"
@@ -191,18 +200,21 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     command = check_command(check, repo)
     if args.no_check:
-        say(f"setup check: not run, so nothing is verified yet. Once you are logged in, run it from the clone: {command}")
+        say(f"setup check: not run, so nothing is verified yet. Run it from the clone: {command}")
         return 0
-    say(f"setup check: {check.relative_to(repo).as_posix()} (the agent smoke test can take a minute or two)")
-    code = subprocess.run([sys.executable, str(check)], cwd=repo, stdin=subprocess.DEVNULL, check=False).returncode
-    # The latest session's pre-work page, or else the first one any session has.
-    pages = [check.parent / "00-prework.html", *sorted(repo.glob("sessions/*/exercises/00-prework.html"))]
-    page = next((p for p in pages if p.is_file()), pages[0]).relative_to(repo).as_posix()
+    say(f"setup check: {check.relative_to(repo).as_posix()}")
+    code = subprocess.run(["mise", "exec", "--", "uv", "run", "--locked", "python", str(check)],
+                          cwd=check.parents[1], stdin=subprocess.DEVNULL, check=False).returncode
+    page = check.parent / "00-prework.html"
+    if not page.is_file():
+        page = check.parents[1] / "README.md"
+    page_name = page.relative_to(repo).as_posix()
     say("Next steps:")
-    print("  1. Copy the whole summary block above, both marker lines included, into the form your instructor gives you.")
-    if code != 0:
-        print(f"     Some lines FAIL: fix them with 'If a line is FAIL' on {page}, then rerun the setup.")
-    print(f"  2. Open {page} in your browser and do the pre-reading.")
+    if (check.parent / "check-setup.sh").is_file():
+        print("  1. Copy the whole summary block above, both marker lines included, into the instructor's form.")
+    else:
+        print(f"  1. Review the setup result above; fix any reported failure and rerun: {command}")
+    print(f"  2. Open {page_name} for this session's instructions.")
     print("  3. Open a new terminal window, so that PATH includes the tools installed now.")
     return 0 if code == 0 else 1
 

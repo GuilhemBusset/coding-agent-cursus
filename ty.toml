@@ -19,7 +19,7 @@ root = ["tools/implementation-loop", "tools/implementation-loop/tests", "tools/t
 
 [src]
 include = ["tools/implementation-loop", "tools/test-impact", "tests/turn_in", "tests/sessions", "setup/browser-libs.py",
-           "setup/editor.py", "setup/student", "tests/student_setup"]
+           "setup/editor.py", "setup/session-02-research-agents.py", "setup/student", "tests/student_setup"]
 
 [terminal]
 error-on-warning = true

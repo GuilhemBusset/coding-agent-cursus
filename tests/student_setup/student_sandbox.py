@@ -36,6 +36,14 @@ if [ -n "$MISE_FAIL" ]; then
     fi ;;
   esac
 fi
+if [ "$1" = exec ]; then
+  shift; shift
+  if [ "$1" = uv ] && [ "$2" = run ]; then
+    while [ "$#" -gt 0 ] && [ "$1" != python ]; do shift; done
+    shift
+    exec "$STUB_PYTHON" "$@"
+  fi
+fi
 exit 0
 """
 UV = """#!/bin/sh
