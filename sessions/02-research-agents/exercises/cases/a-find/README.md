@@ -70,3 +70,13 @@ fails because facts are missing, regardless of how fluent its prose sounds. For
 peer review, also check that every factual sentence is entailed by its cited text;
 IDs alone are insufficient. The common course quality gates are specified in the
 public fixed policy; this rubric explains the case-specific decisive requirements.
+
+## Public seeded variant
+
+The [public manifest](../../fixed/config/public/manifest.json) announces
+`public-seed-20261115` for class and all three independent submission trials,
+identically for baseline and candidate. The [bundle](variants/public-seed-20261115/)
+contains renamed methods, changed timings and reordered sources with recalculated
+citations. Use its own public answer and reference. See the
+[generation instructions](../../fixed/corpus/README.md). Deterministic inputs do
+not promise deterministic model outputs.

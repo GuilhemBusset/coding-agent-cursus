@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "case_id": "A",
+  "variant_id": "public-seed-20261115",
+  "seed": 20261115,
+  "base_revision": "issue-181 A/B v1; issue-182 C v1",
+  "base_path": "cases/a-find",
+  "mappings": {
+    "sources": {
+      "EV-S01": "V20261115-EV-S01",
+      "EV-S02": "V20261115-EV-S02",
+      "EV-S03": "V20261115-EV-S03",
+      "EV-S04": "V20261115-EV-S04",
+      "EV-S05": "V20261115-EV-S05",
+      "EV-S06": "V20261115-EV-S06",
+      "EV-S07": "V20261115-EV-S07",
+      "EV-S08": "V20261115-EV-S08",
+      "EV-S09": "V20261115-EV-S09",
+      "EV-S10": "V20261115-EV-S10",
+      "EV-S11": "V20261115-EV-S11",
+      "EV-S12": "V20261115-EV-S12"
+    },
+    "passages": {
+      "EV-S01:P01": "V20261115-EV-S01:P01",
+      "EV-S01:P02": "V20261115-EV-S01:P02",
+      "EV-S01:P03": "V20261115-EV-S01:P03",
+      "EV-S02:P01": "V20261115-EV-S02:P01",
+      "EV-S02:P02": "V20261115-EV-S02:P02",
+      "EV-S03:P01": "V20261115-EV-S03:P01",
+      "EV-S03:P02": "V20261115-EV-S03:P02",
+      "EV-S04:P01": "V20261115-EV-S04:P01",
+      "EV-S05:P01": "V20261115-EV-S05:P01",
+      "EV-S06:P01": "V20261115-EV-S06:P01",
+      "EV-S06:P02": "V20261115-EV-S06:P02",
+      "EV-S07:P01": "V20261115-EV-S07:P01",
+      "EV-S08:P01": "V20261115-EV-S08:P01",
+      "EV-S09:P01": "V20261115-EV-S09:P01",
+      "EV-S10:P01": "V20261115-EV-S10:P01",
+      "EV-S10:P02": "V20261115-EV-S10:P02",
+      "EV-S11:P01": "V20261115-EV-S11:P01",
+      "EV-S12:P01": "V20261115-EV-S12:P01",
+      "EV-S12:P02": "V20261115-EV-S12:P02"
+    },
+    "experiments": {
+      "EV-E-L1": "V20261115-EV-E-L1",
+      "EV-E-Q1": "V20261115-EV-E-Q1",
+      "EV-E-Q2": "V20261115-EV-E-Q2",
+      "EV-E-D1": "V20261115-EV-E-D1"
+    },
+    "families": {
+      "EV-F-L": "V20261115-EV-F-L",
+      "EV-F-Q": "V20261115-EV-F-Q",
+      "EV-F-D": "V20261115-EV-F-D"
+    },
+    "rows": {},
+    "pairs": {},
+    "methods": {
+      "Slot Ledger Private": "Willow Ledger Private",
+      "Slot Ledger": "Willow Ledger",
+      "Private Ledger": "Willow Ledger Private",
+      "Queue Repair": "Harbor Repair",
+      "slot-ledger": "willow-ledger",
+      "queue-repair": "harbor-repair",
+      "private-ledger": "willow-private"
+    }
+  },
+  "source_order": [
+    "V20261115-EV-S08",
+    "V20261115-EV-S07",
+    "V20261115-EV-S06",
+    "V20261115-EV-S09",
+    "V20261115-EV-S05",
+    "V20261115-EV-S10",
+    "V20261115-EV-S11",
+    "V20261115-EV-S03",
+    "V20261115-EV-S04",
+    "V20261115-EV-S01",
+    "V20261115-EV-S02",
+    "V20261115-EV-S12"
+  ],
+  "numeric_transformation": {
+    "timings_seconds": {
+      "48": 46,
+      "84": 95,
+      "42": 33,
+      "55": 56,
+      "8": 10
+    }
+  },
+  "packaging": "Self-contained case overlay: install this directory at cases/a-find; reference_path remains the canonical overlay path.",
+  "independent_check": "tests/labs/test_case_c_variants.py recomputes from sources, not these values"
+}

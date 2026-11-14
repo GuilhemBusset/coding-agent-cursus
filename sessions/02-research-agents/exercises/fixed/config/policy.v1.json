@@ -23,19 +23,19 @@
     "class": [
       {
         "case_id": "A",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261115",
         "trial": 1,
         "seed": 20261115
       },
       {
         "case_id": "B",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261125",
         "trial": 1,
         "seed": 20261125
       },
       {
         "case_id": "C",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261135",
         "trial": 1,
         "seed": 20261135
       }
@@ -43,55 +43,55 @@
     "submission": [
       {
         "case_id": "A",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261115",
         "trial": 1,
         "seed": 20261115
       },
       {
         "case_id": "A",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261115",
         "trial": 2,
         "seed": 20261115
       },
       {
         "case_id": "A",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261115",
         "trial": 3,
         "seed": 20261115
       },
       {
         "case_id": "B",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261125",
         "trial": 1,
         "seed": 20261125
       },
       {
         "case_id": "B",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261125",
         "trial": 2,
         "seed": 20261125
       },
       {
         "case_id": "B",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261125",
         "trial": 3,
         "seed": 20261125
       },
       {
         "case_id": "C",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261135",
         "trial": 1,
         "seed": 20261135
       },
       {
         "case_id": "C",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261135",
         "trial": 2,
         "seed": 20261135
       },
       {
         "case_id": "C",
-        "variant_id": "public-1",
+        "variant_id": "public-seed-20261135",
         "trial": 3,
         "seed": 20261135
       }

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "case_id": "B",
+  "variant_id": "public-seed-20261125",
+  "corpus_id": "ev-dossier-v1.public-seed-20261125",
+  "question": "For the locally summarised P01 fleet with finite shared slow/fast chargers and a solve limit of at most 60 seconds under EVBench R1, which documented method is supported? Apply both constraints. Reconcile the dated Cedar Ledger eligibility correction, distinguish independent experiments from repeated reports, and qualify the recommendation. Cite passages for each factual claim; do not infer cost superiority or uncertain-demand performance.",
+  "context": "P01 local summary (problem context, not research findings): schedule a one-day fleet of 10 electric trucks covering 40 linehaul legs between eight depots D_A to D_H. Assign each leg exactly once to a truck or cancel it with its penalty; assignments and cancellations are binary. Minimise daily cancellation penalties, charged energy at the slot tariff plus per-kWh degradation, and per-minute deadhead cost. Trucks start at home at 00:00 with initial state of charge. They deadhead immediately to the next leg origin after each leg, arrive by its start, and return home by 24:00; an unused truck stays home. Between drives a truck waits at its current depot. Times and waits are half-open intervals. Charging uses 46 half-hour slots, only when the entire slot lies inside a wait, on at most one slow or fast charger per truck per slot. Received energy is nonnegative and at most min(truck max kW, charger kW) times 0.5 hours, without losses. At each depot, in each slot, simultaneous trucks charging on each type cannot exceed that type's charger count. Maintenance forbids driving and charging during its interval. Battery state stays within its minimum and maximum after every drive and charge, and the day ends at home with at least initial charge. Inputs are known for the deterministic day; these cases do not require CSVs or solving a schedule.\n\nProvenance: condensed locally from P01 in Session 1, introduced via course issue #37, sessions/01-fundamentals/exercises/homework-p01/PROBLEM.md, as present at course revision 855763fa7e51fdef4c4e4edf976315f1d3b829c5 (locked Session 2 plan baseline). No Session 1 file is a runtime input. The method catalogue and every research finding in the local EV-S sources are newly authored fictional teaching data for issue #181. Read the local corpus, not external literature.",
+  "reference_path": "cases/b-compare/reference.json",
+  "registered_tools": [
+    "read",
+    "search"
+  ],
+  "output_contract": "claims.v1+report.v1"
+}

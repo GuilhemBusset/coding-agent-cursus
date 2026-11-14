@@ -1,0 +1,63 @@
+{
+  "spec_version": "1.0",
+  "scenario_id": "timeout",
+  "evidence_kind": "synthetic-specification",
+  "operation": "model-request",
+  "preconditions": {
+    "fresh_workspace": true,
+    "retry_limit": 1,
+    "request_timeout_ms": 1000,
+    "max_retry_delay_ms": 10
+  },
+  "trigger": {
+    "logical_request": 1,
+    "attempts": [
+      1,
+      2
+    ]
+  },
+  "responses": [
+    {
+      "attempt": 1,
+      "status": "error",
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      },
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "delay_ms": 1001
+    },
+    {
+      "attempt": 2,
+      "status": "error",
+      "error": {
+        "code": "timeout",
+        "retryable": true
+      },
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "delay_ms": 1001
+    }
+  ],
+  "solution": "Both attempts fail. Apply at most one bounded retry to the same logical request, new attempt_id with retry_of. Preserve both errors and unknown usage, then stop service_error. Timeout cancels the active attempt; rate-limit waits only the specified bounded delay.",
+  "expected_accounting": {
+    "logical_requests": 1,
+    "model_attempts": 2,
+    "service_errors": 2,
+    "total_tokens": null
+  },
+  "expected_stop_reason": "service_error"
+}

@@ -1,0 +1,490 @@
+{
+  "schema_version": "1.0",
+  "case_id": "B",
+  "variant_id": "public-seed-20261125",
+  "facts": [
+    {
+      "fact_id": "B-recommendation",
+      "assertion": {
+        "subject": "dossier",
+        "predicate": "recommended_method",
+        "type": "string",
+        "value": "delta-repair",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S12",
+          "kind": "passage",
+          "start": 763,
+          "end": 1158
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-both-constraints",
+      "assertion": {
+        "subject": "dossier",
+        "predicate": "eligibility_requirements",
+        "type": "string_set",
+        "value": [
+          "finite-shared-chargers",
+          "solve-at-most-60-seconds"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S12",
+          "kind": "passage",
+          "start": 763,
+          "end": 1158
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-ledger-capacity",
+      "assertion": {
+        "subject": "cedar-ledger",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": true,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S02",
+          "kind": "passage",
+          "start": 392,
+          "end": 790
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-ledger-seconds",
+      "assertion": {
+        "subject": "cedar-ledger",
+        "predicate": "corrected_solve_seconds",
+        "type": "number",
+        "value": 93,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S06",
+          "kind": "passage",
+          "start": 483,
+          "end": 962
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-L1"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-ledger-ineligible",
+      "assertion": {
+        "subject": "cedar-ledger",
+        "predicate": "eligible",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S06",
+          "kind": "passage",
+          "start": 483,
+          "end": 962
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": [
+        "B-obsolete-ledger-eligible"
+      ]
+    },
+    {
+      "fact_id": "B-repair-capacity",
+      "assertion": {
+        "subject": "delta-repair",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": true,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S03",
+          "kind": "passage",
+          "start": 392,
+          "end": 771
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-repair-q1-seconds",
+      "assertion": {
+        "subject": "V20261125-EV-E-Q1",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 34,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S07",
+          "kind": "passage",
+          "start": 443,
+          "end": 850
+        },
+        {
+          "source_id": "V20261125-EV-S08",
+          "kind": "passage",
+          "start": 444,
+          "end": 698
+        },
+        {
+          "source_id": "V20261125-EV-S09",
+          "kind": "passage",
+          "start": 450,
+          "end": 758
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-Q1"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-repair-q2-seconds",
+      "assertion": {
+        "subject": "V20261125-EV-E-Q2",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 51,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S10",
+          "kind": "passage",
+          "start": 447,
+          "end": 833
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-Q2"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-repeat-identity",
+      "assertion": {
+        "subject": "V20261125-EV-E-Q1",
+        "predicate": "reports",
+        "type": "string_set",
+        "value": [
+          "V20261125-EV-S07",
+          "V20261125-EV-S08",
+          "V20261125-EV-S09"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S09",
+          "kind": "passage",
+          "start": 450,
+          "end": 758
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-Q1"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-independent-count",
+      "assertion": {
+        "subject": "delta-repair",
+        "predicate": "independent_experiment_count",
+        "type": "number",
+        "value": 2,
+        "unit": "experiments",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S10",
+          "kind": "passage",
+          "start": 860,
+          "end": 1161
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-Q1",
+        "V20261125-EV-E-Q2"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-private-seconds",
+      "assertion": {
+        "subject": "cedar-private",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 13,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": false,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S11",
+          "kind": "passage",
+          "start": 451,
+          "end": 762
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [
+        "V20261125-EV-E-D1"
+      ],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-private-exclusion",
+      "assertion": {
+        "subject": "cedar-private",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S04",
+          "kind": "passage",
+          "start": 407,
+          "end": 710
+        },
+        {
+          "source_id": "V20261125-EV-S11",
+          "kind": "passage",
+          "start": 451,
+          "end": 762
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-no-optimum",
+      "assertion": {
+        "subject": "delta-repair",
+        "predicate": "global_optimality_established",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S03",
+          "kind": "passage",
+          "start": 798,
+          "end": 1216
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-known-inputs",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "demand_assumption",
+        "type": "string",
+        "value": "deterministic-known-inputs",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S01",
+          "kind": "passage",
+          "start": 736,
+          "end": 1116
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-slot-minutes",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "slot_minutes",
+        "type": "number",
+        "value": 30,
+        "unit": "minutes",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S01",
+          "kind": "passage",
+          "start": 736,
+          "end": 1116
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "B-charging-assumptions",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "charging_assumptions",
+        "type": "string_set",
+        "value": [
+          "whole-wait-slots",
+          "lossless-constant-power",
+          "truck-and-charger-power-bounds"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261125-EV-S01",
+          "kind": "passage",
+          "start": 736,
+          "end": 1116
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    }
+  ],
+  "required_uncertainty": [
+    {
+      "requirement_id": "B-uncertain-demand",
+      "subject": "delta-repair",
+      "predicate": "performance_under_uncertain_demand",
+      "reason": "missing_evidence"
+    }
+  ],
+  "corrections": [
+    {
+      "source_id": "V20261125-EV-S06",
+      "supersedes_source_id": "V20261125-EV-S05",
+      "affected_fact_ids": [
+        "B-ledger-seconds",
+        "B-ledger-ineligible"
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "V20261125-EV-E-L1",
+      "source_ids": [
+        "V20261125-EV-S05",
+        "V20261125-EV-S06"
+      ]
+    },
+    {
+      "experiment_id": "V20261125-EV-E-Q1",
+      "source_ids": [
+        "V20261125-EV-S07",
+        "V20261125-EV-S08",
+        "V20261125-EV-S09"
+      ]
+    },
+    {
+      "experiment_id": "V20261125-EV-E-Q2",
+      "source_ids": [
+        "V20261125-EV-S10"
+      ]
+    },
+    {
+      "experiment_id": "V20261125-EV-E-D1",
+      "source_ids": [
+        "V20261125-EV-S11"
+      ]
+    }
+  ]
+}

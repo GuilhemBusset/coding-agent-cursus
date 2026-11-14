@@ -1,0 +1,358 @@
+{
+  "schema_version": "1.0",
+  "case_id": "C",
+  "variant_id": "public-seed-20261135",
+  "facts": [
+    {
+      "fact_id": "C-rows",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "included_rows",
+        "type": "string_set",
+        "value": [
+          "V20261135-EV-T01:R0001",
+          "V20261135-EV-T01:R0002",
+          "V20261135-EV-T01:R0003",
+          "V20261135-EV-T01:R0004"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-pairs",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "pair_count",
+        "type": "number",
+        "value": 2,
+        "unit": "pairs",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-baseline",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "baseline_method",
+        "type": "string",
+        "value": "birch-baseline",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-S13",
+          "kind": "passage",
+          "start": 116,
+          "end": 574
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-filter",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "pair_filter",
+        "type": "string",
+        "value": "same-instance-run-exactly-one-per-method-both-feasible",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-S13",
+          "kind": "passage",
+          "start": 601,
+          "end": 1060
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-a-total",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "baseline_total",
+        "type": "number",
+        "value": 600,
+        "unit": "fictional-cost-units",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-b-total",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "candidate_total",
+        "type": "number",
+        "value": 456,
+        "unit": "fictional-cost-units",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-ratio",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "reduction_ratio",
+        "type": "number",
+        "value": 0.24,
+        "unit": "ratio",
+        "tolerance": {
+          "absolute": 0.0001,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-percent",
+      "assertion": {
+        "subject": "paired-deterministic-runs",
+        "predicate": "reduction_percent",
+        "type": "number",
+        "value": 24.0,
+        "unit": "percent",
+        "tolerance": {
+          "absolute": 0.01,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-T01",
+          "kind": "rows",
+          "start": 1,
+          "end": 5,
+          "columns": [
+            "row_id",
+            "instance_id",
+            "run_id",
+            "pair_id",
+            "method",
+            "feasible",
+            "cost",
+            "experiment_id"
+          ]
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "C-scope",
+      "assertion": {
+        "subject": "estuary-candidate",
+        "predicate": "uncertain_demand_superiority_established",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261135-EV-S14",
+          "kind": "passage",
+          "start": 117,
+          "end": 554
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    }
+  ],
+  "required_uncertainty": [
+    {
+      "requirement_id": "C-uncertain-demand",
+      "subject": "estuary-candidate",
+      "predicate": "performance_under_uncertain_demand",
+      "reason": "missing_evidence"
+    }
+  ],
+  "corrections": [],
+  "experiments": [
+    {
+      "experiment_id": "V20261135-EV-E-C01",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C02",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C03",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C04",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C05",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C06",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C07",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    },
+    {
+      "experiment_id": "V20261135-EV-E-C08",
+      "source_ids": [
+        "V20261135-EV-T01"
+      ]
+    }
+  ]
+}

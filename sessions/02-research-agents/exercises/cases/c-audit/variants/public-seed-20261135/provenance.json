@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "case_id": "C",
+  "variant_id": "public-seed-20261135",
+  "seed": 20261135,
+  "base_revision": "issue-181 A/B v1; issue-182 C v1",
+  "base_path": "cases/c-audit",
+  "mappings": {
+    "sources": {
+      "EV-S13": "V20261135-EV-S13",
+      "EV-S14": "V20261135-EV-S14",
+      "EV-T01": "V20261135-EV-T01"
+    },
+    "passages": {
+      "EV-S13:P01": "V20261135-EV-S13:P01",
+      "EV-S13:P02": "V20261135-EV-S13:P02",
+      "EV-S13:P03": "V20261135-EV-S13:P03",
+      "EV-S14:P01": "V20261135-EV-S14:P01",
+      "EV-S14:P02": "V20261135-EV-S14:P02"
+    },
+    "experiments": {
+      "EV-E-C01": "V20261135-EV-E-C01",
+      "EV-E-C02": "V20261135-EV-E-C02",
+      "EV-E-C03": "V20261135-EV-E-C03",
+      "EV-E-C04": "V20261135-EV-E-C04",
+      "EV-E-C05": "V20261135-EV-E-C05",
+      "EV-E-C06": "V20261135-EV-E-C06",
+      "EV-E-C07": "V20261135-EV-E-C07",
+      "EV-E-C08": "V20261135-EV-E-C08"
+    },
+    "families": {
+      "EV-F-C": "V20261135-EV-F-C"
+    },
+    "rows": {
+      "EV-T01:R0001": "V20261135-EV-T01:R0001",
+      "EV-T01:R0002": "V20261135-EV-T01:R0002",
+      "EV-T01:R0003": "V20261135-EV-T01:R0003",
+      "EV-T01:R0004": "V20261135-EV-T01:R0004",
+      "EV-T01:R0005": "V20261135-EV-T01:R0005",
+      "EV-T01:R0006": "V20261135-EV-T01:R0006",
+      "EV-T01:R0007": "V20261135-EV-T01:R0007",
+      "EV-T01:R0008": "V20261135-EV-T01:R0008"
+    },
+    "pairs": {
+      "EV-PAIR-0001": "V20261135-EV-PAIR-0001",
+      "EV-PAIR-0002": "V20261135-EV-PAIR-0002",
+      "EV-PAIR-0003": "V20261135-EV-PAIR-0003",
+      "EV-PAIR-0004": "V20261135-EV-PAIR-0004",
+      "EV-PAIR-0005": "V20261135-EV-PAIR-0005"
+    },
+    "methods": {
+      "audit-a": "birch-baseline",
+      "audit-b": "estuary-candidate",
+      "method A": "Birch Baseline",
+      "method B": "Estuary Candidate"
+    }
+  },
+  "source_order": [
+    "V20261135-EV-S13",
+    "V20261135-EV-T01",
+    "V20261135-EV-S14"
+  ],
+  "numeric_transformation": {
+    "scale": 2,
+    "extra_reduction_percentage_points": 4
+  },
+  "packaging": "Self-contained case overlay: install this directory at cases/c-audit; reference_path remains the canonical overlay path.",
+  "independent_check": "tests/labs/test_case_c_variants.py recomputes from sources, not these values"
+}

@@ -85,3 +85,13 @@ eligibility using EV-S05, or count all four Queue Repair reports as experiments.
 Both are well-formed claims-v1 artifacts. Their failures are changed facts and
 inadequate evidence, not forbidden wording. Public positives use different prose
 and set ordering. Peer review checks actual entailment as well as typed facts.
+
+## Public seeded variant
+
+The [public manifest](../../fixed/config/public/manifest.json) announces
+`public-seed-20261125` for class and all three independent submission trials,
+identically for baseline and candidate. The [bundle](variants/public-seed-20261125/)
+changes names, timings and source order, retaining the 60-second limit, correction
+and duplicate-experiment lesson. Use its own public answer and reference. See the
+[generation instructions](../../fixed/corpus/README.md). Deterministic inputs do
+not promise deterministic model outputs.
