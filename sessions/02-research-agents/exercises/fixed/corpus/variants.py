@@ -87,8 +87,10 @@ def generate(case_id: str, seed: int, out: Path) -> Path:
     def text(value: str) -> str:
         value = pattern.sub(lambda m: replacements[m.group()], value)
         if case_id != 'C':
-            value = re.sub(r'\b(48|84|42|55)\b', lambda m: str(timings[int(m.group())]), value)
-            value = re.sub(r'\b8(?=[ -](?:seconds?\b|s\b))', str(timings[8]), value)
+            # Change measured timings (including "42 and 55 seconds"), not P01's
+            # 48 half-hour slots or other quantities that happen to share a value.
+            value = re.sub(r'\b(48|84|42|55|8)(?=(?: and \d+)?[ -](?:seconds?\b|s\b))',
+                           lambda m: str(timings[int(m.group())]), value)
         else:
             value = value.replace('20%', f'{percent}%')
         return value
