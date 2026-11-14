@@ -1,0 +1,9 @@
+row_id,instance_id,run_id,pair_id,method,feasible,cost,experiment_id
+EV-T01:R0001,day-1,run-1,EV-PAIR-0001,audit-a,true,100,EV-E-C01
+EV-T01:R0002,day-1,run-1,EV-PAIR-0001,audit-b,true,90,EV-E-C02
+EV-T01:R0003,day-2,run-1,EV-PAIR-0002,audit-a,true,200,EV-E-C03
+EV-T01:R0004,day-2,run-1,EV-PAIR-0002,audit-b,true,150,EV-E-C04
+EV-T01:R0005,day-3,run-1,EV-PAIR-0003,audit-a,true,300,EV-E-C05
+EV-T01:R0006,day-3,run-1,EV-PAIR-0003,audit-b,false,1,EV-E-C06
+EV-T01:R0007,day-4,run-1,EV-PAIR-0004,audit-a,true,500,EV-E-C07
+EV-T01:R0008,day-5,run-1,EV-PAIR-0005,audit-b,true,2,EV-E-C08

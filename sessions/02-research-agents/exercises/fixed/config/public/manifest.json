@@ -1,0 +1,175 @@
+{
+  "manifest_version": "1.0",
+  "publication": "All assets, seeds, solutions and fault specifications are public before students build. No hidden evaluation seeds or faults.",
+  "variants": [
+    {
+      "case_id": "A",
+      "variant_id": "public-seed-20261115",
+      "seed": 20261115,
+      "path": "cases/a-find/variants/public-seed-20261115",
+      "class_trials": 1,
+      "submission_trials": 3
+    },
+    {
+      "case_id": "B",
+      "variant_id": "public-seed-20261125",
+      "seed": 20261125,
+      "path": "cases/b-compare/variants/public-seed-20261125",
+      "class_trials": 1,
+      "submission_trials": 3
+    },
+    {
+      "case_id": "C",
+      "variant_id": "public-seed-20261135",
+      "seed": 20261135,
+      "path": "cases/c-audit/variants/public-seed-20261135",
+      "class_trials": 1,
+      "submission_trials": 3
+    }
+  ],
+  "schedule": {
+    "class": [
+      {
+        "case_id": "A",
+        "variant_id": "public-seed-20261115",
+        "trial": 1,
+        "seed": 20261115
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-seed-20261125",
+        "trial": 1,
+        "seed": 20261125
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-seed-20261135",
+        "trial": 1,
+        "seed": 20261135
+      }
+    ],
+    "submission": [
+      {
+        "case_id": "A",
+        "variant_id": "public-seed-20261115",
+        "trial": 1,
+        "seed": 20261115
+      },
+      {
+        "case_id": "A",
+        "variant_id": "public-seed-20261115",
+        "trial": 2,
+        "seed": 20261115
+      },
+      {
+        "case_id": "A",
+        "variant_id": "public-seed-20261115",
+        "trial": 3,
+        "seed": 20261115
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-seed-20261125",
+        "trial": 1,
+        "seed": 20261125
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-seed-20261125",
+        "trial": 2,
+        "seed": 20261125
+      },
+      {
+        "case_id": "B",
+        "variant_id": "public-seed-20261125",
+        "trial": 3,
+        "seed": 20261125
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-seed-20261135",
+        "trial": 1,
+        "seed": 20261135
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-seed-20261135",
+        "trial": 2,
+        "seed": 20261135
+      },
+      {
+        "case_id": "C",
+        "variant_id": "public-seed-20261135",
+        "trial": 3,
+        "seed": 20261135
+      }
+    ]
+  },
+  "fault_scenarios": [
+    {
+      "scenario_id": "transient-read",
+      "path": "fixed/config/public/faults/transient-read.json"
+    },
+    {
+      "scenario_id": "missing-source",
+      "path": "fixed/config/public/faults/missing-source.json"
+    },
+    {
+      "scenario_id": "repeated-retrieval",
+      "path": "fixed/config/public/faults/repeated-retrieval.json"
+    },
+    {
+      "scenario_id": "malformed-output",
+      "path": "fixed/config/public/faults/malformed-output.json"
+    },
+    {
+      "scenario_id": "malformed-tool-arguments",
+      "path": "fixed/config/public/faults/malformed-tool-arguments.json"
+    },
+    {
+      "scenario_id": "timeout",
+      "path": "fixed/config/public/faults/timeout.json"
+    },
+    {
+      "scenario_id": "rate-limit",
+      "path": "fixed/config/public/faults/rate-limit.json"
+    },
+    {
+      "scenario_id": "model-budget",
+      "path": "fixed/config/public/faults/model-budget.json"
+    },
+    {
+      "scenario_id": "tool-budget",
+      "path": "fixed/config/public/faults/tool-budget.json"
+    },
+    {
+      "scenario_id": "token-budget",
+      "path": "fixed/config/public/faults/token-budget.json"
+    },
+    {
+      "scenario_id": "absent-usage",
+      "path": "fixed/config/public/faults/absent-usage.json"
+    }
+  ],
+  "configuration": {
+    "policy": "fixed/config/policy.v1.json",
+    "baseline_snapshot": "fixed/config/baseline.snapshot.v1.json",
+    "candidate_snapshot": "fixed/config/candidate.snapshot.v1.json",
+    "shared_fields": [
+      "provider",
+      "model",
+      "endpoint",
+      "settings",
+      "budgets",
+      "rating_bundle",
+      "case_id",
+      "variant_id",
+      "seed",
+      "trial"
+    ],
+    "constraints": "Compare saved baseline/candidate versions with identical announced tasks and shared configuration; only the intended harness/prompt experiment differs. Existing model and bundle pins are illustrative pending later integration and pilot; this manifest makes no live-readiness claim.",
+    "trials": "Fresh workspace and independent logical run for each version/case/trial; distinct run/request IDs. Model sampling seeds/settings, if supported, are shared and recorded separately from the task seed."
+  },
+  "reproducibility": "Task generation from public seeds is deterministic. Three independent model trials measure variability; model outputs are not promised to be deterministically reproducible.",
+  "fault_schedule": "Each named scenario is a separate public synthetic exercise, applied to either compared version with identical fixture and configuration. These are specifications, not live evidence or a runnable injector. Normal class/submission trial counts do not claim these faults were executed."
+}

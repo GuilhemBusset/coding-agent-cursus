@@ -171,7 +171,11 @@ test('secrets stay out of console, events and saved artifacts; invalid configura
     assert.equal(logs.length, 0);
     for (const folder of ['config', 'model']) {
       const base = new URL(`../../exercises/fixed/${folder}/`, import.meta.url);
-      for (const file of await readdir(base)) assert(!(await readFile(new URL(file, base), 'utf8')).includes(secret));
+      for (const file of await readdir(base, { recursive: true, withFileTypes: true })) {
+        if (!file.isFile()) continue;
+        const path = join(file.parentPath, file.name);
+        assert(!(await readFile(path, 'utf8')).includes(secret), `credential found in ${path}`);
+      }
     }
   } finally {
     [console.log, console.warn, console.error] = originals;

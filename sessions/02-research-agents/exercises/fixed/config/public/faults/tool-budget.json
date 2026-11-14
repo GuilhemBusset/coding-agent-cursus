@@ -1,0 +1,37 @@
+{
+  "spec_version": "1.0",
+  "scenario_id": "tool-budget",
+  "evidence_kind": "synthetic-specification",
+  "operation": "read",
+  "preconditions": {
+    "fresh_workspace": true,
+    "counter_prefix": "synthetic prefix already at stated policy limit",
+    "limits": {
+      "model_attempts": 12,
+      "tool_invocations": 20,
+      "total_tokens": 30000
+    }
+  },
+  "trigger": {
+    "admission": "next operation",
+    "counter": "tool_invocations",
+    "value": 20
+  },
+  "responses": [
+    {
+      "status": "admission-denied",
+      "error": {
+        "code": "budget_exhausted",
+        "retryable": false
+      }
+    }
+  ],
+  "solution": "At equality with tool_invocations=20, reject new work before dispatch. Prior failures/retries consumed budget too. Preserve partial artifacts and the exact stop reason; the denied admission is not another outbound attempt or tool invocation.",
+  "expected_accounting": {
+    "counter": "tool_invocations",
+    "before": 20,
+    "after": 20,
+    "additional_dispatches": 0
+  },
+  "expected_stop_reason": "tool_budget"
+}

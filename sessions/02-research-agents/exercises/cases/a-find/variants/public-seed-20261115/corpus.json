@@ -1,0 +1,342 @@
+{
+  "schema_version": "1.0",
+  "corpus_id": "ev-dossier-v1.public-seed-20261115",
+  "normalization": "UTF-8 decoded, universal newlines to LF, Unicode NFC; zero-based half-open Unicode code-point offsets",
+  "sources": [
+    {
+      "source_id": "V20261115-EV-S08",
+      "path": "sources/V20261115-EV-S08.md",
+      "title": "Harbor Repair: reference timing digest",
+      "date": "2026-10-09",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "digest of V20261115-EV-S07; no new run",
+      "experiment_ids": [
+        "V20261115-EV-E-Q1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-Q"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S08:P01",
+          "start": 445,
+          "end": 699,
+          "quote": "This fictional digest repeats V20261115-EV-S07 experiment V20261115-EV-E-Q1 in family V20261115-EV-F-Q: the shared-capacity feasible plan took 33 seconds under EVBench R1. No new run was performed. Do not count this document as an independent experiment."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S07",
+      "path": "sources/V20261115-EV-S07.md",
+      "title": "Harbor Repair: reference timing bulletin",
+      "date": "2026-10-08",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "primary report of V20261115-EV-E-Q1",
+      "experiment_ids": [
+        "V20261115-EV-E-Q1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-Q"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S07:P01",
+          "start": 444,
+          "end": 852,
+          "quote": "Fictional experiment V20261115-EV-E-Q1, family V20261115-EV-F-Q, ran Harbor Repair on a P01-shaped deterministic 40-leg, 10-truck day using shared finite slow and fast charger pools. Its complete feasible plan passed all EVBench R1 checks in 33 seconds, including charger occupancy. This supports eligibility under the 60-second limit for this tested setting, not optimality or a universal runtime guarantee."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S06",
+      "path": "sources/V20261115-EV-S06.md",
+      "title": "Correction: Willow Ledger reference timing",
+      "date": "2026-10-12",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "correction to V20261115-EV-S05, not an independent experiment",
+      "experiment_ids": [
+        "V20261115-EV-E-L1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-L"
+      ],
+      "supersedes_source_ids": [
+        "V20261115-EV-S05"
+      ],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S06:P01",
+          "start": 484,
+          "end": 965,
+          "quote": "Correction to V20261115-EV-S05 and experiment V20261115-EV-E-L1 (family V20261115-EV-F-L): the 46-second run accidentally omitted shared charger occupancy constraints. Re-running the full Willow Ledger formulation with those constraints took 95 seconds under EVBench R1. Replace the 46-second time and the earlier eligible claim: Willow Ledger models shared capacity but is ineligible under the 60-second limit. Its capacity-modelling description in V20261115-EV-S02 remains valid."
+        },
+        {
+          "passage_id": "V20261115-EV-S06:P02",
+          "start": 992,
+          "end": 1260,
+          "quote": "The corrected experiment retains identity V20261115-EV-E-L1. The initial and corrected timings are two reports about this one experiment, not independent support. The correction changes the timing/eligibility conclusion, not Willow Ledger into the Private formulation."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S09",
+      "path": "sources/V20261115-EV-S09.md",
+      "title": "Harbor Repair: reference timing slides",
+      "date": "2026-10-10",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "presentation of V20261115-EV-S07; no new run",
+      "experiment_ids": [
+        "V20261115-EV-E-Q1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-Q"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S09:P01",
+          "start": 451,
+          "end": 759,
+          "quote": "These fictional presentation notes reuse the same V20261115-EV-E-Q1 result, family V20261115-EV-F-Q, already reported in V20261115-EV-S07 and V20261115-EV-S08: 33 seconds with shared occupancy enforced. There are three documents but one experiment here; neither the digest nor these slides replicate the run."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S05",
+      "path": "sources/V20261115-EV-S05.md",
+      "title": "Willow Ledger: reference timing bulletin",
+      "date": "2026-10-07",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "initial experiment report; corrected by V20261115-EV-S06",
+      "experiment_ids": [
+        "V20261115-EV-E-L1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-L"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S05:P01",
+          "start": 465,
+          "end": 847,
+          "quote": "Initial fictional report V20261115-EV-E-L1, family V20261115-EV-F-L: Willow Ledger completed in 46 seconds on the 40-leg, 10-truck P01-shaped deterministic day. We initially labelled it eligible for shared chargers with a 60-second limit. This timing and eligibility statement is superseded by the dated correction V20261115-EV-S06; keep this bulletin only to reconstruct the error."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S10",
+      "path": "sources/V20261115-EV-S10.md",
+      "title": "Harbor Repair: second-day replication",
+      "date": "2026-10-13",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "independent experiment, same method family",
+      "experiment_ids": [
+        "V20261115-EV-E-Q2"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-Q"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S10:P01",
+          "start": 448,
+          "end": 835,
+          "quote": "Fictional independent experiment V20261115-EV-E-Q2, family V20261115-EV-F-Q, used a second deterministic day with changed leg start times, still 40 legs and 10 trucks with the same finite shared charger counts and EVBench R1 timing procedure. Harbor Repair produced a checked feasible plan in 56 seconds. This is a new run, unlike the V20261115-EV-S08 digest and V20261115-EV-S09 slides."
+        },
+        {
+          "passage_id": "V20261115-EV-S10:P02",
+          "start": 862,
+          "end": 1164,
+          "quote": "Harbor Repair thus has two independent shared-charger experiments in this dossier: V20261115-EV-E-Q1 and V20261115-EV-E-Q2, both below 60 seconds. They share a method family, not an experiment identity. Two tested deterministic days do not establish reliability on arbitrary or uncertain future demand."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S11",
+      "path": "sources/V20261115-EV-S11.md",
+      "title": "Willow Ledger Private: fast reference timing",
+      "date": "2026-10-11",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "primary report, dedicated chargers only",
+      "experiment_ids": [
+        "V20261115-EV-E-D1"
+      ],
+      "experiment_family_ids": [
+        "V20261115-EV-F-D"
+      ],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S11:P01",
+          "start": 452,
+          "end": 765,
+          "quote": "Fictional experiment V20261115-EV-E-D1, family V20261115-EV-F-D: Willow Ledger Private produced a plan in 10 seconds under EVBench R1 with a dedicated charger for each truck. The speed does not establish shared-pool feasibility. Willow Ledger Private meets the time bound but fails the shared-charger requirement."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S03",
+      "path": "sources/V20261115-EV-S03.md",
+      "title": "Harbor Repair: shared-depot scheduling",
+      "date": "2026-10-03",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "method note",
+      "experiment_ids": [],
+      "experiment_family_ids": [],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S03:P01",
+          "start": 393,
+          "end": 774,
+          "quote": "Harbor Repair (harbor-repair) fixes candidate truck routes for a repair pass, then allocates charging against a per-depot, per-type, per-slot occupancy ledger. A slot is usable only while its count is below the finite charger count. Conflicts move to another valid waiting slot or trigger leg cancellation and route rebuilding; an unresolved conflict is never returned as feasible."
+        },
+        {
+          "passage_id": "V20261115-EV-S03:P02",
+          "start": 801,
+          "end": 1220,
+          "quote": "Harbor Repair assumes the same known deterministic inputs and 30-minute whole-wait, lossless constant-power charging as V20261115-EV-S01:P02. It checks coverage, deadheads and return home, truck and charger power, maintenance, battery bounds and final state of charge after repair or cancellation. Fixed candidate routes and repair-or-cancel make this a feasible-plan heuristic, with no claim of global cost optimality."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S04",
+      "path": "sources/V20261115-EV-S04.md",
+      "title": "Willow Ledger: private-depot scheduling",
+      "date": "2026-10-04",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "similar-title method note",
+      "experiment_ids": [],
+      "experiment_family_ids": [],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S04:P01",
+          "start": 408,
+          "end": 714,
+          "quote": "Willow Ledger Private (willow-private) gives every truck its own always-available charger. It checks individual energy and charging power but has no depot occupancy sum. It does not model a finite shared charger pool; calling it Willow Ledger without the Private suffix confuses two different formulations."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S01",
+      "path": "sources/V20261115-EV-S01.md",
+      "title": "Dossier scope and common assumptions",
+      "date": "2026-10-01",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "scope note",
+      "experiment_ids": [],
+      "experiment_family_ids": [],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S01:P01",
+          "start": 390,
+          "end": 717,
+          "quote": "This fictional catalogue contains exactly three candidate methods: Willow Ledger (willow-ledger), Harbor Repair (harbor-repair), and Willow Ledger Private (willow-private). Only Willow Ledger and Harbor Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+        },
+        {
+          "passage_id": "V20261115-EV-S01:P02",
+          "start": 744,
+          "end": 1124,
+          "quote": "Both shared-capacity methods assume deterministic, known legs, travel times, energy use, tariffs and charger availability for the whole day. Both use 30-minute slots, require each charge to fit wholly inside a depot wait, and assume lossless charging at constant power bounded by the truck and charger ratings. These are modelling assumptions, not evidence about uncertain demand."
+        },
+        {
+          "passage_id": "V20261115-EV-S01:P03",
+          "start": 1151,
+          "end": 1531,
+          "quote": "Every fictional timing below uses EVBench R1: one thread on the same illustrative reference CPU, including model construction and search until the first complete feasible daily plan passes coverage, sequence, charging, maintenance and state-of-charge checks. A solve need not prove optimality. The acceptance limit is at most 60 seconds; it is not a forecast for student hardware."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S02",
+      "path": "sources/V20261115-EV-S02.md",
+      "title": "Willow Ledger: shared-depot scheduling",
+      "date": "2026-10-02",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "method note",
+      "experiment_ids": [],
+      "experiment_family_ids": [],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S02:P01",
+          "start": 393,
+          "end": 793,
+          "quote": "Willow Ledger (willow-ledger) is a mixed-integer daily-cost model. Binary truck-leg assignments and cancellations, deadhead links and charge-slot choices enforce coverage and the truck day. For each depot, charger type and slot, the sum of simultaneous charging trucks cannot exceed the available charger count. It therefore represents limited shared capacity, including separate slow and fast pools."
+        },
+        {
+          "passage_id": "V20261115-EV-S02:P02",
+          "start": 820,
+          "end": 1187,
+          "quote": "Willow Ledger uses the deterministic 30-minute, whole-wait, lossless constant-power assumptions in V20261115-EV-S01:P02. It enforces truck and charger power bounds, maintenance exclusion, intermediate battery bounds and final home state of charge at least the initial level. It may optimise cost, but a time-limited feasible solution is not an optimality certificate."
+        }
+      ]
+    },
+    {
+      "source_id": "V20261115-EV-S12",
+      "path": "sources/V20261115-EV-S12.md",
+      "title": "Dossier boundary and decision scope",
+      "date": "2026-10-14",
+      "fictional": true,
+      "provenance": "Original fictional course dossier, issue #181, v1",
+      "reporting_relationship": "scope and limitations note",
+      "experiment_ids": [],
+      "experiment_family_ids": [],
+      "supersedes_source_ids": [],
+      "passages": [
+        {
+          "passage_id": "V20261115-EV-S12:P01",
+          "start": 405,
+          "end": 736,
+          "quote": "All methods, authors, experiment results and timings in V20261115-EV-S01 through V20261115-EV-S12 are original fiction for this course, not findings attributed to a real paper. P01 supplies a scheduling problem only. There is no uncertain-demand experiment, numerical cost table or evidence of cost superiority in this A/B dossier."
+        },
+        {
+          "passage_id": "V20261115-EV-S12:P02",
+          "start": 763,
+          "end": 1162,
+          "quote": "For the tested shared-charger setting with a 60-second solve limit, recommend Harbor Repair conditionally on the stated assumptions. Willow Ledger can represent the chargers but the corrected full solve is too slow; Willow Ledger Private is fast but cannot represent their sharing. This is eligibility among the three documented methods, not a claim that Harbor Repair is always fastest or cheapest."
+        }
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "experiment_id": "V20261115-EV-E-L1",
+      "family_id": "V20261115-EV-F-L",
+      "description": "Willow Ledger reference run, corrected full formulation"
+    },
+    {
+      "experiment_id": "V20261115-EV-E-Q1",
+      "family_id": "V20261115-EV-F-Q",
+      "description": "Harbor Repair reference day; three reports of one run"
+    },
+    {
+      "experiment_id": "V20261115-EV-E-Q2",
+      "family_id": "V20261115-EV-F-Q",
+      "description": "Harbor Repair independent second deterministic day"
+    },
+    {
+      "experiment_id": "V20261115-EV-E-D1",
+      "family_id": "V20261115-EV-F-D",
+      "description": "Willow Ledger Private dedicated-charger run"
+    }
+  ],
+  "historical_facts": []
+}

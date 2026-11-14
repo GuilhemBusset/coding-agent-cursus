@@ -1,0 +1,45 @@
+{
+  "spec_version": "1.0",
+  "scenario_id": "absent-usage",
+  "evidence_kind": "synthetic-specification",
+  "operation": "model-request",
+  "preconditions": {
+    "fresh_workspace": true,
+    "retry_limit": 1,
+    "budgets": "policy.v1.json",
+    "case_id": "C",
+    "variant_id": "public-seed-20261135",
+    "continuation_required": true
+  },
+  "trigger": {
+    "logical_request": 1,
+    "attempt": 1
+  },
+  "responses": [
+    {
+      "status": "ok",
+      "provider_usage": null,
+      "usage": {
+        "status": "unknown",
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "reasoning_tokens": null
+      },
+      "output_fixture": {
+        "path": "cases/c-audit/variants/public-seed-20261135/examples.json",
+        "json_pointer": "/positive/0/value",
+        "serialization": "UTF-8 JSON"
+      }
+    }
+  ],
+  "solution": "Keep the successful attempt with unknown usage. Do not substitute zero or estimate tokens. Report aggregate total_tokens=null and efficiency unavailable for unknown_usage. Stop conservatively at token_budget when more work would require a known remaining token budget.",
+  "expected_accounting": {
+    "model_attempts": 1,
+    "total_tokens": null,
+    "efficiency_status": "unknown_usage",
+    "additional_dispatches": 0
+  },
+  "expected_stop_reason": "token_budget"
+}

@@ -1,0 +1,43 @@
+{
+  "spec_version": "1.0",
+  "scenario_id": "transient-read",
+  "evidence_kind": "synthetic-specification",
+  "operation": "read",
+  "preconditions": {
+    "fresh_workspace": true,
+    "retry_limit": 1,
+    "budgets": "policy.v1.json"
+  },
+  "trigger": {
+    "source_role": "first source with nonempty passages in the selected corpus order; its first passage",
+    "matching_invocations": [
+      1,
+      2
+    ],
+    "arguments": "source_id, start and end from that registered passage; identical on all listed invocations"
+  },
+  "responses": [
+    {
+      "invocation": 1,
+      "status": "error",
+      "error": {
+        "code": "service_error",
+        "retryable": true
+      }
+    },
+    {
+      "invocation": 2,
+      "status": "ok",
+      "data": {
+        "from_selected_corpus": "selected registered passage quote and exact span; no substitutions"
+      }
+    }
+  ],
+  "solution": "Retry identical arguments once with a new tool_call_id and retry_of pointing to the failure. Preserve the failed invocation. Then continue normally; this fault alone does not decide answer quality.",
+  "expected_accounting": {
+    "tool_invocations": 2,
+    "tool_errors": 1,
+    "failed_attempts_retained": true
+  },
+  "expected_stop_reason": "completed"
+}

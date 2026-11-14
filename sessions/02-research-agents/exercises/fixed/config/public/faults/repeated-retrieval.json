@@ -1,0 +1,50 @@
+{
+  "spec_version": "1.0",
+  "scenario_id": "repeated-retrieval",
+  "evidence_kind": "synthetic-specification",
+  "operation": "read",
+  "preconditions": {
+    "fresh_workspace": true,
+    "retry_limit": 1,
+    "budgets": "policy.v1.json"
+  },
+  "trigger": {
+    "source_role": "first source with nonempty passages in the selected corpus order; its first passage",
+    "matching_invocations": [
+      1,
+      2,
+      3
+    ],
+    "arguments": "source_id, start and end from that registered passage; identical on all listed invocations"
+  },
+  "responses": [
+    {
+      "invocation": 1,
+      "status": "ok",
+      "data": {
+        "from_selected_corpus": "selected registered passage quote and exact span; no substitutions"
+      }
+    },
+    {
+      "invocation": 2,
+      "status": "ok",
+      "data": {
+        "from_selected_corpus": "selected registered passage quote and exact span; no substitutions"
+      }
+    },
+    {
+      "invocation": 3,
+      "status": "ok",
+      "data": {
+        "from_selected_corpus": "selected registered passage quote and exact span; no substitutions"
+      }
+    }
+  ],
+  "solution": "After two consecutive retrievals add no evidence beyond the first, stop with no_progress. Do not reset budgets or count repeated text as independent support.",
+  "expected_accounting": {
+    "tool_invocations": 3,
+    "tool_errors": 0,
+    "distinct_evidence_spans": 1
+  },
+  "expected_stop_reason": "no_progress"
+}

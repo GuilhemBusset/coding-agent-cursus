@@ -1,0 +1,293 @@
+{
+  "schema_version": "1.0",
+  "case_id": "A",
+  "variant_id": "public-seed-20261115",
+  "facts": [
+    {
+      "fact_id": "A-method-set",
+      "assertion": {
+        "subject": "dossier",
+        "predicate": "limited_capacity_methods",
+        "type": "string_set",
+        "value": [
+          "willow-ledger",
+          "harbor-repair"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S01",
+          "kind": "passage",
+          "start": 390,
+          "end": 717
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-known-inputs",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "demand_assumption",
+        "type": "string",
+        "value": "deterministic-known-inputs",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S01",
+          "kind": "passage",
+          "start": 744,
+          "end": 1124
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-slot-minutes",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "slot_minutes",
+        "type": "number",
+        "value": 30,
+        "unit": "minutes",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S01",
+          "kind": "passage",
+          "start": 744,
+          "end": 1124
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-charging-assumptions",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "charging_assumptions",
+        "type": "string_set",
+        "value": [
+          "whole-wait-slots",
+          "lossless-constant-power",
+          "truck-and-charger-power-bounds"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S01",
+          "kind": "passage",
+          "start": 744,
+          "end": 1124
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-ledger-capacity",
+      "assertion": {
+        "subject": "willow-ledger",
+        "predicate": "capacity_mechanism",
+        "type": "string",
+        "value": "per-depot-type-slot-occupancy-bound",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S02",
+          "kind": "passage",
+          "start": 393,
+          "end": 793
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-ledger-assignment",
+      "assertion": {
+        "subject": "willow-ledger",
+        "predicate": "assignment_assumption",
+        "type": "string",
+        "value": "binary-assignment-and-cancellation",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S02",
+          "kind": "passage",
+          "start": 393,
+          "end": 793
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-ledger-assumptions",
+      "assertion": {
+        "subject": "willow-ledger",
+        "predicate": "formulation_assumptions",
+        "type": "string_set",
+        "value": [
+          "maintenance-and-soc",
+          "final-home-charge"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S02",
+          "kind": "passage",
+          "start": 820,
+          "end": 1187
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-repair-capacity",
+      "assertion": {
+        "subject": "harbor-repair",
+        "predicate": "capacity_mechanism",
+        "type": "string",
+        "value": "per-depot-type-slot-occupancy-ledger",
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S03",
+          "kind": "passage",
+          "start": 393,
+          "end": 774
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-repair-assumptions",
+      "assertion": {
+        "subject": "harbor-repair",
+        "predicate": "formulation_assumptions",
+        "type": "string_set",
+        "value": [
+          "fixed-candidate-routes",
+          "repair-or-cancel",
+          "checked-feasible-not-global-optimum"
+        ],
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S03",
+          "kind": "passage",
+          "start": 801,
+          "end": 1220
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    },
+    {
+      "fact_id": "A-private-exclusion",
+      "assertion": {
+        "subject": "willow-private",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "required": true,
+      "decisive": true,
+      "accepted_evidence": [
+        {
+          "source_id": "V20261115-EV-S04",
+          "kind": "passage",
+          "start": 408,
+          "end": 714
+        }
+      ],
+      "evidence_policy": "required",
+      "experiment_ids": [],
+      "supersedes_fact_ids": []
+    }
+  ],
+  "required_uncertainty": [
+    {
+      "requirement_id": "A-uncertain-demand",
+      "subject": "shared-methods",
+      "predicate": "performance_under_uncertain_demand",
+      "reason": "missing_evidence"
+    }
+  ],
+  "corrections": [],
+  "experiments": [
+    {
+      "experiment_id": "V20261115-EV-E-L1",
+      "source_ids": [
+        "V20261115-EV-S05",
+        "V20261115-EV-S06"
+      ]
+    },
+    {
+      "experiment_id": "V20261115-EV-E-Q1",
+      "source_ids": [
+        "V20261115-EV-S07",
+        "V20261115-EV-S08",
+        "V20261115-EV-S09"
+      ]
+    },
+    {
+      "experiment_id": "V20261115-EV-E-Q2",
+      "source_ids": [
+        "V20261115-EV-S10"
+      ]
+    },
+    {
+      "experiment_id": "V20261115-EV-E-D1",
+      "source_ids": [
+        "V20261115-EV-S11"
+      ]
+    }
+  ]
+}
