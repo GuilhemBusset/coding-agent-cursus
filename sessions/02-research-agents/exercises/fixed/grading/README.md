@@ -153,3 +153,19 @@ paraphrased reports, 4/5 coverage, decisive omissions, tolerance edges, missing
 outputs, wrong cells/spans, interventions, retries, unknown/excess usage, denied
 network access and pre-reference trace validation. All inputs are under the
 existing session labs impact-map registration (`exercises/**`, `tests/labs/**`).
+
+The repository's selected checks also run the session's Pi adapter and setup
+tests. Those require the installed, pinned Node/npm toolchain, even though the
+grader itself is Python-only. From the repository root, prepare a fresh checkout
+using the checked-in helper:
+
+```sh
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py
+```
+
+Then, from the Session 2 directory, keep the pins active for the selected checks:
+
+```sh
+mise exec -- ../../scripts/check-changed.sh plan
+mise exec -- ../../scripts/check-changed.sh
+```
