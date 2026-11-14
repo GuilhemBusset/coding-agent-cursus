@@ -151,6 +151,7 @@ shared = []
 reads = ["exercises/**", "tests/labs/**", ".vscode/**", "package*.json", "tsconfig.json", "mise.toml"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
+  "setup/session-02-research-agents.py",
   "ty.toml", ".vscode/**", "setup/cursus.code-workspace", "setup/editor.py", "setup/editor.json",
   "sessions/*/pyproject.toml",
 ]
@@ -179,6 +180,7 @@ shared = [
 ]
 
 [node.suites]
+model-adapter = ["sessions/02-research-agents/exercises/fixed/model/**", "sessions/02-research-agents/exercises/fixed/config/**", "sessions/02-research-agents/exercises/fixed/schemas/**", "sessions/02-research-agents/package*.json", "sessions/02-research-agents/tsconfig.json", "setup/session-02-research-agents.py"]
 # Session 1 decks: the deck, and the recordings, fixtures and lab files it quotes.
 opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html"]
 sampler = ["sessions/01-fundamentals/cursus/01-sampler.html", "sessions/01-fundamentals/cursus/labs/tokenizer.html", "sessions/01-fundamentals/cursus/fixtures/*.json"]
