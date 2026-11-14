@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-pass-B",
+  "case_id": "B",
+  "variant_id": "base",
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "claim_anchors": [
+    {
+      "claim_id": "claim-B-recommendation",
+      "anchor": "claim-claim-B-recommendation"
+    },
+    {
+      "claim_id": "claim-B-both-constraints",
+      "anchor": "claim-claim-B-both-constraints"
+    },
+    {
+      "claim_id": "claim-B-ledger-capacity",
+      "anchor": "claim-claim-B-ledger-capacity"
+    },
+    {
+      "claim_id": "claim-B-ledger-seconds",
+      "anchor": "claim-claim-B-ledger-seconds"
+    },
+    {
+      "claim_id": "claim-B-ledger-ineligible",
+      "anchor": "claim-claim-B-ledger-ineligible"
+    },
+    {
+      "claim_id": "claim-B-repair-capacity",
+      "anchor": "claim-claim-B-repair-capacity"
+    },
+    {
+      "claim_id": "claim-B-repair-q1-seconds",
+      "anchor": "claim-claim-B-repair-q1-seconds"
+    },
+    {
+      "claim_id": "claim-B-repair-q2-seconds",
+      "anchor": "claim-claim-B-repair-q2-seconds"
+    },
+    {
+      "claim_id": "claim-B-repeat-identity",
+      "anchor": "claim-claim-B-repeat-identity"
+    },
+    {
+      "claim_id": "claim-B-independent-count",
+      "anchor": "claim-claim-B-independent-count"
+    },
+    {
+      "claim_id": "claim-B-private-seconds",
+      "anchor": "claim-claim-B-private-seconds"
+    },
+    {
+      "claim_id": "claim-B-private-exclusion",
+      "anchor": "claim-claim-B-private-exclusion"
+    },
+    {
+      "claim_id": "claim-B-no-optimum",
+      "anchor": "claim-claim-B-no-optimum"
+    },
+    {
+      "claim_id": "claim-B-known-inputs",
+      "anchor": "claim-claim-B-known-inputs"
+    },
+    {
+      "claim_id": "claim-B-slot-minutes",
+      "anchor": "claim-claim-B-slot-minutes"
+    },
+    {
+      "claim_id": "claim-B-charging-assumptions",
+      "anchor": "claim-claim-B-charging-assumptions"
+    },
+    {
+      "claim_id": "claim-B-uncertainty",
+      "anchor": "claim-claim-B-uncertainty"
+    }
+  ]
+}

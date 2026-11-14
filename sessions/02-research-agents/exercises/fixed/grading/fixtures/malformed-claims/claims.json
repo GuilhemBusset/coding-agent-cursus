@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-malformed-claims",
+  "case_id": "C",
+  "variant_id": "base",
+  "claims": "invalid-array"
+}
