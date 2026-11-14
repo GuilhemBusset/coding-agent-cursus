@@ -1,0 +1,490 @@
+{
+  "schema_version": "1.0",
+  "run_id": "fixture-pass-B",
+  "case_id": "B",
+  "variant_id": "base",
+  "claims": [
+    {
+      "claim_id": "claim-B-recommendation",
+      "kind": "decision",
+      "assertion": {
+        "subject": "dossier",
+        "predicate": "recommended_method",
+        "type": "string",
+        "value": "queue-repair",
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S12",
+          "kind": "passage",
+          "start": 713,
+          "end": 1101
+        }
+      ],
+      "reference_fact_ids": [
+        "B-recommendation"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-both-constraints",
+      "kind": "factual",
+      "assertion": {
+        "subject": "dossier",
+        "predicate": "eligibility_requirements",
+        "type": "string_set",
+        "value": [
+          "finite-shared-chargers",
+          "solve-at-most-60-seconds"
+        ],
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S12",
+          "kind": "passage",
+          "start": 713,
+          "end": 1101
+        }
+      ],
+      "reference_fact_ids": [
+        "B-both-constraints"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-ledger-capacity",
+      "kind": "factual",
+      "assertion": {
+        "subject": "slot-ledger",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": true,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S02",
+          "kind": "passage",
+          "start": 371,
+          "end": 767
+        }
+      ],
+      "reference_fact_ids": [
+        "B-ledger-capacity"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-ledger-seconds",
+      "kind": "factual",
+      "assertion": {
+        "subject": "slot-ledger",
+        "predicate": "corrected_solve_seconds",
+        "type": "number",
+        "value": 84,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S06",
+          "kind": "passage",
+          "start": 422,
+          "end": 859
+        }
+      ],
+      "reference_fact_ids": [
+        "B-ledger-seconds"
+      ],
+      "experiment_ids": [
+        "EV-E-L1"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-ledger-ineligible",
+      "kind": "factual",
+      "assertion": {
+        "subject": "slot-ledger",
+        "predicate": "eligible",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S06",
+          "kind": "passage",
+          "start": 422,
+          "end": 859
+        }
+      ],
+      "reference_fact_ids": [
+        "B-ledger-ineligible"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-repair-capacity",
+      "kind": "factual",
+      "assertion": {
+        "subject": "queue-repair",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": true,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S03",
+          "kind": "passage",
+          "start": 372,
+          "end": 751
+        }
+      ],
+      "reference_fact_ids": [
+        "B-repair-capacity"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-repair-q1-seconds",
+      "kind": "factual",
+      "assertion": {
+        "subject": "EV-E-Q1",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 42,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S07",
+          "kind": "passage",
+          "start": 393,
+          "end": 780
+        },
+        {
+          "source_id": "EV-S08",
+          "kind": "passage",
+          "start": 394,
+          "end": 618
+        },
+        {
+          "source_id": "EV-S09",
+          "kind": "passage",
+          "start": 400,
+          "end": 668
+        }
+      ],
+      "reference_fact_ids": [
+        "B-repair-q1-seconds"
+      ],
+      "experiment_ids": [
+        "EV-E-Q1"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-repair-q2-seconds",
+      "kind": "factual",
+      "assertion": {
+        "subject": "EV-E-Q2",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 55,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S10",
+          "kind": "passage",
+          "start": 407,
+          "end": 753
+        }
+      ],
+      "reference_fact_ids": [
+        "B-repair-q2-seconds"
+      ],
+      "experiment_ids": [
+        "EV-E-Q2"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-repeat-identity",
+      "kind": "factual",
+      "assertion": {
+        "subject": "EV-E-Q1",
+        "predicate": "reports",
+        "type": "string_set",
+        "value": [
+          "EV-S07",
+          "EV-S08",
+          "EV-S09"
+        ],
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S09",
+          "kind": "passage",
+          "start": 400,
+          "end": 668
+        }
+      ],
+      "reference_fact_ids": [
+        "B-repeat-identity"
+      ],
+      "experiment_ids": [
+        "EV-E-Q1"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-independent-count",
+      "kind": "factual",
+      "assertion": {
+        "subject": "queue-repair",
+        "predicate": "independent_experiment_count",
+        "type": "number",
+        "value": 2,
+        "unit": "experiments",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S10",
+          "kind": "passage",
+          "start": 770,
+          "end": 1051
+        }
+      ],
+      "reference_fact_ids": [
+        "B-independent-count"
+      ],
+      "experiment_ids": [
+        "EV-E-Q1",
+        "EV-E-Q2"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-private-seconds",
+      "kind": "factual",
+      "assertion": {
+        "subject": "private-ledger",
+        "predicate": "solve_seconds",
+        "type": "number",
+        "value": 8,
+        "unit": "seconds",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S11",
+          "kind": "passage",
+          "start": 410,
+          "end": 693
+        }
+      ],
+      "reference_fact_ids": [
+        "B-private-seconds"
+      ],
+      "experiment_ids": [
+        "EV-E-D1"
+      ],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-private-exclusion",
+      "kind": "factual",
+      "assertion": {
+        "subject": "private-ledger",
+        "predicate": "models_shared_capacity",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S04",
+          "kind": "passage",
+          "start": 386,
+          "end": 688
+        },
+        {
+          "source_id": "EV-S11",
+          "kind": "passage",
+          "start": 410,
+          "end": 693
+        }
+      ],
+      "reference_fact_ids": [
+        "B-private-exclusion"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-no-optimum",
+      "kind": "factual",
+      "assertion": {
+        "subject": "queue-repair",
+        "predicate": "global_optimality_established",
+        "type": "boolean",
+        "value": false,
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S03",
+          "kind": "passage",
+          "start": 768,
+          "end": 1176
+        }
+      ],
+      "reference_fact_ids": [
+        "B-no-optimum"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-known-inputs",
+      "kind": "factual",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "demand_assumption",
+        "type": "string",
+        "value": "deterministic-known-inputs",
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S01",
+          "kind": "passage",
+          "start": 703,
+          "end": 1083
+        }
+      ],
+      "reference_fact_ids": [
+        "B-known-inputs"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-slot-minutes",
+      "kind": "factual",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "slot_minutes",
+        "type": "number",
+        "value": 30,
+        "unit": "minutes",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        }
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S01",
+          "kind": "passage",
+          "start": 703,
+          "end": 1083
+        }
+      ],
+      "reference_fact_ids": [
+        "B-slot-minutes"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-charging-assumptions",
+      "kind": "factual",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "charging_assumptions",
+        "type": "string_set",
+        "value": [
+          "whole-wait-slots",
+          "lossless-constant-power",
+          "truck-and-charger-power-bounds"
+        ],
+        "unit": null
+      },
+      "support_status": "supported",
+      "evidence": [
+        {
+          "source_id": "EV-S01",
+          "kind": "passage",
+          "start": 703,
+          "end": 1083
+        }
+      ],
+      "reference_fact_ids": [
+        "B-charging-assumptions"
+      ],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    },
+    {
+      "claim_id": "claim-B-uncertainty",
+      "kind": "uncertainty",
+      "assertion": {
+        "subject": "queue-repair",
+        "predicate": "performance_under_uncertain_demand",
+        "type": "string",
+        "value": "not-established",
+        "unit": null
+      },
+      "support_status": "unknown",
+      "evidence": [],
+      "reference_fact_ids": [],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    }
+  ]
+}
