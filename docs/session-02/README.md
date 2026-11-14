@@ -2,8 +2,7 @@
 
 Locked teaching plan · 120 minutes · agreed 14 November 2026. This is the canonical
 session-2 design, replacing the earlier system tour in the course narrative.
-Implementation is pending; use the [issue-creation prompt](create-issues-prompt.md)
-to prepare the backlog. Numerical budgets remain subject to the documented pilot.
+Implementation is pending. Numerical budgets remain subject to the documented pilot.
 
 **Destination.** Students leave with a Pi-based program that takes one research question,
 finds and compares evidence, checks a numerical claim, writes a cited answer, and stops
