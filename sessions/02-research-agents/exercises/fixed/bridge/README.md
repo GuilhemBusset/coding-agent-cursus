@@ -2,18 +2,21 @@
 
 Students can inspect `bridge.ts`, `dispatch.py`, `../tools/corpus.py`,
 `../tools/research.py` and the reused `../corpus/audit.py`. No provider call is
-needed. From the session directory, after the documented session setup:
+needed. From the session directory, after the
+[documented session setup](../../../README.md#standalone-session) installs the
+pinned runtimes and locked packages:
 
 ```console
-uv run --locked node exercises/fixed/bridge/inspect.ts --case exercises/cases/c-audit
+mise exec -- uv run --locked node exercises/fixed/bridge/inspect.ts --case exercises/cases/c-audit
 ```
 
 This prints the actual model-facing JSON schemas, descriptions, limits and a real
 search result. To register with Pi, import `createResearchTools` from `bridge.ts`
 and pass `{ caseRoot, runId }`; supply its returned registrations to the Agent's
 `tools`. `caseRoot` is the trusted path to one base case or published variant,
-containing `corpus.json` and `sources/`. Run Node through `uv run --locked` so
-`python` resolves to the session environment. A trusted caller may instead pass an
+containing `corpus.json` and `sources/`. Use `mise exec --` to select the session's
+pinned Node/npm, and run Node through `uv run --locked` so `python` resolves to
+the session environment. A trusted caller may instead pass an
 absolute `python` executable path. Arguments are sent as UTF-8 JSON over stdin;
 Python is spawned with an argument array and `shell: false`. Neither roots nor
 executables are exposed in the research-tool schemas. There is no Bash or
