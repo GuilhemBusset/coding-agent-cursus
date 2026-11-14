@@ -96,6 +96,16 @@ The HTML-suite CI job also installs the session lock when selecting the adapter
 suite (including all-suite main/nightly runs). The smoke helper uses mise when
 available, or Node on PATH in CI environments that already select the runtime.
 
+Fresh CI reproduction on 2026-11-14: extracted `git archive HEAD` into a temporary
+directory with no session dependencies, used Node 22.22.0/npm 10.9.4, executed the
+workflow's `Locked Session 2 adapter dependencies` install command, discovered
+Session 2 suites through `discoverAllSuites()` and ran the registered suite with
+`run-suite.mjs`. All **5 tests passed**, with no skips. npm emitted the expected
+engine warning for the session's student-toolchain pins (Node 24.15.0/npm 11.12.1);
+installation and the CI suite both succeeded. The temporary checkout and runtime
+were removed. A reproduction that omits the workflow's dependency installation
+still fails to import Pi; it does not reproduce the corrected CI job.
+
 From the repository root after the session setup:
 
 ```sh
