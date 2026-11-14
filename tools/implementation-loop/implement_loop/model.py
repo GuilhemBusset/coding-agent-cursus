@@ -158,7 +158,7 @@ class Finding:
     probe: str | None = None         # or the probe file whose test fails while it holds
     file: str | None = None
     line: int | None = None
-    severity: int = 2                # 0..3, informative only: never a gate
+    severity: int = 2                # 0 urgent, 1 major, 2 material, 3 polish (non-blocking except safety)
     # engine bookkeeping
     status: str = "new"              # new | open | closed | follow_up | advisory | rejected
     blocking: bool = False

@@ -534,7 +534,9 @@ class Engine:
     def _req(self, n: int, feedback: list[str] | None = None) -> IssueRequest:
         st = self.store.issue(n)
         facts = {"lacks": self.lacks, "invariants": list(self.invariants), "repair": self.repair,
-                 "decisions": st.decisions[-20:], "operator": self.op, "other": self.other}
+                 "decisions": st.decisions[-20:], "operator": self.op, "other": self.other,
+                 "revision": bool(st.signature or st.examined_sha or st.conflict_pending or st.replans
+                                  or st.fix_forwards), "commands": st.commands}
         return IssueRequest(issue=self.plan.issues[n], spec=self.plan.specs[n],
                             context=self.store.state.get("context") or "", feedback=list(feedback or []), facts=facts)
 
@@ -554,7 +556,7 @@ class Engine:
         return {i["id"] for i in self._items(st) if i["proof"] == "review"}
 
     def _behavioural_items(self, st: IssueState) -> set[str]:
-        """Items proven by a durable test: each gets at least one independent probe."""
+        """Items whose tests the examiner must assess, reusing evidence or adding a probe."""
         return {i["id"] for i in self._items(st) if i["proof"] == "test"}
 
     def _agent_part_items(self, st: IssueState) -> set[str]:
@@ -840,7 +842,7 @@ class Engine:
         infra = any(z.startswith(INFRA_PREFIXES) for z in plan["zones"])
         for o in kept:
             if o["kind"] == "classification":
-                ruling = self.agents.arbitrate(self.other, self._req(n), {
+                ruling = self.agents.arbitrate("codex", self._req(n), {
                     "kind": "classification", "item": o["item"], "item_text": item_text.get(o["item"]),
                     "plan": next((i for i in items if i["id"] == o["item"]), None), "objection": o,
                     "lacks": self.lacks})
@@ -1223,7 +1225,7 @@ class Engine:
                 r["status"], r["reason"] = "refused", "no such open finding"
                 continue
             with self.ws.disposable(wt) as scratch:
-                ruling = self.agents.arbitrate(self.other, self._req(n), {
+                ruling = self.agents.arbitrate("codex", self._req(n), {
                     "kind": "finding", "finding": f, "item_text": self._item_text(n).get(f.get("item") or ""),
                     "invariants": list(self.invariants), "argument": r.get("detail"), "lacks": self.lacks,
                     "history": [x for x in st.findings if x.get("item") == f.get("item")][-5:]}, scratch)
@@ -1651,6 +1653,10 @@ class Engine:
             new.append(gate.classify(f, item_text, self.invariants, reproduced, self._agent_items(st),
                                      self._owner_items(st), {i["id"]: i.get("agent_part") or "" for i in self._items(st)}))
         accepted, unmet, missing = gate.review_verdicts(res.verdicts, item_text, self._verdict_items(st))
+        # The examiner may independently inspect existing tests rather than manufacture a new
+        # probe per checkbox. Require a quoted verdict that cites a passing command on this head.
+        reused = gate.reviewed_tests(res.verdicts, item_text, self._behavioural_items(st), st.evidence, head)
+        accepted.update(reused)
         for i, v in accepted.items():
             st.verdicts[i] = {**v, "head": head}
         st.findings += [asdict(f) for f in new]
@@ -1669,14 +1675,36 @@ class Engine:
                                                      and f.get("round") != rnd]
         self.store.event("examined", issue=n, head=head, findings={f.id: f.status for f in new},
                          unmet=unmet, missing=missing, certify=res.certify, adopted=[p.file for p in adopt],
-                         rejected=rejected)
+                         reused=sorted(reused), rejected=rejected)
         problems = []
         if unmet:
             problems += [f"{i} judged unmet by the examiner" for i in unmet]
         if blocking:
             problems += [f"blocking finding {f.id}: {f.title}" for f in blocking]
         if not res.certify and not problems and not missing:
-            problems.append(f"the examiner withheld its certificate: {res.summary[:400]}")
+            # A bare refusal (including one based only on polish) gives the builder nothing
+            # actionable. Let Astra settle its scope, then ask the examiner for its own certificate.
+            # This never fabricates a certificate, and repeated refusals remain bounded.
+            if st.exam_retries < 2:
+                with self.ws.disposable(wt) as scratch:
+                    ruling = self.agents.arbitrate("codex", self._req(n), {
+                        "kind": "certificate_refusal", "summary": res.summary,
+                        "findings": [asdict(f) for f in new], "verdicts": res.verdicts,
+                        "plan": st.plan, "head": new_head,
+                        "question": "Does this refusal identify a material unmet requirement or safety violation? "
+                                    "If so, quote it and state the minimum fix. Advisory polish does not require work."}, scratch)
+                st = self.store.issue(n)
+                self._decide(st, {"id": "certificate-scope", "choice": "refusal upheld" if ruling.upheld
+                                  else "refusal is non-blocking", "rationale": ruling.reason})
+                self.store.put(st)
+                if not ruling.upheld:
+                    return self._set_phase(n, Phase.VERIFY, exam_retries=st.exam_retries + 1, exam_feedback=[
+                        f"The arbiter ruled your certificate refusal out of scope: {ruling.reason}. "
+                        "Certify if all required work is met; otherwise identify a concrete material finding, "
+                        "unmet review item, or missing evidence. Advisory findings do not block."])
+                problems.append(f"the arbiter upheld the certificate refusal: {ruling.reason}")
+            else:
+                problems.append(f"the examiner withheld its certificate: {res.summary[:400]}")
         if problems:
             bundled = [f for f in new if f.status == "follow_up"]
             if bundled:
@@ -1686,10 +1714,11 @@ class Engine:
         # What the examiner still owes (a verdict, an independent probe) is asked of it again, at
         # most twice; it is not the builder's failure.
         st = self.store.issue(n)
-        covered = {c["criterion"] for c in st.commands if c.get("author") == "examiner"}
+        covered = {c["criterion"] for c in st.commands if c.get("author") == "examiner"} | set(reused)
         unprobed = sorted(self._behavioural_items(st) - covered)
         owed = ([f"give a verdict on {', '.join(missing)}"] if missing else []) + (
-            [f"write an independent probe for {', '.join(unprobed)}"] if unprobed else [])
+            [f"write an independent probe for {', '.join(unprobed)}, or give a met verdict quoting each item "
+             "and naming the passing command whose assertions already prove it"] if unprobed else [])
         if owed and st.exam_retries < 2:
             self.store.event("examination_incomplete", issue=n, missing=missing, unprobed=unprobed, retry=st.exam_retries + 1)
             return self._set_phase(n, Phase.VERIFY, exam_feedback=[f"Your previous examination is incomplete: {'; '.join(owed)}."],
@@ -1700,7 +1729,7 @@ class Engine:
             # No independent probe after two requests: a second key decides whether the builder's
             # locked tests prove those items as written. If not, the builder strengthens them.
             with self.ws.disposable(wt) as scratch:   # the arbiter reads the verified head itself
-                ruling = self.agents.arbitrate(self.other, self._req(n), {
+                ruling = self.agents.arbitrate("codex", self._req(n), {
                     "kind": "probe_waiver", "items": {i: self._item_text(n).get(i) for i in unprobed},
                     "tests": sorted(st.tests), "commands": [c for c in st.commands if c.get("criterion") in unprobed],
                     "manifest": st.manifest, "head": head,

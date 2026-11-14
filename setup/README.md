@@ -412,6 +412,15 @@ Run state lives under the git common dir (`.git/implementation-loop/`), worktree
 `<repo>.loop/` directory. Agents run without your GitHub credentials. Per-role effort, models and
 timeouts are in `tools/implementation-loop/loop.toml`.
 
+For a Codex-operated run, that file pins `gpt-6.1-sol` for planning and initial implementation,
+and `gpt-6-astra` for revisions and arbitration. Claude Code remains the independent examiner
+using its configured default. Install and authenticate both CLIs as above; the Codex account
+must have access to both models. These are runtime selections, not additional packages or
+global configuration changes. Call records include the selected model and effort. The generic
+`doctor --smoke` checks CLI access, not entitlement to every configured model; a model-access
+error must be fixed in the account or in the checked-in role configuration before the run.
+See the [role table and review standard](../tools/implementation-loop/README.md#review-standard).
+
 ### Browser libraries without root
 
 When Chromium cannot start because Linux libraries are missing (`error while loading shared

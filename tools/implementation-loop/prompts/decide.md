@@ -14,6 +14,9 @@ For each request return `approve` and a `reason`:
 - `test_change`: approve only when the locked test is wrong for the item as written, and the new
   version still proves it (you hold the second key: never let a test be weakened). If a test node
   disappears, give its disposition (`owner-run` or `excluded: <reason>`) in `dispositions`.
+  A test that pins prose, adds an unrequested requirement, or duplicates the generic page checker
+  can be wrong under ADR 0017. Permit replacing it with appropriate evidence while retaining
+  required behavioural coverage; a lock is not a reason to preserve a mistaken requirement.
 - `reclassify`: approve only when the item truly needs a capability this host lacks ({{lacks}}) and
   the request keeps the agents' part.
 - `depends`: approve when the item cannot be delivered without that issue's deliverable.

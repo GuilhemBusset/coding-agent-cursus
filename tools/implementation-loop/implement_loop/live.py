@@ -2,7 +2,7 @@
 call, with per-role permissions, schema-validated answers, retries, and a full call record.
 
 Read-only roles (explore, plan, triage, arbitrate) get read-only tools (Claude) or the read-only
-sandbox (Codex). Working roles (build, resolve_locked, examine, decide) may edit their worktree,
+sandbox (Codex). Working roles (build, revise, resolve_locked, examine, decide) may edit their worktree,
 use the network and run anything the checks run, with the same access for both vendors (Codex
 runs without its sandbox, like Claude Code; ADR 0012): a sandbox limit is an engine problem, not
 an owner obligation. Both keep ADR 0008's trust limit: same user, no GitHub credentials, a
@@ -72,6 +72,7 @@ DEFAULT_ROLES = {
     "plan": RoleSettings(timeout_s=1800),
     "triage": RoleSettings(timeout_s=1200),
     "build": RoleSettings(timeout_s=5400),
+    "revise": RoleSettings(timeout_s=5400),
     "resolve_locked": RoleSettings(timeout_s=1800),
     "examine": RoleSettings(timeout_s=3600),
     "decide": RoleSettings(timeout_s=1800),
@@ -297,6 +298,7 @@ class LiveAgents:
             problems = schemas.validate(value, schema) if value is not None else ["no structured answer"]
             outcome = "answered" if code == 0 else classify_failure(code, err)
             record = {"seq": seq, "role": role, "vendor": vendor, "issue": issue, "attempt": attempt + 1,
+                      "model": s.codex_model if vendor == "codex" else s.claude_model, "effort": s.effort,
                       "exit": code, "seconds": round(time.monotonic() - started, 1), "ok": code == 0 and not problems,
                       "outcome": outcome, "problems": problems[:5], "stderr_tail": err[-400:], **meta}
             with self._lock, self.log_path.open("a") as f:
@@ -358,8 +360,10 @@ class LiveAgents:
 
     def build(self, vendor, req, plan, worktree, feedback):
         req = IssueRequest(issue=req.issue, spec=req.spec, context=req.context, feedback=feedback, facts=req.facts)
-        prompt = render("build", plan=json.dumps(plan, indent=1), **self._issue_vars(req, "builder"))
-        v = self.call(vendor, "build", worktree, prompt, req.issue.number)
+        role = "revise" if vendor == "codex" and req.facts.get("revision") else "build"
+        prompt = render("build", plan=json.dumps(plan, indent=1),
+                        **self._issue_vars(req, "builder (revision and deconflicting)" if role == "revise" else "builder"))
+        v = self.call(vendor, role, worktree, prompt, req.issue.number)
         requests = []
         for r in v["requests"]:
             command = ({"criterion": r.get("item") or "", "command": r["command"], "cwd": r.get("cwd") or ".",
@@ -390,6 +394,7 @@ class LiveAgents:
             prompt = render("examine", plan=json.dumps(plan, indent=1), base=(since or base_sha)[:12], head=head_sha[:12],
                             scope=scope, diff=diff, evidence=json.dumps(compact, indent=1),
                             memory=json.dumps(memory, indent=1)[:12000] if memory else "(none)",
+                            commands=json.dumps((req.facts or {}).get("commands") or [], indent=1),
                             **self._issue_vars(req, "examiner"))
             v = self.call(vendor, "examine", scratch, prompt, req.issue.number)
         findings = [Finding(id="", **f) for f in v["findings"]]

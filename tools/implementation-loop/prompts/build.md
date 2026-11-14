@@ -39,3 +39,9 @@ You are the builder. Build this issue in your working directory, following your 
 - Do not commit or push; leave your changes in the working tree.
 
 {{feedback}}
+
+On a revision, resolve the concrete failures with the smallest coherent change. Fix a real
+defect; dispute a finding that adds requirements, quoting the issue and the evidence. Propose a
+`test_change` when a locked test pins wording or tests an out-of-scope requirement. Keep the
+required behaviour covered. Do not implement optional polish merely because it appeared in a
+review, and do not redesign working deliverables to satisfy a reviewer's preference.

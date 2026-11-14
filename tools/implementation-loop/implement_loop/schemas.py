@@ -67,6 +67,7 @@ BY_ROLE = {
     "plan": PLAN,
     "triage": TRIAGE,
     "build": BUILD,
+    "revise": BUILD,
     "resolve_locked": RESOLVED,
     "examine": EXAMINE,
     "decide": DECIDE,

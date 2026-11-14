@@ -6,6 +6,7 @@ fault-repair run may never change.
 - The issue text is the floor and the ceiling. A finding blocks only if it quotes at least three
   words of the item it says is violated (checked here, not trusted), or names a safety invariant
   from `loop.toml`, and carries a behavioural witness (observed against expected).
+- P3 polish is a follow-up unless it demonstrates a safety invariant (ADR 0018).
 - An `owner` classification is valid only for a capability the host lacks; a `deferred` one
   only for an open issue whose title or body contains the quoted words.
 - A round is productive when what fails changes.
@@ -162,7 +163,9 @@ def classify(f: Finding, item_text: dict[str, str], invariants, reproduced: bool
         f.status, f.blocking, f.reason = "rejected", False, "its reproduction fails unconditionally"
         return f
     if reproduced is True:
-        if (tied_item or tied_invariant) and witness:
+        if f.severity == 3 and not tied_invariant:
+            f.status, f.blocking, f.reason = "follow_up", False, "P3 polish is non-blocking"
+        elif (tied_item or tied_invariant) and witness:
             f.status, f.blocking = "open", True
             f.reason = (f"reproduced; it quotes {f.item}" if tied_item else f"reproduced; invariant: {f.invariant}")
         else:
@@ -190,6 +193,29 @@ def review_verdicts(verdicts: list[dict], item_text: dict[str, str], review_item
             unmet.append(i)
     missing = sorted(review_items - set(accepted))
     return accepted, sorted(set(unmet)), missing
+
+
+def reviewed_tests(verdicts: list[dict], item_text: dict[str, str], test_items: set[str],
+                   evidence: list[dict], head: str) -> dict[str, dict]:
+    """Accept existing behavioural coverage only after an independent, evidenced review.
+
+    The engine still runs the commands and locks their tests. A reviewer must name a passing
+    command for this item on this exact head and explain what its assertions establish.
+    """
+    accepted = {}
+    for v in verdicts:
+        item = v.get("item")
+        if (item not in test_items or v.get("verdict") != "met"
+                or not quote_ok(item_text.get(item, ""), v.get("quote"))):
+            continue
+        note = (v.get("note") or "").strip()
+        for e in evidence:
+            command = e.get("command") or ""
+            if (e.get("criterion") == item and e.get("head_sha") == head and e.get("passed") is True
+                    and command and command in note and len(note) > len(command)):
+                accepted[item] = v
+                break
+    return accepted
 
 
 # ------------------------------------------------------------------ zones

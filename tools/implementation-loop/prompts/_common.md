@@ -9,6 +9,13 @@ Rules for every role:
   proven; nothing it does not ask for is required. Scale your work to the issue: these are mostly
   small course-material tasks. Do not invent provenance machinery, byte-pinning, extra platforms or
   edge-case suites the issue does not name.
+- Review for a usable, correct course deliverable. A material defect changes an answer, breaks
+  a required workflow, omits a deliverable or makes teaching misleading. Style preferences,
+  alternative architectures, hypothetical hardening and extra polish are advisory. An empty
+  findings list is a valid outcome; do not find something just to justify the review.
+- Follow ADR 0017: test behaviour, review wording and teaching quality, and use check-page.mjs
+  for generic page layout/accessibility/loading. Do not add tests of copy, slide counts, or
+  duplicate viewport/print checks. Reuse existing tests when their assertions prove the item.
 - Never commit, push, merge, open pull requests, or edit GitHub issues. The engine does that.
 - Never special-case tests, weaken a check, hard-code an expected answer, or skip a test.
 - Nobody will answer questions during this run. Where something is ambiguous, choose the reading
@@ -16,6 +23,9 @@ Rules for every role:
 - Capabilities this host lacks (only these can make an item the owner's): {{lacks}}.
   Anything else, including network access, a browser, Python or Node, agents have: use them.
 - Your final answer must be a single JSON object matching the schema you were given.
+
+Decisions already made for this issue (respect them unless new evidence contradicts them):
+{{decisions}}
 
 The issue you are working on:
 
