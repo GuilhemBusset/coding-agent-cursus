@@ -5,7 +5,8 @@ Give it an epic or a single issue; it works through every open sub-issue in depe
 without waiting for a person and without parking, until each issue is done, delivered with
 typed obligations, or (rarely, and visibly) failed. Design and rationale:
 [ADR 0008](../../docs/adr/0008-implement-loop.md), [ADR 0011](../../docs/adr/0011-autonomous-implement-loop.md)
-and [ADR 0012](../../docs/adr/0012-builder-examiner-loop.md).
+and [ADR 0012](../../docs/adr/0012-builder-examiner-loop.md), with the review and model-routing
+changes in [ADR 0018](../../docs/adr/0018-proportionate-review-and-codex-revisions.md).
 
 It is plain Python (3.11+, standard library only) plus `git` (2.29 or later, for
 `git init --object-format`) and the authenticated GitHub CLI.
@@ -32,6 +33,40 @@ scripts/implement.sh retry 10 [21 ...]                 # a fresh ceiling for fai
 `--operator` names the agent driving the run (the builder); the other one is the examiner.
 `--yes` records that the user agreed the runs merge their own PRs once every gate passes.
 
+For `--operator codex`, the checked-in defaults are:
+
+| Work | CLI / model |
+| --- | --- |
+| Explore, plan, initial build | Codex / `gpt-6.1-sol` (Sol-1) |
+| Revisions after verification or review, and build conflicts | Codex / `gpt-6-astra` |
+| Triage, test/command-change decisions, locked-test conflicts, final examination | Claude Code / configured default |
+| Scope disputes and unexplained certificate refusals | Codex / `gpt-6-astra`, a fresh read-only arbiter |
+
+Revision routing uses persisted issue state, so resuming a run keeps it. Initial plan feedback
+alone does not escalate a build. Each call logs its role, model and effort in `agents.jsonl`.
+A Claude-operated run keeps Claude building and Codex examining; its Codex arbiter also uses
+Astra. Models, effort and timeouts are pinned per role in `loop.toml`; no global Codex setting
+is needed for these choices. Both CLIs still need authentication and access to the selected models.
+
+## Review standard
+
+Review for material correctness and the requested deliverable. P0–P2 defects can block only with
+the existing quoted requirement/invariant and reproduction; P3 polish becomes a follow-up.
+A demonstrated safety violation still blocks at any priority. Prose and teaching quality are
+reviewed, behaviour is tested, and `check-page.mjs` handles generic page checks (ADR 0017).
+
+The examiner can reuse existing tests: it reads their assertions and returns a quoted `met`
+verdict naming a passing command for that item on the exact head. The engine validates that
+evidence and locks the tests as usual. A new probe is needed only for an uncovered behaviour or
+a demonstrated defect. Delta reviews reuse adopted probes and renew evidence verdicts on the
+new head. Missing evidence still has to be supplied or explicitly arbitrated.
+
+A certificate withheld without a blocking finding or unmet review item goes to Astra for a
+scope ruling. An out-of-scope refusal returns to the examiner with that ruling, without a
+builder round. Arbitration never substitutes for the examiner's certificate: verification,
+locked-test protection, the certificate on the final commit and required CI remain mandatory.
+Persistent refusals remain bounded by the normal progress rules and call ceilings.
+
 ## Live agents
 
 Every agent call is a fresh headless process: `claude -p --output-format json --json-schema …`
@@ -42,8 +77,9 @@ per-role effort, models and timeouts in `loop.toml`.
 
 | Role | Vendor | Access |
 | --- | --- | --- |
-| explore, plan, triage, arbitrate | builder (explore, plan) / examiner (triage, arbitrate) | read-only tools (Claude) / read-only sandbox (Codex) |
-| build | builder | edits the issue worktree, runs anything, network; Claude's commit, push and `gh` commands are denied |
+| explore, plan, triage | builder (explore, plan) / examiner (triage) | read-only tools (Claude) / read-only sandbox (Codex) |
+| arbitrate | Codex / Astra | read-only sandbox |
+| build, revise | builder | edits the issue worktree, runs anything, network; Claude's commit, push and `gh` commands are denied |
 | resolve_locked | examiner | resolves main's conflicts in locked tests, in the issue worktree |
 | examine, decide | examiner | anything, network and a browser, in a disposable worktree deleted afterwards |
 
@@ -59,7 +95,7 @@ an agent's commits never reach the repository (the engine commits its changes it
 reviewed heads are merged. Codex calls start with no MCP servers, and each worktree has a private
 copy of `setup/node_modules`.
 
-Every agent that can write (`build`, `resolve_locked`, and `examine` and `decide` in their
+Every agent that can write (`build`, `revise`, `resolve_locked`, and `examine` and `decide` in their
 disposable worktree) works against a private git directory of its run's own, at
 `<repo parent>/<repo name>.loop/issue-<root>/agent-git/<id>/`. For the call, the worktree's `.git`
 file names that directory instead of the worktree's own one in the shared repository. The
@@ -112,7 +148,7 @@ inside a container, a VM or a separate user account.
 | planned | engine | Waits until its zones don't overlap any issue being built, and no shared file is held. |
 | build | builder | Writes the code, its own tests, the registrations and one or more commands per item (all of them run; each names exactly one item id as its criterion, and one that names no item is reported back, not kept; after the first examination a changed list for an item is one `command_change` request, and a typed `command_change` with one command adds it to the item's commands; the decider sees the commands it `replaces`). Never commits. Asks for anything outside its lane with a typed request (`paths`, `protected_change`, `command_change`, `test_change`, `reclassify`, `depends`, `dispute`), decided by a fresh call of the other vendor (disputes: the arbiter). Edits to locked tests without an approved request are reverted. |
 | verify | engine | Runs every command and adopted probe from its own code: locked files unchanged, tests that ran before still run, no skips, per-process pytest reports, unselected tests need a disposition, changed files within the zones and approved grants, open findings re-run. |
-| examine | examiner | In a disposable copy of the exact head: verdicts on review items, every finding at once (with memory of earlier rounds), probes, and a certificate. A finding blocks only if the engine reproduces it and it quotes the item or names a safety invariant; others become a follow-up issue. At the first examination the tests, their configuration, the selection manifest and the adopted probes lock. |
+| examine | examiner | In a disposable copy of the exact head: verdicts on review items, assessment of existing tests, probes for uncovered behaviour, findings in one batch with memory, and a certificate. Material findings block only if reproduced and tied to the item or a safety invariant; polish becomes a follow-up. At the first examination the tests, their configuration, the selection manifest and adopted probes lock. |
 | land | engine | One at a time across runs (a run that finds the queue held waits): push without force, PR with `Refs #N`, evidence comment, the `required` check on the exact certified head, merge with that head SHA. Main moving means verify and a delta examination again. |
 | merged → delivered/done | engine | Re-verifies on `main`, re-runs the run's earlier issues' checks there, ticks the checkboxes with evidence links, files the follow-up issue, and closes the issue, or keeps it open as delivered with its owner and deferred obligations. A broken `main` gets one fix-forward, then a revert PR. |
 

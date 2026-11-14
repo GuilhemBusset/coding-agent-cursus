@@ -4,7 +4,7 @@ Two vendors, two keys. The **builder** (the operator's vendor) plans an issue, w
 its tests, the registrations and the commands that prove each item. The **examiner** (the other
 vendor) triages the plan, examines the result on the exact head, writes independent probes,
 approves or refuses the builder's typed requests, and certifies the head that may land. A fresh
-**arbiter** call from the examiner's vendor settles disputes. The engine (plain code) owns git,
+**arbiter** call through Codex (Astra) settles scope disputes (ADR 0018). The engine (plain code) owns git,
 the verifier, the gates and every merge.
 
 Every call names the vendor that must answer. A `meter` (set by the engine) is told before and

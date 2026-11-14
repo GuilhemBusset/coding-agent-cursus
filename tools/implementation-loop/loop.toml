@@ -5,6 +5,8 @@
 # claude_model: alias or full id for `claude --model`; "" uses your Claude Code default.
 # codex_model:  model for `codex exec -m`; "" uses your Codex default.
 #
+# Codex builds with Sol; revisions and arbitration use Astra. Claude remains the examiner
+# for a Codex-operated run. Pin models here rather than inheriting the operator's defaults.
 # Explorers are cheap fact-finders; every other role works at high effort. Each issue has a
 # persistent call ceiling (config.py, ADR 0012); every call's cost and tokens are logged to
 # <run dir>/agents.jsonl.
@@ -13,35 +15,47 @@
 effort = "low"
 timeout_s = 900
 claude_model = "sonnet"
-codex_model = ""
+codex_model = "gpt-6.1-sol"
 
 [roles.plan]
 effort = "high"
 timeout_s = 1800
+codex_model = "gpt-6.1-sol"
 
 [roles.triage]
 effort = "high"
 timeout_s = 1200
+codex_model = "gpt-6.1-sol"
 
 [roles.build]
 effort = "high"
 timeout_s = 5400
+codex_model = "gpt-6.1-sol"
+
+[roles.revise]
+effort = "high"
+timeout_s = 5400
+codex_model = "gpt-6-astra"
 
 [roles.resolve_locked]
 effort = "high"
 timeout_s = 1800
+codex_model = "gpt-6-astra"
 
 [roles.examine]
 effort = "high"
 timeout_s = 3600
+codex_model = "gpt-6.1-sol"
 
 [roles.decide]
 effort = "high"
 timeout_s = 1800
+codex_model = "gpt-6-astra"
 
 [roles.arbitrate]
 effort = "high"
 timeout_s = 1200
+codex_model = "gpt-6-astra"
 
 # What this host cannot provide (ADR 0012). Only these make an item the owner's; the doctor adds
 # what it can verify (missing API keys, a WSL host lacking native Linux). Agents have network

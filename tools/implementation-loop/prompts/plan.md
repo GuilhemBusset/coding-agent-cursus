@@ -17,5 +17,8 @@ For **every** ledger item ({{ledger_ids}}) return one entry:
 - `decisions`: the choices that matter, each with its rationale. They are published in the PR.
 
 Keep it proportional: the smallest correct plan that delivers every item as written.
+Use `review` for prose, pedagogy and factual explanations, `command` for the generic page checker,
+and `test` for executable behaviour. One meaningful test can cover several related items; a
+checkbox is not a requirement to invent another test file.
 
 {{feedback}}

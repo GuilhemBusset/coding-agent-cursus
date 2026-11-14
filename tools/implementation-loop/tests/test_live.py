@@ -315,6 +315,35 @@ class LiveAdapterTests(unittest.TestCase):
         prompt = self.calls()[-1]["prompt"]
         self.assertIn("c" * 12, prompt)
         self.assertIn("E28-1-1", prompt)
+        self.assertIn("the plan feedback", prompt, "examiner retry instructions actually reach the reviewer")
+
+    def test_codex_initial_build_uses_sol_and_revision_uses_astra_with_the_same_access(self):
+        self.invoke("build", "codex")
+        initial = self.calls()[-1]["argv"]
+        self.req.facts["revision"] = True
+        self.invoke("build", "codex")
+        revision = self.calls()[-1]["argv"]
+        self.assertEqual(initial[initial.index("-m") + 1], "gpt-6.1-sol")
+        self.assertEqual(revision[revision.index("-m") + 1], "gpt-6-astra")
+        for cmd in (initial, revision):
+            self.assertEqual(cmd[cmd.index("--sandbox") + 1], "danger-full-access")
+            self.assertIn('approval_policy="never"', cmd)
+        records = [json.loads(line) for line in self.agents.log_path.read_text().splitlines()]
+        self.assertEqual([(r["role"], r["model"]) for r in records],
+                         [("build", "gpt-6.1-sol"), ("revise", "gpt-6-astra")])
+        self.assertEqual(self.meter.outcomes(), ["answered", "answered"])
+
+    def test_codex_arbitration_uses_astra_without_write_access(self):
+        self.invoke("arbitrate", "codex")
+        cmd = self.calls()[-1]["argv"]
+        self.assertEqual(cmd[cmd.index("-m") + 1], "gpt-6-astra")
+        self.assertEqual(cmd[cmd.index("--sandbox") + 1], "read-only")
+
+    def test_claude_revision_keeps_its_builder_role(self):
+        self.req.facts["revision"] = True
+        self.invoke("build", "claude")
+        record = json.loads(self.agents.log_path.read_text().splitlines()[-1])
+        self.assertEqual((record["vendor"], record["role"]), ("claude", "build"))
 
     def test_decide_and_arbitrate_answers_are_mapped(self):
         d = self.invoke("decide", "codex")
@@ -334,9 +363,9 @@ class LiveAdapterTests(unittest.TestCase):
     def test_every_prompt_file_renders_with_the_adapter_variables(self):
         keys = ("role", "number", "title", "body", "ledger", "context", "ledger_ids", "feedback", "lacks", "invariants",
                 "decisions", "repair", "plan", "branch_note", "files", "base", "head", "scope", "diff", "evidence",
-                "memory", "requests", "dispute", "question", "briefing")
+                "memory", "requests", "dispute", "question", "briefing", "commands")
         names = [p.stem for p in live.PROMPTS.glob("*.md") if not p.stem.startswith("_")]
-        self.assertEqual(sorted(names), sorted(set(live.DEFAULT_ROLES)))
+        self.assertEqual(sorted(names), sorted(set(live.DEFAULT_ROLES) - {"revise"}), "revisions use the build prompt")
         for name in names:
             self.assertNotIn("{{", live.render(name, **{k: "x" for k in keys}), name)
 
