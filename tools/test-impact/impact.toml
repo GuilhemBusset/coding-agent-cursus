@@ -180,6 +180,7 @@ shared = [
 ]
 
 [node.suites]
+tool-bridge = ["sessions/02-research-agents/exercises/fixed/tools/**", "sessions/02-research-agents/exercises/fixed/bridge/**", "sessions/02-research-agents/exercises/fixed/corpus/audit.py", "sessions/02-research-agents/exercises/fixed/schemas/**", "sessions/02-research-agents/exercises/cases/**/corpus.json", "sessions/02-research-agents/exercises/cases/**/sources/**", "sessions/02-research-agents/package*.json", "sessions/02-research-agents/tsconfig.json"]
 model-adapter = ["sessions/02-research-agents/exercises/fixed/model/**", "sessions/02-research-agents/exercises/fixed/config/**", "sessions/02-research-agents/exercises/fixed/schemas/**", "sessions/02-research-agents/package*.json", "sessions/02-research-agents/tsconfig.json", "setup/session-02-research-agents.py"]
 # Session 1 decks: the deck, and the recordings, fixtures and lab files it quotes.
 opening-close = ["sessions/01-fundamentals/cursus/00-opening.html", "sessions/01-fundamentals/cursus/99-close.html"]

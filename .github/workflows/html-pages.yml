@@ -55,8 +55,8 @@ jobs:
           cache-dependency-path: setup/package-lock.json
       - name: Reproduce the documented Linux setup
         run: node setup/html-pages.mjs --with-system-deps
-      - name: Locked Session 2 adapter dependencies
-        if: inputs.suites == 'all' || inputs.suites == '' || contains(inputs.suites, 'sessions/02-research-agents/tests/labs/model-adapter.test.mjs')
+      - name: Locked Session 2 dependencies
+        if: inputs.suites == 'all' || inputs.suites == '' || contains(inputs.suites, 'sessions/02-research-agents/tests/labs/model-adapter.test.mjs') || contains(inputs.suites, 'sessions/02-research-agents/tests/labs/tool-bridge.test.mjs')
         run: npm --prefix sessions/02-research-agents ci
       - name: Node suites
         env:
