@@ -38,6 +38,20 @@ inspect primary notes rather than accepting generated reference values as an
 oracle. They validate every generated case/reference/example against the existing
 schemas, exercise boundary tolerances and reject broken spans/relationships.
 
+For repository regression checks, prepare the session's locked Node/Pi dependencies
+as well. From the session directory in a fresh repository checkout:
+
+```sh
+uv run --no-project --python 3.12 python ../../setup/session-02-research-agents.py
+mise exec -- ../../scripts/check-changed.sh plan
+mise exec -- ../../scripts/check-changed.sh
+```
+
+The selected checks include adapter diagnostics and installed-session readiness.
+They need the session's pinned Node/npm on PATH and its installed packages, even
+though corpus generation itself uses only Python. The setup helper installs from
+the checked-in locks; `mise exec` supplies those pinned runtimes to child checks.
+
 No dependencies or OS installs were added. Paths, file encoding and CSV newlines
 are explicit; utilities are portable Python. Validation here runs on this Linux
 host; it does not claim actual macOS or Windows execution.
