@@ -52,7 +52,8 @@ jobs:
           - image: fedora:45
             prep: dnf install -y sudo curl ca-certificates shadow-utils
           - image: archlinux:base-20261101.0.620205
-            prep: pacman -Sy --noconfirm sudo curl ca-certificates
+            # Upgrade the disposable base with its package databases to avoid partial upgrades.
+            prep: pacman -Syu --noconfirm sudo curl ca-certificates
     steps:
       - uses: actions/checkout@v4
       - name: Install twice in a clean container, then verify

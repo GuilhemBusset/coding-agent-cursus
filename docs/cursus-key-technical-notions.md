@@ -25,6 +25,10 @@
 - Deliberate cuts, kept cut: no backpropagation, gradient descent, training loss, transformer block internals, RLHF mechanics or scaling laws; benchmarks appear only as the distrust lesson and METR trend above.
 
 ## Session 2 — Research Agents (skills & sub-agents that produce a document)
+
+**Superseded:** use the [locked session-2 plan](session-02/README.md) for implementation;
+the earlier notions below are background.
+
 - Two anchor case studies, both OPEN, inspectable, and built on the Skill primitive (introduced fresh in this cursus, not assumed), both uv-managed: Ar9av/PaperOrchestra and google-deepmind/science-skills
 - PaperOrchestra (impl. of Song et al., arXiv:2604.05018): a multi-agent pipeline turning (idea.md + experimental_log.md + template.tex + conference_guidelines) into a submission-ready LaTeX paper — Outline -> (Plotting || Literature-Review, parallel branches) -> Section-Writing (one multimodal call) -> Content-Refinement (accept/revert peer-review loop with halt rules)
 - Skills-as-instruction-docs-plus-deterministic-scripts: SKILL.md (+ references/ verbatim prompts, JSON schemas) + scripts/ (no network, no LLM, no API keys); the host coding agent supplies the model + web search
