@@ -34,8 +34,9 @@ import tempfile
 import threading
 import time
 import traceback
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from contextlib import contextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
 
@@ -789,14 +790,28 @@ class Engine:
         allowed = self.plan.specs[st.number].declared_paths
         return "later", sorted({f for f in touched.splitlines() if f and any(scheduler.overlaps(f, a) for a in allowed)})
 
+    @contextmanager
+    def _check_environment(self) -> Generator[dict[str, str], None, None]:
+        """Bound temporary installations/caches to this invocation, separately from evidence.
+
+        Earlier issues' accepted commands run again after every merge. Even commands using
+        mkdtemp() without cleanup must not accumulate data in the host's shared /tmp.
+        Keep this environment local: issues execute concurrently on worker threads.
+        """
+        parent = self.store.dir / "check-tmp"
+        parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=parent, prefix="check-") as tmp:
+            yield self.check_env | dict.fromkeys(("TMPDIR", "TMP", "TEMP"), str(Path(tmp).resolve()))
+
     def _verify(self, root: Path, st: IssueState, head: str, work_dir: Path, check_tamper: bool = True):
         with self.ws.disposable(root) as scratch:
             return self._verify_in(scratch, st, head, work_dir, check_tamper)
 
     def _verify_in(self, root: Path, st: IssueState, head: str, work_dir: Path, check_tamper: bool = True):
-        return verify.verify(root, self._specs(st), head, work_dir, st.locked, sorted(set(st.tests) | set(st.probes)),
-                             st.manifest or None, self.caps.check_timeout_s,
-                             extra_env=self.check_env, check_tamper=check_tamper)
+        with self._check_environment() as env:
+            return verify.verify(root, self._specs(st), head, work_dir, st.locked, sorted(set(st.tests) | set(st.probes)),
+                                 st.manifest or None, self.caps.check_timeout_s,
+                                 extra_env=env, check_tamper=check_tamper)
 
     def _decide(self, st: IssueState, entry: dict) -> None:
         st.decisions = [d for d in st.decisions if d.get("id") != entry.get("id")] + [entry]
@@ -1472,10 +1487,8 @@ class Engine:
         # Checks are agent-written commands: they run in a throwaway copy of the head on a private git
         # directory, so nothing they do reaches the worktree or another run's refs.
         with self.ws.disposable(wt) as scratch:
-            ok, evidence, vproblems, ran = verify.verify(scratch, self._specs(st), head, self.store.issue_dir(n),
-                                                         st.locked, locked_tests, st.manifest or None,
-                                                         self.caps.check_timeout_s, extra_env=self.check_env,
-                                                         check_tamper=bool(st.examined_sha))
+            ok, evidence, vproblems, ran = self._verify_in(scratch, st, head, self.store.issue_dir(n),
+                                                        check_tamper=bool(st.examined_sha))
         problems += vproblems
         selected = {"*": sorted(set(ran) | {t for v in (st.manifest or {}).values() for t in v})}
         unselected = verify.unselected(wt, [t for t in locked_tests if (wt / t).is_file() and t.endswith(".py")],
@@ -1560,8 +1573,9 @@ class Engine:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(probe[1])
             spec = CheckSpec(criterion="repro", command=command, cwd=cwd)
-            ev, _ = verify.run_check(scratch, spec, self.ws.head(wt), self.store.issue_dir(0) / "repro",
-                                     self.caps.check_timeout_s, extra_env=self.check_env)
+            with self._check_environment() as env:
+                ev, _ = verify.run_check(scratch, spec, self.ws.head(wt), self.store.issue_dir(0) / "repro",
+                                         self.caps.check_timeout_s, extra_env=env)
         if ev.exit_code is None and "timed out" not in (ev.output_tail or ""):
             return None
         return not ev.passed
@@ -1959,9 +1973,7 @@ class Engine:
         coord = self.ws.coord()
         head = self.ws.head(coord)
         with self.ws.disposable(coord) as scratch:
-            ok, evidence, problems, _ = verify.verify(scratch, self._specs(st), head, self.store.issue_dir(n), st.locked,
-                                                      sorted(set(st.tests) | set(st.probes)), st.manifest or None,
-                                                      self.caps.check_timeout_s, extra_env=self.check_env)
+            ok, evidence, problems, _ = self._verify_in(scratch, st, head, self.store.issue_dir(n))
         self.store.event("post_merge_verify", issue=n, head=head, ok=ok, problems=problems)
         if not ok:
             env = environment_problem(evidence)
@@ -2155,10 +2167,10 @@ class Engine:
                       if c.get("kind", "command") == "command"]
             if m == n or not checks:
                 continue
-            with self.ws.disposable(coord) as scratch:
+            with self.ws.disposable(coord) as scratch, self._check_environment() as env:
                 ok, evidence, problems, _ = verify.verify(scratch, checks, head, self.store.issue_dir(m) / "regression",
                                                           {}, entry.get("check_files", []), entry.get("manifest") or None,
-                                                          self.caps.check_timeout_s, extra_env=self.check_env,
+                                                          self.caps.check_timeout_s, extra_env=env,
                                                           check_tamper=False)
             self.store.event("regression_check", issue=n, of=m, head=head, ok=ok, problems=problems)
             if not ok and not environment_problem(evidence):
