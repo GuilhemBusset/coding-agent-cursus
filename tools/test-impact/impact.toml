@@ -33,6 +33,7 @@ paths = [
   "LICENSE",
   "SECURITY.md",
   "docs/*.md",
+  "docs/session-02/*.md",
   "docs/adr/**",
   "setup/*.md",
   "tools/html-pages/research.md",
