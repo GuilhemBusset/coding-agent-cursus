@@ -298,8 +298,8 @@ successes is failure with a null token-per-success value. Retrying a service
 request does not create a new successful task: its usage remains in the same
 attempt and in the all-attempt numerator.
 
-A requirement fix can be retained only when the candidate passes its quality
-gates and no per-case pass rate decreases. Losing an earlier passing A/B cannot
+A requirement fix is retained when a per-case pass rate improves and no per-case
+pass rate decreases, even if other cases still fail. Losing an earlier passing A/B cannot
 be offset by fixing C. Resource-only retention requires both versions to pass
 quality gates and complete measured usage, including cache fields; otherwise the
 result explains insufficient evidence. Elapsed time is diagnostic, never ranked.

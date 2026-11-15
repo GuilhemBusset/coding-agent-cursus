@@ -152,10 +152,10 @@ def recommend(before: Json, after: Json) -> Json:
             choice, reasons = 'revert', ['Per-case quality regressed: ' + ', '.join(regressions) + '. Token savings cannot offset this loss.']
         elif not after['successes']:
             choice, reasons = 'revert', ['Zero successful candidate attempts; tokens per success is undefined.']
+        elif any(after['per_case'][c]['pass_rate'] > b['pass_rate'] for c, b in before['per_case'].items()):
+            choice, reasons = 'retain', ['Requirement fix: a per-case pass rate improved without decreasing any other; no efficiency comparison.']
         elif not after['quality_gates_pass']:
             choice, reasons = 'revert', ['Candidate still fails required quality gates; no efficiency comparison.']
-        elif not before['quality_gates_pass']:
-            choice, reasons = 'retain', ['Requirement fix: candidate passes all quality gates without decreasing any per-case pass rate.']
         elif before['efficiency_status'] != 'available' or after['efficiency_status'] != 'available':
             choice, reasons = 'insufficient_evidence', ['Quality passes, but measured usage/cache accounting is incomplete; efficiency is unknown.']
         elif after['tokens_per_success'] < before['tokens_per_success']:
