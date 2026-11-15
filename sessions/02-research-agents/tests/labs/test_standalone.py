@@ -14,6 +14,7 @@ SESSION = Path(__file__).resolve().parents[2]
 # bridge. Only this test instrumentation changes subprocess environments.
 PY_GUARD = '''
 import os, socket, subprocess
+from pathlib import Path
 def denied(*a, **k): raise AssertionError('offline check attempted network')
 socket.socket.connect = denied
 socket.socket.connect_ex = denied
@@ -22,7 +23,7 @@ original = subprocess.Popen
 def guarded(*a, **k):
     env = dict(k.get('env') or os.environ)
     env['PYTHONPATH'] = os.path.dirname(__file__)
-    env['NODE_OPTIONS'] = '--require="' + os.path.join(os.path.dirname(__file__), 'deny.cjs') + '"'
+    env['NODE_OPTIONS'] = '--require="' + Path(__file__).with_name('deny.cjs').as_posix() + '"'
     k['env'] = env
     return original(*a, **k)
 subprocess.Popen = guarded
@@ -57,7 +58,7 @@ def offline_command(args, session=SESSION, codes=(0,)):
         (guard / 'sitecustomize.py').write_text(PY_GUARD, encoding='utf-8')
         (guard / 'deny.cjs').write_text(NODE_GUARD, encoding='utf-8')
         env = {k: v for k, v in os.environ.items() if not any(s in k for s in ('KEY', 'TOKEN', 'COURSE_ENDPOINT', 'PYTHONPATH', 'NODE_OPTIONS'))}
-        env.update(PYTHONPATH=str(guard), NODE_OPTIONS='--require="' + str(guard / 'deny.cjs') + '"')
+        env.update(PYTHONPATH=str(guard), NODE_OPTIONS='--require="' + (guard / 'deny.cjs').as_posix() + '"')
         return command(args, session, env, codes)
 
 
@@ -78,7 +79,7 @@ def test_export_install_and_offline_workflows():
             assert (destination / 'exercises/fixed/checkpoints' / checkpoint / 'harness/main.ts').is_file()
         # The exported interpreter and cwd establish independence from the clone.
         interpreter = destination / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
-        program = 'from pathlib import Path; import exercises.fixed.run as r; assert Path(r.__file__).resolve().is_relative_to(Path.cwd()); print(r.__file__)'
+        program = 'from pathlib import Path; import exercises.fixed.run as r; assert Path(r.__file__).resolve().is_relative_to(Path.cwd().resolve()); print(r.__file__)'
         command([interpreter, '-c', program], destination, env)
         # Offline commands use the exported interpreter and exported Node packages.
         offline('checkpoint', 'rejoin', '04-audit-stop', session=destination)
@@ -103,3 +104,33 @@ def test_network_guard_covers_python_and_node():
                         "import subprocess; subprocess.run(['node', '-e', \"fetch('https://example.com')\"], check=True)"):
             result = command([sys.executable, '-c', program], SESSION, env, codes=(1,))
             assert 'offline check attempted' in result.stderr
+
+
+def test_checkout_preserves_rating_replay_and_submission_bytes():
+    # Reproduce Windows Git's newline conversion on any OS. Both published LF
+    # evidence and a student's CRLF evidence must retain their sealed bytes.
+    with TemporaryDirectory(prefix='s2-checkout-') as temporary:
+        root = Path(temporary)
+        command(['git', 'init', '-q'], root)
+        command(['git', 'config', 'core.autocrlf', 'true'], root)
+        command(['git', 'config', 'core.safecrlf', 'false'], root)
+        exercises = root / 'exercises'
+        exercises.mkdir()
+        attributes = SESSION / 'exercises/.gitattributes'
+        if attributes.exists():
+            shutil.copyfile(attributes, exercises / '.gitattributes')
+        names = ('fixed/config/rating-files.v1.json',
+                 'fixed/fixtures/faults/transient-read/trace.jsonl',
+                 'cases/a-find/corpus.json')
+        expected = {name: (SESSION / 'exercises' / name).read_bytes() for name in names}
+        expected['runs/submission/peer-audit.md'] = b'Truthful peer audit.\r\nPending.\r\n'
+        for name, data in expected.items():
+            path = exercises / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        command(['git', 'add', '--', 'exercises'], root)
+        for autocrlf in ('true', 'false'):
+            for name in expected:
+                (exercises / name).unlink()
+            command(['git', '-c', 'core.autocrlf=' + autocrlf, 'checkout-index', '--all'], root)
+            assert {name: (exercises / name).read_bytes() for name in expected} == expected
