@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -10,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+from test_standalone import offline
 
 SESSION = Path(__file__).resolve().parents[2]
 FIXED = SESSION / 'exercises/fixed'
@@ -32,23 +32,9 @@ def tree(root):
     return {str(p.relative_to(root)): sha(p) for p in root.rglob('*') if p.is_file()}
 
 
-def cli(module, *args, deny_network=False):
-    program = '''
-import runpy, socket, subprocess, sys, urllib.request
-if sys.argv.pop(1) == 'deny':
-    def denied(*a, **k): raise AssertionError('network or child process attempted during replay')
-    socket.socket.connect = denied
-    socket.socket.connect_ex = denied
-    socket.create_connection = denied
-    urllib.request.urlopen = denied
-    subprocess.Popen = denied
-module = sys.argv.pop(1)
-runpy.run_module('exercises.fixed.' + module, run_name='__main__')
-'''
-    env = {k: v for k, v in os.environ.items() if not any(s in k for s in ('API_KEY', 'COURSE_ENDPOINT', 'TOKEN'))}
-    result = subprocess.run([sys.executable, '-c', program, 'deny' if deny_network else 'allow', module, *map(str, args)],
-        cwd=SESSION, env=env, capture_output=True, text=True, timeout=60)
-    return result
+def cli(module, *args, deny_network=True):
+    # Execution and replay, including child Node/Python processes, are offline.
+    return offline(module, *args, codes=(0, 2))
 
 
 def ok(result):

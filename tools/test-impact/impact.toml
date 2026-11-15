@@ -59,6 +59,7 @@ paths = [
   ".agents/skills/turn-in/**",
   ".claude/skills/turn-in/**",
   "sessions/*/exercises/turn-in-check.sh",
+  "sessions/02-research-agents/.gitignore",
 ]
 
 # tests/sessions: the repository's rules for every session (ADR 0001): its Python imports nothing
@@ -154,7 +155,7 @@ shared = []
 # Session 2's runtime integration tests consume the saved runtime/config and the
 # public offline ZIP under exercises/fixed/runtime/fixtures; exercises/** covers
 # those inputs as well as the cases, evaluator, schemas, bridge and adapter.
-reads = ["exercises/**", "tests/labs/**", ".vscode/**", "package*.json", "tsconfig.json", "mise.toml"]
+reads = ["exercises/**", "tests/labs/**", ".gitignore", ".vscode/**", "package*.json", "tsconfig.json", "mise.toml"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
   "setup/session-02-research-agents.py",
