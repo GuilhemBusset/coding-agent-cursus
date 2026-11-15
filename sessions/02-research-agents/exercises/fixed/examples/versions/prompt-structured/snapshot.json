@@ -1,0 +1,16 @@
+{
+  "files": {
+    "harness": {
+      "main.ts": "c6121195237ae034ca8cd26b929ac290670f0c7bda19b6a29a5be9f645a701c4",
+      "memory.ts": "b02569b092942906007c8e8feb8ca76aefa3824f000e144a19a8b03d3f2558bc",
+      "policy.ts": "d6321515996b7ea7d71ba9106814a0d1cb8eeacb7099eae78a6f867b7bda6211"
+    },
+    "prompts": {
+      ".gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "system.md": "57bb4105b29344d430d726eb7e3c45f9228b92d83c69070e3c5f0d0c6637ea0d"
+    }
+  },
+  "schema_version": "1.0",
+  "sha256": "55b0d18219d6c3dabb1020462a5312bd2a58a96c9b174213392354bdc106b709",
+  "snapshot_id": "prompt-structured"
+}
