@@ -20,6 +20,7 @@ import html
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -360,6 +361,11 @@ def main(argv: list[str] | None = None) -> int:
     print(describe(plan), flush=True)
     failed = []
     for label, command, cwd in commands(plan):
+        # Session subprocesses (including Node/npm launched by pytest) need that
+        # session's pins, even when this runner starts from the repository root.
+        # CI installs its toolchain on PATH and does not require mise.
+        if cwd.parent == ROOT / "sessions" and (cwd / "mise.toml").is_file() and shutil.which("mise"):
+            command = ["mise", "exec", "--", *command]
         print(f"\n== {label}: {' '.join(command)}", flush=True)
         if subprocess.run(command, cwd=cwd, env=command_env(command), check=False).returncode != 0:
             failed.append(label)
