@@ -162,3 +162,51 @@ jobs:
           for platform in linux darwin win32; do
             uv run --locked --group typecheck ty check --python-platform "$platform" exercises
           done
+
+  session-02-portable:
+    needs: discover
+    if: contains(fromJSON(needs.discover.outputs.parts), 'sessions/02-research-agents/tests/labs') || contains(fromJSON(needs.discover.outputs.sessions), 'sessions/02-research-agents')
+    name: Session 2 offline (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        # On Windows only the inherited gate wrapper needs Git Bash. Python and
+        # Node subprocesses remain native Windows executables.
+        shell: bash
+        working-directory: sessions/02-research-agents
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: '0.11.28'
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+      - name: Install from session locks
+        run: |
+          uv sync --locked --group parallel
+          npm ci --ignore-scripts --no-audit --no-fund
+      - name: Native runtime and submission gate (no credentials)
+        run: |
+          npm run typecheck
+          npm test
+          uv run --locked --group parallel pytest -n auto -m 'not live' tests/labs/test_standalone.py tests/labs/test_turn_in.py tests/labs/test_fault_replay.py
+      - name: Runtime Node suites
+        run: |
+          uv run --locked node --test tests/labs/tool-bridge.test.mjs
+          uv run --locked node --test tests/labs/model-adapter.test.mjs
+      - name: Exact-head platform evidence
+        if: always()
+        run: |
+          git rev-parse HEAD
+          uv --version
+          uv run --locked python -c 'import platform; print(platform.platform())'
+          node --version
+          npm --version
+          git status --short

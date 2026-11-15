@@ -10,6 +10,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 import pytest
@@ -135,10 +136,10 @@ jq -cn --args '$ARGS.positional' -- "$@" >> "$SLEEP_LOG"
 
 class Sandbox:
     def __init__(self, path, *, nn="01", handle="stud", default="main",
-                 permission="WRITE", fork_origin=False, scheme="https"):
+                 permission="WRITE", fork_origin=False, scheme="https", slug="fundamentals"):
         self.path, self.nn, self.handle, self.default = path, nn, handle, default
         self.env = isolated_environment(path)
-        self.exercises = f"sessions/{nn}-fundamentals/exercises"
+        self.exercises = f"sessions/{nn}-{slug}/exercises"
         self.branch = f"homework/s{nn}/{handle}"
         self.course = "course/cursus"
         self.fork_name = f"{handle}/cursus-1"
@@ -164,6 +165,9 @@ class Sandbox:
         write(seed / "outside.txt", "outside baseline\n")
         write(seed / self.exercises / "answer.txt", "initial answer\n")
         write(seed / self.exercises / "delete-me.txt", "obsolete\n")
+        if nn == "02":
+            shutil.copyfile(ROOT / "sessions/02-research-agents/.gitignore",
+                            seed / f"sessions/{nn}-{slug}/.gitignore")
         write(seed / "sessions/08-other/exercises/other.txt", "other session\n")
         shutil.copytree(ROOT / ".githooks", seed / ".githooks")
         for hook in (seed / ".githooks").iterdir():
@@ -536,3 +540,46 @@ git add -- ../../from-check.txt
         assert (s.repo / s.exercises / "remote.txt").read_text() == "local untracked file collides\n"
         assert s.git("rev-parse", "HEAD").stdout.strip() == s.base
         s.assert_no_push()
+
+
+@pytest.fixture
+def session_02_workspace():
+    with TemporaryDirectory(prefix='s2-turn-in-repositories-') as temporary:
+        yield Path(temporary)
+
+
+@pytest.mark.parametrize('permission', ['WRITE', 'READ'])
+def test_session_02_evidence_ignore_history_and_unrelated_work(session_02_workspace, permission):
+    s = Sandbox(session_02_workspace, nn='02', slug='research-agents', permission=permission)
+    target = s.course if permission == 'WRITE' else s.fork_name
+    s.edit('runs/submission/harness/runs/baseline-01/trace.jsonl', '{"fixture": true}\n')
+    s.edit('runs/private/practice.json', 'not homework\n')
+    s.edit('home-notes.md', 'Truthful fixture submission.\n')
+    # Shared mechanics invoke a session gate; the actual Python validator is
+    # exercised with complete evidence in the session's test_turn_in.py.
+    s.edit('turn-in-check.sh', '#!/usr/bin/env bash\ntest -f exercises/home-notes.md\n')
+    write(s.repo / 'outside.txt', 'staged outside work\n')
+    s.git('add', 'outside.txt')
+    write(s.repo / 'README.md', 'unstaged outside work\n')
+    previous = s.base
+    for _ in range(2):
+        result = s.run('02')
+        current = s.tip(target)
+        print(result.stdout, 'History:', previous, '->', current)
+        assert s.git('show', '-s', '--format=%P', current).stdout.strip() == previous
+        assert s.git('show', f'{current}:{s.exercises}/runs/submission/harness/runs/baseline-01/trace.jsonl').stdout == '{"fixture": true}\n'
+        assert all('/runs/private/' not in path for path in s.pushed_paths(target))
+        assert s.git('diff', '--cached', '--name-only').stdout.strip() == 'outside.txt'
+        assert (s.repo / 'README.md').read_text() == 'unstaged outside work\n'
+        assert (s.repo / 'outside.txt').read_text() == 'staged outside work\n'
+        assert f'/tree/{s.branch}' in result.stdout
+        s.assert_confined(target)
+        previous = current
+    if permission == 'READ':
+        assert s.git('show-ref', '--verify', f'refs/heads/{s.branch}', cwd=s.remotes[s.course], ok=False).returncode != 0
+        assert '/compare/main...stud:homework/s02/stud' in result.stdout
+    s.edit('turn-in-check.sh', '#!/usr/bin/env bash\nexit 17\n')
+    refs = s.refs()
+    s.run('02', success=False)
+    assert s.refs() == refs
+    s.assert_no_push()

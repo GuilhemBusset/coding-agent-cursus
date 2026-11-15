@@ -3,3 +3,4 @@ node_modules/
 exercises/runs/*
 !exercises/runs/README.md
 !exercises/runs/.gitkeep
+!exercises/runs/submission/

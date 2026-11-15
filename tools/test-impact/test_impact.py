@@ -303,3 +303,27 @@ def test_session_2_typescript_is_selected_through_its_python_lab_entry():
         selected = impact.select(Change({prefix + path}))
         assert prefix + "tests/labs" in selected.parts, path
         assert "student-setup" in selected.units, path
+
+
+@pytest.mark.parametrize('path', [
+    'exercises/fixed/model/adapter.ts',
+    'exercises/fixed/tools/research.py',
+    'exercises/fixed/fixtures/faults/transient-read/trace.jsonl',
+    'exercises/fixed/schemas/run-config.schema.json',
+    'exercises/fixed/checkpoints/04-audit-stop/harness/main.ts',
+    'exercises/fixed/runtime/fixtures/rating-support.zip',
+    'exercises/cases/c-audit/variants/public-seed-20261135/reference.json',
+])
+def test_submission_consumed_inputs_select_offline_labs(path):
+    prefix = 'sessions/02-research-agents/'
+    selected = impact.select(Change({prefix + path}))
+    assert not selected.everything
+    assert prefix + 'tests/labs' in selected.parts
+    # Required Python selection excludes the live marker in the shared runner.
+    assert not any('live' in suite for suite in selected.suites)
+
+
+def test_submission_ignore_policy_selects_shared_turn_in_integration():
+    selected = impact.select(Change({'sessions/02-research-agents/.gitignore'}))
+    assert 'turn-in' in selected.units
+    assert 'sessions/02-research-agents/tests/labs' in selected.parts

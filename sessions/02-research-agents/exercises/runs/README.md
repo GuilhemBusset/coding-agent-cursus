@@ -314,3 +314,11 @@ result explains insufficient evidence. Elapsed time is diagnostic, never ranked.
 Exit **0** means machine comparison gates passed, **1** means failed/incomplete
 gates, **2** means invalid/incompatible input. Peer review is reported separately;
 exit 0 does not complete a human prose audit or verify live evidence.
+
+## Homework evidence
+
+Only `runs/submission/` is allowed through the generated-run ignore rule. It contains
+`harness/` and `prompt/` complete comparison outputs, `peer-audit.md` (or explicit pending
+review) and `submission.json`. Preserve all 18 scheduled attempts per comparison, including
+failures. Follow [standalone homework instructions](../README.md) to seal and check this
+artifact set. Private practice runs, backups and loose snapshots remain ignored.

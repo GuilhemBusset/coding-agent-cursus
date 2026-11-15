@@ -660,3 +660,53 @@ When adding another repository-wide tool, put its installer, manifests/lockfiles
 entry points here, document its prerequisites and destinations in this inventory, and verify
 the setup in a clean environment. Keep student-facing session runtime dependencies local to
 their session, as required by [ADR 0001](../docs/adr/0001-self-contained-per-session-subfolders.md).
+
+### Session 2 standalone export and homework evidence
+
+From the installed session run `uv run --locked python -m exercises.fixed.export --output
+"../session-02 standalone"`. The export contains session-local pins/locks, public support,
+cases/references/variants, completed checkpoints, student harness/prompts, teaching pages and
+tests. It excludes installed packages, `.env` and private runs. Its
+[exercise runbook](../sessions/02-research-agents/exercises/README.md) documents fresh standalone
+installation, offline inspection/checkpoint/replay/grading/comparison and the exact submission
+artifacts. No additional dependency or OS package is introduced by export or validation: both
+use Python's standard library and the existing pinned session runtime.
+
+The shared `turn-in` script is unchanged. Its thin Session 2 Bash gate uses the session lock
+to run a Python validator, with Git Bash only for that wrapper on Windows. Selected evidence
+under `exercises/runs/submission/` is included by a narrow session `.gitignore` exception.
+The gate verifies saved artifacts and independently regrades copies; it makes no model calls.
+Acceptance, quality scores and live verification remain separate. Synthetic/replay/outage
+evidence never awards a live pass.
+
+Native execution evidence for issue #193 must be attached to the exact implementation commit:
+
+| Platform | Current observation | Owner / missing evidence |
+| --- | --- | --- |
+| WSL2 | Agent's offline commands; not native Linux certification | Review command logs |
+| Native Linux (`platform:native-linux`) | Unverified until hosted job runs | Guilhem Busset: exact-head logs |
+| macOS (`platform:macos`) | Unverified until hosted job runs | Guilhem Busset: exact-head logs |
+| Native Windows (`platform:windows`) | Unverified until hosted job runs | Guilhem Busset: exact-head logs |
+
+The existing `student-setup.yml` installs twice on Linux, macOS and Windows; the new
+`session-tests.yml` Session 2 matrix executes export installation, offline exercise/runtime
+and actual gate tests on all three. To discharge each missing native observation, use matching
+exact-head hosted CI logs or, on that native OS, run the following from a fresh course clone:
+
+```sh
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py
+uv run --no-project --python 3.12 python setup/session-02-research-agents.py
+cd sessions/02-research-agents
+mise exec -- npm run typecheck
+mise exec -- npm test
+mise exec -- uv run --locked node --test tests/labs/tool-bridge.test.mjs
+mise exec -- uv run --locked node --test tests/labs/model-adapter.test.mjs
+mise exec -- uv run --locked --group parallel pytest -n auto -m 'not live' tests/labs/test_standalone.py tests/labs/test_turn_in.py tests/labs/test_fault_replay.py
+```
+
+The tests prepare disposable complete evidence and invoke the real gate, including via Git
+Bash on Windows. Installation may download dependencies; test execution denies Python and
+Node networking and supplies no model credentials. Keep exact commit, OS/Python/uv/Node/npm
+versions, both installation logs, test/gate status and final `git status --short`. Do not infer
+native execution from WSL or cross-platform typing. Required CI on the implementation head
+is reported by the loop engine; local selected-check success is not that remote result.
