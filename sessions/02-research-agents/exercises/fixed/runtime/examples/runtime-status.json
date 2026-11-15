@@ -1,0 +1,11 @@
+{
+  "status": "stopped",
+  "stop_reason": "no_progress",
+  "detail": "no_progress",
+  "model_attempts": 2,
+  "tool_invocations": 1,
+  "known_observed_tokens": 240,
+  "accounting_status": "known",
+  "elapsed_ms": 38,
+  "intervention": false
+}

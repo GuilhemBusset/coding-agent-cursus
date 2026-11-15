@@ -1,0 +1,13 @@
+{
+  "connection": {
+    "provider": "openai",
+    "endpoint_alias": "openai",
+    "model": "gpt-5.4-mini-2026-03-17",
+    "settings": {"temperature": null, "sampling_seed": null, "max_output_tokens": 1024, "reasoning": "none"},
+    "timeout_ms": 30000,
+    "retries": 1
+  },
+  "budgets": {"model_attempts": 12, "tool_invocations": 20, "total_tokens": 30000},
+  "tool_timeout_ms": 10000,
+  "run_timeout_ms": 120000
+}

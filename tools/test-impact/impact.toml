@@ -137,7 +137,7 @@ paths = ["**/*.py", "ruff.toml", "setup/pyproject.toml", "setup/uv.lock"]
 # uv.lock, README.md...) runs both. A Node suite in tests/<part>/ is selected by [node] only.
 # The session's type check (ty, from its `typecheck` group) runs when one of `types` changes.
 [sessions]
-types = ["**/*.py", "pyproject.toml", "uv.lock", "mise.toml"]
+types = ["**/*.py", "**/*.ts", "package*.json", "tsconfig.json", "pyproject.toml", "uv.lock", "mise.toml"]
 
 [sessions.parts.lessons]
 # The evidence deck re-runs the P00 lab it quotes.
@@ -148,6 +148,9 @@ shared = []
 # test_home_turn_in.py runs the real turn-in script and hooks; test_editor_setup.py and
 # test_p00_lab.py check the editor setup a student's installation and the exported lab carry
 # (ADR 0016).
+# Session 2's runtime integration tests consume the saved runtime/config and the
+# public offline ZIP under exercises/fixed/runtime/fixtures; exercises/** covers
+# those inputs as well as the cases, evaluator, schemas, bridge and adapter.
 reads = ["exercises/**", "tests/labs/**", ".vscode/**", "package*.json", "tsconfig.json", "mise.toml"]
 shared = [
   "scripts/turn-in.sh", ".githooks/**",
