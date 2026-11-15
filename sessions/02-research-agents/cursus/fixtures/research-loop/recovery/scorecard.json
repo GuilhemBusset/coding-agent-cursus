@@ -1,0 +1,310 @@
+{
+  "schema_version": "1.0",
+  "run_id": "recovery",
+  "case_id": "A",
+  "variant_id": "base",
+  "hashes": {
+    "corpus": "49253985ca43785758e4bd35f2ef6fb5bc31286365e17333da077acd06ac9779",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "b42e02bcc6aa4fdb25b58cbb5ea908499f278ca6c35484c1a6b1173967cb1287",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "b1efd4dd82bc4ae385b6b4e1b1ca79715551facac2fded37351bda8e5beea98a",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "9413b3729a2837025a2083cdccb4688c32d31fa59f123e3a58812206e4ccf013"
+  },
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "evidence_kind": "synthetic",
+  "model_attempts": 7,
+  "logical_requests": 7,
+  "tool_invocations": 8,
+  "service_errors": 1,
+  "usage": {
+    "input_tokens": 700,
+    "output_tokens": 140,
+    "cache_read_tokens": 40,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 8,
+    "status": "complete"
+  },
+  "total_tokens": 840,
+  "elapsed_ms": 327,
+  "intervention": false,
+  "stop_reason": "completed",
+  "grading_assertions": [
+    {
+      "assertion_id": "required_fact.A-method-set",
+      "category": "required_fact",
+      "target_ids": [
+        "A-method-set"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-method-set",
+      "category": "decisive",
+      "target_ids": [
+        "A-method-set"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-known-inputs",
+      "category": "required_fact",
+      "target_ids": [
+        "A-known-inputs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-known-inputs",
+      "category": "decisive",
+      "target_ids": [
+        "A-known-inputs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-slot-minutes",
+      "category": "required_fact",
+      "target_ids": [
+        "A-slot-minutes"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-slot-minutes",
+      "category": "decisive",
+      "target_ids": [
+        "A-slot-minutes"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-charging-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-charging-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-charging-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-charging-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-capacity",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-ledger-capacity",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-assignment",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-assignment"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-ledger-assignment",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-assignment"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-ledger-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-repair-capacity",
+      "category": "required_fact",
+      "target_ids": [
+        "A-repair-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-repair-capacity",
+      "category": "decisive",
+      "target_ids": [
+        "A-repair-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-repair-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-repair-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-repair-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-repair-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.A-private-exclusion",
+      "category": "required_fact",
+      "target_ids": [
+        "A-private-exclusion"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.A-private-exclusion",
+      "category": "decisive",
+      "target_ids": [
+        "A-private-exclusion"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-method-set",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-method-set"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-known-inputs",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-known-inputs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-slot-minutes",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-slot-minutes"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-charging-assumptions",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-charging-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-ledger-capacity",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-ledger-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-ledger-assignment",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-ledger-assignment"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-ledger-assumptions",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-ledger-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-repair-capacity",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-repair-capacity"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-repair-assumptions",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-repair-assumptions"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-A-private-exclusion",
+      "category": "citation",
+      "target_ids": [
+        "claim-A-private-exclusion"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "uncertainty.A-uncertain-demand",
+      "category": "uncertainty",
+      "target_ids": [
+        "A-uncertain-demand"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "output.A",
+      "category": "output",
+      "target_ids": [
+        "A"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decision.A",
+      "category": "decision",
+      "target_ids": [
+        "A"
+      ],
+      "passed": true
+    }
+  ],
+  "failed_assertion_ids": [],
+  "required_facts_total": 10,
+  "required_facts_met": 10,
+  "required_fact_coverage": 1.0,
+  "decisive_pass": true,
+  "all_factual_spans_valid": true,
+  "no_unsupported_decision": true,
+  "uncertainty_pass": true,
+  "output_valid": true,
+  "peer_review": "pending",
+  "quality_pass": true
+}

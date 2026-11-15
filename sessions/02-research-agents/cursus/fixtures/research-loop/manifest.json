@@ -1,0 +1,38 @@
+{
+  "evidence_kind": "synthetic",
+  "date": "2026-11-15",
+  "demos": [
+    {
+      "name": "a-gap",
+      "checkpoint": "00-model",
+      "case": "a-find",
+      "scenario": null,
+      "quality_pass": false,
+      "stop_reason": "completed"
+    },
+    {
+      "name": "b-memory",
+      "checkpoint": "03-memory",
+      "case": "b-compare",
+      "scenario": null,
+      "quality_pass": true,
+      "stop_reason": "completed"
+    },
+    {
+      "name": "c-rows",
+      "checkpoint": "04-audit-stop",
+      "case": "c-audit",
+      "scenario": null,
+      "quality_pass": true,
+      "stop_reason": "completed"
+    },
+    {
+      "name": "recovery",
+      "checkpoint": "04-audit-stop",
+      "case": "a-find",
+      "scenario": "transient-read",
+      "quality_pass": true,
+      "stop_reason": "completed"
+    }
+  ]
+}

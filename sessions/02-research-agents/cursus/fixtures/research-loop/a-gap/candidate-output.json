@@ -1,0 +1,27 @@
+{
+  "claims": [
+    {
+      "claim_id": "unresolved",
+      "kind": "uncertainty",
+      "assertion": {
+        "subject": "shared-methods",
+        "predicate": "performance_under_uncertain_demand",
+        "type": "string",
+        "value": "unknown",
+        "unit": null
+      },
+      "support_status": "unknown",
+      "evidence": [],
+      "reference_fact_ids": [],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    }
+  ],
+  "claim_anchors": [
+    {
+      "claim_id": "unresolved",
+      "anchor": "claim-unresolved"
+    }
+  ],
+  "markdown": "SYNTHETIC offline wiring example.\n\n<a id=\"claim-unresolved\"></a>\nUncertain-demand performance is unknown. Other dossier findings remain incomplete in this synthetic example; this is not a complete answer to A.\n"
+}

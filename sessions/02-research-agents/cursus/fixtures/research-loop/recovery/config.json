@@ -1,0 +1,88 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "case_id": "A",
+  "endpoint_alias": "openai",
+  "evidence_kind": "synthetic",
+  "fault": {
+    "scenario_id": "transient-read",
+    "schedule": {
+      "preconditions": {
+        "budgets": "policy.v1.json",
+        "fresh_workspace": true,
+        "retry_limit": 1
+      },
+      "responses": [
+        {
+          "error": {
+            "code": "service_error",
+            "retryable": true
+          },
+          "invocation": 1,
+          "status": "error"
+        },
+        {
+          "data": {
+            "from_selected_corpus": "selected registered passage quote and exact span; no substitutions"
+          },
+          "invocation": 2,
+          "status": "ok"
+        }
+      ],
+      "trigger": {
+        "arguments": "source_id, start and end from that registered passage; identical on all listed invocations",
+        "matching_invocations": [
+          1,
+          2
+        ],
+        "source_role": "first source with nonempty passages in the selected corpus order; its first passage"
+      }
+    },
+    "spec_sha256": "f86d74372d1570eee92084c116037b24041fd218362236c25d73a7af2897ef40"
+  },
+  "hashes": {
+    "corpus": "49253985ca43785758e4bd35f2ef6fb5bc31286365e17333da077acd06ac9779",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "b42e02bcc6aa4fdb25b58cbb5ea908499f278ca6c35484c1a6b1173967cb1287",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "b1efd4dd82bc4ae385b6b4e1b1ca79715551facac2fded37351bda8e5beea98a",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "9413b3729a2837025a2083cdccb4688c32d31fa59f123e3a58812206e4ccf013"
+  },
+  "mode": "class",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "provider": "openai",
+  "rating_bundle": {
+    "illustrative": true,
+    "revision": "development-working-tree",
+    "sha256": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f"
+  },
+  "replay_of": null,
+  "run_id": "recovery",
+  "schema_version": "1.0",
+  "seed": 20261115,
+  "settings": {
+    "max_output_tokens": 1024,
+    "sampling_seed": null,
+    "temperature": null
+  },
+  "snapshot_id": "recovery",
+  "trial": 1,
+  "variant_id": "base",
+  "workspace": {
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ],
+    "workspace_id": "workspace-6706cbfd9a80437ea970491ae47110bd"
+  }
+}

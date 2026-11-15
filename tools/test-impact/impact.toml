@@ -141,7 +141,10 @@ types = ["**/*.py", "**/*.ts", "package*.json", "tsconfig.json", "pyproject.toml
 
 [sessions.parts.lessons]
 # The evidence deck re-runs the P00 lab it quotes.
-reads = ["cursus/**", "index.html", "tests/lessons/**", "exercises/p00-lab/**"]
+reads = ["cursus/**", "index.html", "tests/lessons/**", "exercises/p00-lab/**",
+         # Session 2 teaching demos execute completed checkpoints, seal/replay,
+         # tools, schemas, pinned rating support and controlled experiments.
+         "exercises/fixed/**", "exercises/cases/**", "package*.json", "mise.toml"]
 shared = []
 
 [sessions.parts.labs]
@@ -183,6 +186,7 @@ shared = [
 ]
 
 [node.suites]
+research-loop = ["sessions/02-research-agents/cursus/demos/research-loop.html", "sessions/02-research-agents/cursus/fixtures/research-loop/**", "tools/html-pages/assets/**"]
 tool-bridge = ["sessions/02-research-agents/exercises/fixed/tools/**", "sessions/02-research-agents/exercises/fixed/bridge/**", "sessions/02-research-agents/exercises/fixed/corpus/audit.py", "sessions/02-research-agents/exercises/fixed/schemas/**", "sessions/02-research-agents/exercises/cases/**/corpus.json", "sessions/02-research-agents/exercises/cases/**/sources/**", "sessions/02-research-agents/package*.json", "sessions/02-research-agents/tsconfig.json"]
 model-adapter = ["sessions/02-research-agents/exercises/fixed/model/**", "sessions/02-research-agents/exercises/fixed/config/**", "sessions/02-research-agents/exercises/fixed/schemas/**", "sessions/02-research-agents/package*.json", "sessions/02-research-agents/tsconfig.json", "setup/session-02-research-agents.py"]
 # Session 1 decks: the deck, and the recordings, fixtures and lab files it quotes.

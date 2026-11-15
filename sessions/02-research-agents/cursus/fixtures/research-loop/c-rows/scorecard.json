@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0",
+  "run_id": "c-rows",
+  "case_id": "C",
+  "variant_id": "base",
+  "hashes": {
+    "corpus": "786b494e411b7766d66e3c731222bbad7312aef0eeabeaf58ad4dfe56412032a",
+    "evaluator": "5119f8227e136f297974139156d0098a4ea4cfe3aa524d235efa99a714bf07d7",
+    "harness": "b42e02bcc6aa4fdb25b58cbb5ea908499f278ca6c35484c1a6b1173967cb1287",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "b1efd4dd82bc4ae385b6b4e1b1ca79715551facac2fded37351bda8e5beea98a",
+    "rating_bundle": "0be1a010c38b277173a17abe558b4d6a4c9c9f7aa447b07ba0a95cbaa1ecc856",
+    "settings": "98ff9cfbe4a80935c06bbff6a9834e2932747611b1dfeb7297f589b0e4b21513"
+  },
+  "policy_sha256": "202987a63627b27d136eae8bc623fbf3f320503f6864d3ebbe995a2519673683",
+  "evidence_kind": "synthetic",
+  "model_attempts": 5,
+  "logical_requests": 5,
+  "tool_invocations": 4,
+  "service_errors": 0,
+  "usage": {
+    "input_tokens": 500,
+    "output_tokens": 100,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 0,
+    "status": "complete"
+  },
+  "total_tokens": 600,
+  "elapsed_ms": 206,
+  "intervention": false,
+  "stop_reason": "completed",
+  "grading_assertions": [
+    {
+      "assertion_id": "required_fact.C-rows",
+      "category": "required_fact",
+      "target_ids": [
+        "C-rows"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-rows",
+      "category": "decisive",
+      "target_ids": [
+        "C-rows"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-pairs",
+      "category": "required_fact",
+      "target_ids": [
+        "C-pairs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-pairs",
+      "category": "decisive",
+      "target_ids": [
+        "C-pairs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-baseline",
+      "category": "required_fact",
+      "target_ids": [
+        "C-baseline"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-baseline",
+      "category": "decisive",
+      "target_ids": [
+        "C-baseline"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-filter",
+      "category": "required_fact",
+      "target_ids": [
+        "C-filter"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-filter",
+      "category": "decisive",
+      "target_ids": [
+        "C-filter"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-a-total",
+      "category": "required_fact",
+      "target_ids": [
+        "C-a-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-a-total",
+      "category": "decisive",
+      "target_ids": [
+        "C-a-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-b-total",
+      "category": "required_fact",
+      "target_ids": [
+        "C-b-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-b-total",
+      "category": "decisive",
+      "target_ids": [
+        "C-b-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-ratio",
+      "category": "required_fact",
+      "target_ids": [
+        "C-ratio"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-ratio",
+      "category": "decisive",
+      "target_ids": [
+        "C-ratio"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-percent",
+      "category": "required_fact",
+      "target_ids": [
+        "C-percent"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-percent",
+      "category": "decisive",
+      "target_ids": [
+        "C-percent"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "required_fact.C-scope",
+      "category": "required_fact",
+      "target_ids": [
+        "C-scope"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decisive.C-scope",
+      "category": "decisive",
+      "target_ids": [
+        "C-scope"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-rows",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-rows"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-pairs",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-pairs"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-baseline",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-baseline"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-filter",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-filter"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-a-total",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-a-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-b-total",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-b-total"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-ratio",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-ratio"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-percent",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-percent"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "citation.claim-C-scope",
+      "category": "citation",
+      "target_ids": [
+        "claim-C-scope"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "uncertainty.C-uncertain-demand",
+      "category": "uncertainty",
+      "target_ids": [
+        "C-uncertain-demand"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "output.C",
+      "category": "output",
+      "target_ids": [
+        "C"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decision.C",
+      "category": "decision",
+      "target_ids": [
+        "C"
+      ],
+      "passed": true
+    }
+  ],
+  "failed_assertion_ids": [],
+  "required_facts_total": 9,
+  "required_facts_met": 9,
+  "required_fact_coverage": 1.0,
+  "decisive_pass": true,
+  "all_factual_spans_valid": true,
+  "no_unsupported_decision": true,
+  "uncertainty_pass": true,
+  "output_valid": true,
+  "peer_review": "pending",
+  "quality_pass": true
+}
