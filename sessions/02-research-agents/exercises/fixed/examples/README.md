@@ -1,7 +1,7 @@
 # Controlled experiments, public completed examples
 
 First build the same program through [checkpoint 04](../checkpoints/04-audit-stop/README.md),
-then run the [70–85 harness block](../../harness/README.md). Only then start the
+then run the [70–85 harness block](harness-experiment.md). Only then start the
 85–105 prompt block below. This directory supplies completed **editable** snapshots,
 shared comparison specifications, synthetic provider scripts and
 [filled records](completed-records.md). Student edits go in `exercises/harness/`
@@ -12,6 +12,8 @@ code and exactly one active prompt (`prompts/system.md`, plus empty `.gitkeep`).
 No prompt guide or competing prompt is included in model context. Source copies
 are public at class start; the rejoin helper copies either complete directory,
 preserving existing work in a unique backup before replacement.
+Both block guides live here in `fixed/examples/`, outside the replaced editable
+trees, so checkpoint and experiment rejoin commands leave the instructions available.
 
 | Snapshot in `versions/` | Purpose |
 | --- | --- |

@@ -1,19 +1,19 @@
 # Harness experiment · minutes 70–85
 
-Complete [checkpoint 04](../fixed/checkpoints/04-audit-stop/README.md) first:
+Complete [checkpoint 04](../checkpoints/04-audit-stop/README.md) first:
 read/search, claim–passage memory, numerical checking, recovery and stopping
 belong to the same runnable program. Leave its failing trace visible over the
 65–70 break. Prompt experiments start at 85, after this block.
 
 Commands run from `sessions/02-research-agents` after the
-[pinned session setup](../../../../setup/README.md). On all three student OSes,
+[pinned session setup](../../../../../setup/README.md). On all three student OSes,
 use the session's Node 24.15.0 and `uv run --locked`; no shell-specific copy or
 environment assignment is needed. New run/version names must be unused.
 
 **Say (70–72).** Driver B takes the keyboard; A navigates and checks controls.
 “Predict one harness change. What quality requirement will it fix, or what work
 will it save? What earlier case could regress?” Write the hypothesis in
-[experiment-notes.md](../experiment-notes.md) before editing. Hold every prompt
+[experiment-notes.md](../../experiment-notes.md) before editing. Hold every prompt
 byte, model/provider/endpoint, sampling setting, case/seed/trial, registered tool
 and budget fixed. We adapt Harness²'s Propose–Probe–Compose: students propose,
 public checks probe, and the pair composes one trace-supported lesson. Harness²'s
@@ -39,7 +39,7 @@ uv run --locked python -m exercises.fixed.examples.workflow configure harness --
 For the public worked proposal, change only `stagnant >= 2` to `stagnant >= 1`
 in `harness/policy.ts`: “Stopping after one retrieval adds no retained evidence
 will save tokens without losing answers.” The
-[completed candidate](../fixed/examples/versions/harness-candidate/harness/policy.ts)
+[completed candidate](versions/harness-candidate/harness/policy.ts)
 contains that single edit. The fixed boundary still owns resource admission;
 this edit changes the student stopping policy, not the measured budget.
 
@@ -88,5 +88,5 @@ uv run --locked python -m exercises.fixed.examples.workflow rejoin harness-basel
 
 To inspect the rejected proposal, rejoin `harness-candidate`; restore
 `harness-baseline` before prompting. The [six public snapshots and completed
-records](../fixed/examples/README.md) are available from the start. At 85 swap
-roles and [freeze code for the prompt experiment](../fixed/examples/README.md#prompt-experiment--minutes-85105).
+records](README.md) are available from the start. At 85 swap
+roles and [freeze code for the prompt experiment](README.md#prompt-experiment--minutes-85105).
