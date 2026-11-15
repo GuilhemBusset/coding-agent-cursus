@@ -22,7 +22,9 @@ const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)
 
 export function createMemory() {
   const ledger = new Map<string, Entry>(); // New instance inside every run().
+  const calculations = new Map<string, unknown>();
   let omitted = 0;
+  const evidenceCount = () => ledger.size + calculations.size;
 
   function ingest(value: unknown) {
     // Only successful read results are evidence. Search snippets remain discovery
@@ -89,7 +91,7 @@ export function createMemory() {
       experiment_id, // One support group per experiment, regardless of report count.
       passage_ids: unique(entries.filter(e => e.experiment_ids.includes(experiment_id)).map(e => e.passage_id)),
     }));
-    const result = { ledger: claims, sources, experiments, unresolved,
+    const result = { ledger: claims, sources, experiments, unresolved, calculations: [...calculations.values()],
       synthesis: 'Apply the task constraints to current evidence; qualify anything still unsupported.',
       omitted_entries: omitted, limits: memoryLimits };
     while (bytes(result) > memoryLimits.bytes - 512 && result.ledger.length) {
@@ -97,6 +99,9 @@ export function createMemory() {
       // Do not leave support groups pointing at omitted passages.
       result.experiments = result.experiments.map(group => ({ ...group, passage_ids:
         group.passage_ids.filter(id => result.ledger.some(e => e.passage_id === id)) })).filter(g => g.passage_ids.length);
+    }
+    while (bytes(result) > memoryLimits.bytes - 512 && result.calculations.length) {
+      result.calculations.pop(); result.omitted_entries++;
     }
     if (result.omitted_entries) result.unresolved.push({ kind: 'capacity', source_id: '',
       question: 'Memory capacity exceeded: inspect raw tool-results.jsonl and reread narrower spans before concluding.' });
@@ -115,5 +120,20 @@ export function createMemory() {
       { role: 'user', content: memoryPrefix + JSON.stringify(snapshot()), timestamp: 0 },
       ...(keepBatch ? batch : [])];
   }
-  return { ingest, snapshot, context };
+  function retainCalculation(arguments_: unknown, value: any) {
+    if (value?.status !== 'ok' || value.tool !== 'check_table') return;
+    const data = value.data;
+    const key = JSON.stringify([data.source_id, data.method_left, data.method_right, data.pairs]);
+    if (calculations.has(key)) return;
+    const baseline_total = data.pairs.reduce((sum: number, p: any) => sum + p.left_value, 0);
+    const candidate_total = data.pairs.reduce((sum: number, p: any) => sum + p.right_value, 0);
+    // Keep the actual tool rows/citations and requested filter; never just the
+    // percentage. The fixed journal additionally retains independent audit IDs.
+    const entry = { arguments: arguments_, ...data, baseline_total, candidate_total,
+      denominator: baseline_total, formula: '(sum_left - sum_right) / sum_left',
+      reduction_percent: 100 * data.relative_reduction };
+    if (calculations.size >= 8 || bytes([...calculations.values(), entry]) > memoryLimits.bytes / 4) { omitted++; return; }
+    calculations.set(key, entry);
+  }
+  return { ingest, retainCalculation, evidenceCount, snapshot, context };
 }
