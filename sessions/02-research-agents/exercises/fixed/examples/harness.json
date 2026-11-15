@@ -1,0 +1,14 @@
+{
+  "baseline": "versions/harness-baseline",
+  "candidate": "versions/harness-candidate",
+  "experiment_type": "harness",
+  "mode": "class",
+  "rating_export": "../runtime/fixtures/rating-support.zip",
+  "schema_version": "1.0",
+  "scripts": {
+    "A": "scripts/A.json",
+    "B": "scripts/B.json",
+    "C": "scripts/C.json"
+  },
+  "settings": "../config/run.v1.json"
+}
