@@ -1,0 +1,94 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "case_id": "C",
+  "endpoint_alias": "openai",
+  "evidence_kind": "synthetic",
+  "fault": {
+    "scenario_id": "absent-usage",
+    "schedule": {
+      "preconditions": {
+        "budgets": "policy.v1.json",
+        "case_id": "C",
+        "continuation_required": true,
+        "fresh_workspace": true,
+        "retry_limit": 1,
+        "variant_id": "public-seed-20261135"
+      },
+      "responses": [
+        {
+          "output_fixture": {
+            "json_pointer": "/positive/0/value",
+            "path": "cases/c-audit/variants/public-seed-20261135/examples.json",
+            "serialization": "UTF-8 JSON"
+          },
+          "provider_usage": null,
+          "status": "ok",
+          "usage": {
+            "cache_read_tokens": null,
+            "cache_write_tokens": null,
+            "input_tokens": null,
+            "output_tokens": null,
+            "reasoning_tokens": null,
+            "status": "unknown"
+          }
+        }
+      ],
+      "selected_read": {
+        "end": 574,
+        "source_id": "V20261135-EV-S13",
+        "start": 116
+      },
+      "trigger": {
+        "attempt": 1,
+        "logical_request": 1
+      }
+    },
+    "spec_sha256": "611a4a1807c8d27b0acd7eac3c6536d07f29749b27853d95c8524b8b069244d5"
+  },
+  "hashes": {
+    "corpus": "01e0d65b2fec670885a2f75d68dc8587c4f023ee3be007ec01639aada12e067e",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "c576d21e1686b099dd5ba00ba154218904084ce36a73cbb13a32809f5c017f23",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "01d825704bb7d570785c553205659f1ba0464b16cf719dbf1c505c386fe29c09",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "98ff9cfbe4a80935c06bbff6a9834e2932747611b1dfeb7297f589b0e4b21513"
+  },
+  "mode": "class",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "provider": "openai",
+  "rating_bundle": {
+    "illustrative": true,
+    "revision": "development-working-tree",
+    "sha256": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f"
+  },
+  "replay_of": null,
+  "run_id": "synthetic-absent-usage-77f76391869f4271ae0e82308443dc24",
+  "schema_version": "1.0",
+  "seed": 20261135,
+  "settings": {
+    "max_output_tokens": 1024,
+    "sampling_seed": null,
+    "temperature": null
+  },
+  "snapshot_id": "public-fault-absent-usage",
+  "trial": 1,
+  "variant_id": "public-seed-20261135",
+  "workspace": {
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ],
+    "workspace_id": "workspace-a389202811024bcaabdaf6894748a893"
+  }
+}

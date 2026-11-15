@@ -1,0 +1,9 @@
+{
+  "case_id": "A",
+  "claim_anchors": [],
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "run_id": "synthetic-malformed-tool-arguments-4606c03dd9614f2fa7748657c26401dd",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}

@@ -50,6 +50,11 @@ export function createBoundary(spec: Json, support: {
       event_id: `event-${eventCount}`, sequence: eventCount++, elapsed_ms: elapsed() };
     events.push(e); append('trace.jsonl', e);
   }
+  const fault = spec.fault?.scenario_id;
+  function activation(point: string) {
+    if (fault) event({ type: 'fault_activation', scenario_id: fault, point, schedule: spec.fault.schedule });
+  }
+  if (fault) activation('configured');
   const adapter = support.createAdapter({ ...spec.settings.connection, retries: 0 }, {
     env: credentialEnv, runId: spec.run_id,
     fetch: async (target, init) => {
@@ -74,6 +79,7 @@ export function createBoundary(spec: Json, support: {
       check();
       current.admitted = true; current.reservation = reservation;
       attempts++;
+      if (fault) activation(`model-attempt-${attempts}`);
       append('dispatches.jsonl', { type: 'model', attempt_id: `attempt-${attempts}`,
         request_id: current.request, retry_of: current.previous, elapsed_ms: elapsed() });
       append('requests.jsonl', { attempt_id: `attempt-${attempts}`, body });
@@ -94,6 +100,7 @@ export function createBoundary(spec: Json, support: {
 
   async function model(): Promise<AssistantMessage> {
     check();
+    if (accountingUnknown) stop('token_budget');
     if (active) stop('concurrent_dispatch');
     active = true;
     const request = `request-${++logical}`;
@@ -112,7 +119,9 @@ export function createBoundary(spec: Json, support: {
         const raw = adapter.events[before];
         if (!raw) stop('accounting_unknown');
         const record: Attempt = { ...raw, request_id: request, attempt_id: `attempt-${attempts}`, retry_of: previous };
-        const retryable = record.status === 'error' && record.error?.code === 'service_error' && result.content.length === 0;
+        const boundedFaultRetry = ['timeout', 'rate-limit'].includes(fault);
+        const retryable = (record.status === 'error' || boundedFaultRetry && record.error?.code === 'timeout') &&
+          ['service_error', ...(boundedFaultRetry ? ['timeout'] : [])].includes(record.error?.code ?? '') && result.content.length === 0;
         if (record.error) record.error.retryable = retryable;
         event(record);
         append('effective-settings.jsonl', { ...adapter.effectiveSettings.at(-1), attempt_id: record.attempt_id });
@@ -121,11 +130,20 @@ export function createBoundary(spec: Json, support: {
         observed += (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
         if (usage.input_tokens === null || usage.output_tokens === null) {
           accountingUnknown = true;
-          stop('accounting_unknown');
+          if (boundedFaultRetry && retryable) {
+            if (retry < spec.settings.connection.retries) {
+              previous = record.attempt_id;
+              if (fault === 'rate-limit') await new Promise(resolve => setTimeout(resolve, 10));
+              continue;
+            }
+            stop('service_error');
+          }
+          if (fault !== 'absent-usage' || record.status !== 'ok') stop('accounting_unknown');
         }
         // Cached input and reasoning are already subsets, never added again.
         if (observed > spec.settings.budgets.total_tokens) stop('token_budget');
-        if (usage.input_tokens + usage.output_tokens > current.reservation!) stop('reservation_exceeded');
+        if (usage.input_tokens !== null && usage.output_tokens !== null &&
+            usage.input_tokens + usage.output_tokens > current.reservation!) stop('reservation_exceeded');
         check();
         if (record.status === 'ok') {
           messages.push(result); last = { message: result, request, attempt: record.attempt_id };
@@ -142,6 +160,7 @@ export function createBoundary(spec: Json, support: {
 
   async function executeTools() {
     check();
+    if (accountingUnknown) stop('token_budget');
     if (active) stop('concurrent_dispatch');
     if (!last) stop('invalid_tool_request');
     active = true;
@@ -155,23 +174,37 @@ export function createBoundary(spec: Json, support: {
         const toolId = `tool-${tools + 1}`; // Provider IDs may contain Pi's `|` separator.
         const name = call.name as ToolName;
         let args: Json;
+        let invalid = false;
         try { args = validateToolCall(support.declarations, call); }
-        catch { stop('invalid_tool_request'); }
+        catch {
+          if (fault !== 'malformed-tool-arguments') stop('invalid_tool_request');
+          args = call.arguments; invalid = true;
+        }
         // Let the bridge compute successful read defaults from actual source
         // length. Error-only trace envelopes need explicit bounded defaults to
         // fit v1; the raw arguments remain in the dispatch/tool-result journals.
         const traceArgs = { ...args };
         if (name === 'read') { traceArgs.start ??= 0; traceArgs.end ??= traceArgs.start + 4096; }
         if (name === 'search') traceArgs.limit ??= 5;
-        const input = { schema_version: '1.0', run_id: spec.run_id, tool_call_id: toolId, tool: name, arguments: traceArgs };
+        const input = { schema_version: '1.0', run_id: spec.run_id, tool_call_id: toolId, tool: name,
+          arguments: traceArgs, ...(invalid ? { rejected: true } : {}) };
         const at = performance.now();
         tools++; dispatchedToolIds.add(`${last.attempt}:${call.id}`);
-        const linkage = { request_id: last.request, attempt_id: last.attempt, retry_of: null, tool_call_id: toolId };
+        const prior = events.findLast(e => e.type === 'tool_invocation' && e.result.status === 'error' &&
+          e.result.error.retryable && e.input.tool === name && JSON.stringify(e.input.arguments) === JSON.stringify(traceArgs));
+        const linkage = { request_id: last.request, attempt_id: last.attempt, retry_of: prior?.tool_call_id ?? null, tool_call_id: toolId };
         append('dispatches.jsonl', { type: 'tool', ...linkage, input, arguments: args, elapsed_ms: elapsed() });
         let response;
         try {
+          if (fault) activation(`tool-invocation-${tools}`);
+          if (invalid || fault === 'transient-read' && tools === 1) {
+            response = { invocation: input, result: { schema_version: '1.0', run_id: spec.run_id,
+              tool_call_id: toolId, tool: name, status: 'error', data: null,
+              error: { code: invalid ? 'invalid_input' : 'service_error', retryable: !invalid } } };
+          } else {
           response = await support.callTool({ caseRoot: spec.case_root, python: spec.python,
             runId: spec.run_id, timeoutMs: spec.settings.tool_timeout_ms }, name, args, toolId, controller.signal);
+          }
         } catch {
           response = { invocation: input, result: { schema_version: '1.0', run_id: spec.run_id,
             tool_call_id: toolId, tool: name, status: 'error', data: null,

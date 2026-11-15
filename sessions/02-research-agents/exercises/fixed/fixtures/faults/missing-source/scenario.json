@@ -1,0 +1,36 @@
+{
+  "evidence_kind": "synthetic-specification",
+  "expected_accounting": {
+    "automatic_retries": 0,
+    "tool_errors": 1,
+    "tool_invocations": 1
+  },
+  "expected_stop_reason": "completed",
+  "operation": "read",
+  "preconditions": {
+    "budgets": "policy.v1.json",
+    "fresh_workspace": true,
+    "retry_limit": 1
+  },
+  "responses": [
+    {
+      "error": {
+        "code": "not_found",
+        "retryable": false
+      },
+      "status": "error"
+    }
+  ],
+  "scenario_id": "missing-source",
+  "solution": "Do not retry permanent absence. Continue with available evidence; if decisive support is absent, qualify the answer rather than invent it.",
+  "spec_version": "1.0",
+  "trigger": {
+    "arguments": {
+      "end": 1,
+      "source_id": "EV-MISSING",
+      "start": 0
+    },
+    "matching_invocations": "all",
+    "source_id": "EV-MISSING"
+  }
+}

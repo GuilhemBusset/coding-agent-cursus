@@ -1,0 +1,14 @@
+{
+  "case_id": "A",
+  "claim_anchors": [
+    {
+      "anchor": "claim-unfinished",
+      "claim_id": "unfinished"
+    }
+  ],
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "run_id": "synthetic-rate-limit-9f4dcaac093049cf80887d0559549399",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}

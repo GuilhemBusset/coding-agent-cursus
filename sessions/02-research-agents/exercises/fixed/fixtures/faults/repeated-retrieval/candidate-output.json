@@ -1,0 +1,28 @@
+{
+  "claims": [
+    {
+      "claim_id": "unfinished",
+      "kind": "factual",
+      "assertion": {
+        "subject": "research",
+        "predicate": "result",
+        "type": "string",
+        "value": "not-established",
+        "unit": null
+      },
+      "support_status": "unknown",
+      "evidence": [],
+      "reference_fact_ids": [],
+      "experiment_ids": [],
+      "supersedes_claim_ids": []
+    }
+  ],
+  "claim_anchors": [
+    {
+      "claim_id": "unfinished",
+      "anchor": "claim-unfinished"
+    }
+  ],
+  "markdown": "<a id=\"claim-unfinished\"></a>\nEvidence is incomplete; no research conclusion is established.\n",
+  "stop_reason": "no_progress"
+}

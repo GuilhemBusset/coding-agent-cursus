@@ -175,7 +175,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     run_id = args.name or 'run-' + uuid.uuid4().hex
     if not run_id[0].isalnum() or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-' for c in run_id):
         raise ValueError('run name must be an identifier')
-    output = args.exercises.resolve() / 'runs' / run_id
+    output = getattr(args, 'out', None) or args.exercises.resolve() / 'runs' / run_id
+    output = output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     policy = read(FIXED / 'config/policy.v1.json')
     identity = {k: pin[k] for k in ('revision', 'sha256', 'illustrative')}
@@ -193,6 +194,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                               harness=digest(encoded(saved['files']['harness'])), prompt=digest(encoded(saved['files']['prompts'])), rating_bundle=pin['sha256']),
                   rating_bundle=identity, snapshot_id=saved['snapshot_id'], workspace=dict(workspace_id='workspace-' + uuid.uuid4().hex,
                   fresh=True, supplied_inputs=['question', 'context', 'prompt', 'tool_definitions', 'corpus_via_tools', 'output_contract']))
+    fault = getattr(args, 'fault', None)
+    if fault:
+        if not args.script:
+            raise ValueError('fault schedules require synthetic transport')
+        config['fault'] = fault
     write(output / 'config.json', config)
     write(output / 'run-inputs.json', dict(mode=args.mode, settings=options, tools=selected, bundle=pin,
                                         snapshot=saved, support_files=files))
@@ -218,7 +224,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             spec = dict(run_id=run_id, output=str(output), workspace=str(workspace), support=str(workspace),
                         case_root=str(workspace / case_relative), python=sys.executable, settings=options, tools=selected,
                         prompts=prompts, task={k: case[k] for k in ('question', 'context')}, output_contract=contract,
-                        script=str(args.script.resolve()) if args.script else None)
+                        script=str(args.script.resolve()) if args.script else None, fault=fault)
             write(workspace / 'launch.json', spec)
             try:
                 process = subprocess.run(['node', str(FIXED / 'runtime/launch.ts'), str(workspace / 'launch.json')],

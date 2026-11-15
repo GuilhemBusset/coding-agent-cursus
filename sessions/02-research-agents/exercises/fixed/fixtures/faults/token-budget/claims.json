@@ -1,0 +1,24 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "findings",
+        "subject": "run",
+        "type": "string",
+        "unit": null,
+        "value": "not-produced"
+      },
+      "claim_id": "unfinished",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "uncertainty",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "synthetic-token-budget-405f94ca612f490eb95ca78a24aa459d",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}

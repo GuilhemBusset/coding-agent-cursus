@@ -1,0 +1,24 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "result",
+        "subject": "research",
+        "type": "string",
+        "unit": null,
+        "value": "not-established"
+      },
+      "claim_id": "unfinished",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "synthetic-transient-read-e2897943994e4ddc9827941a32595a24",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}

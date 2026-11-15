@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "source_run_id": "synthetic-absent-usage-77f76391869f4271ae0e82308443dc24",
+  "evidence_kind": "synthetic",
+  "case": "c-audit/variants/public-seed-20261135",
+  "case_files": {
+    "README.md": "06afbd45b99d2e48d59feb4c039adde39ea778bafdc86bd7f6398ed082ef249c",
+    "case.json": "0418de0dbd14192df28c026954935629bb7b304ff8fef36ea58be7e3163b10a3",
+    "corpus.json": "bd281b1f8fbf5404fba73030cbbf78f17337535f76f080c40da74b67ac21a441",
+    "examples.json": "afd8db35372f09271daf115ffefbf614c20521f1eb3abc9c349b043c6177afce",
+    "provenance.json": "01281bf5f05e29927a7d0f2a56ce01c8310004ffb834ed21269e74ce39b018bd",
+    "reference.json": "ffab57a5b85f66c61ad4f1282a82ed7aa0f8c171039894ed56e14fb71dffb2ad",
+    "sources/V20261135-EV-S13.md": "7811fd521e4ec5e0e59e27b0dbbdd6d37c0081f28ccfdb34849e5ac3feb325e0",
+    "sources/V20261135-EV-S14.md": "5323d4f6f55522ec0310930327a131c00ef60dbde4f458842e743d19f361acc7",
+    "sources/V20261135-EV-T01.csv": "3051a9e6538769d66fdd97db1354c319f926a69ee143a6ce68cc99649d16a273",
+    "worksheet.md": "795e26d1f70bc0d6ca5353241a71d45e0ed643154d3fa340d26470fe0ca259c4"
+  },
+  "files": {
+    "config.json": "b515eb1a346c0843776e04d4b6ae66ce40ba79ccf1c2e9e61a701b2c7607f55d",
+    "policy.json": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+    "claims.json": "269f1081ced0c2e26bf791f49662dd30cbcb4ebade592f409a707e14c0cf83f9",
+    "report.json": "713ed469c6b5cd6a9a6bff50cab86eaf2adab1cfabb775a1a95d4ae1f87942c4",
+    "report.md": "dc914f36b9c0f2c38a9db89c048cdcdaa2f8bc486e0553fc32e5285ae470105d",
+    "trace.jsonl": "c2953e3477d833f73ad1ddba7dcf423ac4572b8e02ce8df115d9165347051d80",
+    "scorecard.json": "826b75885fd7d8b1feb6e9d972a970786412657a0dde99e9a558bbe88e375bbc",
+    "scenario.json": "879a343467500d047cd67eee6431d2c390a5a380d02313857196c72c12f7ea29",
+    "transport.json": "74460579232dc55d014f87659349c67e2caa22038357ada3022253729c8e821c"
+  },
+  "claim": "Integrity since sealing; origin label is a capture assertion, not proof of live compatibility."
+}

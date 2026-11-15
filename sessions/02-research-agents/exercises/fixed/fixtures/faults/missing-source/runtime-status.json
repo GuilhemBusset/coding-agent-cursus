@@ -1,0 +1,11 @@
+{
+  "status": "completed",
+  "stop_reason": "completed",
+  "detail": "completed",
+  "model_attempts": 1,
+  "tool_invocations": 1,
+  "known_observed_tokens": 13,
+  "accounting_status": "known",
+  "elapsed_ms": 38,
+  "intervention": false
+}

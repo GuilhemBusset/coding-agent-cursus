@@ -1,0 +1,11 @@
+{
+  "status": "stopped",
+  "stop_reason": "service_error",
+  "detail": "service_error",
+  "model_attempts": 2,
+  "tool_invocations": 0,
+  "known_observed_tokens": 0,
+  "accounting_status": "unknown",
+  "elapsed_ms": 21,
+  "intervention": false
+}

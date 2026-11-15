@@ -1,0 +1,261 @@
+{
+  "schema_version": "1.0",
+  "run_id": "synthetic-token-budget-405f94ca612f490eb95ca78a24aa459d",
+  "case_id": "A",
+  "variant_id": "public-seed-20261115",
+  "hashes": {
+    "corpus": "3d358f811cd9ddfa86409ebaa6fdc7bb601c7d255430924417ee8ff888bfa799",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "fe96815dc5cf779d92771190b493341a14ae90487bfed006533117fb8ed414c5",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "01d825704bb7d570785c553205659f1ba0464b16cf719dbf1c505c386fe29c09",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "a1ecf87b17872862c562768ffcf85b06d0187ef388cf9acc908ce5f50398c3bd"
+  },
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "evidence_kind": "synthetic",
+  "model_attempts": 1,
+  "logical_requests": 1,
+  "tool_invocations": 0,
+  "service_errors": 0,
+  "usage": {
+    "input_tokens": 21808,
+    "output_tokens": 8192,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 0,
+    "status": "complete"
+  },
+  "total_tokens": 30000,
+  "elapsed_ms": 15,
+  "intervention": false,
+  "stop_reason": "token_budget",
+  "grading_assertions": [
+    {
+      "assertion_id": "required_fact.A-method-set",
+      "category": "required_fact",
+      "target_ids": [
+        "A-method-set"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-method-set",
+      "category": "decisive",
+      "target_ids": [
+        "A-method-set"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-known-inputs",
+      "category": "required_fact",
+      "target_ids": [
+        "A-known-inputs"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-known-inputs",
+      "category": "decisive",
+      "target_ids": [
+        "A-known-inputs"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-slot-minutes",
+      "category": "required_fact",
+      "target_ids": [
+        "A-slot-minutes"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-slot-minutes",
+      "category": "decisive",
+      "target_ids": [
+        "A-slot-minutes"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-charging-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-charging-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-charging-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-charging-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-capacity",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-capacity"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-ledger-capacity",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-capacity"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-assignment",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-assignment"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-ledger-assignment",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-assignment"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-ledger-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-ledger-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-ledger-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-ledger-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-repair-capacity",
+      "category": "required_fact",
+      "target_ids": [
+        "A-repair-capacity"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-repair-capacity",
+      "category": "decisive",
+      "target_ids": [
+        "A-repair-capacity"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-repair-assumptions",
+      "category": "required_fact",
+      "target_ids": [
+        "A-repair-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-repair-assumptions",
+      "category": "decisive",
+      "target_ids": [
+        "A-repair-assumptions"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "required_fact.A-private-exclusion",
+      "category": "required_fact",
+      "target_ids": [
+        "A-private-exclusion"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "decisive.A-private-exclusion",
+      "category": "decisive",
+      "target_ids": [
+        "A-private-exclusion"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "uncertainty.A-uncertain-demand",
+      "category": "uncertainty",
+      "target_ids": [
+        "A-uncertain-demand"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "output.A",
+      "category": "output",
+      "target_ids": [
+        "A"
+      ],
+      "passed": false
+    },
+    {
+      "assertion_id": "citation.A",
+      "category": "citation",
+      "target_ids": [
+        "A"
+      ],
+      "passed": true
+    },
+    {
+      "assertion_id": "decision.A",
+      "category": "decision",
+      "target_ids": [
+        "A"
+      ],
+      "passed": true
+    }
+  ],
+  "failed_assertion_ids": [
+    "required_fact.A-method-set",
+    "decisive.A-method-set",
+    "required_fact.A-known-inputs",
+    "decisive.A-known-inputs",
+    "required_fact.A-slot-minutes",
+    "decisive.A-slot-minutes",
+    "required_fact.A-charging-assumptions",
+    "decisive.A-charging-assumptions",
+    "required_fact.A-ledger-capacity",
+    "decisive.A-ledger-capacity",
+    "required_fact.A-ledger-assignment",
+    "decisive.A-ledger-assignment",
+    "required_fact.A-ledger-assumptions",
+    "decisive.A-ledger-assumptions",
+    "required_fact.A-repair-capacity",
+    "decisive.A-repair-capacity",
+    "required_fact.A-repair-assumptions",
+    "decisive.A-repair-assumptions",
+    "required_fact.A-private-exclusion",
+    "decisive.A-private-exclusion",
+    "uncertainty.A-uncertain-demand",
+    "output.A"
+  ],
+  "required_facts_total": 10,
+  "required_facts_met": 0,
+  "required_fact_coverage": 0.0,
+  "decisive_pass": false,
+  "all_factual_spans_valid": true,
+  "no_unsupported_decision": true,
+  "uncertainty_pass": false,
+  "output_valid": false,
+  "peer_review": "pending",
+  "quality_pass": false
+}

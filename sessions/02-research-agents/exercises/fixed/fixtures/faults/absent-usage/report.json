@@ -1,0 +1,50 @@
+{
+  "case_id": "C",
+  "claim_anchors": [
+    {
+      "anchor": "claim-claim-C-rows",
+      "claim_id": "claim-C-rows"
+    },
+    {
+      "anchor": "claim-claim-C-pairs",
+      "claim_id": "claim-C-pairs"
+    },
+    {
+      "anchor": "claim-claim-C-baseline",
+      "claim_id": "claim-C-baseline"
+    },
+    {
+      "anchor": "claim-claim-C-filter",
+      "claim_id": "claim-C-filter"
+    },
+    {
+      "anchor": "claim-claim-C-a-total",
+      "claim_id": "claim-C-a-total"
+    },
+    {
+      "anchor": "claim-claim-C-b-total",
+      "claim_id": "claim-C-b-total"
+    },
+    {
+      "anchor": "claim-claim-C-ratio",
+      "claim_id": "claim-C-ratio"
+    },
+    {
+      "anchor": "claim-claim-C-percent",
+      "claim_id": "claim-C-percent"
+    },
+    {
+      "anchor": "claim-claim-C-scope",
+      "claim_id": "claim-C-scope"
+    },
+    {
+      "anchor": "claim-claim-C-uncertainty",
+      "claim_id": "claim-C-uncertainty"
+    }
+  ],
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "run_id": "synthetic-absent-usage-77f76391869f4271ae0e82308443dc24",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261135"
+}

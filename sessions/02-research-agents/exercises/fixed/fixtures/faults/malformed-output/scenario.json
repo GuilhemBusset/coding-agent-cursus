@@ -1,0 +1,35 @@
+{
+  "evidence_kind": "synthetic-specification",
+  "expected_accounting": {
+    "model_attempts": 1,
+    "output_valid": false,
+    "total_tokens": 13
+  },
+  "expected_stop_reason": "invalid_output",
+  "operation": "model-final",
+  "preconditions": {
+    "fresh_workspace": true,
+    "output_repair_limit": 0
+  },
+  "responses": [
+    {
+      "raw_output": "{\"claims\": [",
+      "status": "ok",
+      "usage": {
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "input_tokens": 10,
+        "output_tokens": 3,
+        "reasoning_tokens": 0,
+        "status": "complete"
+      }
+    }
+  ],
+  "scenario_id": "malformed-output",
+  "solution": "Preserve raw output, reject parsing and retain partial artifacts. This scenario configures no repair attempt and stops invalid_output. Never synthesize a passing claim.",
+  "spec_version": "1.0",
+  "trigger": {
+    "attempt": 1,
+    "logical_request": 1
+  }
+}

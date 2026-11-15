@@ -1,0 +1,17 @@
+{
+  "evidence_kind": "synthetic",
+  "usage_note": "All numbers are scripted test values, never API measurements. Quality is independently graded; completed recovery alone does not establish an answer.",
+  "scenarios": {
+    "transient-read": {"model_attempts": 2, "logical_requests": 2, "tool_invocations": 2, "service_errors": 1, "total_tokens": 26, "stop_reason": "completed", "quality_pass": false, "output_valid": true},
+    "missing-source": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 1, "service_errors": 1, "total_tokens": 13, "stop_reason": "completed", "quality_pass": false, "output_valid": true},
+    "repeated-retrieval": {"model_attempts": 3, "logical_requests": 3, "tool_invocations": 3, "service_errors": 0, "total_tokens": 39, "stop_reason": "no_progress", "quality_pass": false, "output_valid": true},
+    "malformed-output": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 0, "service_errors": 0, "total_tokens": 13, "stop_reason": "invalid_output", "quality_pass": false, "output_valid": false},
+    "malformed-tool-arguments": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 1, "service_errors": 1, "total_tokens": 13, "stop_reason": "invalid_output", "quality_pass": false, "output_valid": false},
+    "timeout": {"model_attempts": 2, "logical_requests": 1, "tool_invocations": 0, "service_errors": 2, "total_tokens": null, "stop_reason": "service_error", "quality_pass": false, "output_valid": false},
+    "rate-limit": {"model_attempts": 2, "logical_requests": 1, "tool_invocations": 0, "service_errors": 2, "total_tokens": null, "stop_reason": "service_error", "quality_pass": false, "output_valid": false},
+    "model-budget": {"model_attempts": 12, "logical_requests": 12, "tool_invocations": 0, "service_errors": 0, "total_tokens": 156, "stop_reason": "model_budget", "quality_pass": false, "output_valid": false},
+    "tool-budget": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 20, "service_errors": 0, "total_tokens": 13, "stop_reason": "tool_budget", "quality_pass": false, "output_valid": false},
+    "token-budget": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 0, "service_errors": 0, "total_tokens": 30000, "stop_reason": "token_budget", "quality_pass": false, "output_valid": false},
+    "absent-usage": {"model_attempts": 1, "logical_requests": 1, "tool_invocations": 0, "service_errors": 0, "total_tokens": null, "stop_reason": "token_budget", "quality_pass": true, "output_valid": true}
+  }
+}
