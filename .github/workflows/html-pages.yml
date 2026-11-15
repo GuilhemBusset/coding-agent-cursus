@@ -57,7 +57,9 @@ jobs:
         run: node setup/html-pages.mjs --with-system-deps
       - name: Locked Session 2 adapter dependencies
         if: inputs.suites == 'all' || inputs.suites == '' || contains(inputs.suites, 'sessions/02-research-agents/tests/labs/model-adapter.test.mjs') || contains(inputs.suites, 'sessions/02-research-agents/tests/labs/tool-bridge.test.mjs')
-        run: npm --prefix sessions/02-research-agents ci
+        # Session 2 also has browser lesson suites. Keep this install usable on its
+        # own; the documented HTML setup is idempotent after the Linux setup above.
+        run: npm --prefix sessions/02-research-agents ci && node setup/html-pages.mjs
       - name: Node suites
         env:
           SUITES: ${{ inputs.suites || 'all' }}
