@@ -1,0 +1,24 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "findings",
+        "subject": "run",
+        "type": "string",
+        "unit": null,
+        "value": "not-produced"
+      },
+      "claim_id": "unfinished",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "uncertainty",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "synthetic-tool-budget-4a0518d283724e15979490e4439306f9",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}

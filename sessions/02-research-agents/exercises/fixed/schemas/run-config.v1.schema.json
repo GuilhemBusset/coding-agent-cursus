@@ -149,6 +149,27 @@
         "supplied_inputs"
       ],
       "additionalProperties": false
+    },
+    "fault": {
+      "type": "object",
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "schedule": {
+          "type": "object"
+        },
+        "spec_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "scenario_id",
+        "schedule",
+        "spec_sha256"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

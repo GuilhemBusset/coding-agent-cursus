@@ -1,0 +1,10 @@
+[
+  {
+    "body": "{\"error\":{\"message\":\"synthetic rate limit\"}}",
+    "status": 429
+  },
+  {
+    "body": "{\"error\":{\"message\":\"synthetic rate limit\"}}",
+    "status": 429
+  }
+]

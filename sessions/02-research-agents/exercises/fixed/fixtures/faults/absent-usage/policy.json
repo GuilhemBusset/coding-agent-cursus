@@ -1,0 +1,100 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "calibration": "pending_live_pilot",
+  "gates": {
+    "all_decisive": true,
+    "every_factual_span_valid": true,
+    "no_intervention": true,
+    "no_unsupported_decision": true,
+    "required_fact_fraction": 0.8
+  },
+  "provisional": true,
+  "rating_bundle": {
+    "illustrative": true,
+    "revision": "development-working-tree",
+    "sha256": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f"
+  },
+  "schedule": {
+    "class": [
+      {
+        "case_id": "A",
+        "seed": 20261115,
+        "trial": 1,
+        "variant_id": "public-seed-20261115"
+      },
+      {
+        "case_id": "B",
+        "seed": 20261125,
+        "trial": 1,
+        "variant_id": "public-seed-20261125"
+      },
+      {
+        "case_id": "C",
+        "seed": 20261135,
+        "trial": 1,
+        "variant_id": "public-seed-20261135"
+      }
+    ],
+    "submission": [
+      {
+        "case_id": "A",
+        "seed": 20261115,
+        "trial": 1,
+        "variant_id": "public-seed-20261115"
+      },
+      {
+        "case_id": "A",
+        "seed": 20261115,
+        "trial": 2,
+        "variant_id": "public-seed-20261115"
+      },
+      {
+        "case_id": "A",
+        "seed": 20261115,
+        "trial": 3,
+        "variant_id": "public-seed-20261115"
+      },
+      {
+        "case_id": "B",
+        "seed": 20261125,
+        "trial": 1,
+        "variant_id": "public-seed-20261125"
+      },
+      {
+        "case_id": "B",
+        "seed": 20261125,
+        "trial": 2,
+        "variant_id": "public-seed-20261125"
+      },
+      {
+        "case_id": "B",
+        "seed": 20261125,
+        "trial": 3,
+        "variant_id": "public-seed-20261125"
+      },
+      {
+        "case_id": "C",
+        "seed": 20261135,
+        "trial": 1,
+        "variant_id": "public-seed-20261135"
+      },
+      {
+        "case_id": "C",
+        "seed": 20261135,
+        "trial": 2,
+        "variant_id": "public-seed-20261135"
+      },
+      {
+        "case_id": "C",
+        "seed": 20261135,
+        "trial": 3,
+        "variant_id": "public-seed-20261135"
+      }
+    ]
+  },
+  "schema_version": "1.0"
+}

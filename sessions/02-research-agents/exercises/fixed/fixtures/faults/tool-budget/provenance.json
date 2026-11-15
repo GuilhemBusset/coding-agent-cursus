@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "source_run_id": "synthetic-tool-budget-4a0518d283724e15979490e4439306f9",
+  "evidence_kind": "synthetic",
+  "case": "a-find/variants/public-seed-20261115",
+  "case_files": {
+    "README.md": "5510c42eb84fafe148cd37aaa8e7efc077ad61b73e1f051af0b53c76d7c0437f",
+    "case.json": "0d414022556a14196fd3b85a4705168130cc2fe87c5eb0b7c4a335cc756e0410",
+    "corpus.json": "a1c64348fffad565e1f4928eaf3f1292eac78b6a9e782985eb0596277f847889",
+    "examples.json": "ee8bca3f53c59f76e89f0330f166c6de506f98d2ce708c03c6f0bbdf1521c21b",
+    "provenance.json": "c352f1dd6d438692ba1052a53fe076bc16853859d76cd975fdf159cb3d94b8c9",
+    "reference.json": "6d5ad12f0a759a090ba0977fd4f6f570014084ff1f9dcfcbaf973b35a844816d",
+    "sources/V20261115-EV-S01.md": "f8c3a3bc3a8e4a4e858c430c89626982c34fc7e19fc73020fabde98014aabdf1",
+    "sources/V20261115-EV-S02.md": "687d44c4313b6619d22794f56a666b331f01a56e3e72927fa72d15a472a38971",
+    "sources/V20261115-EV-S03.md": "9a6f3eb6a232208bdfdddd5ce10afeb0926da6de05f1f01f919623ae31d32ffc",
+    "sources/V20261115-EV-S04.md": "065fe1521c7dcb1d2c9535add1232135e191a7b7e4e1752337d25c3e3766e6f9",
+    "sources/V20261115-EV-S05.md": "6b41660fabd55577c622a64afb04a9125b9c7c6e045db097d33734dd260c1c2a",
+    "sources/V20261115-EV-S06.md": "d62f4866baa764fe6e3594317e6ce7d7dcf87ccf160e7640f768bf8219f165d7",
+    "sources/V20261115-EV-S07.md": "3d95d6d16b3f99d169639ff93cfdda7d94fa05c582a26cd0f03d22a5ec0818f4",
+    "sources/V20261115-EV-S08.md": "296800c5f1ddbc75e61755c903328ab3731a59ea667237e6067ac44988b16198",
+    "sources/V20261115-EV-S09.md": "ed4647c15b81bacac1789d915c3b29a1c5f7932f5b4a8defa6b0112baedde47a",
+    "sources/V20261115-EV-S10.md": "67b7f6ff2edc4c975b570fc5f274908cf070ba82a9430df943607b3c4907f705",
+    "sources/V20261115-EV-S11.md": "3d5d47c45b27420de1c82ebbe4965b220524444990a4d6333ce78f6705cb8a11",
+    "sources/V20261115-EV-S12.md": "391ffe80709b912a65c5d0a2e0bc878252aff150a3ac644d50107ed558d37c08"
+  },
+  "files": {
+    "config.json": "60d6e992e11542671c2b69c836b7a2ad21421090da1853be4af81ebde4bbcb35",
+    "policy.json": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+    "claims.json": "9265b7a3b2a9458ab8915eb176eac4a40c445268baeb74a4255d57c9d46b552c",
+    "report.json": "c4229109357aa2808bd4ca510793dbec0e00bf7796d18a8dcfc2d4111316aba3",
+    "report.md": "02e9850775576e8ec6ab2a21bc9d286bd8818fb45d73efa74b8de7f2de82e240",
+    "trace.jsonl": "e7fa56532151a0297b40486763b19d7b11e0b77de35e8245b9a3dd121a943823",
+    "scorecard.json": "f6cd1fc4227b335769063bf4e1e00301cdf662e35388c4a4215b8837630090df",
+    "scenario.json": "59456ad9f93fec2a039495d6c6383e65fb2f0b76f1107dc20b0687c345673388",
+    "transport.json": "031e0533a22a444323dc4a1696ce7bcdf12e68e0f1f3c7fdb9ad4497b1d9d735"
+  },
+  "claim": "Integrity since sealing; origin label is a capture assertion, not proof of live compatibility."
+}

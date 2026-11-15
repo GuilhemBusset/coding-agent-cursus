@@ -256,6 +256,54 @@
         "intervention"
       ],
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "run_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "const": "fault_activation"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "point": {
+          "type": "string"
+        },
+        "schedule": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_id",
+        "run_id",
+        "sequence",
+        "elapsed_ms",
+        "type",
+        "scenario_id",
+        "point",
+        "schedule"
+      ],
+      "additionalProperties": false
     }
   ]
 }

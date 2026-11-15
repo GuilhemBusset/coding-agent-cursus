@@ -1,0 +1,11 @@
+{
+  "status": "stopped",
+  "stop_reason": "model_budget",
+  "detail": "model_budget",
+  "model_attempts": 12,
+  "tool_invocations": 0,
+  "known_observed_tokens": 156,
+  "accounting_status": "known",
+  "elapsed_ms": 27,
+  "intervention": false
+}

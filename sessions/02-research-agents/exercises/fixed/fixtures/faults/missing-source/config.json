@@ -1,0 +1,86 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "case_id": "A",
+  "endpoint_alias": "openai",
+  "evidence_kind": "synthetic",
+  "fault": {
+    "scenario_id": "missing-source",
+    "schedule": {
+      "preconditions": {
+        "budgets": "policy.v1.json",
+        "fresh_workspace": true,
+        "retry_limit": 1
+      },
+      "responses": [
+        {
+          "error": {
+            "code": "not_found",
+            "retryable": false
+          },
+          "status": "error"
+        }
+      ],
+      "selected_read": {
+        "end": 699,
+        "source_id": "V20261115-EV-S08",
+        "start": 445
+      },
+      "trigger": {
+        "arguments": {
+          "end": 1,
+          "source_id": "EV-MISSING",
+          "start": 0
+        },
+        "matching_invocations": "all",
+        "source_id": "EV-MISSING"
+      }
+    },
+    "spec_sha256": "f6c7e98eed50a64a7739e8cb3c782262a29ef053ec07e4b4a17dc8f98eaf1f93"
+  },
+  "hashes": {
+    "corpus": "3d358f811cd9ddfa86409ebaa6fdc7bb601c7d255430924417ee8ff888bfa799",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "9a76a87c723ae4a40ad8dd09fbc973c95d27c3354bb7e4629dbd16e2e2a01c30",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "01d825704bb7d570785c553205659f1ba0464b16cf719dbf1c505c386fe29c09",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "9413b3729a2837025a2083cdccb4688c32d31fa59f123e3a58812206e4ccf013"
+  },
+  "mode": "class",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "provider": "openai",
+  "rating_bundle": {
+    "illustrative": true,
+    "revision": "development-working-tree",
+    "sha256": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f"
+  },
+  "replay_of": null,
+  "run_id": "synthetic-missing-source-a0f5e55ef5234e97a9fdde691d13b7cf",
+  "schema_version": "1.0",
+  "seed": 20261115,
+  "settings": {
+    "max_output_tokens": 1024,
+    "sampling_seed": null,
+    "temperature": null
+  },
+  "snapshot_id": "public-fault-missing-source",
+  "trial": 1,
+  "variant_id": "public-seed-20261115",
+  "workspace": {
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ],
+    "workspace_id": "workspace-5ea01623c2824231bf7c96672804242c"
+  }
+}

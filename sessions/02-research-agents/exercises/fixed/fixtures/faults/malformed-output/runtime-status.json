@@ -1,0 +1,11 @@
+{
+  "status": "stopped",
+  "stop_reason": "invalid_output",
+  "detail": "invalid_output",
+  "model_attempts": 1,
+  "tool_invocations": 0,
+  "known_observed_tokens": 13,
+  "accounting_status": "known",
+  "elapsed_ms": 12,
+  "intervention": false
+}

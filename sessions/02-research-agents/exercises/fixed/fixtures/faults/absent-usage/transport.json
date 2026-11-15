@@ -1,0 +1,5 @@
+[
+  {
+    "body": "data: {\"type\": \"response.created\", \"response\": {\"id\": \"resp_synthetic\"}}\n\ndata: {\"type\": \"response.output_item.added\", \"output_index\": 0, \"item\": {\"type\": \"message\", \"id\": \"msg_synthetic\", \"role\": \"assistant\", \"content\": []}}\n\ndata: {\"type\": \"response.output_text.delta\", \"output_index\": 0, \"content_index\": 0, \"delta\": \"continue\"}\n\ndata: {\"type\": \"response.output_item.done\", \"output_index\": 0, \"item\": {\"type\": \"message\", \"id\": \"msg_synthetic\", \"role\": \"assistant\", \"content\": [{\"type\": \"output_text\", \"text\": \"continue\", \"annotations\": []}]}}\n\ndata: {\"type\": \"response.completed\", \"response\": {\"id\": \"resp_synthetic\", \"status\": \"completed\", \"output\": [{\"type\": \"message\", \"id\": \"msg_synthetic\", \"role\": \"assistant\", \"content\": [{\"type\": \"output_text\", \"text\": \"continue\", \"annotations\": []}]}], \"usage\": null, \"error\": null}}\n\n"
+  }
+]

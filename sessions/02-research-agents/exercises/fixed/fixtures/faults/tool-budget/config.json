@@ -1,0 +1,86 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "case_id": "A",
+  "endpoint_alias": "openai",
+  "evidence_kind": "synthetic",
+  "fault": {
+    "scenario_id": "tool-budget",
+    "schedule": {
+      "preconditions": {
+        "counter_prefix": "synthetic prefix already at stated policy limit",
+        "fresh_workspace": true,
+        "limits": {
+          "model_attempts": 12,
+          "tool_invocations": 20,
+          "total_tokens": 30000
+        }
+      },
+      "responses": [
+        {
+          "error": {
+            "code": "budget_exhausted",
+            "retryable": false
+          },
+          "status": "admission-denied"
+        }
+      ],
+      "selected_read": {
+        "end": 699,
+        "source_id": "V20261115-EV-S08",
+        "start": 445
+      },
+      "trigger": {
+        "admission": "next operation",
+        "counter": "tool_invocations",
+        "value": 20
+      }
+    },
+    "spec_sha256": "374c25e78e09f5b4cd18b343615c3dae2c8c061e4655178fe06e90595d2bd180"
+  },
+  "hashes": {
+    "corpus": "3d358f811cd9ddfa86409ebaa6fdc7bb601c7d255430924417ee8ff888bfa799",
+    "evaluator": "fb8e4b68d6594653a3834b708dd2174dca5ef0fe9b7cc1ac6b4fbb7c57ce6e85",
+    "harness": "9a39ebca8c06f3ea809aeea22a485413a22f8b8c944f217ef53676218e71a363",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "01d825704bb7d570785c553205659f1ba0464b16cf719dbf1c505c386fe29c09",
+    "rating_bundle": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f",
+    "settings": "9413b3729a2837025a2083cdccb4688c32d31fa59f123e3a58812206e4ccf013"
+  },
+  "mode": "class",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "policy_sha256": "08e43f82f33ed29b7134e237b664d5856a45f8a182121995ff01f35ff283b3ef",
+  "provider": "openai",
+  "rating_bundle": {
+    "illustrative": true,
+    "revision": "development-working-tree",
+    "sha256": "7782d01d357270df11fd125ff44c0e5afebab7cc5b91a06d88b99b0f3e19987f"
+  },
+  "replay_of": null,
+  "run_id": "synthetic-tool-budget-4a0518d283724e15979490e4439306f9",
+  "schema_version": "1.0",
+  "seed": 20261115,
+  "settings": {
+    "max_output_tokens": 1024,
+    "sampling_seed": null,
+    "temperature": null
+  },
+  "snapshot_id": "public-fault-tool-budget",
+  "trial": 1,
+  "variant_id": "public-seed-20261115",
+  "workspace": {
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ],
+    "workspace_id": "workspace-505f40f560134616b088d436a3b31d72"
+  }
+}

@@ -182,7 +182,7 @@ def validate(kind: str, value: dict[str, Any]) -> None:
     elif kind == 'report':
         unique(value['claim_anchors'], 'claim_id')
         unique(value['claim_anchors'], 'anchor')
-    elif kind == 'tool-input' and value['tool'] == 'read':
+    elif kind == 'tool-input' and value['tool'] == 'read' and not value.get('rejected'):
         require(value['arguments']['start'] < value['arguments']['end'], 'read span order')
     elif kind == 'tool-result' and value['status'] == 'ok' and value['tool'] == 'check_table':
         data = value['data']
@@ -199,6 +199,9 @@ def validate(kind: str, value: dict[str, Any]) -> None:
                 validate('tool-' + key, value[key])
                 require(all(value[key][field] == value[field] for field in ('run_id', 'tool_call_id')), 'tool identity mismatch')
             require(value['input']['tool'] == value['result']['tool'], 'tool identity mismatch')
+            if value['input'].get('rejected'):
+                require(value['result']['status'] == 'error' and value['result']['error']['code'] == 'invalid_input',
+                        'rejected arguments cannot execute')
         elif value['type'] == 'model_attempt':
             require((value['status'] == 'ok') == (value['error'] is None), 'attempt error/status mismatch')
     elif kind == 'scorecard':

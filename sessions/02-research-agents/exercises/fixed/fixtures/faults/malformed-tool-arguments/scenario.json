@@ -1,0 +1,35 @@
+{
+  "evidence_kind": "synthetic-specification",
+  "expected_accounting": {
+    "source_reads": 0,
+    "tool_errors": 1,
+    "tool_invocations": 1
+  },
+  "expected_stop_reason": "invalid_output",
+  "operation": "read",
+  "preconditions": {
+    "budgets": "policy.v1.json",
+    "fresh_workspace": true,
+    "retry_limit": 1
+  },
+  "responses": [
+    {
+      "error": {
+        "code": "invalid_input",
+        "retryable": false
+      },
+      "status": "error"
+    }
+  ],
+  "scenario_id": "malformed-tool-arguments",
+  "solution": "Validate before source access. Count the attempted invocation, do not read a file. Allow a new corrected request within budget; this scenario ends after retaining the invalid output.",
+  "spec_version": "1.0",
+  "trigger": {
+    "arguments": {
+      "end": -1,
+      "source_id": "EV-S13",
+      "start": "zero"
+    },
+    "tool_call": 1
+  }
+}

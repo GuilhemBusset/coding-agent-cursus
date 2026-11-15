@@ -1,0 +1,18 @@
+{
+  "model_attempts": 3,
+  "logical_requests": 3,
+  "tool_invocations": 3,
+  "service_errors": 0,
+  "usage": {
+    "input_tokens": 30,
+    "output_tokens": 9,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "reasoning_tokens": 0,
+    "status": "complete"
+  },
+  "total_tokens": 39,
+  "elapsed_ms": 83,
+  "intervention": false,
+  "stop_reason": "no_progress"
+}

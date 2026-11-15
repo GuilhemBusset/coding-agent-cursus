@@ -1,0 +1,24 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "result",
+        "subject": "research",
+        "type": "string",
+        "unit": null,
+        "value": "not-established"
+      },
+      "claim_id": "unfinished",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "synthetic-missing-source-a0f5e55ef5234e97a9fdde691d13b7cf",
+  "schema_version": "1.0",
+  "variant_id": "public-seed-20261115"
+}
