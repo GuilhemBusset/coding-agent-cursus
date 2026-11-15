@@ -190,7 +190,12 @@ export function createBoundary(spec: Json, support: {
       return structuredClone(results);
     } finally { active = false; }
   }
-  function saveOutput(output: Json) { check(); write('candidate-output.json', output); }
+  function saveOutput(output: Json) {
+    // A dispatch stop still permits the harness to preserve its research result.
+    // Keep terminal intact so saving output cannot turn a stopped run into success.
+    if (finished) throw new Stop('run_finished');
+    write('candidate-output.json', output);
+  }
   return {
     api: Object.freeze({ task: Object.freeze(structuredClone(spec.task)), model, tools: executeTools,
       addMessage(text: string) { check(); messages.push({ role: 'user', content: String(text), timestamp: Date.now() }); },

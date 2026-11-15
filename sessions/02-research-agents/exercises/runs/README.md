@@ -72,8 +72,11 @@ The harness chooses progress, recovery and completion. Return
 arrays from the public claims/report schemas and Markdown with the corresponding
 anchors. The boundary supplies run/case/variant identity and fixed output paths.
 Candidate counters, pass flags and claimed usage are saved as candidate output
-but are never used for measurement or grading. No returned result means
-`no_progress`; failure retains an explicitly unfinished partial report.
+but are never used for measurement or grading. After catching a boundary stop,
+the harness can still return a result or call `api.saveOutput(output)` to retain
+its work for grading. Saving output preserves the exact stop reason and does not
+permit further dispatch. Without a boundary stop, no returned result means
+`no_progress`; if no result was saved, grading uses an explicitly unfinished report.
 
 ## Exactly what reaches the model
 
