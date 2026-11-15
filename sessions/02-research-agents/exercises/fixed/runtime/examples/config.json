@@ -1,0 +1,52 @@
+{
+  "budgets": {
+    "model_attempts": 12,
+    "tool_invocations": 20,
+    "total_tokens": 30000
+  },
+  "case_id": "A",
+  "endpoint_alias": "openai",
+  "evidence_kind": "synthetic",
+  "hashes": {
+    "corpus": "49253985ca43785758e4bd35f2ef6fb5bc31286365e17333da077acd06ac9779",
+    "evaluator": "5119f8227e136f297974139156d0098a4ea4cfe3aa524d235efa99a714bf07d7",
+    "harness": "d52eeb09a315a0c0141d3fde4de14573c5fefe211bf20f2dc59daca7483067f1",
+    "model": "249ad911fe12bcd2c59cd8d26b798ed19d63ad5fd21875f8914ea2356b52a2ae",
+    "prompt": "46e62df896ced2b51fdc38255f6f37e0b5ab39f6ad4eaa97d663fd31d6184585",
+    "rating_bundle": "0be1a010c38b277173a17abe558b4d6a4c9c9f7aa447b07ba0a95cbaa1ecc856",
+    "settings": "9413b3729a2837025a2083cdccb4688c32d31fa59f123e3a58812206e4ccf013"
+  },
+  "mode": "class",
+  "model": "gpt-5.4-mini-2026-03-17",
+  "policy_sha256": "202987a63627b27d136eae8bc623fbf3f320503f6864d3ebbe995a2519673683",
+  "provider": "openai",
+  "rating_bundle": {
+    "illustrative": false,
+    "revision": "75e9de64f9b8f38ce88deec76cd92fca5f7bfb50",
+    "sha256": "0be1a010c38b277173a17abe558b4d6a4c9c9f7aa447b07ba0a95cbaa1ecc856"
+  },
+  "replay_of": null,
+  "run_id": "offline-smoke",
+  "schema_version": "1.0",
+  "seed": 20261115,
+  "settings": {
+    "max_output_tokens": 1024,
+    "sampling_seed": null,
+    "temperature": null
+  },
+  "snapshot_id": "baseline-v1",
+  "trial": 1,
+  "variant_id": "base",
+  "workspace": {
+    "fresh": true,
+    "supplied_inputs": [
+      "question",
+      "context",
+      "prompt",
+      "tool_definitions",
+      "corpus_via_tools",
+      "output_contract"
+    ],
+    "workspace_id": "workspace-239ee85e94c2491d83f4f54c47fd70a7"
+  }
+}

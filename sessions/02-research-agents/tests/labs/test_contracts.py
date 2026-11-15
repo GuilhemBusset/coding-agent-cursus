@@ -66,7 +66,12 @@ def test_every_artifact_schema_has_positive_and_negative_examples():
     assert {x['schema'] for x in NEGATIVE} == kinds
 
 
-@pytest.mark.parametrize('path', sorted((FIXED / 'config').glob('*.json')), ids=lambda p: p.name)
+# Runtime preparation/settings JSON is not an emitted v1 run-config artifact;
+# its byte and operational checks live in test_run_boundary/test_run_accounting.
+@pytest.mark.parametrize('path', sorted(
+    path for path in (FIXED / 'config').glob('*.json')
+    if '.snapshot.' in path.name or path.name.startswith(('policy.', 'run.illustrative.'))
+), ids=lambda p: p.name)
 def test_published_configuration(path):
     kind = 'snapshot' if '.snapshot.' in path.name else 'policy' if path.name.startswith('policy.') else 'run-config'
     invoke('validate', kind, read(path))
