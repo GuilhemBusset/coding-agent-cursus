@@ -11,6 +11,10 @@ You are the builder. Build this issue in your working directory, following your 
   - Python tests: pytest through uv (`uv run --no-project --with pytest==8.3.5 pytest ...`, or the
     session's own `uv run pytest`); there may be no bare `python`. Run each pytest selection as its own
     command rather than chaining several with `&&` when they prove different items.
+  - Acceptance commands are durable: select tests explicitly and prepare the pinned runtime and
+    locked dependencies they require, including for subprocesses. They run in fresh copies, after
+    merge and on revert trees. Keep `scripts/check-changed.sh` as repository validation, not as
+    acceptance evidence: its merge-base selection changes across those trees.
   - HTML pages: use the `html-page` skill (tools/html-pages/GUIDE.md) and its checker.
   - Tests in proportion: for small issues aim for fewer test lines than deliverable lines; no
     byte-pinning of text the issue does not change; prose is reviewed, not keyword-matched.

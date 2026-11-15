@@ -98,10 +98,25 @@ class FixCase(EngineCase):
         return max((e["seq"] for e in self.store.events()), default=0)
 
     def breaking_pair(self):
-        """#3 breaks #2's checks on main; its fix-forward changes nothing, so it is reverted."""
+        """A check that fails only after merge still needs fix-forward and revert recovery.
+
+        Ordinary content regressions are caught before merge (test_engine_recovery). Model a
+        context-dependent command here so these tests continue exercising the post-merge gates.
+        """
         self.add_work(2, "docs/a.txt", "alpha")
         self.add_work(3, "docs/a.txt", "broken", blocked_by=(2,))
         self.epic(2, 3)
+        script = FakeAgents._test_script
+
+        def main_sensitive(agent, n):
+            body = script(agent, n)
+            if n == 2:
+                return "if git merge-base --is-ancestor HEAD origin/main; then\n" + body + "fi\n"
+            return body
+
+        patch = mock.patch.object(FakeAgents, "_test_script", main_sensitive)
+        patch.start()
+        self.addCleanup(patch.stop)
 
     def revert_prs(self):
         return [p for p in self.gh.prs.values() if p["head"]["ref"].endswith("-revert")]
@@ -150,7 +165,7 @@ class Finding02RevertGates(FixCase):
         agents = Agents(self.scripts)
         self.run_engine(agents=agents)
         self.assertEqual(self.phase(2), Phase.DONE)
-        regressions = [e for e in self.events("regression_check") if e["issue"] == 3]
+        regressions = [e for e in self.events("regression_check") if e["issue"] == 3 and not e["before_merge"]]
         self.assertTrue(regressions and not regressions[0]["ok"])
         self.assertEqual(regressions[0]["of"], 2)
         self.assertEqual(len(self.events("fix_forward", 3)), 1, "one fix-forward round")
@@ -222,10 +237,10 @@ class Finding02RevertGates(FixCase):
         self.breaking_pair()
         real = Engine._regressions
 
-        def still_failing_on_the_revert(engine, n, root, head):
-            if Path(root).name != "coord":   # the revert's own worktree
+        def still_failing_on_the_revert(engine, n, root, head, base=None):
+            if base is None and Path(root).name != "coord":   # the revert's own worktree
                 return [f"after #{n} was reverted, #2's checks still fail"]
-            return real(engine, n, root, head)
+            return real(engine, n, root, head, base=base)
         with mock.patch.object(Engine, "_regressions", still_failing_on_the_revert):
             self.run_engine(agents=Agents(self.scripts))
         st = self.store.issue(3)
