@@ -1,0 +1,3 @@
+# Rating bundles, replay fixtures and submitted snapshots are hashed as bytes.
+# Preserve both published LF files and student-generated CRLF evidence on every OS.
+* -text
