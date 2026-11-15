@@ -1,0 +1,13 @@
+{
+  "files": {
+    "harness": {
+      "main.ts": "b10071ba6ee222e98d0d92d7c154cc054dbefe47dcc27696a31a3048afad7749"
+    },
+    "prompts": {
+      "research.md": "64ddf9a78541e1dd54e119c5a2efac31e9ac22d5b6eef9b4f9e14adb28b56d65"
+    }
+  },
+  "schema_version": "1.0",
+  "sha256": "8fcbeffe55dc30288ac71c27106fbaf6ec06a32d766e84a9a0023e4924be70a1",
+  "snapshot_id": "scripted-candidate-v1"
+}

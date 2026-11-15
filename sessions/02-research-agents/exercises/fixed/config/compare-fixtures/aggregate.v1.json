@@ -1,0 +1,902 @@
+[
+  {
+    "errors": [],
+    "known_usage": {
+      "cache_read_tokens": 10,
+      "cache_write_tokens": 0,
+      "input_tokens": 100,
+      "output_tokens": 20,
+      "reasoning_tokens": 2
+    },
+    "run_id": "manual-1",
+    "score": {
+      "elapsed_ms": 10,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.A",
+          "category": "decisive",
+          "passed": true,
+          "target_ids": [
+            "A"
+          ]
+        },
+        {
+          "assertion_id": "citation.A",
+          "category": "citation",
+          "passed": true,
+          "target_ids": [
+            "A"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 1,
+      "quality_pass": true,
+      "required_facts_met": 10,
+      "required_facts_total": 10,
+      "service_errors": 0,
+      "stop_reason": "completed",
+      "tool_invocations": 1,
+      "total_tokens": 120,
+      "usage": {
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "input_tokens": 100,
+        "output_tokens": 20,
+        "reasoning_tokens": 2,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "A",
+      "trial": 1
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": null,
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-1",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 10,
+          "cache_write_tokens": 0,
+          "input_tokens": 100,
+          "output_tokens": 20,
+          "reasoning_tokens": 2,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 1,
+        "event_id": "event-1",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-1",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-1",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-1",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 10,
+        "event_id": "event-2",
+        "intervention": false,
+        "run_id": "manual-1",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  },
+  {
+    "errors": [],
+    "known_usage": {
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "input_tokens": 180,
+      "output_tokens": 20,
+      "reasoning_tokens": 2
+    },
+    "run_id": "manual-2",
+    "score": {
+      "elapsed_ms": 20,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.A",
+          "category": "decisive",
+          "passed": false,
+          "target_ids": [
+            "A"
+          ]
+        },
+        {
+          "assertion_id": "citation.A",
+          "category": "citation",
+          "passed": false,
+          "target_ids": [
+            "A"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 1,
+      "quality_pass": false,
+      "required_facts_met": 8,
+      "required_facts_total": 10,
+      "service_errors": 0,
+      "stop_reason": "completed",
+      "tool_invocations": 2,
+      "total_tokens": 200,
+      "usage": {
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "input_tokens": 180,
+        "output_tokens": 20,
+        "reasoning_tokens": 2,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "A",
+      "trial": 2
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": null,
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-2",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "input_tokens": 180,
+          "output_tokens": 20,
+          "reasoning_tokens": 2,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 1,
+        "event_id": "event-1",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-2",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-2",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-2",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 2,
+        "event_id": "event-2",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-2",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-2"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-2",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-2"
+        },
+        "retry_of": null,
+        "run_id": "manual-2",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "tool_call_id": "tool-2",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 20,
+        "event_id": "event-3",
+        "intervention": false,
+        "run_id": "manual-2",
+        "schema_version": "1.0",
+        "sequence": 3,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  },
+  {
+    "errors": [
+      {
+        "code": "service_error",
+        "kind": "model_attempt"
+      }
+    ],
+    "known_usage": {
+      "cache_read_tokens": 10,
+      "cache_write_tokens": 0,
+      "input_tokens": 120,
+      "output_tokens": 30,
+      "reasoning_tokens": 3
+    },
+    "run_id": "manual-3",
+    "score": {
+      "elapsed_ms": 30,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.B",
+          "category": "decisive",
+          "passed": true,
+          "target_ids": [
+            "B"
+          ]
+        },
+        {
+          "assertion_id": "citation.B",
+          "category": "citation",
+          "passed": true,
+          "target_ids": [
+            "B"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 2,
+      "quality_pass": true,
+      "required_facts_met": 10,
+      "required_facts_total": 10,
+      "service_errors": 1,
+      "stop_reason": "completed",
+      "tool_invocations": 1,
+      "total_tokens": 150,
+      "usage": {
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "input_tokens": 120,
+        "output_tokens": 30,
+        "reasoning_tokens": 3,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "B",
+      "trial": 1
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": {
+          "code": "service_error",
+          "retryable": true
+        },
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-3",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "error",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 0,
+          "cache_write_tokens": 0,
+          "input_tokens": 20,
+          "output_tokens": 10,
+          "reasoning_tokens": 1,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-2",
+        "duration_ms": 6,
+        "elapsed_ms": 1,
+        "error": null,
+        "event_id": "event-1",
+        "request_id": "request-1",
+        "retry_of": "attempt-1",
+        "run_id": "manual-3",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 10,
+          "cache_write_tokens": 0,
+          "input_tokens": 100,
+          "output_tokens": 20,
+          "reasoning_tokens": 2,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-2",
+        "duration_ms": 24,
+        "elapsed_ms": 2,
+        "event_id": "event-2",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-3",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-3",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-3",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 30,
+        "event_id": "event-3",
+        "intervention": false,
+        "run_id": "manual-3",
+        "schema_version": "1.0",
+        "sequence": 3,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  },
+  {
+    "errors": [],
+    "known_usage": {
+      "cache_read_tokens": 20,
+      "cache_write_tokens": 0,
+      "input_tokens": 200,
+      "output_tokens": 30,
+      "reasoning_tokens": 3
+    },
+    "run_id": "manual-4",
+    "score": {
+      "elapsed_ms": 40,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.B",
+          "category": "decisive",
+          "passed": true,
+          "target_ids": [
+            "B"
+          ]
+        },
+        {
+          "assertion_id": "citation.B",
+          "category": "citation",
+          "passed": true,
+          "target_ids": [
+            "B"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 1,
+      "quality_pass": true,
+      "required_facts_met": 10,
+      "required_facts_total": 10,
+      "service_errors": 0,
+      "stop_reason": "completed",
+      "tool_invocations": 2,
+      "total_tokens": 230,
+      "usage": {
+        "cache_read_tokens": 20,
+        "cache_write_tokens": 0,
+        "input_tokens": 200,
+        "output_tokens": 30,
+        "reasoning_tokens": 3,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "B",
+      "trial": 2
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": null,
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-4",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 20,
+          "cache_write_tokens": 0,
+          "input_tokens": 200,
+          "output_tokens": 30,
+          "reasoning_tokens": 3,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 1,
+        "event_id": "event-1",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-4",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-4",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-4",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 2,
+        "event_id": "event-2",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-4",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-2"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-4",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-2"
+        },
+        "retry_of": null,
+        "run_id": "manual-4",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "tool_call_id": "tool-2",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 40,
+        "event_id": "event-3",
+        "intervention": false,
+        "run_id": "manual-4",
+        "schema_version": "1.0",
+        "sequence": 3,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  },
+  {
+    "errors": [],
+    "known_usage": {
+      "cache_read_tokens": 10,
+      "cache_write_tokens": 0,
+      "input_tokens": 100,
+      "output_tokens": 50,
+      "reasoning_tokens": 5
+    },
+    "run_id": "manual-5",
+    "score": {
+      "elapsed_ms": 50,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.C",
+          "category": "decisive",
+          "passed": false,
+          "target_ids": [
+            "C"
+          ]
+        },
+        {
+          "assertion_id": "citation.C",
+          "category": "citation",
+          "passed": false,
+          "target_ids": [
+            "C"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 1,
+      "quality_pass": false,
+      "required_facts_met": 6,
+      "required_facts_total": 10,
+      "service_errors": 0,
+      "stop_reason": "completed",
+      "tool_invocations": 1,
+      "total_tokens": 150,
+      "usage": {
+        "cache_read_tokens": 10,
+        "cache_write_tokens": 0,
+        "input_tokens": 100,
+        "output_tokens": 50,
+        "reasoning_tokens": 5,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "C",
+      "trial": 1
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": null,
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-5",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 10,
+          "cache_write_tokens": 0,
+          "input_tokens": 100,
+          "output_tokens": 50,
+          "reasoning_tokens": 5,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 1,
+        "event_id": "event-1",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-5",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-5",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-5",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 50,
+        "event_id": "event-2",
+        "intervention": false,
+        "run_id": "manual-5",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  },
+  {
+    "errors": [],
+    "known_usage": {
+      "cache_read_tokens": 20,
+      "cache_write_tokens": 0,
+      "input_tokens": 200,
+      "output_tokens": 50,
+      "reasoning_tokens": 5
+    },
+    "run_id": "manual-6",
+    "score": {
+      "elapsed_ms": 60,
+      "evidence_kind": "synthetic",
+      "grading_assertions": [
+        {
+          "assertion_id": "decisive.C",
+          "category": "decisive",
+          "passed": true,
+          "target_ids": [
+            "C"
+          ]
+        },
+        {
+          "assertion_id": "citation.C",
+          "category": "citation",
+          "passed": true,
+          "target_ids": [
+            "C"
+          ]
+        }
+      ],
+      "logical_requests": 1,
+      "model_attempts": 1,
+      "quality_pass": true,
+      "required_facts_met": 10,
+      "required_facts_total": 10,
+      "service_errors": 0,
+      "stop_reason": "completed",
+      "tool_invocations": 1,
+      "total_tokens": 250,
+      "usage": {
+        "cache_read_tokens": 20,
+        "cache_write_tokens": 0,
+        "input_tokens": 200,
+        "output_tokens": 50,
+        "reasoning_tokens": 5,
+        "status": "complete"
+      }
+    },
+    "slot": {
+      "case_id": "C",
+      "trial": 2
+    },
+    "status": "complete",
+    "trace": [
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 6,
+        "elapsed_ms": 0,
+        "error": null,
+        "event_id": "event-0",
+        "request_id": "request-1",
+        "retry_of": null,
+        "run_id": "manual-6",
+        "schema_version": "1.0",
+        "sequence": 0,
+        "status": "ok",
+        "type": "model_attempt",
+        "usage": {
+          "cache_read_tokens": 20,
+          "cache_write_tokens": 0,
+          "input_tokens": 200,
+          "output_tokens": 50,
+          "reasoning_tokens": 5,
+          "status": "complete"
+        }
+      },
+      {
+        "attempt_id": "attempt-1",
+        "duration_ms": 24,
+        "elapsed_ms": 1,
+        "event_id": "event-1",
+        "input": {
+          "arguments": {
+            "limit": 1,
+            "query": "shared charger"
+          },
+          "run_id": "manual-6",
+          "schema_version": "1.0",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "request_id": "request-1",
+        "result": {
+          "data": [
+            {
+              "span": {
+                "end": 686,
+                "kind": "passage",
+                "source_id": "EV-S01",
+                "start": 370
+              },
+              "text": "This fictional catalogue contains exactly three candidate methods: Slot Ledger (slot-ledger), Queue Repair (queue-repair), and Slot Ledger Private (private-ledger). Only Slot Ledger and Queue Repair model limited shared charger capacity. The private edition is a title distractor, not another shared-capacity method."
+            }
+          ],
+          "error": null,
+          "run_id": "manual-6",
+          "schema_version": "1.0",
+          "status": "ok",
+          "tool": "search",
+          "tool_call_id": "tool-1"
+        },
+        "retry_of": null,
+        "run_id": "manual-6",
+        "schema_version": "1.0",
+        "sequence": 1,
+        "tool_call_id": "tool-1",
+        "type": "tool_invocation"
+      },
+      {
+        "elapsed_ms": 60,
+        "event_id": "event-2",
+        "intervention": false,
+        "run_id": "manual-6",
+        "schema_version": "1.0",
+        "sequence": 2,
+        "stop_reason": "completed",
+        "type": "run_end"
+      }
+    ]
+  }
+]

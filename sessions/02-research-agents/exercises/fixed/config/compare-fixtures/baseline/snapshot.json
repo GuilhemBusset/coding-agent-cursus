@@ -1,0 +1,13 @@
+{
+  "files": {
+    "harness": {
+      "main.ts": "fec69d2dd4e5b3fe74a462eeaf4a247bbeff46c25a12eab057747343bda98c67"
+    },
+    "prompts": {
+      "research.md": "64ddf9a78541e1dd54e119c5a2efac31e9ac22d5b6eef9b4f9e14adb28b56d65"
+    }
+  },
+  "schema_version": "1.0",
+  "sha256": "ea312956b57cd3809a738219d080808eb7bfa8ca75cfa41465fc5a99acda3e12",
+  "snapshot_id": "scripted-baseline-v1"
+}

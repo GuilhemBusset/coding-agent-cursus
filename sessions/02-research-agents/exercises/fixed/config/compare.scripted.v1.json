@@ -1,0 +1,14 @@
+{
+  "baseline": "compare-fixtures/baseline",
+  "candidate": "compare-fixtures/candidate",
+  "experiment_type": "harness",
+  "mode": "class",
+  "rating_export": "../runtime/fixtures/rating-support.zip",
+  "schema_version": "1.0",
+  "scripts": {
+    "A": "compare-fixtures/A.json",
+    "B": "compare-fixtures/B.json",
+    "C": "compare-fixtures/C.json"
+  },
+  "settings": "run.v1.json"
+}
