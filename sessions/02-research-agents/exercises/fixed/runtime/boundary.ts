@@ -1,7 +1,9 @@
 /** Instructor-owned dispatch/accounting. The harness owns research decisions. */
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AssistantMessage, Message, Tool } from '@earendil-works/pi-ai';
+import type { AssistantMessage, Message, Tool, TranscriptContext } from '@earendil-works/pi-ai';
+import type { AgentTool, StreamFn } from '@earendil-works/pi-agent-core';
+import { AssistantMessageEventStream } from '@earendil-works/pi-ai/utils/event-stream';
 import { normalizeContext } from '@earendil-works/pi-ai/utils/transcript';
 import { validateToolCall } from '@earendil-works/pi-ai/utils/validation';
 import type { createAdapter as adapterFactory, Attempt } from '../model/adapter.ts';
@@ -98,7 +100,7 @@ export function createBoundary(spec: Json, support: {
     controller.abort();
   }, spec.settings.run_timeout_ms);
 
-  async function model(): Promise<AssistantMessage> {
+  async function model(context?: TranscriptContext): Promise<AssistantMessage> {
     check();
     if (accountingUnknown) stop('token_budget');
     if (active) stop('concurrent_dispatch');
@@ -111,7 +113,7 @@ export function createBoundary(spec: Json, support: {
         if (attempts >= spec.settings.budgets.model_attempts) stop('model_budget');
         current = { request, previous, admitted: false };
         const before = adapter.events.length;
-        const stream = await adapter.streamFn(adapter.model, normalizeContext({ systemPrompt, messages,
+        const stream = await adapter.streamFn(adapter.model, context ?? normalizeContext({ systemPrompt, messages,
           tools: support.declarations }), { signal: controller.signal });
         for await (const _ of stream) { /* Drain partial output; saved below. */ }
         const result = await stream.result();
@@ -158,7 +160,7 @@ export function createBoundary(spec: Json, support: {
     } finally { active = false; }
   }
 
-  async function executeTools() {
+  async function executeTools(callId?: string) {
     check();
     if (accountingUnknown) stop('token_budget');
     if (active) stop('concurrent_dispatch');
@@ -168,6 +170,7 @@ export function createBoundary(spec: Json, support: {
       const results = [];
       for (const call of last.message.content) {
         if (call.type !== 'toolCall' || dispatchedToolIds.has(`${last.attempt}:${call.id}`)) continue;
+        if (callId !== undefined && call.id !== callId) continue;
         check();
         if (tools >= spec.settings.budgets.tool_invocations) stop('tool_budget');
         if (!support.declarations.some(t => t.name === call.name)) stop('unregistered_tool');
@@ -229,8 +232,38 @@ export function createBoundary(spec: Json, support: {
     if (finished) throw new Stop('run_finished');
     write('candidate-output.json', output);
   }
+  // Pi owns conversation and continuation; these adapters retain the same fixed
+  // admission, evidence dispatch and accounting used by the manual runtime API.
+  const streamFn: StreamFn = async (_model, context) => {
+    const stream = new AssistantMessageEventStream();
+    try {
+      const message = await model(context);
+      stream.push({ type: 'done', reason: message.stopReason as 'stop' | 'length' | 'toolUse', message });
+    } catch {
+      const message: AssistantMessage = { role: 'assistant', content: [], api: adapter.model.api,
+        provider: adapter.model.provider, model: adapter.model.id, timestamp: Date.now(),
+        stopReason: 'error', errorMessage: terminal ?? 'service_error',
+        usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } } };
+      stream.push({ type: 'error', reason: 'error', error: message });
+    }
+    stream.end();
+    return stream;
+  };
+  function researchTool(name: ToolName): AgentTool {
+    const declaration = support.declarations.find(tool => tool.name === name);
+    if (!declaration) throw new Error('tool not in selected registry');
+    return { ...declaration, label: name, executionMode: 'sequential',
+      async execute(callId) {
+        const [result] = await executeTools(callId);
+        if (!result) stop('invalid_tool_request');
+        return { content: [{ type: 'text', text: JSON.stringify(result) }], details: result,
+          isError: result.status === 'error' };
+      } };
+  }
   return {
     api: Object.freeze({ task: Object.freeze(structuredClone(spec.task)), model, tools: executeTools,
+      piModel: adapter.model, systemPrompt, streamFn, researchTool,
       addMessage(text: string) { check(); messages.push({ role: 'user', content: String(text), timestamp: Date.now() }); },
       saveOutput,
       cancel() { terminal ??= 'cancelled'; controller.abort(); },
