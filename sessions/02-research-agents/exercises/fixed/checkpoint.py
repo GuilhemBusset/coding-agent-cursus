@@ -9,13 +9,15 @@ from tempfile import TemporaryDirectory
 
 from . import evaluate
 from . import run as launcher
-from .snapshot import EXERCISES, inventory, save, verify
+from .snapshot import EXERCISES, digest, inventory, save, verify
 
 CHECKPOINTS = Path(__file__).resolve().parent / 'checkpoints'
-NAMES = ('00-model', '01-read', '02-search', '03-memory')
-TOOLS = ('', 'read', 'read,search', 'read,search')
+NAMES = ('00-model', '01-read', '02-search', '03-memory', '04-audit-stop')
+TOOLS = ('', 'read', 'read,search', 'read,search', 'read,search,check_table')
 GROUPS = ('harness', 'prompts')
 CASES = ('a-find', 'b-compare')
+FINAL_CASES = (*CASES, 'c-audit')
+SCENARIOS = ('transient-read', 'repeated-retrieval', 'missing-source')
 MEMORY_PREFIX = 'Claim–passage memory\n'
 
 
@@ -35,8 +37,15 @@ def publish_memory_trace(output: Path) -> None:
     (output / 'memory-context.jsonl').write_text(''.join(json.dumps(row, ensure_ascii=False) + '\n' for row in rows), encoding='utf-8')
 
 
-def script_for(case: str) -> Path:
-    return CHECKPOINTS / '03-memory' / ('transport-a.json' if case == 'a-find' else 'transport-b.json')
+def script_for(case: str, checkpoint: str = '03-memory') -> Path:
+    return CHECKPOINTS / checkpoint / ('transport-' + case[0] + '.json')
+
+
+def fault_for(name: str) -> dict:
+    path = launcher.FIXED / 'config/public/faults' / (name + '.json')
+    spec = launcher.read(path)
+    return dict(scenario_id=name, spec_sha256=digest(path.read_bytes()),
+                schedule={key: spec[key] for key in ('trigger', 'responses', 'preconditions')})
 
 
 def rejoin(name: str, exercises: Path) -> dict[str, str]:
@@ -67,6 +76,11 @@ def rejoin(name: str, exercises: Path) -> dict[str, str]:
 
 
 def execute(args: argparse.Namespace) -> dict:
+    scenario = getattr(args, 'scenario', None)
+    if scenario and (args.checkpoint != '04-audit-stop' or args.live or args.case != 'a-find'):
+        raise ValueError('04 public faults use offline case A')
+    if args.case == 'c-audit' and args.checkpoint != '04-audit-stop':
+        raise ValueError('use compare --audit-stop for earlier versions on C')
     exercises = args.exercises.resolve()
     name = args.name or ('live-' if args.live else 'synthetic-') + args.checkpoint + '-' + uuid.uuid4().hex[:8]
     snapshot = args.snapshot or exercises / 'runs/versions' / name
@@ -77,15 +91,19 @@ def execute(args: argparse.Namespace) -> dict:
     cache = exercises / 'runs/cache/rating-v1'
     launcher.bundle.prepare(cache, launcher.FIXED / 'runtime/fixtures/rating-support.zip')
     result = launcher.run(argparse.Namespace(
-        snapshot=snapshot, settings=args.settings, mode='rating', cache=cache,
-        case=args.case, tools=TOOLS[NAMES.index(args.checkpoint)], name=name,
-        trial=1, seed=20261115, exercises=exercises,
-        script=None if args.live else script_for(args.case) if args.checkpoint == '03-memory' else CHECKPOINTS / args.checkpoint / 'transport.json',
+        snapshot=snapshot, settings=args.settings, mode='development' if scenario else 'rating', cache=cache,
+        case=args.case, tools=TOOLS[NAMES.index(args.checkpoint)] if args.case == 'c-audit' else
+            TOOLS[min(NAMES.index(args.checkpoint), 3)], name=name,
+        trial=1, seed=20261115, exercises=launcher.FIXED.parent if scenario else exercises,
+        out=exercises / 'runs' / name,
+        script=None if args.live else CHECKPOINTS / args.checkpoint / (scenario + '.json') if scenario else
+            script_for(args.case, args.checkpoint) if args.checkpoint in ('03-memory', '04-audit-stop') else CHECKPOINTS / args.checkpoint / 'transport.json',
+        fault=fault_for(scenario) if scenario else None,
     ))
     output = exercises / 'runs' / name
     score = launcher.read(output / 'scorecard.json')
     comparison = dict(evidence_kind=score['evidence_kind'],
-                      reference=str(cache / 'exercises/cases' / args.case / 'reference.json'),
+                      reference=str((launcher.FIXED.parent / 'cases' if scenario else cache / 'exercises/cases') / args.case / 'reference.json'),
                       required_facts_met=score['required_facts_met'],
                       required_facts_total=score['required_facts_total'],
                       failed_assertion_ids=score['failed_assertion_ids'],
@@ -98,32 +116,34 @@ def execute(args: argparse.Namespace) -> dict:
 def compare(args: argparse.Namespace) -> dict:
     """Thin A/B class smoke; the general evaluator owns submission schedules."""
     saved = {role: verify(getattr(args, role)) for role in evaluate.ROLES}
+    audit = getattr(args, 'audit_stop', False)
+    cases = FINAL_CASES if audit else CASES
     if saved['baseline']['files']['prompts'] != saved['candidate']['files']['prompts']:
-        raise ValueError('memory comparison must hold prompts fixed')
+        raise ValueError('checkpoint comparison must hold prompts fixed')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     launcher.write(output / 'settings.json', launcher.settings(args.settings))
     cache = output / 'cache'
     launcher.bundle.prepare(cache, launcher.FIXED / 'runtime/fixtures/rating-support.zip')
     pin, files = launcher.bundle.verify(cache)
-    schedule = [dict(case=case, case_id=case[0].upper(), variant_id='base', seed=20261115,
-                     trial=1, tools=['read', 'search']) for case in CASES]
+    schedule: list[dict] = [dict(case=case, case_id=case[0].upper(), variant_id='base', seed=20261115,
+                     trial=1, tools=['read', 'search', 'check_table'] if case == 'c-audit' else ['read', 'search']) for case in cases]
     shared = dict(mode='class', evidence_kind='synthetic', settings=launcher.settings(output / 'settings.json'),
                   rating_bundle={k: pin[k] for k in ('revision', 'sha256', 'illustrative')},
                   support_files=files, schedule=schedule)
     launcher.write(output / 'shared.json', shared)
     (output / 'scripts').mkdir()
-    for case in CASES:
-        shutil.copyfile(script_for(case), output / 'scripts' / (case[0].upper() + '.json'))
+    for case in cases:
+        shutil.copyfile(script_for(case, '04-audit-stop' if audit else '03-memory'), output / 'scripts' / (case[0].upper() + '.json'))
     records: dict[str, list[dict]] = {role: [] for role in evaluate.ROLES}
     for role in evaluate.ROLES:
         snapshot = output / 'versions' / role
         shutil.copytree(getattr(args, role), snapshot)
-        for slot, case in zip(schedule, CASES):
+        for slot, case in zip(schedule, cases):
             case_id = case[0].upper()
             name = role + '-' + case_id
             launcher.run(argparse.Namespace(snapshot=snapshot, settings=output / 'settings.json', mode='rating',
-                cache=cache, case=case, tools='read,search', name=name, trial=1, seed=slot['seed'],
+                cache=cache, case=case, tools=','.join(slot['tools']), name=name, trial=1, seed=slot['seed'],
                 exercises=output, script=output / 'scripts' / (case_id + '.json')))
             run_output = output / 'runs' / name
             publish_memory_trace(run_output)
@@ -149,13 +169,15 @@ def main() -> None:
             mode.add_argument('--live', action='store_true', help='explicit paid API opt-in; environment credentials')
             sub.add_argument('--name', help='new run/snapshot identifier; defaults to a unique name')
             sub.add_argument('--settings', type=Path, default=launcher.FIXED / 'config/run.v1.json')
-            sub.add_argument('--case', choices=CASES, default='a-find')
+            sub.add_argument('--case', choices=FINAL_CASES, default='a-find')
+            sub.add_argument('--scenario', choices=SCENARIOS, help='04 offline case A: public read fault/stop')
             sub.add_argument('--snapshot', type=Path, help='run a saved version instead of saving current edits')
     comparison = commands.add_parser('compare', help='synthetic A/B comparison, identical prompt/settings/scripts')
     comparison.add_argument('--baseline', type=Path, required=True)
     comparison.add_argument('--candidate', type=Path, required=True)
     comparison.add_argument('--output', type=Path, required=True)
     comparison.add_argument('--settings', type=Path, default=launcher.FIXED / 'config/run.v1.json')
+    comparison.add_argument('--audit-stop', action='store_true', help='compare saved versions on A–C with all three tools')
     args = parser.parse_args()
     try:
         result = compare(args) if args.command == 'compare' else rejoin(args.checkpoint, args.exercises) if args.command == 'rejoin' else execute(args)
