@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -18,7 +19,7 @@ SECRET = re.compile(r'\bsk-[A-Za-z0-9_-]{20,}|\bgh[pousr]_[A-Za-z0-9]{20,}|-----
 ARTIFACTS = ('config.json', 'policy.json', 'run-inputs.json', 'trace.jsonl', 'claims.json',
              'report.json', 'report.md', 'scorecard.json', 'grading.json', 'accounting.json',
              'runtime-status.json', 'peer-review.md', 'dispatches.jsonl', 'reservations.jsonl',
-             'tool-results.jsonl', 'effective-settings.jsonl')
+             'effective-settings.jsonl')
 
 
 def members(root: Path) -> dict[str, str]:
@@ -36,17 +37,20 @@ def portable(value: Any) -> Any:
 
 
 def hygiene(exercises: Path) -> None:
-    # These are precisely the editable/submitted inputs; supplied public support is
-    # checked separately by its pin. Never echo a matched value into diagnostics.
+    # Retain snapshot link checks for evidence and editable runtime inputs.
     for root in (exercises / 'harness', exercises / 'prompts', exercises / 'runs/submission'):
-        inventory(root)  # refuses links, including directory links
-        for path in root.rglob('*'):
-            if path.is_file():
-                require(not path.name.startswith('.env'), 'environment file in submission')
-                require(not SECRET.search(path.read_bytes().decode('utf-8', errors='replace')), 'credential in submission')
-    for path in exercises.iterdir():
+        inventory(root)
+    # Match git add's scope, including tracked files that now match ignore rules.
+    # An export need not be in Git (or even have Git installed): scan all of it.
+    git = shutil.which('git')
+    listed = subprocess.run([git, 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '.'],
+                            cwd=exercises, capture_output=True, check=False) if git else None
+    paths = (exercises / name.decode('utf-8') for name in listed.stdout.split(b'\0') if name) if listed and listed.returncode == 0 else exercises.rglob('*')
+    for path in paths:
+        require(not path.is_symlink(), 'symlink in submission')
         if path.is_file():
             require(not path.name.startswith('.env'), 'environment file in exercises')
+            # Never echo a matched value into diagnostics.
             require(not SECRET.search(path.read_bytes().decode('utf-8', errors='replace')), 'credential in exercise file')
 
 
@@ -85,6 +89,9 @@ def comparison(source: Path, kind: str) -> dict[str, Any]:
                     evaluate.lines(file)
             for schema in ('claims', 'report'):
                 validate(schema, run.read(original / (schema + '.json')))
+            # The runtime creates this journal lazily, on the first tool call.
+            if any(event['type'] == 'tool_invocation' for event in evaluate.lines(original / 'trace.jsonl')):
+                require((original / 'tool-results.jsonl').is_file(), 'missing tool results')
             config = run.read(original / 'config.json')
             require(config['evidence_kind'] == shared['evidence_kind'], 'evidence label mismatch')
             slot = shared['schedule'][int(name.rsplit('-', 1)[1]) - 1]
