@@ -34,8 +34,8 @@ All paths are regular Python/Node paths, including spaces and Windows drives.
 that case's registered tools; `check_table` is available when registered by the
 case. `--name` sets a unique run ID; otherwise one is generated. `--trial` and
 `--seed` record the experimental identity; the seed does not promise deterministic
-provider sampling. These launches are class-mode attempts; comparison/schedule
-orchestration is separate work.
+provider sampling. These single launches are class-mode attempts; use the comparison entry point
+below for the class or submission schedule.
 
 Snapshots copy every regular file in `harness/` and `prompts/`, reject symlinks,
 and save sorted relative-path SHA-256 maps in `snapshot.json`. Immutability means
@@ -188,8 +188,8 @@ Artifacts under `runs/<run-id>/` retain successful and failed attempts:
 
 A stopped run is still a recorded attempt. The CLI returns a JSON status even when
 quality fails; startup/input/bundle failures exit 2. Check `runtime-status.json`
-and `scorecard.json` independently. Reusing an output directory fails. No comparison,
-replay certification or completed teaching harness is supplied by this boundary.
+and `scorecard.json` independently. Reusing an output directory fails. Replay certification and a completed teaching harness are separate from this boundary;
+the comparison entry point below composes it for saved-version experiments.
 
 ## Validation and limits of this evidence
 
@@ -223,3 +223,86 @@ Named owner evidence obligations (implementation and offline checks are supplied
   request/tool-continuation, usage, cancellation and status artifacts. Verify the
   actual provider/model/endpoint compatibility; these offline fixtures supply no
   live autonomy or classroom calibration evidence.
+
+## Compare two saved versions
+
+After the normal session setup, this single offline command prepares the shipped
+rating export, verifies both public saved versions, runs every class-schedule
+slot in a fresh workspace, grades the outputs, and saves readable and JSON
+before/after scorecards:
+
+```sh
+uv run --locked python -m exercises.fixed.evaluate compare --experiment exercises/fixed/config/compare.scripted.v1.json --output exercises/runs/compare-scripted
+```
+
+Output directories are never overwritten: use a new `--output` on a later run.
+The fixture runs six attempts (A, B, C per version), with identical prompts,
+model/effective settings, task seeds, variant schedule, tool registries, budgets
+and public corpus/evaluator revision. Baseline's redundant model call costs
+1,080 total tokens / 3 successes = 360 tokens/success; candidate uses
+720 / 3 = 240. The machine recommendation is retain, **provisional** while peer
+prose review is pending. This is synthetic evidence, not live compatibility,
+autonomy, or classroom-readiness evidence. The public scripted answers pass
+through the real boundary and independent grader; no harness assigns scores.
+
+`compare-scripted/` contains:
+
+- `experiment.json`, `public-manifest.json`, `shared.json`, `settings.json`:
+  selected mode, exact announced schedule and shared controls, including tools,
+  task seeds (distinct from model sampling settings), budgets and support hashes.
+- `versions/baseline/`, `versions/candidate/`: copied saved manifests and bytes.
+  Editing student working files after saving does not change these versions.
+- `cache/`, `scripts/`: verified public rating support and copied synthetic inputs.
+- `runs/<version>-<slot>/`: every scheduled attempt, with normal launcher
+  config, effective-settings, requests, trace, accounting, report, grading and
+  peer-review artifacts. `shared.json` records the same canonical comparison
+  controls per attempt. Launch failures retain `launch-error.json`; service and
+  quality failures are kept and the next scheduled attempt still runs.
+- `before.json`, `after.json`, `before.md`, `after.md`: scheduled per-case pass
+  rates, requirement failures, fact coverage, citation checks, all-attempt calls,
+  stop reasons, token/cache/usage status, known subtotals, elapsed time and errors.
+- `comparison.json`, `comparison.md`: all slot statuses and explicit decision
+  reasons, plus a separate pending peer prose review. Follow each attempt's
+  `peer-review.md` to inspect prose and supporting evidence.
+
+The [independent manual calculation](../fixed/scorecards/manual-calculation.md)
+includes successes, quality failures and a metered retry. The checked-in
+[scripted result](../fixed/scorecards/scripted-comparison.md) records the demo's
+before/after totals; regenerate the full evidence with the command above.
+
+For student work, copy `fixed/config/compare.scripted.v1.json` to a new experiment
+JSON. Set `baseline` and `candidate` to saved snapshot **directories**, and
+`settings` to one run settings file. All paths resolve relative to that JSON,
+not the shell's working directory. `experiment_type` is `harness` (prompts must
+match) or `prompt` (harness files must match); changing both is rejected. Missing
+version metadata or incompatible effective settings/hashes are invalid inputs.
+Use `mode: "class"` for one announced variant per case, or `"submission"` for
+three independent trials per case per version (18 total attempts). Model trial
+identity does not imply deterministic sampling. The comparison records this
+mode in every attempt's config; it does not alter the provider request.
+
+Keep `scripts` for offline work. For explicitly authorized paid runs, remove
+`scripts` and add `--live`; credentials stay in the environment. `rating_export`
+can name the shipped ZIP or an exported directory; omitting it fetches the
+existing public pin. The default tests never make paid requests.
+
+```sh
+# Recheck saved attempt metadata and regenerate scorecards without model calls:
+uv run --locked python -m exercises.fixed.evaluate summarize --output exercises/runs/compare-scripted
+```
+
+A missing attempt remains in its scheduled denominator and is named in
+`comparison.json`. Incomplete effective settings or usage blocks unsupported
+efficiency conclusions. Known usage subtotals are not complete totals. Zero
+successes is failure with a null token-per-success value. Retrying a service
+request does not create a new successful task: its usage remains in the same
+attempt and in the all-attempt numerator.
+
+A requirement fix can be retained only when the candidate passes its quality
+gates and no per-case pass rate decreases. Losing an earlier passing A/B cannot
+be offset by fixing C. Resource-only retention requires both versions to pass
+quality gates and complete measured usage, including cache fields; otherwise the
+result explains insufficient evidence. Elapsed time is diagnostic, never ranked.
+Exit **0** means machine comparison gates passed, **1** means failed/incomplete
+gates, **2** means invalid/incompatible input. Peer review is reported separately;
+exit 0 does not complete a human prose audit or verify live evidence.
