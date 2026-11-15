@@ -166,8 +166,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if case_relative.is_absolute() or '..' in case_relative.parts:
         raise ValueError('case must be a relative bundle path')
     case = read(support / case_relative / 'case.json')
-    selected = args.tools.split(',') if args.tools else case['registered_tools']
-    if not selected or len(set(selected)) != len(selected) or not set(selected) <= set(case['registered_tools']):
+    selected = case['registered_tools'] if args.tools is None else args.tools.split(',') if args.tools else []
+    if len(set(selected)) != len(selected) or not set(selected) <= set(case['registered_tools']):
         raise ValueError('tools must be selected from the case registry')
     prompts = {name: (snapshot / 'prompts' / name).read_text(encoding='utf-8') for name in saved['files']['prompts'] if name != '.gitkeep'}
     if not (snapshot / 'harness/main.ts').is_file():

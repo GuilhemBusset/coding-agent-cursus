@@ -1,5 +1,13 @@
 # Saved versions and fresh runs
 
+For the first 25 minutes, start with the public
+[00 model-call guide](../fixed/checkpoints/00-model/README.md), then
+[01 read](../fixed/checkpoints/01-read/README.md) and
+[02 search](../fixed/checkpoints/02-search/README.md). The portable
+`python -m exercises.fixed.checkpoint` helper saves the current harness/prompts,
+runs public A and writes a reference comparison beside the normal artifacts.
+Rejoin preserves both editable directories under unique `runs/backups/` folders.
+
 Run commands below from `sessions/02-research-agents/`, after the session setup
 (`uv sync --locked` and `npm ci`; see the session README). Python orchestrates the
 portable files/processes; Node runs the Pi TypeScript boundary. No global package,
