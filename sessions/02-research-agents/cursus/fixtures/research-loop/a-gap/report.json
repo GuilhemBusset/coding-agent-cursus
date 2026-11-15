@@ -1,0 +1,14 @@
+{
+  "case_id": "A",
+  "claim_anchors": [
+    {
+      "anchor": "claim-unresolved",
+      "claim_id": "unresolved"
+    }
+  ],
+  "claims_path": "claims.json",
+  "report_path": "report.md",
+  "run_id": "a-gap",
+  "schema_version": "1.0",
+  "variant_id": "base"
+}

@@ -1,0 +1,272 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "limited_capacity_methods",
+        "subject": "dossier",
+        "type": "string_set",
+        "unit": null,
+        "value": [
+          "slot-ledger",
+          "queue-repair"
+        ]
+      },
+      "claim_id": "claim-A-method-set",
+      "evidence": [
+        {
+          "end": 686,
+          "kind": "passage",
+          "source_id": "EV-S01",
+          "start": 370
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "demand_assumption",
+        "subject": "shared-methods",
+        "type": "string",
+        "unit": null,
+        "value": "deterministic-known-inputs"
+      },
+      "claim_id": "claim-A-known-inputs",
+      "evidence": [
+        {
+          "end": 1083,
+          "kind": "passage",
+          "source_id": "EV-S01",
+          "start": 703
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "slot_minutes",
+        "subject": "shared-methods",
+        "tolerance": {
+          "absolute": 0,
+          "relative": 0
+        },
+        "type": "number",
+        "unit": "minutes",
+        "value": 30
+      },
+      "claim_id": "claim-A-slot-minutes",
+      "evidence": [
+        {
+          "end": 1083,
+          "kind": "passage",
+          "source_id": "EV-S01",
+          "start": 703
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "charging_assumptions",
+        "subject": "shared-methods",
+        "type": "string_set",
+        "unit": null,
+        "value": [
+          "whole-wait-slots",
+          "lossless-constant-power",
+          "truck-and-charger-power-bounds"
+        ]
+      },
+      "claim_id": "claim-A-charging-assumptions",
+      "evidence": [
+        {
+          "end": 1083,
+          "kind": "passage",
+          "source_id": "EV-S01",
+          "start": 703
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "capacity_mechanism",
+        "subject": "slot-ledger",
+        "type": "string",
+        "unit": null,
+        "value": "per-depot-type-slot-occupancy-bound"
+      },
+      "claim_id": "claim-A-ledger-capacity",
+      "evidence": [
+        {
+          "end": 767,
+          "kind": "passage",
+          "source_id": "EV-S02",
+          "start": 371
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "assignment_assumption",
+        "subject": "slot-ledger",
+        "type": "string",
+        "unit": null,
+        "value": "binary-assignment-and-cancellation"
+      },
+      "claim_id": "claim-A-ledger-assignment",
+      "evidence": [
+        {
+          "end": 767,
+          "kind": "passage",
+          "source_id": "EV-S02",
+          "start": 371
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "formulation_assumptions",
+        "subject": "slot-ledger",
+        "type": "string_set",
+        "unit": null,
+        "value": [
+          "maintenance-and-soc",
+          "final-home-charge"
+        ]
+      },
+      "claim_id": "claim-A-ledger-assumptions",
+      "evidence": [
+        {
+          "end": 1139,
+          "kind": "passage",
+          "source_id": "EV-S02",
+          "start": 784
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "capacity_mechanism",
+        "subject": "queue-repair",
+        "type": "string",
+        "unit": null,
+        "value": "per-depot-type-slot-occupancy-ledger"
+      },
+      "claim_id": "claim-A-repair-capacity",
+      "evidence": [
+        {
+          "end": 751,
+          "kind": "passage",
+          "source_id": "EV-S03",
+          "start": 372
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "formulation_assumptions",
+        "subject": "queue-repair",
+        "type": "string_set",
+        "unit": null,
+        "value": [
+          "fixed-candidate-routes",
+          "repair-or-cancel",
+          "checked-feasible-not-global-optimum"
+        ]
+      },
+      "claim_id": "claim-A-repair-assumptions",
+      "evidence": [
+        {
+          "end": 1176,
+          "kind": "passage",
+          "source_id": "EV-S03",
+          "start": 768
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "models_shared_capacity",
+        "subject": "private-ledger",
+        "type": "boolean",
+        "unit": null,
+        "value": false
+      },
+      "claim_id": "claim-A-private-exclusion",
+      "evidence": [
+        {
+          "end": 688,
+          "kind": "passage",
+          "source_id": "EV-S04",
+          "start": 386
+        }
+      ],
+      "experiment_ids": [],
+      "kind": "factual",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "supported"
+    },
+    {
+      "assertion": {
+        "predicate": "performance_under_uncertain_demand",
+        "subject": "shared-methods",
+        "type": "string",
+        "unit": null,
+        "value": "not-established"
+      },
+      "claim_id": "claim-A-uncertainty",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "uncertainty",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "recovery",
+  "schema_version": "1.0",
+  "variant_id": "base"
+}

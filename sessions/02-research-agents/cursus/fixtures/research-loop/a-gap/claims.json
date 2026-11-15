@@ -1,0 +1,24 @@
+{
+  "case_id": "A",
+  "claims": [
+    {
+      "assertion": {
+        "predicate": "performance_under_uncertain_demand",
+        "subject": "shared-methods",
+        "type": "string",
+        "unit": null,
+        "value": "unknown"
+      },
+      "claim_id": "unresolved",
+      "evidence": [],
+      "experiment_ids": [],
+      "kind": "uncertainty",
+      "reference_fact_ids": [],
+      "supersedes_claim_ids": [],
+      "support_status": "unknown"
+    }
+  ],
+  "run_id": "a-gap",
+  "schema_version": "1.0",
+  "variant_id": "base"
+}
