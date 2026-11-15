@@ -1896,6 +1896,11 @@ class Engine:
             if head != st.certified_sha:
                 self.store.event("head_changed_after_certificate", issue=n, certified=st.certified_sha, head=head)
                 return self._set_phase(n, Phase.VERIFY)
+            regressions = self._regressions(n, wt, head, base=sync.main)
+            if regressions:
+                # Diagnostic output can contain timings/temporary paths. Keep it out of the
+                # progress signature, while giving the builder the complete failure record.
+                return self._round_failed(n, [r.split("\n", 1)[0] for r in regressions], notes=regressions)
             body = report.render_pr_body(n, issue.title, st, self.op, self.other)
             pr = self.gh.find_pr(st.branch)
             if pr is None or pr.get("state") != "open":
@@ -2157,8 +2162,40 @@ class Engine:
         self.store.put(st)
         self._sync(n)
 
-    def _regressions(self, n: int, coord: Path, head: str) -> list[str]:
-        """Re-run the commands of the run's earlier issues on `main` after a merge."""
+    def _regression_baseline(self, coord: Path, head: str, base: str, checks: list[CheckSpec], entry: dict,
+                             work_dir: Path):
+        """Run unchanged checks on base content with the candidate's changed paths.
+
+        A plain base checkout empties check-changed's selection. In this disposable private
+        git directory only, make a base-tree child of the candidate and compare against the
+        candidate: the reverse diff selects the same paths while HEAD/archive read base code.
+        No shared branch, remote ref, accepted command or manifest is changed.
+        """
+        with self.ws.disposable(coord) as scratch, self._check_environment() as env:
+            tree = self.ws.git("rev-parse", f"{base}^{{tree}}", cwd=scratch)
+            baseline = self.ws.git("commit-tree", tree, "-p", head, "-m", "Regression baseline", cwd=scratch)
+            self.ws.git("reset", "--hard", baseline, cwd=scratch)
+            self.ws.git("update-ref", self.ws.base_ref(), head, cwd=scratch)
+            ok, evidence, problems, _ = verify.verify(
+                scratch, checks, baseline, work_dir, {}, entry.get("check_files", []),
+                entry.get("manifest") or None, self.caps.check_timeout_s, extra_env=env, check_tamper=False)
+            return ok, evidence, problems, self._regression_failures(evidence, scratch)
+
+    @staticmethod
+    def _regression_failures(evidence: list[dict], root: Path) -> list[tuple]:
+        # Pytest notes identify failing/skipped tests and bad exits; shell checks have no
+        # such identity, so require matching diagnostic output as well as the exit code.
+        return [(e["criterion"], e["command"], e["cwd"], e["exit_code"],
+                 e.get("note") or e.get("output_tail", "").replace(str(root), "<checkout>"))
+                for e in evidence if not e["passed"]]
+
+    def _regressions(self, n: int, coord: Path, head: str, base: str | None = None) -> list[str]:
+        """Check earlier evidence before landing, and retain the post-merge/revert checks.
+
+        Before landing, reproduce failures on base content under the same selection/runtime
+        before attributing them to the candidate. Inherited failures stay recorded as failures,
+        rather than spending candidate repair rounds on a locked, unrelated command.
+        """
         out = []
         fields = CheckSpec.__dataclass_fields__
         for key, entry in sorted(self.store.state.get("accepted_checks", {}).items()):
@@ -2172,9 +2209,23 @@ class Engine:
                                                           {}, entry.get("check_files", []), entry.get("manifest") or None,
                                                           self.caps.check_timeout_s, extra_env=env,
                                                           check_tamper=False)
-            self.store.event("regression_check", issue=n, of=m, head=head, ok=ok, problems=problems)
-            if not ok and not environment_problem(evidence):
-                out.append(f"after #{n} merged, #{m}'s checks fail on main: " + "; ".join(problems)[:400])
+                failures = self._regression_failures(evidence, scratch)
+            inherited = False
+            if not ok and base:
+                base_ok, base_evidence, base_problems, base_failures = self._regression_baseline(
+                    coord, head, base, checks, entry, self.store.issue_dir(m) / "regression-base")
+                inherited = (not base_ok and problems == base_problems
+                             and failures == base_failures)
+                self.store.event("regression_baseline", issue=n, of=m, head=head, base=base,
+                                 ok=base_ok, inherited=inherited, problems=base_problems, evidence=base_evidence)
+            self.store.event("regression_check", issue=n, of=m, head=head, ok=ok, problems=problems,
+                             before_merge=base is not None, inherited=inherited, evidence=evidence)
+            if not ok and not inherited and (base is not None or not environment_problem(evidence)):
+                diagnostics = [f"command: {e['command']}\ncwd: {e['cwd']}\n{e.get('output_tail', '')}"
+                               for e in evidence if not e["passed"]]
+                context = (f"#{m}'s checks fail before landing #{n}: " if base
+                           else f"after #{n} merged, #{m}'s checks fail on main: ")
+                out.append(context + "; ".join(problems) + "\n" + "\n".join(diagnostics))
         return out
 
     def _reconcile_delivered(self) -> None:

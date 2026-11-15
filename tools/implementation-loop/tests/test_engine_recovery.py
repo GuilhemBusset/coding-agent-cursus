@@ -87,6 +87,104 @@ class HappyPathRegressions(RecoveryCase):
         self.assertIn("`docs/a.txt` contains `alpha`.", briefing)
 
 
+class PreLandingRegressions(RecoveryCase):
+    """#183: issue-177/events.jsonl 660–671 separates a real #180 workflow-label
+    regression from #179's diff-selected setup failure on the revert tree. Its
+    calls/0108-build-codex-183.out.json used mise for Node checks, whereas #179's
+    accepted check-changed command did not. Replaying the revert's setup subprocess
+    rejects ambient Node 26.4.0; pinned Node 24.15.0 passes readiness and both npm
+    commands. Model that inherited runtime failure alongside a genuine regression.
+    """
+
+    def candidate(self, *, repair=False, inherited=False, breaks=True):
+        if inherited:
+            self.move_main({"docs/a.txt": "alpha\n", "checks/test_runtime.py": """\
+import os
+from pathlib import Path
+def test_runtime():
+    assert os.environ['FIXTURE_RUNTIME'] == 'pinned', 'prepare the pinned runtime'
+def test_content():
+    assert Path('docs/a.txt').read_text().strip() == 'alpha'
+"""})
+            self.environment = {"check_env": {"FIXTURE_RUNTIME": "ambient"}}
+        self.add_work(2, "docs/contract.txt" if inherited else "docs/a.txt", "alpha")
+        self.add_work(3, "docs/b.txt", "beta", blocked_by=(2,))
+        self.epic(2, 3)
+        agents = FakeAgents(self.scripts)
+        plan, build = agents.plan, agents.build
+
+        def zones(vendor, req, worktree):
+            result = plan(vendor, req, worktree)
+            if req.issue.number == 3:
+                result.zones.append("docs/a.txt")
+            return result
+
+        def candidate_build(vendor, req, plan, worktree, feedback):
+            result = build(vendor, req, plan, worktree, feedback)
+            if req.issue.number == 2:
+                check = worktree / agents.test_file(2)
+                if inherited:
+                    check.write_text(check.read_text() + f"""\
+if git diff --name-only "$(git merge-base origin/main HEAD)" | grep -q 'docs/b.txt'; then
+    {shlex.quote(sys.executable)} -m pytest -q checks/test_runtime.py
+fi
+""")
+                else:
+                    check.write_text(check.read_text().replace(
+                        'test "$(cat docs/a.txt)" = "alpha"',
+                        'test "$(cat docs/a.txt)" = "alpha" || { echo "expected alpha in docs/a.txt"; exit 1; }'))
+            else:
+                fixed = repair and any("before landing" in f for f in feedback)
+                (worktree / "docs/a.txt").write_text("alpha\n" if fixed or not breaks else "broken\n")
+            return result
+
+        agents.plan = zones  # ty: ignore[invalid-assignment]  # test double
+        agents.build = candidate_build  # ty: ignore[invalid-assignment]  # test double
+        self.run_engine(agents=agents)
+        return [e for e in self.events("regression_check", 3) if e["before_merge"]]
+
+    def test_candidate_regression_reaches_revision_before_merge_and_repair_lands(self):
+        checks = self.candidate(repair=True)
+        self.assertFalse(checks[0]["ok"])
+        self.assertFalse(checks[0]["inherited"])
+        self.assertTrue(checks[-1]["ok"])
+        feedback = "\n".join(self.builds(3)[1][3])
+        for diagnostic in ("bash checks/issue_2.sh", "cwd: .", "expected alpha in docs/a.txt"):
+            self.assertIn(diagnostic, feedback)
+        merged = self.events("merged", 3)[0]
+        self.assertLess(checks[-1]["seq"], merged["seq"])
+        self.assertEqual(self.phase(3), Phase.DONE)
+        self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha")
+        self.assertFalse(self.events("fix_forward", 3))
+
+    def test_unrepaired_candidate_never_lands(self):
+        checks = self.candidate()
+        self.assertTrue(checks and all(not e["ok"] and not e["inherited"] for e in checks))
+        self.assertEqual(self.phase(3), Phase.FAILED)
+        self.assertFalse(self.events("merged", 3))
+        self.assertEqual(self.repo.main_file("docs/a.txt"), "alpha")
+
+    def test_diff_selected_ambient_failure_is_reproduced_on_base_without_blocking_candidate(self):
+        checks = self.candidate(inherited=True, breaks=False)
+        self.assertTrue(checks and all(not e["ok"] and e["inherited"] for e in checks))
+        baseline = self.events("regression_baseline", 3)[0]
+        self.assertIn("test_runtime", str(baseline["problems"]))
+        accepted = self.store.state["accepted_checks"]["2"]["checks"]
+        self.assertEqual([e["command"] for e in baseline["evidence"]], [c["command"] for c in accepted])
+        self.assertEqual(self.phase(3), Phase.DONE)
+        self.assertEqual(len(self.builds(3)), 1)
+        self.assertFalse(list(self.engine.ws.dir.glob("scratch-*")))
+
+    def test_inherited_failure_does_not_hide_an_additional_candidate_regression(self):
+        checks = self.candidate(inherited=True)
+        self.assertTrue(checks and all(not e["inherited"] for e in checks))
+        self.assertIn("test_content", str(checks[0]["problems"]))
+        baseline = self.events("regression_baseline", 3)[0]
+        self.assertNotIn("test_content", str(baseline["problems"]))
+        self.assertEqual(self.phase(3), Phase.FAILED)
+        self.assertFalse(self.events("merged", 3))
+
+
 class TemporaryCheckRegressions(RecoveryCase):
     # Deliberately reproduce #178's mkdtemp-without-cleanup command, using tiny data.
     leak = f"{shlex.quote(sys.executable)} - <<'PY'\n" + """\
