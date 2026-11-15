@@ -2,6 +2,7 @@
 
 import json
 import shutil
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -116,6 +117,15 @@ def test_bash_wrapper_uses_actual_validator(complete, workspace):
     shutil.copytree(complete, session / 'exercises')
     shutil.copytree(SESSION / 'exercises/fixed', session / 'exercises/fixed', ignore=shutil.ignore_patterns('__pycache__'))
     gate = SESSION / 'exercises/turn-in-check.sh'
-    command(['bash', gate], session)
+    bash = 'bash'
+    if sys.platform == 'win32':
+        # PATH's bash.exe can be the WSL launcher. Use the installed Git Bash
+        # explicitly, keeping the validator's Python/uv runtime native Windows.
+        git_exec = Path(command(['git', '--exec-path'], session).stdout.strip())
+        candidates = [root / 'bin/bash.exe' for root in git_exec.parents]
+        git_bash = next((path for path in candidates if path.is_file()), None)
+        assert git_bash is not None, 'Git for Windows with Git Bash is required'
+        bash = str(git_bash)
+    command([bash, gate.as_posix()], session)
     (session / 'exercises/runs/submission/peer-audit.md').unlink()
-    command(['bash', gate], session, codes=(1,))
+    command([bash, gate.as_posix()], session, codes=(1,))
